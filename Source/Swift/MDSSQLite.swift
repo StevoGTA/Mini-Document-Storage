@@ -232,9 +232,9 @@ class MDSSQLite : MiniDocumentStorage {
 	private	let	sqliteDatabase :SQLiteDatabase
 
 	private	let	infoTable :SQLiteTable
-	private	let	infoKeyTableColumnInfo =
-						SQLiteTableColumnInfo("key", .text(size: nil, default: nil), [.primaryKey, .unique, .notNull])
-	private	let	infoValueTableColumnInfo = SQLiteTableColumnInfo("value", .text(size: nil, default: nil), [.notNull])
+	private	let	infoKeyTableColumn =
+						SQLiteTableColumn("key", .text(size: nil, default: nil), [.primaryKey, .unique, .notNull])
+	private	let	infoValueTableColumn = SQLiteTableColumn("value", .text(size: nil, default: nil), [.notNull])
 
 	private	let	documentsTable :SQLiteTable
 	private	let	collectionsTable :SQLiteTable
@@ -261,22 +261,22 @@ class MDSSQLite : MiniDocumentStorage {
 		// Setup tables
 		self.infoTable =
 				self.sqliteDatabase.table(name: "Info", options: [.withoutRowID],
-						tableColumnInfos: [self.infoKeyTableColumnInfo, self.infoValueTableColumnInfo])
+						tableColumns: [self.infoKeyTableColumn, self.infoValueTableColumn])
 		self.infoTable.create()
 
-		let	infoValueTableColumnInfo = self.infoValueTableColumnInfo
+		let	infoValueTableColumn = self.infoValueTableColumn
 
 		var	version :Int?
-		self.infoTable.select(tableColumnInfos: [self.infoValueTableColumnInfo],
-				where: (tableColumnInfo: self.infoKeyTableColumnInfo, columnValue: "version")) {
+		self.infoTable.select(tableColumns: [self.infoValueTableColumn],
+				where: SQLiteWhere(tableColumn: self.infoKeyTableColumn, value: "version")) {
 					// Retrieve value
-					version = $0.next() ? Int($0.text(for: infoValueTableColumnInfo)) : nil
+					version = $0.next() ? Int($0.text(for: infoValueTableColumn)!) : nil
 				}
 		if version == nil {
 			// Setup table
 			_ = self.infoTable.insert([
-										(self.infoKeyTableColumnInfo, "version"),
-										(self.infoValueTableColumnInfo, 1),
+										(self.infoKeyTableColumn, "version"),
+										(self.infoValueTableColumn, 1),
 									  ])
 		}
 
@@ -294,10 +294,9 @@ class MDSSQLite : MiniDocumentStorage {
 		// Return tables
 		return MDSSQLiteDocumentBacking.tablesInfo(for: documentType, tablesInfoMap: &self.documentTablesInfoMap,
 				tablesInfoMapLock: &self.documentTablesInfoMapLock,
-				tableProc: { name, options, tableColumnInfos, referenceInfos -> SQLiteTable in
+				tableProc: {
 					// Return table
-					return self.sqliteDatabase.table(name: name, options: options, tableColumnInfos: tableColumnInfos,
-							referenceInfos: referenceInfos)
+					return self.sqliteDatabase.table(name: $0, options: $1, tableColumns: $2, references: $3)
 				})
 	}
 

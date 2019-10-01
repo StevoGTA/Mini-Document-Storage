@@ -20,26 +20,26 @@ class MDSSQLiteDocumentBacking {
 	typealias TablesInfoMap = [/* type */ String : TablesInfo]
 
 	// MARK: Properties
-	static	private	let	masterTypeColumnInfo =
-								SQLiteTableColumnInfo("type", .text(size: nil, default: nil), [.notNull, .unique])
-	static	private	let	masterLastRevisionColumnInfo =
-								SQLiteTableColumnInfo("lastRevision", .integer(size: 4, default: nil), [.notNull])
+	static	private	let	masterTypeTableColumn =
+								SQLiteTableColumn("type", .text(size: nil, default: nil), [.notNull, .unique])
+	static	private	let	masterLastRevisionTableColumn =
+								SQLiteTableColumn("lastRevision", .integer(size: 4, default: nil), [.notNull])
 
-	static	private	let	infoIDTableColumnInfo =
-								SQLiteTableColumnInfo("id", .integer(size: nil, default: nil),
+	static	private	let	infoIDTableColumn =
+								SQLiteTableColumn("id", .integer(size: nil, default: nil),
 										[.primaryKey, .autoincrement])
-	static	private	let	infoDocumentIDTableColumnInfo =
-								SQLiteTableColumnInfo("documentID", .text(size: nil, default: nil), [.notNull, .unique])
-	static	private	let	infoCreationDateTableColumnInfo =
-								SQLiteTableColumnInfo("creationDate", .text(size: 23, default: nil), [.notNull])
-	static	private	let	infoModificationDateTableColumnInfo =
-								SQLiteTableColumnInfo("modificationDate", .text(size: 23, default: nil), [.notNull])
-	static	private	let	infoRevisionTableColumnInfo =
-								SQLiteTableColumnInfo("revision", .integer(size: 4, default: nil), [.notNull])
+	static	private	let	infoDocumentIDTableColumn =
+								SQLiteTableColumn("documentID", .text(size: nil, default: nil), [.notNull, .unique])
+	static	private	let	infoCreationDateTableColumn =
+								SQLiteTableColumn("creationDate", .text(size: 23, default: nil), [.notNull])
+	static	private	let	infoModificationDateTableColumn =
+								SQLiteTableColumn("modificationDate", .text(size: 23, default: nil), [.notNull])
+	static	private	let	infoRevisionTableColumn =
+								SQLiteTableColumn("revision", .integer(size: 4, default: nil), [.notNull])
 
-	static	private	let	contentsIDTableColumnInfo =
-								SQLiteTableColumnInfo("id", .integer(size: nil, default: nil), [.primaryKey])
-	static	private	let	contentsJSONTableColumnInfo = SQLiteTableColumnInfo("json", .blob, [.notNull])
+	static	private	let	contentsIDTableColumn =
+								SQLiteTableColumn("id", .integer(size: nil, default: nil), [.primaryKey])
+	static	private	let	contentsJSONTableColumn = SQLiteTableColumn("json", .blob, [.notNull])
 
 					let	creationDate :Date
 
@@ -56,15 +56,15 @@ class MDSSQLiteDocumentBacking {
 	static func masterTable(for database :SQLiteDatabase) -> SQLiteTable {
 		// Return table
 		return database.table(name: "Documents", options: [],
-				tableColumnInfos: [self.masterTypeColumnInfo, self.masterLastRevisionColumnInfo])
+				tableColumns: [self.masterTypeTableColumn, self.masterLastRevisionTableColumn])
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	static func tablesInfo(for documentType :String, tablesInfoMap :inout TablesInfoMap,
 			tablesInfoMapLock :inout ReadPreferringReadWriteLock,
 			tableProc:
-					(_ name :String, _ options :SQLiteTable.Options, _ tableColumnInfos :[SQLiteTableColumnInfo],
-							_ referenceInfos :[SQLiteTableColumnReferencesInfo]) -> SQLiteTable) -> TablesInfo {
+					(_ name :String, _ options :SQLiteTable.Options, _ tableColumnInfos :[SQLiteTableColumn],
+							_ referenceInfos :[SQLiteTableColumn.Reference]) -> SQLiteTable) -> TablesInfo {
 		// Try existing tables
 		if let tablesInfo = tablesInfoMapLock.read({ return tablesInfoMap[documentType] }) {
 			// Return tables
@@ -74,14 +74,21 @@ class MDSSQLiteDocumentBacking {
 			let	tableTitleRoot = documentType.prefix(1).uppercased() + documentType.dropFirst()
 			let	infoTable =
 						tableProc("\(tableTitleRoot)s", [],
-								[self.infoIDTableColumnInfo, self.infoDocumentIDTableColumnInfo,
-										self.infoCreationDateTableColumnInfo, self.infoModificationDateTableColumnInfo,
-										self.infoRevisionTableColumnInfo],
+								[
+									self.infoIDTableColumn,
+									self.infoDocumentIDTableColumn,
+									self.infoCreationDateTableColumn,
+									self.infoModificationDateTableColumn,
+									self.infoRevisionTableColumn
+								],
 								[])
 			let	contentTable =
 						tableProc("\(tableTitleRoot)Contents", [],
-								[self.contentsIDTableColumnInfo, self.contentsJSONTableColumnInfo],
-								[(self.contentsIDTableColumnInfo, infoTable, self.infoIDTableColumnInfo)])
+								[
+									self.contentsIDTableColumn,
+									self.contentsJSONTableColumn
+								],
+								[(self.contentsIDTableColumn, infoTable, self.infoIDTableColumn)])
 
 			// Create tables
 			_ = infoTable.create()
@@ -104,8 +111,8 @@ class MDSSQLiteDocumentBacking {
 			// Iterate all results
 			while $0.next() {
 				// Get info
-				let	type = $0.text(for: self.masterTypeColumnInfo)
-				let	lastRevision :Int = $0.integer(for: self.masterLastRevisionColumnInfo)
+				let	type = $0.text(for: self.masterTypeTableColumn)!
+				let	lastRevision :Int = $0.integer(for: self.masterLastRevisionTableColumn)!
 
 				// Add to map
 				typeInfoMap[type] = lastRevision
@@ -125,14 +132,11 @@ class MDSSQLiteDocumentBacking {
 			// Iterate all results
 			while $0.next() {
 				// Get info
-				let	id :Int = $0.integer(for: self.infoIDTableColumnInfo)
-				let	documentID = $0.text(for: self.infoDocumentIDTableColumnInfo)
-				let	creationDateStandardized = $0.text(for: self.infoCreationDateTableColumnInfo)
-				let	modificationDateStandardized = $0.text(for: self.infoModificationDateTableColumnInfo)
-				let	revision :Int = $0.integer(for: self.infoRevisionTableColumnInfo)
-
-				let	creationDate = try! Date(fromStandardized: creationDateStandardized)
-				let	modificationDate = try! Date(fromStandardized: modificationDateStandardized)
+				let	id :Int = $0.integer(for: self.infoIDTableColumn)!
+				let	documentID = $0.text(for: self.infoDocumentIDTableColumn)!
+				let	creationDate = try! Date(fromStandardized: $0.text(for: self.infoCreationDateTableColumn)!)
+				let	modificationDate = try! Date(fromStandardized: $0.text(for: self.infoModificationDateTableColumn)!)
+				let	revision :Int = $0.integer(for: self.infoRevisionTableColumn)!
 
 				// Add to array
 				infos.append(
@@ -150,23 +154,21 @@ class MDSSQLiteDocumentBacking {
 		var	map = MDSSQLiteDocumentBacking.Map()
 
 		// Select
-		tablesInfo.infoTable.select(innerJoin: (tablesInfo.contentTable, self.contentsIDTableColumnInfo),
-				where: (tableColumnInfo: self.infoDocumentIDTableColumnInfo, columnValues: documentIDs)) {
+		tablesInfo.infoTable.select(innerJoin: (tablesInfo.contentTable, self.contentsIDTableColumn),
+				where: SQLiteWhere(tableColumn: self.infoDocumentIDTableColumn, values: documentIDs)) {
 					// Iterate all results
 					while $0.next() {
 						// Get info
-						let	id :Int = $0.integer(for: self.infoIDTableColumnInfo)
-						let	documentID = $0.text(for: self.infoDocumentIDTableColumnInfo)
-						let	creationDateStandardized = $0.text(for: self.infoCreationDateTableColumnInfo)
-						let	modificationDateStandardized = $0.text(for: self.infoModificationDateTableColumnInfo)
-						let	revision :Int = $0.integer(for: self.infoRevisionTableColumnInfo)
+						let	id :Int = $0.integer(for: self.infoIDTableColumn)!
+						let	documentID = $0.text(for: self.infoDocumentIDTableColumn)!
+						let	creationDate = try! Date(fromStandardized: $0.text(for: self.infoCreationDateTableColumn)!)
+						let	modificationDate =
+									try! Date(fromStandardized: $0.text(for: self.infoModificationDateTableColumn)!)
+						let	revision :Int = $0.integer(for: self.infoRevisionTableColumn)!
 						let	propertyMap =
 									try! JSONSerialization.jsonObject(
-											with: $0.blob(for: self.contentsJSONTableColumnInfo), options: []) as!
+											with: $0.blob(for: self.contentsJSONTableColumn)!, options: []) as!
 											[String : Any]
-
-						let	creationDate = try! Date(fromStandardized: creationDateStandardized)
-						let	modificationDate = try! Date(fromStandardized: modificationDateStandardized)
 
 						// Add to map
 						map[documentID] =
@@ -190,15 +192,15 @@ class MDSSQLiteDocumentBacking {
 
 		// Select
 		tablesInfo.contentTable.select(
-				tableColumnInfos: [self.contentsIDTableColumnInfo, self.contentsJSONTableColumnInfo],
-				where: (tableColumnInfo: self.contentsIDTableColumnInfo, columnValues: Array(infoMap.keys))) {
+				tableColumns: [self.contentsIDTableColumn, self.contentsJSONTableColumn],
+				where: SQLiteWhere(tableColumn: self.contentsIDTableColumn, values: Array(infoMap.keys))) {
 					// Iterate all results
 					while $0.next() {
 						// Get info
-						let	id :Int = $0.integer(for: self.contentsIDTableColumnInfo)
+						let	id :Int = $0.integer(for: self.contentsIDTableColumn)!
 						let	propertyMap =
 									try! JSONSerialization.jsonObject(
-											with: $0.blob(for: self.contentsJSONTableColumnInfo), options: []) as!
+											with: $0.blob(for: self.contentsJSONTableColumn)!, options: []) as!
 											[String : Any]
 						let	info = infoMap[Int64(id)]!
 
@@ -248,21 +250,21 @@ class MDSSQLiteDocumentBacking {
 
 		// Add to database
 		_ = documentsTable.insertOrReplace([
-											(MDSSQLiteDocumentBacking.masterTypeColumnInfo, type),
-											(MDSSQLiteDocumentBacking.masterLastRevisionColumnInfo, revision),
+											(MDSSQLiteDocumentBacking.masterTypeTableColumn, type),
+											(MDSSQLiteDocumentBacking.masterLastRevisionTableColumn, revision),
 										   ])
 		self.id =
 				tablesInfo.infoTable.insert([
-												(MDSSQLiteDocumentBacking.infoDocumentIDTableColumnInfo, documentID),
-												(MDSSQLiteDocumentBacking.infoCreationDateTableColumnInfo,
+												(MDSSQLiteDocumentBacking.infoDocumentIDTableColumn, documentID),
+												(MDSSQLiteDocumentBacking.infoCreationDateTableColumn,
 														self.creationDate.standardized),
-												(MDSSQLiteDocumentBacking.infoModificationDateTableColumnInfo,
+												(MDSSQLiteDocumentBacking.infoModificationDateTableColumn,
 														self.modificationDate.standardized),
-												(MDSSQLiteDocumentBacking.infoRevisionTableColumnInfo, revision),
+												(MDSSQLiteDocumentBacking.infoRevisionTableColumn, revision),
 											])
 		_ = tablesInfo.contentTable.insert([
-											(MDSSQLiteDocumentBacking.contentsIDTableColumnInfo, self.id),
-											(MDSSQLiteDocumentBacking.contentsJSONTableColumnInfo, data),
+											(MDSSQLiteDocumentBacking.contentsIDTableColumn, self.id),
+											(MDSSQLiteDocumentBacking.contentsJSONTableColumn, data),
 										   ])
 	}
 
@@ -310,25 +312,25 @@ class MDSSQLiteDocumentBacking {
 
 		// Update
 		_ = documentsTable.insertOrReplace([
-											(MDSSQLiteDocumentBacking.masterTypeColumnInfo, type),
-											(MDSSQLiteDocumentBacking.masterLastRevisionColumnInfo, revision),
+											(MDSSQLiteDocumentBacking.masterTypeTableColumn, type),
+											(MDSSQLiteDocumentBacking.masterLastRevisionTableColumn, revision),
 										   ])
 		tablesInfo.infoTable.update(
 				[
-					(MDSSQLiteDocumentBacking.infoModificationDateTableColumnInfo, self.modificationDate.standardized),
-					(MDSSQLiteDocumentBacking.infoRevisionTableColumnInfo, self.revision)
+					(MDSSQLiteDocumentBacking.infoModificationDateTableColumn, self.modificationDate.standardized),
+					(MDSSQLiteDocumentBacking.infoRevisionTableColumn, self.revision)
 				],
-				where: (tableColumnInfo: MDSSQLiteDocumentBacking.infoIDTableColumnInfo, columnValue: self.id))
-		tablesInfo.contentTable.update([(MDSSQLiteDocumentBacking.contentsJSONTableColumnInfo, data)],
-				where: (tableColumnInfo: MDSSQLiteDocumentBacking.contentsIDTableColumnInfo, columnValue: self.id))
+				where: SQLiteWhere(tableColumn: MDSSQLiteDocumentBacking.infoIDTableColumn, value: self.id))
+		tablesInfo.contentTable.update([(MDSSQLiteDocumentBacking.contentsJSONTableColumn, data)],
+				where: SQLiteWhere(tableColumn: MDSSQLiteDocumentBacking.contentsIDTableColumn, value: self.id))
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func remove(from tablesInfo :TablesInfo) {
 		// Delete
 		tablesInfo.infoTable.delete(
-				where: (tableColumnInfo: MDSSQLiteDocumentBacking.infoIDTableColumnInfo, columnValue: self.id))
+				where: SQLiteWhere(tableColumn: MDSSQLiteDocumentBacking.infoIDTableColumn, value: self.id))
 		tablesInfo.contentTable.delete(
-				where: (tableColumnInfo: MDSSQLiteDocumentBacking.contentsIDTableColumnInfo, columnValue: self.id))
+				where: SQLiteWhere(tableColumn: MDSSQLiteDocumentBacking.contentsIDTableColumn, value: self.id))
 	}
 }
