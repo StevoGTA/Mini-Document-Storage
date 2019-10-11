@@ -53,7 +53,8 @@ class MDSSQLite : MiniDocumentStorage {
 		// Check for batch
 		if let batchInfo = self.mdsBatchInfoMapLock.read({ return self.mdsBatchInfoMap[Thread.current] }) {
 			// In batch
-			_ = batchInfo.addDocument(documentType: T.documentType, documentID: documentID)
+			_ = batchInfo.addDocument(documentType: T.documentType, documentID: documentID, creationDate: Date(),
+					modificationDate: Date())
 		} else {
 			// Add document
 			let	document =
@@ -132,7 +133,7 @@ class MDSSQLite : MiniDocumentStorage {
 					// Is removed?
 					if !batchDocumentInfo.removed {
 						// Update document
-						if let document = batchDocumentInfo.documentReference {
+						if let document = batchDocumentInfo.reference {
 							// Update document
 							document.update(type: documentType,
 									updatedPropertyMap: batchDocumentInfo.updatedPropertyMap,
@@ -150,7 +151,7 @@ class MDSSQLite : MiniDocumentStorage {
 						}
 					} else {
 						// Remove document
-						batchDocumentInfo.documentReference!.remove(from: tablesInfo)
+						batchDocumentInfo.reference!.remove(from: tablesInfo)
 						self.documentBackingMapLock.write() { self.documentBackingMap[documentID] = nil }
 					}
 				}
@@ -182,8 +183,8 @@ class MDSSQLite : MiniDocumentStorage {
 			} else {
 				// Don't have document in batch
 				let	document = self.document(documentType: documentType, documentID: documentID)
-				batchInfo.addDocument(documentType: documentType, documentID: documentID,
-								documentReference: document, valueProc: { return $0.value(for: $1) })
+				batchInfo.addDocument(documentType: documentType, documentID: documentID, reference: document,
+						creationDate: Date(), modificationDate: Date(), valueProc: { return $0.value(for: $1) })
 						.set(value, for: key)
 			}
 		} else {
@@ -214,8 +215,8 @@ class MDSSQLite : MiniDocumentStorage {
 			} else {
 				// Don't have document in batch
 				let	document = self.document(documentType: documentType, documentID: documentID)
-				batchInfo.addDocument(documentType: documentType, documentID: documentID,
-						documentReference: document).remove()
+				batchInfo.addDocument(documentType: documentType, documentID: documentID, reference: document,
+						creationDate: Date(), modificationDate: Date()).remove()
 			}
 		} else {
 			// Not in batch

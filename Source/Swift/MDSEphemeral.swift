@@ -1,8 +1,9 @@
 //
 //  MDSEphemeral.swift
+//  Mini Document Storage
 //
-//  Created by Stevo on 10/7/16.
-//  Copyright © 2016 Stevo Brock. All rights reserved.
+//  Created by Stevo on 10/9/18.
+//  Copyright © 2018 Stevo Brock. All rights reserved.
 //
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -18,7 +19,8 @@ class MDSEphemeral : MiniDocumentStorage {
 		// Check for batch
 		if let batchInfo = self.mdsBatchInfoMapLock.read({ return self.mdsBatchInfoMap[Thread.current] }) {
 			// In batch
-			_ = batchInfo.addDocument(documentType: T.documentType, documentID: documentID)
+			_ = batchInfo.addDocument(documentType: T.documentType, documentID: documentID, creationDate: Date(),
+					modificationDate: Date())
 		} else {
 			// Add document
 			self.documentMapLock.write() {
@@ -118,8 +120,8 @@ class MDSEphemeral : MiniDocumentStorage {
 				batchDocumentInfo.set(value, for: key)
 			} else {
 				// Don't have document in batch
-				batchInfo.addDocument(documentType: documentType, documentID: documentID,
-								documentReference: [:], valueProc: { _, key in
+				batchInfo.addDocument(documentType: documentType, documentID: documentID, reference: [:],
+						creationDate: Date(), modificationDate: Date(), valueProc: { _, key in
 									// Play nice with others
 									self.documentMapLock.read() { return self.documentMap[documentID]?[key] }
 								})
@@ -147,8 +149,8 @@ class MDSEphemeral : MiniDocumentStorage {
 				batchDocumentInfo.remove()
 			} else {
 				// Don't have document in batch
-				batchInfo.addDocument(documentType: documentType, documentID: documentID,
-						documentReference: [:]).remove()
+				batchInfo.addDocument(documentType: documentType, documentID: documentID, reference: [:],
+						creationDate: Date(), modificationDate: Date()).remove()
 			}
 		} else {
 			// Not in batch
