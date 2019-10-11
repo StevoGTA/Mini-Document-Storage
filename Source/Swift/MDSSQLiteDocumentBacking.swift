@@ -63,8 +63,8 @@ class MDSSQLiteDocumentBacking {
 	static func tablesInfo(for documentType :String, tablesInfoMap :inout TablesInfoMap,
 			tablesInfoMapLock :inout ReadPreferringReadWriteLock,
 			tableProc:
-					(_ name :String, _ options :SQLiteTable.Options, _ tableColumnInfos :[SQLiteTableColumn],
-							_ referenceInfos :[SQLiteTableColumn.Reference]) -> SQLiteTable) -> TablesInfo {
+					(_ name :String, _ options :SQLiteTable.Options, _ tableColumns :[SQLiteTableColumn],
+							_ references :[SQLiteTableColumn.Reference]) -> SQLiteTable) -> TablesInfo {
 		// Try existing tables
 		if let tablesInfo = tablesInfoMapLock.read({ return tablesInfoMap[documentType] }) {
 			// Return tables

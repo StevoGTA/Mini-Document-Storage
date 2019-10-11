@@ -13,15 +13,12 @@ class MDSSQLiteCollection {
 
 	// MARK: Properties
 //	let	id :String
-	static	private	let	idTableColumnInfo =
+	static	private	let	idTableColumn =
 								SQLiteTableColumn("id", .integer(size: nil, default: nil),
 										[.primaryKey, .autoincrement])
-	static	private	let	nameTableColumnInfo =
-								SQLiteTableColumn("name", .text(size: nil, default: nil), [.notNull, .unique])
-	static	private	let	typeTableColumnInfo =
-								SQLiteTableColumn("type", .text(size: nil, default: nil), [.notNull])
-	static	private	let	versionTableColumnInfo =
-								SQLiteTableColumn("version", .integer(size: 2, default: nil), [.notNull])
+	static	private	let	nameTableColumn = SQLiteTableColumn("name", .text(size: nil, default: nil), [.notNull, .unique])
+	static	private	let	typeTableColumn = SQLiteTableColumn("type", .text(size: nil, default: nil), [.notNull])
+	static	private	let	versionTableColumn = SQLiteTableColumn("version", .integer(size: 2, default: nil), [.notNull])
 	static	private	let	lastRevisionColumnInfo =
 								SQLiteTableColumn("lastRevision", .integer(size: 4, default: nil), [.notNull])
 
@@ -31,12 +28,12 @@ class MDSSQLiteCollection {
 		// Return table
 		return database.table(name: "Collections", options: [],
 				tableColumns: [
-								self.idTableColumnInfo,
-								self.nameTableColumnInfo,
-								self.typeTableColumnInfo,
-								self.versionTableColumnInfo,
-								self.lastRevisionColumnInfo
-		])
+								self.idTableColumn,
+								self.nameTableColumn,
+								self.typeTableColumn,
+								self.versionTableColumn,
+								self.lastRevisionColumnInfo,
+							  ])
 	}
 
 	// MARK: Lifecycle methods
