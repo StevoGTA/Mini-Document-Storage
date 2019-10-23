@@ -68,6 +68,21 @@ class MDSDocument : Hashable {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func double(for key :String) -> Double? {
+		// Retrieve value
+		return self.miniDocumentStorage.value(for: key, documentType: type(of: self).documentType, documentID: self.id)
+				as? Double
+	}
+	func set(_ value :Double?, for key :String) {
+		// Check if different
+		if value != double(for: key) {
+			// Set value
+			self.miniDocumentStorage.set(value, for: key, documentType: type(of: self).documentType,
+					documentID: self.id)
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func int(for key :String) -> Int? {
 		// Retrieve value
 		return self.miniDocumentStorage.value(for: key, documentType: type(of: self).documentType, documentID: self.id)
@@ -94,6 +109,25 @@ class MDSDocument : Hashable {
 			// Set value
 			self.miniDocumentStorage.set(value, for: key, documentType: type(of: self).documentType,
 					documentID: self.id)
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func document<T>(for key :String) -> T? {
+		// Retrieve document ID
+		if let documentID = string(for: key) {
+			// Return document
+			return self.miniDocumentStorage.document(for: documentID)
+		} else {
+			// No document for this key
+			return nil
+		}
+	}
+	func set<T : MDSDocument>(_ document :T?, for key :String) {
+		// Check if different
+		if document?.id != string(for: key) {
+			// Set value
+			self.miniDocumentStorage.set(document?.id, for: key, documentType: T.documentType, documentID: self.id)
 		}
 	}
 
