@@ -12,7 +12,7 @@ class MDSDocument : Hashable {
 
 	// MARK: Procs
 	typealias CreationProc = (_ id :String, _ documentStorage :MiniDocumentStorage) -> MDSDocument
-	typealias ApplyProc<T> = (_ document :T) -> Void
+	typealias ApplyProc<T : MDSDocument> = (_ document :T) -> Void
 
 	// MARK: Equatable implementation
     static func == (lhs: MDSDocument, rhs: MDSDocument) -> Bool { return lhs.id == rhs.id }
@@ -38,15 +38,15 @@ class MDSDocument : Hashable {
 	//------------------------------------------------------------------------------------------------------------------
 	func bool(for key :String) -> Bool? {
 		// Retrieve value
-		return self.miniDocumentStorage.value(for: key, documentType: type(of: self).documentType, documentID: self.id)
+		return self.miniDocumentStorage.value(for: key, documentID: self.id, documentType: type(of: self).documentType)
 				as? Bool
 	}
 	func set(_ value :Bool?, for key :String) {
 		// Check if different
 		if value != bool(for: key) {
 			// Set value
-			self.miniDocumentStorage.set(value, for: key, documentType: type(of: self).documentType,
-					documentID: self.id)
+			self.miniDocumentStorage.set(value, for: key, documentID: self.id,
+					documentType: type(of: self).documentType)
 		}
 	}
 
@@ -55,65 +55,65 @@ class MDSDocument : Hashable {
 		// Retrieve value
 		return self.miniDocumentStorage.date(
 				for:
-						self.miniDocumentStorage.value(for: key, documentType: type(of: self).documentType,
-								documentID: self.id))
+						self.miniDocumentStorage.value(for: key, documentID: self.id,
+								documentType: type(of: self).documentType))
 	}
 	func set(_ value :Date?, for key :String) {
 		// Check if different
 		if value != date(for: key) {
 			// Set value
-			self.miniDocumentStorage.set(self.miniDocumentStorage.value(for: value), for: key,
-					documentType: type(of: self).documentType, documentID: self.id)
+			self.miniDocumentStorage.set(self.miniDocumentStorage.value(for: value), for: key, documentID: self.id,
+					documentType: type(of: self).documentType)
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func double(for key :String) -> Double? {
 		// Retrieve value
-		return self.miniDocumentStorage.value(for: key, documentType: type(of: self).documentType, documentID: self.id)
+		return self.miniDocumentStorage.value(for: key, documentID: self.id, documentType: type(of: self).documentType)
 				as? Double
 	}
 	func set(_ value :Double?, for key :String) {
 		// Check if different
 		if value != double(for: key) {
 			// Set value
-			self.miniDocumentStorage.set(value, for: key, documentType: type(of: self).documentType,
-					documentID: self.id)
+			self.miniDocumentStorage.set(value, for: key, documentID: self.id,
+					documentType: type(of: self).documentType)
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func int(for key :String) -> Int? {
 		// Retrieve value
-		return self.miniDocumentStorage.value(for: key, documentType: type(of: self).documentType, documentID: self.id)
+		return self.miniDocumentStorage.value(for: key, documentID: self.id, documentType: type(of: self).documentType)
 				as? Int
 	}
 	func set(_ value :Int?, for key :String) {
 		// Check if different
 		if value != int(for: key) {
 			// Set value
-			self.miniDocumentStorage.set(value, for: key, documentType: type(of: self).documentType,
-					documentID: self.id)
+			self.miniDocumentStorage.set(value, for: key, documentID: self.id,
+					documentType: type(of: self).documentType)
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func string(for key :String) -> String? {
 		// Retrieve value
-		return self.miniDocumentStorage.value(for: key, documentType: type(of: self).documentType, documentID: self.id)
+		return self.miniDocumentStorage.value(for: key, documentID: self.id, documentType: type(of: self).documentType)
 				as? String
 	}
 	func set(_ value :String?, for key :String) {
 		// Check if different
 		if value != string(for: key) {
 			// Set value
-			self.miniDocumentStorage.set(value, for: key, documentType: type(of: self).documentType,
-					documentID: self.id)
+			self.miniDocumentStorage.set(value, for: key, documentID: self.id,
+					documentType: type(of: self).documentType)
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func document<T>(for key :String) -> T? {
+	func document<T : MDSDocument>(for key :String) -> T? {
 		// Retrieve document ID
 		if let documentID = string(for: key) {
 			// Return document
@@ -127,13 +127,13 @@ class MDSDocument : Hashable {
 		// Check if different
 		if document?.id != string(for: key) {
 			// Set value
-			self.miniDocumentStorage.set(document?.id, for: key, documentType: T.documentType, documentID: self.id)
+			self.miniDocumentStorage.set(document?.id, for: key, documentID: self.id, documentType: T.documentType)
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func remove() {
 		// Remove
-		self.miniDocumentStorage.remove(documentType: type(of: self).documentType, documentID: self.id)
+		self.miniDocumentStorage.remove(documentID: self.id, documentType: type(of: self).documentType)
 	}
 }

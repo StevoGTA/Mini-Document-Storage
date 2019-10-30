@@ -46,21 +46,21 @@ class MDSSQLite : MiniDocumentStorage {
 
 	// MARK: MiniDocumentStorage implementation
 	//------------------------------------------------------------------------------------------------------------------
-	func newDocument<T : MDSDocument>(_ creationProc :MDSDocument.CreationProc) -> T {
+	func newDocument<T : MDSDocument>(documentType :String, creationProc :MDSDocument.CreationProc) -> T {
 		// Setup
 		let	documentID = UUID().base64EncodedString
 
 		// Check for batch
 		if let batchInfo = self.mdsBatchInfoMapLock.read({ return self.mdsBatchInfoMap[Thread.current] }) {
 			// In batch
-			_ = batchInfo.addDocument(documentType: T.documentType, documentID: documentID, creationDate: Date(),
+			_ = batchInfo.addDocument(documentType: documentType, documentID: documentID, creationDate: Date(),
 					modificationDate: Date())
 		} else {
 			// Add document
 			let	document =
-						MDSSQLiteDocumentBacking(documentID: documentID, type: T.documentType,
+						MDSSQLiteDocumentBacking(documentID: documentID, type: documentType,
 								typeInfoMap: &self.documentBackingTypeInfoMap, documentsTable: self.documentsTable,
-								tablesInfo: tablesInfo(for: T.documentType))
+								tablesInfo: tablesInfo(for: documentType))
 			self.documentBackingMapLock.write() { self.documentBackingMap[documentID] = document }
 		}
 
@@ -69,9 +69,96 @@ class MDSSQLite : MiniDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func enumerate<T : MDSDocument>(_ proc :MDSDocument.ApplyProc<T>, _ creationProc :MDSDocument.CreationProc) {
+	func document<T : MDSDocument>(for documentID :String, documentType :String, creationProc :MDSDocument.CreationProc)
+			-> T? {
+		// Check for batch
+		if let batchInfo = self.mdsBatchInfoMapLock.read({ return self.mdsBatchInfoMap[Thread.current] }),
+				batchInfo.batchDocumentInfo(for: documentID) != nil {
+			// Have document in batch
+			return (creationProc(documentID, self) as! T)
+		} else {
+			// Don't have document in batch
+			let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)
+
+			return (documentBacking != nil) ? (creationProc(documentID, self) as! T) : nil
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func value(for key :String, documentID :String, documentType :String) -> Any? {
+		// Check for batch
+		if let batchInfo = self.mdsBatchInfoMapLock.read({ return self.mdsBatchInfoMap[Thread.current] }),
+				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: documentID) {
+			// In batch
+			return batchDocumentInfo.value(for: key)
+		} else {
+			// Not in batch
+			return documentBacking(documentType: documentType, documentID: documentID)?.value(for: key)
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func set(_ value :Any?, for key :String, documentID :String, documentType :String) {
+		// Check for batch
+		if let batchInfo = self.mdsBatchInfoMapLock.read({ return self.mdsBatchInfoMap[Thread.current] }) {
+			// In batch
+			if let batchDocumentInfo = batchInfo.batchDocumentInfo(for: documentID) {
+				// Have document in batch
+				batchDocumentInfo.set(value, for: key)
+			} else {
+				// Don't have document in batch
+				let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)
+				batchInfo.addDocument(documentType: documentType, documentID: documentID, reference: documentBacking,
+						creationDate: Date(), modificationDate: Date(), valueProc: { return $0.value(for: $1) })
+						.set(value, for: key)
+			}
+		} else {
+			// Not in batch
+			let	tablesInfo = self.tablesInfo(for: documentType)
+			if let documentBacking = self.documentBacking(documentID: documentID, in: tablesInfo) {
+				// Update document
+				documentBacking.set(value, for: key, type: documentType, typeInfoMap: &self.documentBackingTypeInfoMap,
+						documentsTable: self.documentsTable, tablesInfo: tablesInfo)
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func date(for value :Any?) -> Date? { return (value != nil) ? try! Date(fromStandardized: value as! String) : nil }
+
+	//------------------------------------------------------------------------------------------------------------------
+	func value(for date :Date?) -> Any? { return (date != nil) ? date!.standardized : nil }
+
+	//------------------------------------------------------------------------------------------------------------------
+	func remove(documentID :String, documentType :String) {
+		// Check for batch
+		if let batchInfo = self.mdsBatchInfoMapLock.read({ return self.mdsBatchInfoMap[Thread.current] }) {
+			// In batch
+			if let batchDocumentInfo = batchInfo.batchDocumentInfo(for: documentID) {
+				// Have document in batch
+				batchDocumentInfo.remove()
+			} else {
+				// Don't have document in batch
+				let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)
+				batchInfo.addDocument(documentType: documentType, documentID: documentID, reference: documentBacking,
+						creationDate: Date(), modificationDate: Date()).remove()
+			}
+		} else {
+			// Not in batch
+			let	tablesInfo = self.tablesInfo(for: documentType)
+			if let documentBacking = self.documentBacking(documentID: documentID, in: tablesInfo) {
+				// Remove document
+				documentBacking.remove(from: tablesInfo)
+				self.documentBackingMapLock.write() { self.documentBackingMap[documentID] = nil }
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func enumerate<T : MDSDocument>(documentType :String, proc :MDSDocument.ApplyProc<T>,
+			creationProc :MDSDocument.CreationProc) {
 		// Setup
-		let	tablesInfo = self.tablesInfo(for: T.documentType)
+		let	tablesInfo = self.tablesInfo(for: documentType)
 		let	infos = MDSSQLiteDocumentBacking.infos(in: tablesInfo)
 
 		// Collect existing documents and collect infos for documents to retrieve
@@ -159,76 +246,6 @@ class MDSSQLite : MiniDocumentStorage {
 		}
 	}
 
-	//------------------------------------------------------------------------------------------------------------------
-	func value(for key :String, documentType :String, documentID :String) -> Any? {
-		// Check for batch
-		if let batchInfo = self.mdsBatchInfoMapLock.read({ return self.mdsBatchInfoMap[Thread.current] }),
-				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: documentID) {
-			// In batch
-			return batchDocumentInfo.value(for: key)
-		} else {
-			// Not in batch
-			return document(documentType: documentType, documentID: documentID).value(for: key)
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func set(_ value :Any?, for key :String, documentType :String, documentID :String) {
-		// Check for batch
-		if let batchInfo = self.mdsBatchInfoMapLock.read({ return self.mdsBatchInfoMap[Thread.current] }) {
-			// In batch
-			if let batchDocumentInfo = batchInfo.batchDocumentInfo(for: documentID) {
-				// Have document in batch
-				batchDocumentInfo.set(value, for: key)
-			} else {
-				// Don't have document in batch
-				let	document = self.document(documentType: documentType, documentID: documentID)
-				batchInfo.addDocument(documentType: documentType, documentID: documentID, reference: document,
-						creationDate: Date(), modificationDate: Date(), valueProc: { return $0.value(for: $1) })
-						.set(value, for: key)
-			}
-		} else {
-			// Not in batch
-			let	tablesInfo = self.tablesInfo(for: documentType)
-			let	document = self.document(documentID: documentID, in: tablesInfo)
-
-			// Update document
-			document.set(value, for: key, type: documentType, typeInfoMap: &self.documentBackingTypeInfoMap,
-					documentsTable: self.documentsTable, tablesInfo: tablesInfo)
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func date(for value :Any?) -> Date? { return (value != nil) ? try! Date(fromStandardized: value as! String) : nil }
-
-	//------------------------------------------------------------------------------------------------------------------
-	func value(for date :Date?) -> Any? { return (date != nil) ? date!.standardized : nil }
-
-	//------------------------------------------------------------------------------------------------------------------
-	func remove(documentType :String, documentID :String) {
-		// Check for batch
-		if let batchInfo = self.mdsBatchInfoMapLock.read({ return self.mdsBatchInfoMap[Thread.current] }) {
-			// In batch
-			if let batchDocumentInfo = batchInfo.batchDocumentInfo(for: documentID) {
-				// Have document in batch
-				batchDocumentInfo.remove()
-			} else {
-				// Don't have document in batch
-				let	document = self.document(documentType: documentType, documentID: documentID)
-				batchInfo.addDocument(documentType: documentType, documentID: documentID, reference: document,
-						creationDate: Date(), modificationDate: Date()).remove()
-			}
-		} else {
-			// Not in batch
-			let	tablesInfo = self.tablesInfo(for: documentType)
-			let	document = self.document(documentID: documentID, in: tablesInfo)
-
-			// Remove document
-			document.remove(from: tablesInfo)
-			self.documentBackingMapLock.write() { self.documentBackingMap[documentID] = nil }
-		}
-	}
-
 	// MARK: Properties
 	private	let	sqliteDatabase :SQLiteDatabase
 
@@ -302,34 +319,44 @@ class MDSSQLite : MiniDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func document(documentType :String, documentID :String) -> MDSSQLiteDocumentBacking {
+	private func documentBacking(documentType :String, documentID :String) -> MDSSQLiteDocumentBacking? {
 		// Try to retrieve stored document
-		if let document = self.documentBackingMapLock.read({ return self.documentBackingMap[documentID] }) {
+		if let documentBacking = self.documentBackingMapLock.read({ return self.documentBackingMap[documentID] }) {
 			// Have document
-			return document
+			return documentBacking
 		} else {
 			// Don't have document yet
 			let	tablesInfo = self.tablesInfo(for: documentType)
-			let	document = MDSSQLiteDocumentBacking.map(for: [documentID], in: tablesInfo).first!.value
-			self.documentBackingMapLock.write() { self.documentBackingMap[documentID] = document }
+			if let documentBacking = MDSSQLiteDocumentBacking.map(for: [documentID], in: tablesInfo).first?.value {
+				// Update map
+				self.documentBackingMapLock.write() { self.documentBackingMap[documentID] = documentBacking }
 
-			return document
+				return documentBacking
+			} else {
+				// Doesn't exist
+				return nil
+			}
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func document(documentID :String, in tablesInfo :MDSSQLiteDocumentBacking.TablesInfo) ->
-			MDSSQLiteDocumentBacking {
+	private func documentBacking(documentID :String, in tablesInfo :MDSSQLiteDocumentBacking.TablesInfo) ->
+			MDSSQLiteDocumentBacking? {
 		// Try to retrieve stored document
-		if let document = self.documentBackingMapLock.read({ return self.documentBackingMap[documentID] }) {
+		if let documentBacking = self.documentBackingMapLock.read({ return self.documentBackingMap[documentID] }) {
 			// Have document
-			return document
+			return documentBacking
 		} else {
 			// Don't have document yet
-			let	document = MDSSQLiteDocumentBacking.map(for: [documentID], in: tablesInfo).first!.value
-			self.documentBackingMapLock.write() { self.documentBackingMap[documentID] = document }
+			if let documentBacking = MDSSQLiteDocumentBacking.map(for: [documentID], in: tablesInfo).first?.value {
+				// Update map
+				self.documentBackingMapLock.write() { self.documentBackingMap[documentID] = documentBacking }
 
-			return document
+				return documentBacking
+			} else {
+				// Doesn't exist
+				return nil
+			}
 		}
 	}
 }
