@@ -53,62 +53,59 @@ public class MDSDocumentBackingCache<T> {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentBacking(for documentID :String) -> T? {
-		// Return cached document, if available
-		return self.lock.read() { self.referenceMap[documentID]?.documentBacking }
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func noteWasReferenced(documentID :String) {
-		// Update
-		self.lock.write() {
-			// Note was referenced
-			self.referenceMap[documentID]?.noteWasReferenced()
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func noteWasReferenced(documentID :String, documentBacking :T) {
-		// Update
-		self.lock.write() {
-			// Retrieve reference
-			if let reference = self.referenceMap[documentID] {
-				// Have existing reference in cache
-				reference.noteWasReferenced()
-			} else {
-				// Add to cache
-				let	reference = Reference(documentID: documentID, documentBacking: documentBacking)
-				self.referenceMap[documentID] = reference
-				self.references.append(reference)
-
-				// Refresh references
-				refreshReferences()
-			}
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func noteWasReferenced(_ documentInfos :[(documentID :String, documentBacking :T)]) {
+	public func add(_ documentInfos :[(documentID :String, documentBacking :T)]) {
 		// Update
 		self.lock.write() {
 			// Do all documents
 			documentInfos.forEach() {
-				// Retrieve document reference
-				if let reference = self.referenceMap[$0.documentID] {
-					// Have existing reference in cache
-					reference.documentBacking = $0.documentBacking
-					reference.noteWasReferenced()
-				} else {
-					// Add to cache
-					let	reference = Reference(documentID: $0.documentID, documentBacking: $0.documentBacking)
-					self.referenceMap[$0.documentID] = reference
-					self.references.append(reference)
-				}
+				// Add to cache
+				let	reference = Reference(documentID: $0.documentID, documentBacking: $0.documentBacking)
+				self.referenceMap[$0.documentID] = reference
+				self.references.append(reference)
 			}
 
 			// Refresh references
 			refreshReferences()
 		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func documentBacking(for documentID :String) -> T? {
+		// Return cached document, if available
+		return self.lock.read() {
+			// Retrieve
+			if let reference = self.referenceMap[documentID] {
+				// Note was referenced
+				reference.noteWasReferenced()
+
+				return reference.documentBacking
+			} else {
+				// Not found
+				return nil
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func query(_ documentIDs :[String]) -> (foundDocumentIDs :Set<String>, notFoundDocumentIDs :Set<String>) {
+		// Setup
+		var	foundDocumentIDs = Set<String>()
+		var	notFoundDocumentIDs = Set<String>()
+
+		// Iterate document IDs
+		self.lock.read() { documentIDs.forEach() {
+			// Look up reference for this document ID
+			if let reference = self.referenceMap[$0] {
+				// Found
+				foundDocumentIDs.insert($0)
+				reference.noteWasReferenced()
+			} else {
+				// Not found
+				notFoundDocumentIDs.insert($0)
+			}
+		} }
+
+		return (foundDocumentIDs, notFoundDocumentIDs)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

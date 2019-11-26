@@ -6,134 +6,174 @@
 //  Copyright © 2018 Stevo Brock. All rights reserved.
 //
 
+/*
+	Still need data and error (NSError) based on HRCoder
+		Need actual stored examples to match
+*/
+
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: MDSDocument
-class MDSDocument : Hashable {
+public class MDSDocument : Hashable {
 
 	// MARK: Procs
-	typealias CreationProc = (_ id :String, _ documentStorage :MiniDocumentStorage) -> MDSDocument
-	typealias ApplyProc<T : MDSDocument> = (_ document :T) -> Void
+	public typealias ApplyProc<T : MDSDocument> = (_ document :T) -> Void
+	public typealias CreationProc<T :MDSDocument> = (_ id :String, _ documentStorage :MDSDocumentStorage) -> T
+	public typealias KeysProc<T :MDSDocument> = (_ document :T) -> [String]
+	public typealias IncludeProc<T : MDSDocument> = (_ document :T, _ info :[String : Any]) -> Bool
 
 	// MARK: Equatable implementation
-    static func == (lhs: MDSDocument, rhs: MDSDocument) -> Bool { return lhs.id == rhs.id }
+	static	public	func == (lhs: MDSDocument, rhs: MDSDocument) -> Bool { return lhs.id == rhs.id }
 
 	// MARK: Hashable implementation
-    func hash(into hasher: inout Hasher) { hasher.combine(self.id) }
+	public func hash(into hasher: inout Hasher) { hasher.combine(self.id) }
 
 	// MARK: Properties
 	class	var	documentType :String { return "" }
 
+			var	creationDate :Date { return self.documentStorage.creationDate(for: self) }
+			var	modificationDate :Date { return self.documentStorage.modificationDate(for: self) }
+
 			var	id :String
-			var	miniDocumentStorage: MiniDocumentStorage
+			var	documentStorage: MDSDocumentStorage
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	required init(id :String, miniDocumentStorage :MiniDocumentStorage) {
+	required init(id :String, documentStorage :MDSDocumentStorage) {
 		// Store
 		self.id = id
-		self.miniDocumentStorage = miniDocumentStorage
+		self.documentStorage = documentStorage
 	}
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	func bool(for key :String) -> Bool? {
-		// Retrieve value
-		return self.miniDocumentStorage.value(for: key, documentID: self.id, documentType: type(of: self).documentType)
-				as? Bool
-	}
+	func array<T>(for key :String) -> [T]? { return self.documentStorage.value(for: key, in: self) as? [T] }
+	func set<T>(_ value :[T]?, for key :String) { self.documentStorage.set(value, for: key, in: self) }
+
+	//------------------------------------------------------------------------------------------------------------------
+	func bool(for key :String) -> Bool? { return self.documentStorage.value(for: key, in: self) as? Bool }
 	func set(_ value :Bool?, for key :String) {
 		// Check if different
-		if value != bool(for: key) {
-			// Set value
-			self.miniDocumentStorage.set(value, for: key, documentID: self.id,
-					documentType: type(of: self).documentType)
-		}
+		guard value != bool(for: key) else { return }
+
+		// Set value
+		self.documentStorage.set(value, for: key, in: self)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func date(for key :String) -> Date? {
-		// Retrieve value
-		return self.miniDocumentStorage.date(
-				for:
-						self.miniDocumentStorage.value(for: key, documentID: self.id,
-								documentType: type(of: self).documentType))
-	}
+	func date(for key :String) -> Date? { return self.documentStorage.date(for: key, in: self) }
 	func set(_ value :Date?, for key :String) {
 		// Check if different
-		if value != date(for: key) {
-			// Set value
-			self.miniDocumentStorage.set(self.miniDocumentStorage.value(for: value), for: key, documentID: self.id,
-					documentType: type(of: self).documentType)
-		}
+		guard value != date(for: key) else { return }
+
+		// Set value
+		self.documentStorage.set(value, for: key, in: self)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func double(for key :String) -> Double? {
-		// Retrieve value
-		return self.miniDocumentStorage.value(for: key, documentID: self.id, documentType: type(of: self).documentType)
-				as? Double
-	}
+	func double(for key :String) -> Double? { return self.documentStorage.value(for: key, in: self) as? Double }
 	func set(_ value :Double?, for key :String) {
 		// Check if different
-		if value != double(for: key) {
-			// Set value
-			self.miniDocumentStorage.set(value, for: key, documentID: self.id,
-					documentType: type(of: self).documentType)
-		}
+		guard value != double(for: key) else { return }
+
+		// Set value
+		self.documentStorage.set(value, for: key, in: self)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func int(for key :String) -> Int? {
-		// Retrieve value
-		return self.miniDocumentStorage.value(for: key, documentID: self.id, documentType: type(of: self).documentType)
-				as? Int
-	}
+	func int(for key :String) -> Int? { return self.documentStorage.value(for: key, in: self) as? Int }
 	func set(_ value :Int?, for key :String) {
 		// Check if different
-		if value != int(for: key) {
-			// Set value
-			self.miniDocumentStorage.set(value, for: key, documentID: self.id,
-					documentType: type(of: self).documentType)
-		}
+		guard value != int(for: key) else { return }
+
+		// Set value
+		self.documentStorage.set(value, for: key, in: self)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func string(for key :String) -> String? {
-		// Retrieve value
-		return self.miniDocumentStorage.value(for: key, documentID: self.id, documentType: type(of: self).documentType)
-				as? String
+	func int64(for key :String) -> Int64? { return self.documentStorage.value(for: key, in: self) as? Int64 }
+	func set(_ value :Int64?, for key :String) {
+		// Check if different
+		guard value != int64(for: key) else { return }
+
+		// Set value
+		self.documentStorage.set(value, for: key, in: self)
 	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func uint(for key :String) -> UInt? { return self.documentStorage.value(for: key, in: self) as? UInt }
+	func set(_ value :UInt?, for key :String) {
+		// Check if different
+		guard value != uint(for: key) else { return }
+
+		// Set value
+		self.documentStorage.set(value, for: key, in: self)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func map(for key :String) -> [String : Any]? { return self.documentStorage.value(for: key, in: self) as? [String : Any] }
+	func set(_ value :[String : Any]?, for key :String) {
+		// Set value
+		self.documentStorage.set(value, for: key, in: self)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func string(for key :String) -> String? { return self.documentStorage.value(for: key, in: self) as? String }
 	func set(_ value :String?, for key :String) {
 		// Check if different
-		if value != string(for: key) {
-			// Set value
-			self.miniDocumentStorage.set(value, for: key, documentID: self.id,
-					documentType: type(of: self).documentType)
-		}
+		guard value != string(for: key) else { return }
+
+		// Set value
+		self.documentStorage.set(value, for: key, in: self)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func document<T : MDSDocument>(for key :String) -> T? {
+	func document<T : MDSDocument>(for key :String,
+			creationProc :MDSDocument.CreationProc<T> = { return T(id: $0, documentStorage: $1) }) -> T? {
 		// Retrieve document ID
-		if let documentID = string(for: key) {
-			// Return document
-			return self.miniDocumentStorage.document(for: documentID)
-		} else {
-			// No document for this key
-			return nil
-		}
+		guard let documentID = string(for: key) else { return nil }
+
+		return self.documentStorage.document(for: documentID)
 	}
 	func set<T : MDSDocument>(_ document :T?, for key :String) {
 		// Check if different
-		if document?.id != string(for: key) {
-			// Set value
-			self.miniDocumentStorage.set(document?.id, for: key, documentID: self.id, documentType: T.documentType)
-		}
+		guard document?.id != string(for: key) else { return }
+
+		// Set value
+		self.documentStorage.set(document?.id, for: key, in: self)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func remove() {
-		// Remove
-		self.miniDocumentStorage.remove(documentID: self.id, documentType: type(of: self).documentType)
+	func documents<T : MDSDocument>(for key :String,
+			creationProc :MDSDocument.CreationProc<T> = { return T(id: $0, documentStorage: $1) }) -> [T]? {
+		// Retrieve document ID
+		guard let documentIDs :[String] = array(for: key) else { return nil }
+
+		return self.documentStorage.documents(for: documentIDs)
 	}
+	func set<T : MDSDocument>(_ documents :[T]?, for key :String) {
+		// Set value
+		self.documentStorage.set(documents?.map({ $0.id }), for: key, in: self)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentMap<T : MDSDocument>(for key :String) -> [String : T]? {
+		// Retrieve document IDs map
+		guard let storedMap = map(for: key) as? [String : String] else { return nil }
+
+		let	documents :[T] = self.documentStorage.documents(for: Array(storedMap.values))
+		guard documents.count == storedMap.count else { return nil }
+
+		// Prepare map from document ID to document
+		var	documentMap = [String : T]()
+		documents.forEach() { documentMap[$0.id] = $0 }
+
+		return storedMap.mapValues() { documentMap[$0]! }
+	}
+	func set<T : MDSDocument>(_ documentMap :[String : T]?, for key :String) {
+		// Set value
+		self.documentStorage.set(documentMap?.mapValues({ $0.id }), for: key, in: self)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func remove() { self.documentStorage.remove(self) }
 }

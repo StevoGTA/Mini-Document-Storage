@@ -11,17 +11,17 @@
 public class MDSBatchDocumentInfo<T> {
 
 	// MARK: Types
-	public typealias PropertyMap = [/* Key */ String : /* Value */ Any]
+	public typealias PropertyMap = [/* Property */ String : /* Value */ Any]
 
 	// MARK: Procs
-	public typealias ValueProc = (_ documentInfo :T, _ key :String) -> Any?
+	public typealias ValueProc = (_ property :String) -> Any?
 
 	// MARK: Properties
 	public					let	reference :T?
 	public					let	creationDate :Date
 
 	public	private(set)	var	updatedPropertyMap :PropertyMap?
-	public	private(set)	var	removedKeys :Set<String>?
+	public	private(set)	var	removedProperties :Set<String>?
 	public	private(set)	var	modificationDate :Date
 	public	private(set)	var	removed = false
 
@@ -48,7 +48,7 @@ public class MDSBatchDocumentInfo<T> {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	public func value(for key :String) -> Any? {
+	public func value(for property :String) -> Any? {
 		// Check for removed
 		guard !self.removed else { return nil }
 
@@ -56,10 +56,10 @@ public class MDSBatchDocumentInfo<T> {
 		if let (value, _) =
 					self.lock.read({ () -> (value :Any?, removed :Bool)? in
 						// Check the deal
-						if self.removedKeys?.contains(key) ?? false {
+						if self.removedProperties?.contains(property) ?? false {
 							// Removed
 							return (nil, true)
-						} else if let value = self.updatedPropertyMap?[key] {
+						} else if let value = self.updatedPropertyMap?[property] {
 							// Have value
 							return (value, false)
 						} else {
@@ -69,17 +69,14 @@ public class MDSBatchDocumentInfo<T> {
 					}) {
 			// Have info
 			return value
-		} else if let reference = self.reference {
-			// Call value proc
-			return self.valueProc(reference, key)
 		} else {
-			// No value
-			return nil
+			// Call value proc
+			return self.valueProc(property)
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func set(_ value :Any?, for key :String) {
+	public func set(_ value :Any?, for property :String) {
 		// Write
 		self.lock.write() {
 			// Check if have value
@@ -87,23 +84,23 @@ public class MDSBatchDocumentInfo<T> {
 				// Have value
 				if self.updatedPropertyMap != nil {
 					// Have updated info
-					self.updatedPropertyMap![key] = value
+					self.updatedPropertyMap![property] = value
 				} else {
 					// First updated info
-					self.updatedPropertyMap = [key : value!]
+					self.updatedPropertyMap = [property : value!]
 				}
 
-				self.removedKeys?.remove(key)
+				self.removedProperties?.remove(property)
 			} else {
 				// Removing value
-				self.updatedPropertyMap?[key] = nil
+				self.updatedPropertyMap?[property] = nil
 
-				if self.removedKeys != nil {
-					// Have removed keys
-					self.removedKeys!.insert(key)
+				if self.removedProperties != nil {
+					// Have removed propertys
+					self.removedProperties!.insert(property)
 				} else {
-					// First removed key
-					self.removedKeys = Set<String>([key])
+					// First removed property
+					self.removedProperties = Set<String>([property])
 				}
 			}
 
@@ -134,7 +131,7 @@ public class MDSBatchInfo<T> {
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
 	public func addDocument(documentType :String, documentID :String, reference :T? = nil, creationDate :Date,
-			modificationDate :Date, valueProc :@escaping MDSBatchDocumentInfo<T>.ValueProc = { _,_ in return nil }) ->
+			modificationDate :Date, valueProc :@escaping MDSBatchDocumentInfo<T>.ValueProc = { _ in return nil }) ->
 			MDSBatchDocumentInfo<T> {
 		// Setup
 		let	batchDocumentInfo =

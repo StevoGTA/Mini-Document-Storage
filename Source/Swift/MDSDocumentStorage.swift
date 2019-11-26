@@ -1,0 +1,88 @@
+//
+//  MDSDocumentStorage.swift
+//  Mini Document Storage
+//
+//  Created by Stevo on 10/9/18.
+//  Copyright © 2018 Stevo Brock. All rights reserved.
+//
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: MDSBatchResult
+public enum MDSBatchResult {
+	case commit
+	case cancel
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSDocumentStorage protocol
+public protocol MDSDocumentStorage : class {
+
+	// MARK: Instance methods
+	func newDocument<T : MDSDocument>(creationProc :MDSDocument.CreationProc<T>) -> T
+
+	func document<T : MDSDocument>(for documentID :String) -> T?
+
+	func creationDate<T : MDSDocument>(for document :T) -> Date
+	func modificationDate<T : MDSDocument>(for document :T) -> Date
+
+	func value<T : MDSDocument>(for property :String, in document :T) -> Any?
+	func date<T : MDSDocument>(for property :String, in document :T) -> Date?
+	func set<T : MDSDocument>(_ value :Any?, for property :String, in document :T)
+
+	func remove<T : MDSDocument>(_ document :T)
+
+	func enumerate<T : MDSDocument>(proc :MDSDocument.ApplyProc<T>)
+	func enumerate<T : MDSDocument>(documentIDs :[String], proc :MDSDocument.ApplyProc<T>)
+
+	func batch(_ proc :() -> MDSBatchResult)
+
+	func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
+			info :[String : Any], isUpToDate :Bool, includeSelector :String,
+			includeProc :@escaping MDSDocument.IncludeProc<T>)
+	func queryCollectionDocumentCount(name :String) -> UInt
+	func enumerateCollection<T : MDSDocument>(name :String, proc :MDSDocument.ApplyProc<T>)
+
+	func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
+			isUpToDate :Bool, keysSelector :String, keysProc :@escaping MDSDocument.KeysProc<T>)
+	func enumerateIndex<T : MDSDocument>(name :String, keys :[String], proc :MDSDocument.ApplyProc<T>)
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSDocumentStorage extension
+extension MDSDocumentStorage {
+
+	// MARK: Instance methods
+	//------------------------------------------------------------------------------------------------------------------
+	func newDocument<T : MDSDocument>() -> T { return newDocument() { return T(id: $0, documentStorage: $1) } }
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documents<T :MDSDocument>() -> [T] {
+		// Setup
+		var	documents = [T]()
+
+		// Enumerate all documents
+		enumerate(proc: { (document :T) -> Void in documents.append(document) })
+
+		return documents
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documents<T :MDSDocument>(for documentIDs :[String]) -> [T] {
+		// Setup
+		var	documents = [T]()
+
+		// Enumerate documents for document ids
+		enumerate(documentIDs: documentIDs, proc: { (document :T) -> Void in documents.append(document) })
+
+		return documents
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
+			info :[String : Any] = [:], isUpToDate :Bool, includeSelector :String = "",
+			includeProc :@escaping MDSDocument.IncludeProc<T>) {
+		// Register collection
+		registerCollection(named: name, version: version, relevantProperties: relevantProperties,
+				info: info, isUpToDate: isUpToDate, includeSelector: includeSelector, includeProc: includeProc)
+	}
+}
