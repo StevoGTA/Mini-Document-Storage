@@ -154,7 +154,8 @@ public class MDSBatchInfo<T> {
 	public func forEach(
 			_ proc
 					:(_ documentType :String,
-							_ batchDocumentInfosMap :[/* id */ String : MDSBatchDocumentInfo<T>]) -> Void) {
+							_ batchDocumentInfosMap :[/* id */ String : MDSBatchDocumentInfo<T>]) throws -> Void)
+			rethrows {
 		// Collate
 		var	map = [/* document type */ String : [/* id */ String : MDSBatchDocumentInfo<T>]]()
 		self.batchDocumentInfoMapLock.read() {
@@ -174,6 +175,6 @@ public class MDSBatchInfo<T> {
 		}
 
 		// Iterate and call proc
-		map.forEach() { proc($0.key, $0.value) }
+		try map.forEach() { try proc($0.key, $0.value) }
 	}
 }
