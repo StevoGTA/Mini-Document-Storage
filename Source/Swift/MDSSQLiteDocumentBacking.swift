@@ -165,6 +165,47 @@ class MDSSQLiteDocumentBacking {
 		return documentInfos
 	}
 
+	//------------------------------------------------------------------------------------------------------------------
+	static func documentInfoMap(of documentType :String, with sqliteCore :MDSSQLiteCore,
+			keyTableColumn :SQLiteTableColumn, sqliteInnerJoin :SQLiteInnerJoin? = nil,
+			where _where :SQLiteWhere? = nil) -> [String : DocumentInfo] {
+		// Setup
+		let	(infoTable, contentTable) = sqliteCore.documentTables(for: documentType)
+
+
+		let	sqliteInnerJoinUse =
+					(sqliteInnerJoin != nil) ?
+							sqliteInnerJoin!.and(infoTable, tableColumn: infoTable.idTableColumn, to: contentTable) :
+							SQLiteInnerJoin(infoTable, tableColumn: infoTable.idTableColumn, to: contentTable)
+
+		// Select
+		var	documentInfoMap = [String : DocumentInfo]()
+		infoTable.select(innerJoin: sqliteInnerJoinUse, where: _where) {
+			// Iterate all results
+			while $0.next() {
+				// Get info
+				let	key = $0.text(for: keyTableColumn)!
+				let	id :Int64 = $0.integer(for: infoTable.idTableColumn)!
+				let	documentID = $0.text(for: infoTable.documentIDTableColumn)!
+				let	revision :Int = $0.integer(for: infoTable.revisionTableColumn)!
+				let	creationDate = Date(fromStandardized: $0.text(for: contentTable.creationDateTableColumn)!)!
+				let	modificationDate = Date(fromStandardized: $0.text(for: contentTable.modificationDateTableColumn)!)!
+				let	propertyMap =
+							try! JSONSerialization.jsonObject(
+									with: $0.blob(for: contentTable.jsonTableColumn)!) as! [String : Any]
+
+				// Create
+				documentInfoMap[key] =
+						(documentID,
+								MDSSQLiteDocumentBacking(info: Info(id: id, documentID: documentID, revision: revision),
+										creationDate: creationDate, modificationDate: modificationDate,
+										propertyMap: propertyMap))
+			}
+		}
+
+		return documentInfoMap
+	}
+
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
 	init(info :Info, creationDate :Date, modificationDate :Date, propertyMap :PropertyMap) {

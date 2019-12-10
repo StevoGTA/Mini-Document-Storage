@@ -228,7 +228,7 @@ class MDSEphemeral : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func enumerateIndex<T : MDSDocument>(name :String, keys :[String], proc :MDSDocument.ApplyProc<T>) {
+	func enumerateIndex<T : MDSDocument>(name :String, keys :[String], proc :MDSDocument.IndexApplyProc<T>) {
 		// Not yet implemented
 		fatalError("enumerateIndex(...) has not been implemented")
 	}

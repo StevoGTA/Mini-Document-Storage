@@ -20,6 +20,7 @@ public class MDSDocument : Hashable {
 	public typealias CreationProc<T :MDSDocument> = (_ id :String, _ documentStorage :MDSDocumentStorage) -> T
 	public typealias KeysProc<T :MDSDocument> = (_ document :T) -> [String]
 	public typealias IncludeProc<T : MDSDocument> = (_ document :T, _ info :[String : Any]) -> Bool
+	public typealias IndexApplyProc<T :MDSDocument> = (_ key :String, _ document :T) -> Void
 
 	// MARK: Equatable implementation
 	static	public	func == (lhs: MDSDocument, rhs: MDSDocument) -> Bool { return lhs.id == rhs.id }

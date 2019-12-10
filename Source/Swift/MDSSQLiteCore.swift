@@ -93,14 +93,14 @@ class MDSSQLiteCore {
 			private	let	infoTable :SQLiteTable
 
 			private	let	documentsMasterTable :SQLiteTable
-			private	var	documentTablesMap = LockingMap</* Document type */ String, DocumentTables>()
-			private	var	documentLastRevisionMap = LockingMap</* Document type */ String, Int>()
+			private	var	documentTablesMap = LockingDictionary</* Document type */ String, DocumentTables>()
+			private	var	documentLastRevisionMap = LockingDictionary</* Document type */ String, Int>()
 
 			private	var	collectionsMasterTable :SQLiteTable
-			private	var	collectionTablesMap = LockingMap</* Collection name */ String, SQLiteTable>()
+			private	var	collectionTablesMap = LockingDictionary</* Collection name */ String, SQLiteTable>()
 
 			private	var	indexesMasterTable :SQLiteTable
-			private	var	indexTablesMap = LockingMap</* Index name */ String, SQLiteTable>()
+			private	var	indexTablesMap = LockingDictionary</* Index name */ String, SQLiteTable>()
 
 			private	var	documentLastRevisionTypesNeedingWrite :LockingSet</* Document type */ String>?
 
@@ -415,7 +415,7 @@ class MDSSQLiteCore {
 		let	updateMasterTable :Bool
 		if storedLastRevision == nil {
 			// New
-			lastRevision = isUpToDate ? self.documentLastRevisionMap.value(for: documentType)! : 0
+			lastRevision = isUpToDate ? (self.documentLastRevisionMap.value(for: documentType) ?? 0) : 0
 			updateMasterTable = true
 		} else if version != storedVersion {
 			// Updated version
@@ -432,12 +432,13 @@ class MDSSQLiteCore {
 			// New or updated
 			self.indexesMasterTable.insertOrReplace(
 					[
+						(self.indexesMasterTable.nameTableColumn, name),
 						(self.indexesMasterTable.versionTableColumn, version),
 						(self.indexesMasterTable.lastRevisionTableColumn, lastRevision),
 					])
 
 			// Update table
-			table.drop()
+			if storedLastRevision != nil { table.drop() }
 			table.create()
 		}
 
@@ -475,7 +476,7 @@ class MDSSQLiteCore {
 			sqliteTable.delete(where: SQLiteWhere(tableColumn: sqliteTable.idTableColumn, values: removedIDs))
 		}
 		self.indexesMasterTable.update(
-				[(self.indexesMasterTable.lastDocumentRevisionTableColumn, lastRevision)],
+				[(self.indexesMasterTable.lastRevisionTableColumn, lastRevision)],
 				where: SQLiteWhere(tableColumn: self.indexesMasterTable.nameTableColumn, value: name))
 	}
 }

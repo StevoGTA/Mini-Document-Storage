@@ -44,7 +44,7 @@ public protocol MDSDocumentStorage : class {
 
 	func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
 			isUpToDate :Bool, keysSelector :String, keysProc :@escaping MDSDocument.KeysProc<T>)
-	func enumerateIndex<T : MDSDocument>(name :String, keys :[String], proc :MDSDocument.ApplyProc<T>)
+	func enumerateIndex<T : MDSDocument>(name :String, keys :[String], proc :MDSDocument.IndexApplyProc<T>)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -78,11 +78,29 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
-			info :[String : Any] = [:], isUpToDate :Bool, includeSelector :String = "",
+	func registerCollection<T : MDSDocument>(named name :String, version :UInt = 1, relevantProperties :[String],
+			info :[String : Any] = [:], isUpToDate :Bool = true, includeSelector :String = "",
 			includeProc :@escaping MDSDocument.IncludeProc<T>) {
 		// Register collection
 		registerCollection(named: name, version: version, relevantProperties: relevantProperties,
 				info: info, isUpToDate: isUpToDate, includeSelector: includeSelector, includeProc: includeProc)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func registerIndex<T : MDSDocument>(named name :String, version :UInt = 1, relevantProperties :[String],
+			isUpToDate :Bool = true, keysSelector :String = "", keysProc :@escaping MDSDocument.KeysProc<T>) {
+		// Register index
+		registerIndex(named: name, version: version, relevantProperties: relevantProperties, isUpToDate: isUpToDate,
+				keysSelector: keysSelector, keysProc: keysProc)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentMap<T : MDSDocument>(forIndexNamed name :String, keys :[String]) -> [String : T] {
+		// Setup
+		var	documentMap = [String : T]()
+
+		enumerateIndex(name: name, keys: keys) { (key :String, document :T) in documentMap[key] = document }
+
+		return documentMap
 	}
 }

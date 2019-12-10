@@ -122,7 +122,8 @@ class MDSSQLite : MDSDocumentStorage {
 			return propertyMap[property]
 		} else {
 			// Not in batch
-			return documentBacking(documentType: T.documentType, documentID: document.id)?.value(for: property)
+			return documentBacking(documentType: type(of: document).documentType, documentID: document.id)?
+					.value(for: property)
 		}
 	}
 
@@ -351,6 +352,9 @@ class MDSSQLite : MDSDocumentStorage {
 	func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
 			info :[String : Any], isUpToDate :Bool, includeSelector :String,
 			includeProc :@escaping MDSDocument.IncludeProc<T>) {
+		// Ensure we have the document tables
+		_ = self.sqliteCore.documentTables(for: T.documentType)
+
 		// Register collection
 		let	lastRevision =
 					self.sqliteCore.registerCollection(documentType: T.documentType, name: name, version: version,
@@ -398,6 +402,9 @@ class MDSSQLite : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
 			isUpToDate :Bool, keysSelector :String, keysProc :@escaping MDSDocument.KeysProc<T>) {
+		// Ensure we have the document tables
+		_ = self.sqliteCore.documentTables(for: T.documentType)
+
 		// Register index
 		let	lastRevision =
 					self.sqliteCore.registerIndex(documentType: T.documentType, name: name, version: version,
@@ -417,15 +424,16 @@ class MDSSQLite : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func enumerateIndex<T : MDSDocument>(name :String, keys :[String], proc :MDSDocument.ApplyProc<T>) {
+	func enumerateIndex<T : MDSDocument>(name :String, keys :[String], proc :MDSDocument.IndexApplyProc<T>) {
 		// Bring up to date
 		bringIndexUpToDate(name: name)
 
 		// Collect document infos
 		let	(infoTable, _) = self.sqliteCore.documentTables(for: T.documentType)
 		let	indexContentsTable = self.sqliteCore.sqliteTable(forIndexNamed: name)
-		let	documentInfos =
-					MDSSQLiteDocumentBacking.documentInfos(of: T.documentType, with: self.sqliteCore,
+		let	documentInfoMap =
+					MDSSQLiteDocumentBacking.documentInfoMap(of: T.documentType, with: self.sqliteCore,
+							keyTableColumn: indexContentsTable.keyTableColumn,
 							sqliteInnerJoin:
 									SQLiteInnerJoin(infoTable, tableColumn: infoTable.idTableColumn,
 											to: indexContentsTable),
@@ -434,24 +442,24 @@ class MDSSQLite : MDSDocumentStorage {
 											tableColumn: indexContentsTable.keyTableColumn, values: keys))
 
 		// Enumerate
-		documentInfos.forEach() { proc(T(id: $0.documentID, documentStorage: self)) }
+		documentInfoMap.forEach() { proc($0.key, T(id: $0.value.documentID, documentStorage: self)) }
 	}
 
 	// MARK: Properties
 			var	logErrorMessageProc :(_ errorMessage :String) -> Void = { _ in }
 
-	private	let	batchInfoMap = LockingMap<Thread, MDSBatchInfo<MDSSQLiteDocumentBacking>>()
+	private	let	batchInfoMap = LockingDictionary<Thread, MDSBatchInfo<MDSSQLiteDocumentBacking>>()
 	private	let	documentBackingCache = MDSDocumentBackingCache<MDSSQLiteDocumentBacking>()
-	private	let	documentsBeingCreatedPropertyMapMap = LockingMap<String, MDSSQLiteDocumentBacking.PropertyMap>()
+	private	let	documentsBeingCreatedPropertyMapMap = LockingDictionary<String, MDSSQLiteDocumentBacking.PropertyMap>()
 	private	let	sqliteCore :MDSSQLiteCore
 
-	private	var	documentCreationProcMap = LockingMap<String, MDSDocument.CreationProc<MDSDocument>>()
+	private	var	documentCreationProcMap = LockingDictionary<String, MDSDocument.CreationProc<MDSDocument>>()
 
-	private	var	collectionsByNameMap = LockingMap</* Name */ String, MDSCollection>()
-	private	var	collectionsByDocumentTypeMap = LockingArrayMap</* Document type */ String, MDSCollection>()
+	private	var	collectionsByNameMap = LockingDictionary</* Name */ String, MDSCollection>()
+	private	var	collectionsByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSCollection>()
 
-	private	var	indexesByNameMap = LockingMap</* Name */ String, MDSIndex>()
-	private	var	indexesByDocumentTypeMap = LockingArrayMap</* Document type */ String, MDSIndex>()
+	private	var	indexesByNameMap = LockingDictionary</* Name */ String, MDSIndex>()
+	private	var	indexesByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSIndex>()
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
