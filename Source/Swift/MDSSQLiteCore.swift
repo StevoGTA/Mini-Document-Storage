@@ -40,53 +40,38 @@ class MDSSQLiteCore {
 
 	// MARK: Properties
 	static	private	let	infoKeyTableColumn =
-								SQLiteTableColumn("key", .text(size: nil, default: nil),
-										[.primaryKey, .unique, .notNull])
-	static	private	let	infoValueTableColumn = SQLiteTableColumn("value", .text(size: nil, default: nil), [.notNull])
+								SQLiteTableColumn("key", .text, [.primaryKey, .unique, .notNull])
+	static	private	let	infoValueTableColumn = SQLiteTableColumn("value", .text, [.notNull])
 
-	static	private	let	documentsMasterTypeTableColumn =
-								SQLiteTableColumn("type", .text(size: nil, default: nil), [.notNull, .unique])
+	static	private	let	documentsMasterTypeTableColumn = SQLiteTableColumn("type", .text, [.notNull, .unique])
 	static	private	let	documentsMasterLastRevisionTableColumn =
-								SQLiteTableColumn("lastRevision", .integer(size: 4, default: nil), [.notNull])
+								SQLiteTableColumn("lastRevision", .integer4, [.notNull])
 
-	static	private	let	documentsInfoIDTableColumn =
-								SQLiteTableColumn("id", .integer(size: nil, default: nil),
-										[.primaryKey, .autoincrement])
-	static	private	let	documentsInfoDocumentIDTableColumn =
-								SQLiteTableColumn("documentID", .text(size: nil, default: nil), [.notNull, .unique])
-	static	private	let	documentsInfoRevisionTableColumn =
-								SQLiteTableColumn("revision", .integer(size: 4, default: nil), [.notNull])
+	static	private	let	documentsInfoIDTableColumn = SQLiteTableColumn("id", .integer, [.primaryKey, .autoincrement])
+	static	private	let	documentsInfoDocumentIDTableColumn = SQLiteTableColumn("documentID", .text, [.notNull, .unique])
+	static	private	let	documentsInfoRevisionTableColumn = SQLiteTableColumn("revision", .integer4, [.notNull])
 
-	static	private	let	documentsContentsIDTableColumn =
-								SQLiteTableColumn("id", .integer(size: nil, default: nil), [.primaryKey])
+	static	private	let	documentsContentsIDTableColumn = SQLiteTableColumn("id", .integer, [.primaryKey])
 	static	private	let	documentsContentsCreationDateTableColumn =
-								SQLiteTableColumn("creationDate", .text(size: 23, default: nil), [.notNull])
+								SQLiteTableColumn("creationDate", .textWith(size: 23), [.notNull])
 	static	private	let	documentsContentsModificationDateTableColumn =
-								SQLiteTableColumn("modificationDate", .text(size: 23, default: nil), [.notNull])
+								SQLiteTableColumn("modificationDate", .textWith(size: 23), [.notNull])
 	static	private	let	documentsContentsJSONTableColumn = SQLiteTableColumn("json", .blob, [.notNull])
 
-	static	private	let	collectionsMasterNameTableColumn =
-								SQLiteTableColumn("name", .text(size: nil, default: nil), [.notNull, .unique])
-	static	private	let	collectionsMasterVersionTableColumn =
-								SQLiteTableColumn("version", .integer(size: 2, default: nil), [.notNull])
+	static	private	let	collectionsMasterNameTableColumn = SQLiteTableColumn("name", .text, [.notNull, .unique])
+	static	private	let	collectionsMasterVersionTableColumn = SQLiteTableColumn("version", .integer2, [.notNull])
 	static	private	let	collectionsMasterLastRevisionTableColumn  =
-								SQLiteTableColumn("lastRevision", .integer(size: 4, default: nil), [.notNull])
+								SQLiteTableColumn("lastRevision", .integer4, [.notNull])
 	static	private	let	collectionsMasterInfoTableColumn = SQLiteTableColumn("info", .blob, [.notNull])
 
-	static	private	let	collectionIDTableColumn =
-								SQLiteTableColumn("id", .integer(size: nil, default: nil), [.primaryKey])
+	static	private	let	collectionIDTableColumn = SQLiteTableColumn("id", .integer, [.primaryKey])
 
-	static	private	let	indexesMasterNameTableColumn =
-								SQLiteTableColumn("name", .text(size: nil, default: nil), [.notNull, .unique])
-	static	private	let	indexesMasterVersionTableColumn =
-								SQLiteTableColumn("version", .integer(size: 2, default: nil), [.notNull])
-	static	private	let	indexesMasterLastRevisionTableColumn =
-								SQLiteTableColumn("lastRevision", .integer(size: 4, default: nil), [.notNull])
+	static	private	let	indexesMasterNameTableColumn = SQLiteTableColumn("name", .text, [.notNull, .unique])
+	static	private	let	indexesMasterVersionTableColumn = SQLiteTableColumn("version", .integer2, [.notNull])
+	static	private	let	indexesMasterLastRevisionTableColumn = SQLiteTableColumn("lastRevision", .integer4, [.notNull])
 
-	static	private	let	indexKeyTableColumn =
-								SQLiteTableColumn("key", .text(size: nil, default: nil), [.notNull, .unique])
-	static	private	let	indexIDTableColumn =
-								SQLiteTableColumn("id", .integer(size: nil, default: nil), [.primaryKey])
+	static	private	let	indexKeyTableColumn = SQLiteTableColumn("key", .text, [.notNull, .unique])
+	static	private	let	indexIDTableColumn = SQLiteTableColumn("id", .integer, [.primaryKey])
 
 			private	let	sqliteDatabase :SQLiteDatabase
 
@@ -147,16 +132,13 @@ class MDSSQLiteCore {
 		self.indexesMasterTable.create()
 
 		// Finalize setup
-		self.documentsMasterTable.select() {
-			// Iterate all results
-			while $0.next() {
-				// Get info
-				let	documentType = $0.text(for: self.documentsMasterTable.typeTableColumn)!
-				let	lastRevision :Int = $0.integer(for: self.documentsMasterTable.lastRevisionTableColumn)!
+		try! self.documentsMasterTable.select() {
+			// Process results
+			let	documentType = $0.text(for: self.documentsMasterTable.typeTableColumn)!
+			let	lastRevision :Int = $0.integer(for: self.documentsMasterTable.lastRevisionTableColumn)!
 
-				// Add to key value store
-				self.documentLastRevisionMap.set(lastRevision, for: documentType)
-			}
+			// Add to key value store
+			self.documentLastRevisionMap.set(lastRevision, for: documentType)
 		}
 	}
 
@@ -165,10 +147,10 @@ class MDSSQLiteCore {
 	func int(for key :String) -> Int? {
 		// Retrieve value
 		var	value :Int?
-		self.infoTable.select(tableColumns: [self.infoTable.valueTableColumn],
+		try! self.infoTable.select(tableColumns: [self.infoTable.valueTableColumn],
 				where: SQLiteWhere(tableColumn: self.infoTable.keyTableColumn, value: key)) {
-					// Retrieve value
-					value = $0.next() ? Int($0.text(for: self.infoTable.valueTableColumn)!) : nil
+					// Process results
+					value = Int($0.text(for: self.infoTable.valueTableColumn)!)
 				}
 
 		return value
@@ -284,7 +266,7 @@ class MDSSQLiteCore {
 		var	storedVersion :UInt?
 		var	storedLastRevision :Int?
 		var	storedInfo :[String : Any]?
-		self.collectionsMasterTable.select(
+		try! self.collectionsMasterTable.select(
 				tableColumns: [
 								self.collectionsMasterTable.versionTableColumn,
 								self.collectionsMasterTable.lastRevisionTableColumn,
@@ -292,15 +274,11 @@ class MDSSQLiteCore {
 							  ],
 				where: SQLiteWhere(tableColumn: self.collectionsMasterTable.nameTableColumn, value: name)) {
 					// Process results
-					if $0.next() {
-						// Get info
-						storedVersion = $0.integer(for: self.collectionsMasterTable.versionTableColumn)!
-						storedLastRevision = $0.integer(for: self.collectionsMasterTable.lastRevisionTableColumn)!
-						storedInfo =
-								try! JSONSerialization.jsonObject(
-										with: $0.blob(for: self.collectionsMasterTable.infoTableColumn)!) as!
-										[String : Any]
-					}
+					storedVersion = $0.integer(for: self.collectionsMasterTable.versionTableColumn)!
+					storedLastRevision = $0.integer(for: self.collectionsMasterTable.lastRevisionTableColumn)!
+					storedInfo =
+							try! JSONSerialization.jsonObject(
+									with: $0.blob(for: self.collectionsMasterTable.infoTableColumn)!) as! [String : Any]
 				}
 
 		// Setup table
@@ -387,18 +365,15 @@ class MDSSQLiteCore {
 		// Query database
 		var	storedVersion :UInt?
 		var	storedLastRevision :Int?
-		self.indexesMasterTable.select(
+		try! self.indexesMasterTable.select(
 				tableColumns: [
 								self.indexesMasterTable.versionTableColumn,
 								self.indexesMasterTable.lastRevisionTableColumn,
 							  ],
 				where: SQLiteWhere(tableColumn: self.indexesMasterTable.nameTableColumn, value: name)) {
 					// Process results
-					if $0.next() {
-						// Get info
-						storedVersion = $0.integer(for: self.indexesMasterTable.versionTableColumn)!
-						storedLastRevision = $0.integer(for: self.indexesMasterTable.lastRevisionTableColumn)!
-					}
+					storedVersion = $0.integer(for: self.indexesMasterTable.versionTableColumn)!
+					storedLastRevision = $0.integer(for: self.indexesMasterTable.lastRevisionTableColumn)!
 				}
 
 		// Setup table

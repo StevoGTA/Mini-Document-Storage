@@ -41,17 +41,14 @@ class MDSSQLiteDocumentBacking {
 		var	infos = [MDSSQLiteDocumentBacking.Info]()
 
 		// Select all
-		infoTable.select() {
-			// Iterate all results
-			while $0.next() {
-				// Get info
-				let	id :Int64 = $0.integer(for: infoTable.idTableColumn)!
-				let	documentID = $0.text(for: infoTable.documentIDTableColumn)!
-				let	revision :Int = $0.integer(for: infoTable.revisionTableColumn)!
+		try! infoTable.select() {
+			// Process results
+			let	id :Int64 = $0.integer(for: infoTable.idTableColumn)!
+			let	documentID = $0.text(for: infoTable.documentIDTableColumn)!
+			let	revision :Int = $0.integer(for: infoTable.revisionTableColumn)!
 
-				// Add to array
-				infos.append(Info(id: id, documentID: documentID, revision: revision))
-			}
+			// Add to array
+			infos.append(Info(id: id, documentID: documentID, revision: revision))
 		}
 
 		return infos
@@ -68,7 +65,7 @@ class MDSSQLiteDocumentBacking {
 
 		// Select
 		var	documentInfos = [DocumentInfo]()
-		contentTable.select(
+		try! contentTable.select(
 				tableColumns: [
 								contentTable.idTableColumn,
 								contentTable.creationDateTableColumn,
@@ -76,24 +73,21 @@ class MDSSQLiteDocumentBacking {
 								contentTable.jsonTableColumn,
 							  ],
 				where: SQLiteWhere(tableColumn: contentTable.idTableColumn, values: Array(infoMap.keys))) {
-					// Iterate all results
-					while $0.next() {
-						// Get info
-						let	id :Int64 = $0.integer(for: contentTable.idTableColumn)!
-						let	creationDate = Date(fromStandardized: $0.text(for: contentTable.creationDateTableColumn)!)!
-						let	modificationDate =
-									Date(fromStandardized: $0.text(for: contentTable.modificationDateTableColumn)!)!
-						let	propertyMap =
-									try! JSONSerialization.jsonObject(
-											with: $0.blob(for: contentTable.jsonTableColumn)!) as! [String : Any]
-						let	info = infoMap[id]!
+					// Process results
+					let	id :Int64 = $0.integer(for: contentTable.idTableColumn)!
+					let	creationDate = Date(fromStandardized: $0.text(for: contentTable.creationDateTableColumn)!)!
+					let	modificationDate =
+								Date(fromStandardized: $0.text(for: contentTable.modificationDateTableColumn)!)!
+					let	propertyMap =
+								try! JSONSerialization.jsonObject(
+										with: $0.blob(for: contentTable.jsonTableColumn)!) as! [String : Any]
+					let	info = infoMap[id]!
 
-						// Add to array
-						documentInfos.append(
-								(info.documentID,
-										MDSSQLiteDocumentBacking(info: info, creationDate: creationDate,
-												modificationDate: modificationDate, propertyMap: propertyMap)))
-					}
+					// Add to array
+					documentInfos.append(
+							(info.documentID,
+									MDSSQLiteDocumentBacking(info: info, creationDate: creationDate,
+											modificationDate: modificationDate, propertyMap: propertyMap)))
 				}
 
 		return documentInfos
@@ -140,26 +134,23 @@ class MDSSQLiteDocumentBacking {
 
 		// Select
 		var	documentInfos = [DocumentInfo]()
-		infoTable.select(innerJoin: sqliteInnerJoinUse, where: _where) {
-			// Iterate all results
-			while $0.next() {
-				// Get info
-				let	id :Int64 = $0.integer(for: infoTable.idTableColumn)!
-				let	documentID = $0.text(for: infoTable.documentIDTableColumn)!
-				let	revision :Int = $0.integer(for: infoTable.revisionTableColumn)!
-				let	creationDate = Date(fromStandardized: $0.text(for: contentTable.creationDateTableColumn)!)!
-				let	modificationDate = Date(fromStandardized: $0.text(for: contentTable.modificationDateTableColumn)!)!
-				let	propertyMap =
-							try! JSONSerialization.jsonObject(
-									with: $0.blob(for: contentTable.jsonTableColumn)!) as! [String : Any]
+		try! infoTable.select(innerJoin: sqliteInnerJoinUse, where: _where) {
+			// Process results
+			let	id :Int64 = $0.integer(for: infoTable.idTableColumn)!
+			let	documentID = $0.text(for: infoTable.documentIDTableColumn)!
+			let	revision :Int = $0.integer(for: infoTable.revisionTableColumn)!
+			let	creationDate = Date(fromStandardized: $0.text(for: contentTable.creationDateTableColumn)!)!
+			let	modificationDate = Date(fromStandardized: $0.text(for: contentTable.modificationDateTableColumn)!)!
+			let	propertyMap =
+						try! JSONSerialization.jsonObject(
+								with: $0.blob(for: contentTable.jsonTableColumn)!) as! [String : Any]
 
-				// Create
-				documentInfos.append(
-						(documentID,
-								MDSSQLiteDocumentBacking(info: Info(id: id, documentID: documentID, revision: revision),
-										creationDate: creationDate, modificationDate: modificationDate,
-										propertyMap: propertyMap)))
-			}
+			// Create
+			documentInfos.append(
+					(documentID,
+							MDSSQLiteDocumentBacking(info: Info(id: id, documentID: documentID, revision: revision),
+									creationDate: creationDate, modificationDate: modificationDate,
+									propertyMap: propertyMap)))
 		}
 
 		return documentInfos
@@ -180,27 +171,24 @@ class MDSSQLiteDocumentBacking {
 
 		// Select
 		var	documentInfoMap = [String : DocumentInfo]()
-		infoTable.select(innerJoin: sqliteInnerJoinUse, where: _where) {
-			// Iterate all results
-			while $0.next() {
-				// Get info
-				let	key = $0.text(for: keyTableColumn)!
-				let	id :Int64 = $0.integer(for: infoTable.idTableColumn)!
-				let	documentID = $0.text(for: infoTable.documentIDTableColumn)!
-				let	revision :Int = $0.integer(for: infoTable.revisionTableColumn)!
-				let	creationDate = Date(fromStandardized: $0.text(for: contentTable.creationDateTableColumn)!)!
-				let	modificationDate = Date(fromStandardized: $0.text(for: contentTable.modificationDateTableColumn)!)!
-				let	propertyMap =
-							try! JSONSerialization.jsonObject(
-									with: $0.blob(for: contentTable.jsonTableColumn)!) as! [String : Any]
+		try! infoTable.select(innerJoin: sqliteInnerJoinUse, where: _where) {
+			// Process results
+			let	key = $0.text(for: keyTableColumn)!
+			let	id :Int64 = $0.integer(for: infoTable.idTableColumn)!
+			let	documentID = $0.text(for: infoTable.documentIDTableColumn)!
+			let	revision :Int = $0.integer(for: infoTable.revisionTableColumn)!
+			let	creationDate = Date(fromStandardized: $0.text(for: contentTable.creationDateTableColumn)!)!
+			let	modificationDate = Date(fromStandardized: $0.text(for: contentTable.modificationDateTableColumn)!)!
+			let	propertyMap =
+						try! JSONSerialization.jsonObject(
+								with: $0.blob(for: contentTable.jsonTableColumn)!) as! [String : Any]
 
-				// Create
-				documentInfoMap[key] =
-						(documentID,
-								MDSSQLiteDocumentBacking(info: Info(id: id, documentID: documentID, revision: revision),
-										creationDate: creationDate, modificationDate: modificationDate,
-										propertyMap: propertyMap))
-			}
+			// Create
+			documentInfoMap[key] =
+					(documentID,
+							MDSSQLiteDocumentBacking(info: Info(id: id, documentID: documentID, revision: revision),
+									creationDate: creationDate, modificationDate: modificationDate,
+									propertyMap: propertyMap))
 		}
 
 		return documentInfoMap
