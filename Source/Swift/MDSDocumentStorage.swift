@@ -6,6 +6,8 @@
 //  Copyright © 2018 Stevo Brock. All rights reserved.
 //
 
+import Foundation
+
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: MDSBatchResult
 public enum MDSBatchResult {
@@ -22,14 +24,14 @@ public protocol MDSDocumentStorage : class {
 
 	func document<T : MDSDocument>(for documentID :String) -> T?
 
-	func creationDate<T : MDSDocument>(for document :T) -> Date
-	func modificationDate<T : MDSDocument>(for document :T) -> Date
+	func creationDate(for document :MDSDocument) -> Date
+	func modificationDate(for document :MDSDocument) -> Date
 
-	func value<T : MDSDocument>(for property :String, in document :T) -> Any?
-	func date<T : MDSDocument>(for property :String, in document :T) -> Date?
-	func set<T : MDSDocument>(_ value :Any?, for property :String, in document :T)
+	func value(for property :String, in document :MDSDocument) -> Any?
+	func date(for property :String, in document :MDSDocument) -> Date?
+	func set(_ value :Any?, for property :String, in document :MDSDocument)
 
-	func remove<T : MDSDocument>(_ document :T)
+	func remove(_ document :MDSDocument)
 
 	func enumerate<T : MDSDocument>(proc :MDSDocument.ApplyProc<T>)
 	func enumerate<T : MDSDocument>(documentIDs :[String], proc :MDSDocument.ApplyProc<T>)

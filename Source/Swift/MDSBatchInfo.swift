@@ -6,6 +6,8 @@
 //  Copyright © 2019 Stevo Brock. All rights reserved.
 //
 
+import Foundation
+
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSBatchDocumentInfo
 public class MDSBatchDocumentInfo<T> {

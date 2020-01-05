@@ -5,6 +5,8 @@
 //  Copyright © 2018 Stevo Brock. All rights reserved.
 //
 
+import Foundation
+
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: MDSSQLiteError
 public enum MDSSQLiteError : Error {
@@ -79,7 +81,7 @@ class MDSSQLite : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func creationDate<T : MDSDocument>(for document :T) -> Date{
+	func creationDate(for document :MDSDocument) -> Date{
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
 				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
@@ -90,12 +92,12 @@ class MDSSQLite : MDSDocumentStorage {
 			return Date()
 		} else {
 			// Not in batch
-			return documentBacking(documentType: T.documentType, documentID: document.id)!.creationDate
+			return documentBacking(documentType: type(of: document).documentType, documentID: document.id)!.creationDate
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func modificationDate<T : MDSDocument>(for document :T) -> Date {
+	func modificationDate(for document :MDSDocument) -> Date {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
 				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
@@ -106,12 +108,13 @@ class MDSSQLite : MDSDocumentStorage {
 			return Date()
 		} else {
 			// Not in batch
-			return documentBacking(documentType: T.documentType, documentID: document.id)!.modificationDate
+			return documentBacking(documentType: type(of: document).documentType, documentID: document.id)!
+					.modificationDate
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func value<T : MDSDocument>(for property :String, in document :T) -> Any? {
+	func value(for property :String, in document :MDSDocument) -> Any? {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
 				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
@@ -128,13 +131,16 @@ class MDSSQLite : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func date<T : MDSDocument>(for property :String, in document :T) -> Date? {
+	func date(for property :String, in document :MDSDocument) -> Date? {
 		// Return date
 		return Date(fromStandardized: value(for: property, in: document) as? String)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func set<T : MDSDocument>(_ value :Any?, for property :String, in document :T) {
+	func set(_ value :Any?, for property :String, in document :MDSDocument) {
+		// Setup
+		let	documentType = type(of: document).documentType
+
 		// Transform
 		let	valueUse :Any?
 		if let date = value as? Date {
@@ -153,8 +159,8 @@ class MDSSQLite : MDSDocumentStorage {
 				batchDocumentInfo.set(valueUse, for: property)
 			} else {
 				// Don't have document in batch
-				let	documentBacking = self.documentBacking(documentType: T.documentType, documentID: document.id)
-				batchInfo.addDocument(documentType: T.documentType, documentID: document.id, reference: documentBacking,
+				let	documentBacking = self.documentBacking(documentType: documentType, documentID: document.id)
+				batchInfo.addDocument(documentType: documentType, documentID: document.id, reference: documentBacking,
 								creationDate: Date(), modificationDate: Date(),
 								valueProc: { return documentBacking?.value(for: $0) })
 						.set(valueUse, for: property)
@@ -163,9 +169,9 @@ class MDSSQLite : MDSDocumentStorage {
 			// Being created
 			propertyMap[property] = valueUse
 			self.documentsBeingCreatedPropertyMapMap.set(propertyMap, for: document.id)
-		} else if let documentBacking = self.documentBacking(documentType: T.documentType, documentID: document.id) {
+		} else if let documentBacking = self.documentBacking(documentType: documentType, documentID: document.id) {
 			// Update document
-			documentBacking.set(valueUse, for: property, documentType: T.documentType, with: self.sqliteCore)
+			documentBacking.set(valueUse, for: property, documentType: documentType, with: self.sqliteCore)
 
 			// Update collections and indexes
 			updateCollections(for: document, documentBacking: documentBacking, changedProperties: [property])
@@ -174,7 +180,10 @@ class MDSSQLite : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func remove<T : MDSDocument>(_ document :T) {
+	func remove(_ document :MDSDocument) {
+		// Setup
+		let	documentType = type(of: document).documentType
+
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
 			// In batch
@@ -183,20 +192,20 @@ class MDSSQLite : MDSDocumentStorage {
 				batchDocumentInfo.remove()
 			} else {
 				// Don't have document in batch
-				let	documentBacking = self.documentBacking(documentType: T.documentType, documentID: document.id)
-				batchInfo.addDocument(documentType: T.documentType, documentID: document.id, reference: documentBacking,
+				let	documentBacking = self.documentBacking(documentType: documentType, documentID: document.id)
+				batchInfo.addDocument(documentType: documentType, documentID: document.id, reference: documentBacking,
 						creationDate: Date(), modificationDate: Date()).remove()
 			}
 		} else {
 			// Not in batch
 			if let documentBacking =
-					self.documentBacking(documentType: T.documentType, documentID: document.id) {
+					self.documentBacking(documentType: documentType, documentID: document.id) {
 				// Remove from collections and indexes
-				removeFromCollections(for: T.documentType, documentBacking: documentBacking)
-				removeFromIndexes(for: T.documentType, documentBacking: documentBacking)
+				removeFromCollections(for: documentType, documentBacking: documentBacking)
+				removeFromIndexes(for: documentType, documentBacking: documentBacking)
 
 				// Remove
-				documentBacking.remove(documentType: T.documentType, with: self.sqliteCore)
+				documentBacking.remove(documentType: documentType, with: self.sqliteCore)
 			}
 
 			// Remove from cache

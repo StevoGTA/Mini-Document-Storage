@@ -6,6 +6,8 @@
 //  Copyright © 2018 Stevo Brock. All rights reserved.
 //
 
+import Foundation
+
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: MDSEphemeral
 class MDSEphemeral : MDSDocumentStorage {
@@ -41,7 +43,7 @@ class MDSEphemeral : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func creationDate<T : MDSDocument>(for document :T) -> Date {
+	func creationDate(for document :MDSDocument) -> Date {
 		// Check for batch
 		if let batchInfo = self.mdsBatchInfoMapLock.read({ return self.mdsBatchInfoMap[Thread.current] }),
 				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
@@ -54,7 +56,7 @@ class MDSEphemeral : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func modificationDate<T : MDSDocument>(for document :T) -> Date {
+	func modificationDate(for document :MDSDocument) -> Date {
 		// Check for batch
 		if let batchInfo = self.mdsBatchInfoMapLock.read({ return self.mdsBatchInfoMap[Thread.current] }),
 				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
@@ -67,7 +69,7 @@ class MDSEphemeral : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func value<T : MDSDocument>(for property :String, in document :T) -> Any? {
+	func value(for property :String, in document :MDSDocument) -> Any? {
 		// Check for batch
 		if let batchInfo = self.mdsBatchInfoMapLock.read({ return self.mdsBatchInfoMap[Thread.current] }),
 				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
@@ -80,13 +82,13 @@ class MDSEphemeral : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func date<T : MDSDocument>(for property :String, in document :T) -> Date? {
+	func date(for property :String, in document :MDSDocument) -> Date? {
 		// Return date
 		return value(for: property, in: document) as? Date
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func set<T : MDSDocument>(_ value :Any?, for property :String, in document :T) {
+	func set(_ value :Any?, for property :String, in document :MDSDocument) {
 		// Check for batch
 		if let batchInfo = self.mdsBatchInfoMapLock.read({ return self.mdsBatchInfoMap[Thread.current] }) {
 			// In batch
@@ -95,8 +97,8 @@ class MDSEphemeral : MDSDocumentStorage {
 				batchDocumentInfo.set(value, for: property)
 			} else {
 				// Don't have document in batch
-				batchInfo.addDocument(documentType: T.documentType, documentID: document.id, reference: [:],
-						creationDate: Date(), modificationDate: Date(), valueProc: { property in
+				batchInfo.addDocument(documentType: type(of: document).documentType, documentID: document.id,
+						reference: [:], creationDate: Date(), modificationDate: Date(), valueProc: { property in
 									// Play nice with others
 									self.documentMapLock.read() { return self.documentMap[document.id]?[property] }
 								})
@@ -109,7 +111,10 @@ class MDSEphemeral : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func remove<T : MDSDocument>(_ document :T) {
+	func remove(_ document :MDSDocument) {
+		// Setup
+		let	documentType = type(of: document).documentType
+
 		// Check for batch
 		if let batchInfo = self.mdsBatchInfoMapLock.read({ return self.mdsBatchInfoMap[Thread.current] }) {
 			// In batch
@@ -118,7 +123,7 @@ class MDSEphemeral : MDSDocumentStorage {
 				batchDocumentInfo.remove()
 			} else {
 				// Don't have document in batch
-				batchInfo.addDocument(documentType: T.documentType, documentID: document.id, reference: [:],
+				batchInfo.addDocument(documentType: documentType, documentID: document.id, reference: [:],
 						creationDate: Date(), modificationDate: Date()).remove()
 			}
 		} else {
@@ -126,7 +131,7 @@ class MDSEphemeral : MDSDocumentStorage {
 			self.documentMapLock.write() {
 				// Update maps
 				self.documentMap[document.id] = nil
-				self.documentTypeMap.removeSetValueElement(key: T.documentType, value: document.id)
+				self.documentTypeMap.removeSetValueElement(key: documentType, value: document.id)
 			}
 		}
 	}

@@ -11,6 +11,8 @@
 		Need actual stored examples to match
 */
 
+import Foundation
+
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: MDSDocument
 public class MDSDocument : Hashable {

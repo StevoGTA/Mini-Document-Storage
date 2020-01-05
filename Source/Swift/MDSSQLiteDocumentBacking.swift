@@ -6,6 +6,8 @@
 //  Copyright © 2018 Stevo Brock. All rights reserved.
 //
 
+import Foundation
+
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: MDSSQLiteDocumentBacking
 class MDSSQLiteDocumentBacking {
@@ -297,13 +299,13 @@ class MDSSQLiteDocumentBacking {
 					}
 
 		// Update
-		infoTable.update(
-				[
-					(infoTable.modificationDateTableColumn, self.modificationDate.standardized),
-					(infoTable.revisionTableColumn, self.revision)
-				],
+		infoTable.update([(infoTable.revisionTableColumn, self.revision)],
 				where: SQLiteWhere(tableColumn: infoTable.idTableColumn, value: self.id))
-		contentTable.update([(contentTable.jsonTableColumn, data)],
+		contentTable.update(
+				[
+					(contentTable.modificationDateTableColumn, self.modificationDate.standardized),
+					(contentTable.jsonTableColumn, data)
+				],
 				where: SQLiteWhere(tableColumn: contentTable.idTableColumn, value: self.id))
 	}
 

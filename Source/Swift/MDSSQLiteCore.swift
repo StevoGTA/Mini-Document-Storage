@@ -31,6 +31,8 @@
 			Columns: key, id
 */
 
+import Foundation
+
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: MDSSQLiteCore
 class MDSSQLiteCore {
