@@ -107,7 +107,7 @@ class MDSSQLiteCore {
 		self.infoTable.create()
 
 		self.documentsMasterTable =
-				self.sqliteDatabase.table(name: "Documents", options: [],
+				self.sqliteDatabase.table(name: "Documents",
 						tableColumns: [
 										type(of: self).documentsMasterTypeTableColumn,
 										type(of: self).documentsMasterLastRevisionTableColumn
@@ -115,7 +115,7 @@ class MDSSQLiteCore {
 		self.documentsMasterTable.create()
 
 		self.collectionsMasterTable =
-				self.sqliteDatabase.table(name: "Collections", options: [],
+				self.sqliteDatabase.table(name: "Collections",
 						tableColumns: [
 										type(of: self).collectionsMasterNameTableColumn,
 										type(of: self).collectionsMasterVersionTableColumn,
@@ -125,7 +125,7 @@ class MDSSQLiteCore {
 		self.collectionsMasterTable.create()
 
 		self.indexesMasterTable =
-				self.sqliteDatabase.table(name: "Indexes", options: [],
+				self.sqliteDatabase.table(name: "Indexes",
 						tableColumns: [
 										type(of: self).indexesMasterNameTableColumn,
 										type(of: self).indexesMasterVersionTableColumn,
@@ -177,14 +177,14 @@ class MDSSQLiteCore {
 			// Setup tables
 			let	tableTitleRoot = documentType.prefix(1).uppercased() + documentType.dropFirst()
 			let	infoTable =
-						self.sqliteDatabase.table(name: "\(tableTitleRoot)s", options: [],
+						self.sqliteDatabase.table(name: "\(tableTitleRoot)s",
 								tableColumns: [
 												type(of: self).documentsInfoIDTableColumn,
 												type(of: self).documentsInfoDocumentIDTableColumn,
 												type(of: self).documentsInfoRevisionTableColumn
 											  ])
 			let	contentTable =
-						self.sqliteDatabase.table(name: "\(tableTitleRoot)Contents", options: [],
+						self.sqliteDatabase.table(name: "\(tableTitleRoot)Contents",
 								tableColumns: [
 												type(of: self).documentsContentsIDTableColumn,
 												type(of: self).documentsContentsCreationDateTableColumn,
