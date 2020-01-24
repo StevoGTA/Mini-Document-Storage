@@ -10,11 +10,35 @@ import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: MDSEphemeral
-class MDSEphemeral : MDSDocumentStorage {
+public class MDSEphemeral : MDSDocumentStorage {
 
 	// MARK: MDSDocumentStorage implementation
+	public var id: String = UUID().uuidString
+
 	//------------------------------------------------------------------------------------------------------------------
-	func newDocument<T : MDSDocument>(creationProc :MDSDocument.CreationProc<T>) -> T {
+	public func extraValue<T>(for key :String) -> T? { return self.extraValues?[key] as? T }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func store<T>(extraValue :T?, for key :String) {
+		// Store
+		if (self.extraValues == nil) && (extraValue != nil) {
+			// First one
+			self.extraValues = [key : extraValue!]
+		} else {
+			// Update
+			self.extraValues?[key] = extraValue
+
+			// Check for empty
+			if self.extraValues?.isEmpty ?? false {
+				// No more values
+				self.extraValues = nil
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
+			-> T {
 		// Setup
 		let	documentID = UUID().base64EncodedString
 
@@ -37,13 +61,13 @@ class MDSEphemeral : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func document<T : MDSDocument>(for documentID :String) -> T? {
+	public func document<T : MDSDocument>(for documentID :String) -> T? {
 		// Call proc
 		return T(id: documentID, documentStorage: self)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func creationDate(for document :MDSDocument) -> Date {
+	public func creationDate(for document :MDSDocument) -> Date {
 		// Check for batch
 		if let batchInfo = self.mdsBatchInfoMapLock.read({ return self.mdsBatchInfoMap[Thread.current] }),
 				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
@@ -56,7 +80,7 @@ class MDSEphemeral : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func modificationDate(for document :MDSDocument) -> Date {
+	public func modificationDate(for document :MDSDocument) -> Date {
 		// Check for batch
 		if let batchInfo = self.mdsBatchInfoMapLock.read({ return self.mdsBatchInfoMap[Thread.current] }),
 				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
@@ -69,7 +93,7 @@ class MDSEphemeral : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func value(for property :String, in document :MDSDocument) -> Any? {
+	public func value(for property :String, in document :MDSDocument) -> Any? {
 		// Check for batch
 		if let batchInfo = self.mdsBatchInfoMapLock.read({ return self.mdsBatchInfoMap[Thread.current] }),
 				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
@@ -82,13 +106,13 @@ class MDSEphemeral : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func date(for property :String, in document :MDSDocument) -> Date? {
+	public func date(for property :String, in document :MDSDocument) -> Date? {
 		// Return date
 		return value(for: property, in: document) as? Date
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func set(_ value :Any?, for property :String, in document :MDSDocument) {
+	public func set<T : MDSDocument>(_ value :Any?, for property :String, in document :T) {
 		// Check for batch
 		if let batchInfo = self.mdsBatchInfoMapLock.read({ return self.mdsBatchInfoMap[Thread.current] }) {
 			// In batch
@@ -111,7 +135,7 @@ class MDSEphemeral : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func remove(_ document :MDSDocument) {
+	public func remove(_ document :MDSDocument) {
 		// Setup
 		let	documentType = type(of: document).documentType
 
@@ -137,7 +161,7 @@ class MDSEphemeral : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func enumerate<T : MDSDocument>(proc :MDSDocument.ApplyProc<T>) {
+	public func enumerate<T : MDSDocument>(proc :(_ document : T) -> Void) {
 		// Collect document IDs
 		let	documentIDs = self.documentMapLock.read() { return self.documentTypeMap[T.documentType] ?? Set<String>() }
 
@@ -146,13 +170,13 @@ class MDSEphemeral : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func enumerate<T : MDSDocument>(documentIDs :[String], proc :MDSDocument.ApplyProc<T>) {
+	public func enumerate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void) {
 		// Iterate all
 		documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func batch(_ proc :() -> MDSBatchResult) {
+	public func batch(_ proc :() throws -> MDSBatchResult) rethrows {
 		// Setup
 		let	batchInfo = MDSBatchInfo<[String : Any]>()
 
@@ -160,7 +184,7 @@ class MDSEphemeral : MDSDocumentStorage {
 		self.mdsBatchInfoMapLock.write() { self.mdsBatchInfoMap[Thread.current] = batchInfo }
 
 		// Call proc
-		let	result = proc()
+		let	result = try proc()
 
 		// Remove
 		self.mdsBatchInfoMapLock.write() { self.mdsBatchInfoMap[Thread.current] = nil }
@@ -206,39 +230,42 @@ class MDSEphemeral : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
+	public func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
 			values :[String], isUpToDate :Bool, includeSelector :String,
-			includeProc :@escaping MDSDocument.IncludeProc<T>) {
+			includeProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool) {
 		// Not yet implemented
 		fatalError("registerCollection(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func queryCollectionDocumentCount(name :String) -> UInt {
+	public func queryCollectionDocumentCount(name :String) -> UInt {
 		// Not yet implemented
 		fatalError("queryCollectionDocumentCount(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func enumerateCollection<T : MDSDocument>(name :String, proc :MDSDocument.ApplyProc<T>) {
+	public func enumerateCollection<T : MDSDocument>(name :String, proc :(_ document : T) -> Void) {
 		// Not yet implemented
 		fatalError("enumerateCollection(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
-			isUpToDate :Bool, keysSelector :String, keysProc :@escaping MDSDocument.KeysProc<T>) {
+	public func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
+			isUpToDate :Bool, keysSelector :String, keysProc :@escaping (_ document :T) -> [String]) {
 		// Not yet implemented
 		fatalError("registerIndex(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func enumerateIndex<T : MDSDocument>(name :String, keys :[String], proc :MDSDocument.IndexApplyProc<T>) {
+	public func enumerateIndex<T : MDSDocument>(name :String, keys :[String],
+			proc :(_ key :String, _ document :T) -> Void) {
 		// Not yet implemented
 		fatalError("enumerateIndex(...) has not been implemented")
 	}
 
 	// MARK: Properties
+	private	var	extraValues :[/* Key */ String : Any]?
+
 	private	var	mdsBatchInfoMap = [Thread : MDSBatchInfo<[String : Any]>]()
 	private	var	mdsBatchInfoMapLock = ReadPreferringReadWriteLock()
 

@@ -10,104 +10,120 @@ import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: MDSRemoteStorage
-class MDSRemoteStorage : MDSDocumentStorage {
+public class MDSRemoteStorage : MDSDocumentStorage {
 
 	// MARK: MDSDocumentStorage implementation
+	public var id: String = UUID().uuidString
+
 	//------------------------------------------------------------------------------------------------------------------
-	func newDocument<T : MDSDocument>(creationProc :MDSDocument.CreationProc<T>) -> T {
+	public func extraValue<T>(for key :String) -> T? {
+		// Not yet implemented
+		fatalError("extraValue(...) has not been implemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func store<T>(extraValue :T?, for key :String) {
+		// Not yet implemented
+		fatalError("store(...) has not been implemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
+			-> T {
 		// Not yet implemented
 		fatalError("newDocument(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func document<T : MDSDocument>(for documentID :String) -> T? {
+	public func document<T : MDSDocument>(for documentID :String) -> T? {
 		// Not yet implemented
 		fatalError("document(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func creationDate(for document :MDSDocument) -> Date {
+	public func creationDate(for document :MDSDocument) -> Date {
 		// Not yet implemented
 		fatalError("creationDate(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func modificationDate(for document :MDSDocument) -> Date {
+	public func modificationDate(for document :MDSDocument) -> Date {
 		// Not yet implemented
 		fatalError("modificationDate(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func value(for property :String, in document :MDSDocument) -> Any? {
+	public func value(for property :String, in document :MDSDocument) -> Any? {
 		// Not yet implemented
 		fatalError("value(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func date(for property :String, in document :MDSDocument) -> Date? {
+	public func date(for property :String, in document :MDSDocument) -> Date? {
 		// Not yet implemented
 		fatalError("date(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func set(_ value :Any?, for property :String, in document :MDSDocument) {
+	public func set<T : MDSDocument>(_ value :Any?, for property :String, in document :T) {
 		// Not yet implemented
 		fatalError("set(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func remove(_ document :MDSDocument) {
+	public func remove(_ document :MDSDocument) {
 		// Not yet implemented
 		fatalError("remove(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func enumerate<T : MDSDocument>(proc :MDSDocument.ApplyProc<T>) {
+	public func enumerate<T : MDSDocument>(proc :(_ document : T) -> Void) {
 		// Not yet implemented
 		fatalError("enumerate(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func enumerate<T : MDSDocument>(documentIDs :[String], proc :MDSDocument.ApplyProc<T>) {
+	public func enumerate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void) {
 		// Not yet implemented
 		fatalError("enumerate(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func batch(_ proc :() -> MDSBatchResult) {
+	public func batch(_ proc :() throws -> MDSBatchResult) rethrows {
 		// Not yet implemented
 		fatalError("batch(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
+	public func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
 			values :[String], isUpToDate :Bool, includeSelector :String,
-			includeProc :@escaping MDSDocument.IncludeProc<T>) {
+			includeProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool) {
 		// Not yet implemented
 		fatalError("registerCollection(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func queryCollectionDocumentCount(name :String) -> UInt {
+	public func queryCollectionDocumentCount(name :String) -> UInt {
 		// Not yet implemented
 		fatalError("queryCollectionDocumentCount(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func enumerateCollection<T : MDSDocument>(name :String, proc :MDSDocument.ApplyProc<T>) {
+	public func enumerateCollection<T : MDSDocument>(name :String, proc :(_ document : T) -> Void) {
 		// Not yet implemented
 		fatalError("enumerateCollection(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
-			isUpToDate :Bool, keysSelector :String, keysProc :@escaping MDSDocument.KeysProc<T>) {
+	public func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
+			isUpToDate :Bool, keysSelector :String, keysProc :@escaping (_ document :T) -> [String]) {
 		// Not yet implemented
 		fatalError("registerIndex(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func enumerateIndex<T : MDSDocument>(name :String, keys :[String], proc :MDSDocument.IndexApplyProc<T>) {
+	public func enumerateIndex<T : MDSDocument>(name :String, keys :[String],
+			proc :(_ key :String, _ document :T) -> Void) {
 		// Not yet implemented
 		fatalError("enumerateIndex(...) has not been implemented")
 	}

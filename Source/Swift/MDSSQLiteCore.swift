@@ -40,56 +40,32 @@ class MDSSQLiteCore {
 	// MARK: Types
 	typealias DocumentTables = (infoTable :SQLiteTable, contentTable :SQLiteTable)
 
+	typealias CollectionUpdateInfo = (includedIDs :[Int64], notIncludedIDs :[Int64], lastRevision :Int)
+	typealias IndexUpdateInfo = (keysInfos :[(keys :[String], value :Int64)], removedIDs :[Int64], lastRevision :Int)
+	struct BatchInfo {
+
+		// MARK: Properties
+		var	documentLastRevisionTypesNeedingWrite = Set<String>()
+		var	collectionInfo = [/* collection name */ String : CollectionUpdateInfo]()
+		var	indexInfo = [/* index name */ String : IndexUpdateInfo]()
+	}
+
 	// MARK: Properties
-	static	private	let	infoKeyTableColumn =
-								SQLiteTableColumn("key", .text, [.primaryKey, .unique, .notNull])
-	static	private	let	infoValueTableColumn = SQLiteTableColumn("value", .text, [.notNull])
+	private	let	sqliteDatabase :SQLiteDatabase
 
-	static	private	let	documentsMasterTypeTableColumn = SQLiteTableColumn("type", .text, [.notNull, .unique])
-	static	private	let	documentsMasterLastRevisionTableColumn =
-								SQLiteTableColumn("lastRevision", .integer4, [.notNull])
+	private	let	infoTable :SQLiteTable
 
-	static	private	let	documentsInfoIDTableColumn = SQLiteTableColumn("id", .integer, [.primaryKey, .autoincrement])
-	static	private	let	documentsInfoDocumentIDTableColumn = SQLiteTableColumn("documentID", .text, [.notNull, .unique])
-	static	private	let	documentsInfoRevisionTableColumn = SQLiteTableColumn("revision", .integer4, [.notNull])
+	private	let	documentsMasterTable :SQLiteTable
+	private	var	documentTablesMap = LockingDictionary</* Document type */ String, DocumentTables>()
+	private	var	documentLastRevisionMap = LockingDictionary</* Document type */ String, Int>()
 
-	static	private	let	documentsContentsIDTableColumn = SQLiteTableColumn("id", .integer, [.primaryKey])
-	static	private	let	documentsContentsCreationDateTableColumn =
-								SQLiteTableColumn("creationDate", .textWith(size: 23), [.notNull])
-	static	private	let	documentsContentsModificationDateTableColumn =
-								SQLiteTableColumn("modificationDate", .textWith(size: 23), [.notNull])
-	static	private	let	documentsContentsJSONTableColumn = SQLiteTableColumn("json", .blob, [.notNull])
+	private	var	collectionsMasterTable :SQLiteTable
+	private	var	collectionTablesMap = LockingDictionary</* Collection name */ String, SQLiteTable>()
 
-	static	private	let	collectionsMasterNameTableColumn = SQLiteTableColumn("name", .text, [.notNull, .unique])
-	static	private	let	collectionsMasterVersionTableColumn = SQLiteTableColumn("version", .integer2, [.notNull])
-	static	private	let	collectionsMasterLastRevisionTableColumn  =
-								SQLiteTableColumn("lastRevision", .integer4, [.notNull])
-	static	private	let	collectionsMasterInfoTableColumn = SQLiteTableColumn("info", .blob, [.notNull])
+	private	var	indexesMasterTable :SQLiteTable
+	private	var	indexTablesMap = LockingDictionary</* Index name */ String, SQLiteTable>()
 
-	static	private	let	collectionIDTableColumn = SQLiteTableColumn("id", .integer, [.primaryKey])
-
-	static	private	let	indexesMasterNameTableColumn = SQLiteTableColumn("name", .text, [.notNull, .unique])
-	static	private	let	indexesMasterVersionTableColumn = SQLiteTableColumn("version", .integer2, [.notNull])
-	static	private	let	indexesMasterLastRevisionTableColumn = SQLiteTableColumn("lastRevision", .integer4, [.notNull])
-
-	static	private	let	indexKeyTableColumn = SQLiteTableColumn("key", .text, [.notNull, .unique])
-	static	private	let	indexIDTableColumn = SQLiteTableColumn("id", .integer, [.primaryKey])
-
-			private	let	sqliteDatabase :SQLiteDatabase
-
-			private	let	infoTable :SQLiteTable
-
-			private	let	documentsMasterTable :SQLiteTable
-			private	var	documentTablesMap = LockingDictionary</* Document type */ String, DocumentTables>()
-			private	var	documentLastRevisionMap = LockingDictionary</* Document type */ String, Int>()
-
-			private	var	collectionsMasterTable :SQLiteTable
-			private	var	collectionTablesMap = LockingDictionary</* Collection name */ String, SQLiteTable>()
-
-			private	var	indexesMasterTable :SQLiteTable
-			private	var	indexTablesMap = LockingDictionary</* Index name */ String, SQLiteTable>()
-
-			private	var	documentLastRevisionTypesNeedingWrite :LockingSet</* Document type */ String>?
+	private	var	batchInfoMap = LockingDictionary<Thread, BatchInfo>()
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -101,35 +77,35 @@ class MDSSQLiteCore {
 		self.infoTable =
 				self.sqliteDatabase.table(name: "Info", options: [.withoutRowID],
 						tableColumns: [
-										type(of: self).infoKeyTableColumn,
-										type(of: self).infoValueTableColumn
+										SQLiteTableColumn("key", .text, [.primaryKey, .unique, .notNull]),
+										SQLiteTableColumn("value", .text, [.notNull])
 									  ])
 		self.infoTable.create()
 
 		self.documentsMasterTable =
 				self.sqliteDatabase.table(name: "Documents",
 						tableColumns: [
-										type(of: self).documentsMasterTypeTableColumn,
-										type(of: self).documentsMasterLastRevisionTableColumn
+										SQLiteTableColumn("type", .text, [.notNull, .unique]),
+										SQLiteTableColumn("lastRevision", .integer4, [.notNull])
 									  ])
 		self.documentsMasterTable.create()
 
 		self.collectionsMasterTable =
 				self.sqliteDatabase.table(name: "Collections",
 						tableColumns: [
-										type(of: self).collectionsMasterNameTableColumn,
-										type(of: self).collectionsMasterVersionTableColumn,
-										type(of: self).collectionsMasterLastRevisionTableColumn,
-										type(of: self).collectionsMasterInfoTableColumn,
+										SQLiteTableColumn("name", .text, [.notNull, .unique]),
+										SQLiteTableColumn("version", .integer2, [.notNull]),
+										SQLiteTableColumn("lastRevision", .integer4, [.notNull]),
+										SQLiteTableColumn("info", .blob, [.notNull]),
 									  ])
 		self.collectionsMasterTable.create()
 
 		self.indexesMasterTable =
 				self.sqliteDatabase.table(name: "Indexes",
 						tableColumns: [
-										type(of: self).indexesMasterNameTableColumn,
-										type(of: self).indexesMasterVersionTableColumn,
-										type(of: self).indexesMasterLastRevisionTableColumn,
+										SQLiteTableColumn("name", .text, [.notNull, .unique]),
+										SQLiteTableColumn("version", .integer2, [.notNull]),
+										SQLiteTableColumn("lastRevision", .integer4, [.notNull]),
 									  ])
 		self.indexesMasterTable.create()
 
@@ -161,14 +137,17 @@ class MDSSQLiteCore {
 	//------------------------------------------------------------------------------------------------------------------
 	func set(_ value :Any, for key :String) {
 		// Store value
-		self.infoTable.insertOrReplace([
-										(self.infoTable.keyTableColumn, key),
-										(self.infoTable.valueTableColumn, value),
-									   ])
+		self.infoTable.insertOrReplaceRow([
+											(self.infoTable.keyTableColumn, key),
+											(self.infoTable.valueTableColumn, value),
+										  ])
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func documentTables(for documentType :String) -> DocumentTables {
+guard !documentType.isEmpty else {
+	fatalError("documentType is empty")
+}
 		// Check for already having tables
 		if let documentTables = self.documentTablesMap.value(for: documentType) {
 			// Have tables
@@ -176,25 +155,23 @@ class MDSSQLiteCore {
 		} else {
 			// Setup tables
 			let	tableTitleRoot = documentType.prefix(1).uppercased() + documentType.dropFirst()
+			let	contentIDTableColumn = SQLiteTableColumn("id", .integer, [.primaryKey])
 			let	infoTable =
 						self.sqliteDatabase.table(name: "\(tableTitleRoot)s",
 								tableColumns: [
-												type(of: self).documentsInfoIDTableColumn,
-												type(of: self).documentsInfoDocumentIDTableColumn,
-												type(of: self).documentsInfoRevisionTableColumn
+												SQLiteTableColumn("id", .integer, [.primaryKey, .autoincrement]),
+												SQLiteTableColumn("documentID", .text, [.notNull, .unique]),
+												SQLiteTableColumn("revision", .integer4, [.notNull])
 											  ])
 			let	contentTable =
 						self.sqliteDatabase.table(name: "\(tableTitleRoot)Contents",
 								tableColumns: [
-												type(of: self).documentsContentsIDTableColumn,
-												type(of: self).documentsContentsCreationDateTableColumn,
-												type(of: self).documentsContentsModificationDateTableColumn,
-												type(of: self).documentsContentsJSONTableColumn
+												contentIDTableColumn,
+												SQLiteTableColumn("creationDate", .textWith(size: 23), [.notNull]),
+												SQLiteTableColumn("modificationDate", .textWith(size: 23), [.notNull]),
+												SQLiteTableColumn("json", .blob, [.notNull])
 											  ],
-								references: [
-												(type(of: self).documentsContentsIDTableColumn, infoTable,
-														type(of: self).documentsInfoIDTableColumn)
-											])
+								references: [(contentIDTableColumn, infoTable, infoTable.idTableColumn)])
 
 			// Create tables
 			_ = infoTable.create()
@@ -219,16 +196,17 @@ class MDSSQLiteCore {
 		let	nextRevision = currentRevision(for: documentType) + 1
 
 		// Check if in batch
-		if self.documentLastRevisionTypesNeedingWrite == nil {
-			// Write to storage
-			self.documentsMasterTable.insertOrReplace([
-														(self.documentsMasterTable.typeTableColumn, documentType),
-														(self.documentsMasterTable.lastRevisionTableColumn,
-																nextRevision),
-													  ])
+		if var batchInfo = self.batchInfoMap.value(for: Thread.current) {
+			// Update batch info
+			batchInfo.documentLastRevisionTypesNeedingWrite.insert(documentType)
+			self.batchInfoMap.set(batchInfo, for: Thread.current)
 		} else {
-			// Note to update later
-			self.documentLastRevisionTypesNeedingWrite!.insert(documentType)
+			// Write to storage
+			self.documentsMasterTable.insertOrReplaceRow([
+															(self.documentsMasterTable.typeTableColumn, documentType),
+															(self.documentsMasterTable.lastRevisionTableColumn,
+																	nextRevision),
+														 ])
 		}
 
 		// Store
@@ -240,25 +218,36 @@ class MDSSQLiteCore {
 	//------------------------------------------------------------------------------------------------------------------
 	func batch(_ proc :() -> Void) {
 		// Setup
-		self.documentLastRevisionTypesNeedingWrite = LockingSet<String>()
+		self.batchInfoMap.set(BatchInfo(), for: Thread.current)
 
 		// Call proc
 		proc()
 
 		// Commit changes
-		self.documentLastRevisionTypesNeedingWrite!.values.forEach() {
+		let	batchInfo = self.batchInfoMap.value(for: Thread.current)!
+		self.batchInfoMap.set(nil, for: Thread.current)
+
+		batchInfo.documentLastRevisionTypesNeedingWrite.forEach() {
 			// Get revision
 			let	revision = self.documentLastRevisionMap.value(for: $0)!
 
 			// Write to storage
-			self.documentsMasterTable.insertOrReplace([
-														(self.documentsMasterTable.typeTableColumn, $0),
-														(self.documentsMasterTable.lastRevisionTableColumn, revision),
-													  ])
+			self.documentsMasterTable.insertOrReplaceRow([
+															(self.documentsMasterTable.typeTableColumn, $0),
+															(self.documentsMasterTable.lastRevisionTableColumn,
+																	revision),
+														 ])
 		}
-
-		// Reset
-		self.documentLastRevisionTypesNeedingWrite = nil
+		batchInfo.collectionInfo.forEach() {
+			// Update collection
+			self.updateCollection(name: $0.key, includedIDs: $0.value.includedIDs,
+					notIncludedIDs: $0.value.notIncludedIDs, lastRevision: $0.value.lastRevision)
+		}
+		batchInfo.indexInfo.forEach() {
+			// Update index
+			self.updateIndex(name: $0.key, keysInfos: $0.value.keysInfos, removedIDs: $0.value.removedIDs,
+					lastRevision: $0.value.lastRevision)
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -286,7 +275,7 @@ class MDSSQLiteCore {
 		// Setup table
 		let	table =
 					self.sqliteDatabase.table(name: "Collection-\(name)", options: [.withoutRowID],
-							tableColumns: [type(of: self).collectionIDTableColumn])
+							tableColumns: [SQLiteTableColumn("id", .integer, [.primaryKey])])
 		self.collectionTablesMap.set(table, for: name)
 
 		// Compose last revision
@@ -294,7 +283,7 @@ class MDSSQLiteCore {
 		let	updateMasterTable :Bool
 		if storedLastRevision == nil {
 			// New
-			lastRevision = isUpToDate ? self.documentLastRevisionMap.value(for: documentType)! : 0
+			lastRevision = isUpToDate ? self.documentLastRevisionMap.value(for: documentType) ?? 0 : 0
 			updateMasterTable = true
 		} else if version != storedVersion {
 			// Updated version
@@ -313,8 +302,9 @@ class MDSSQLiteCore {
 		// Check if need to update the master table
 		if updateMasterTable {
 			// New or updated
-			self.collectionsMasterTable.insertOrReplace(
+			self.collectionsMasterTable.insertOrReplaceRow(
 					[
+						(self.collectionsMasterTable.nameTableColumn, name),
 						(self.collectionsMasterTable.versionTableColumn, version),
 						(self.collectionsMasterTable.lastRevisionTableColumn, lastRevision),
 						(self.collectionsMasterTable.infoTableColumn,
@@ -322,7 +312,7 @@ class MDSSQLiteCore {
 					])
 
 			// Update table
-			table.drop()
+			if storedLastRevision != nil { table.drop() }
 			table.create()
 		}
 
@@ -337,23 +327,32 @@ class MDSSQLiteCore {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func updateCollection(name :String, includedIDs :[Int64], notIncludedIDs :[Int64], lastRevision :Int) {
-		// Setup
-		let	sqliteTable = self.collectionTablesMap.value(for: name)!
-		let	infos :[(tableColumn :SQLiteTableColumn, value :Any)] =
-					includedIDs.map({ (sqliteTable.idTableColumn, $0) })
+		// Check if in batch
+		if var batchInfo = self.batchInfoMap.value(for: Thread.current) {
+			// Update batch info
+			let	collectionInfo = batchInfo.collectionInfo[name]
+			batchInfo.collectionInfo[name] =
+					((collectionInfo?.includedIDs ?? []) + includedIDs,
+							(collectionInfo?.notIncludedIDs ?? []) + notIncludedIDs, lastRevision)
+			self.batchInfoMap.set(batchInfo, for: Thread.current)
+		} else {
+			// Setup
+			let	sqliteTable = self.collectionTablesMap.value(for: name)!
+			let	idTableColumn = sqliteTable.idTableColumn
 
-		// Update tables
-		if !infos.isEmpty {
-			// Update
-			sqliteTable.insertOrReplace(infos)
+			// Update tables
+			if !includedIDs.isEmpty {
+				// Update
+				sqliteTable.insertOrReplaceRows(idTableColumn, values: includedIDs)
+			}
+			if !notIncludedIDs.isEmpty {
+				// Delete
+				sqliteTable.deleteRows(idTableColumn, values: notIncludedIDs)
+			}
+			self.collectionsMasterTable.update(
+					[(self.collectionsMasterTable.lastRevisionTableColumn, lastRevision)],
+					where: SQLiteWhere(tableColumn: self.collectionsMasterTable.nameTableColumn, value: name))
 		}
-		if !notIncludedIDs.isEmpty {
-			// Delete
-			sqliteTable.delete(where: SQLiteWhere(tableColumn: sqliteTable.idTableColumn, values: notIncludedIDs))
-		}
-		self.collectionsMasterTable.update(
-				[(self.collectionsMasterTable.lastDocumentRevisionTableColumn, lastRevision)],
-				where: SQLiteWhere(tableColumn: self.collectionsMasterTable.nameTableColumn, value: name))
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -382,8 +381,8 @@ class MDSSQLiteCore {
 		let	table =
 					self.sqliteDatabase.table(name: "Index-\(name)", options: [.withoutRowID],
 							tableColumns: [
-											type(of: self).indexKeyTableColumn,
-											type(of: self).indexIDTableColumn
+											SQLiteTableColumn("key", .text, [.primaryKey]),
+											SQLiteTableColumn("id", .integer, [])
 										  ])
 		self.indexTablesMap.set(table, for: name)
 
@@ -407,7 +406,7 @@ class MDSSQLiteCore {
 		// Check if need to update the master table
 		if updateMasterTable {
 			// New or updated
-			self.indexesMasterTable.insertOrReplace(
+			self.indexesMasterTable.insertOrReplaceRow(
 					[
 						(self.indexesMasterTable.nameTableColumn, name),
 						(self.indexesMasterTable.versionTableColumn, version),
@@ -431,29 +430,40 @@ class MDSSQLiteCore {
 	//------------------------------------------------------------------------------------------------------------------
 	func updateIndex(name :String, keysInfos :[(keys :[String], value :Int64)], removedIDs :[Int64],
 			lastRevision :Int) {
-		// Setup
-		let	sqliteTable = self.indexTablesMap.value(for: name)!
+		// Check if in batch
+		if var batchInfo = self.batchInfoMap.value(for: Thread.current) {
+			// Update batch info
+			let	indexInfo = batchInfo.indexInfo[name]
+			batchInfo.indexInfo[name] =
+					((indexInfo?.keysInfos ?? []) + keysInfos, (indexInfo?.removedIDs ?? []) + removedIDs,
+							lastRevision)
+			self.batchInfoMap.set(batchInfo, for: Thread.current)
+		} else {
+			// Setup
+			let	sqliteTable = self.indexTablesMap.value(for: name)!
+			let	idTableColumn = sqliteTable.idTableColumn
 
-		// Update tables
-		keysInfos.forEach() { keysInfo in
-			// Delete old keys
-			sqliteTable.delete(where: SQLiteWhere(tableColumn: sqliteTable.idTableColumn, value: keysInfo.value))
+			// Update tables
+			keysInfos.forEach() { keysInfo in
+				// Delete old keys
+				sqliteTable.deleteRows(idTableColumn, values: [keysInfo.value])
 
-			// Insert new keys
-			keysInfo.keys.forEach() {
-				// Insert this key
-				sqliteTable.insert([
-									(tableColumn: sqliteTable.keyTableColumn, value: $0),
-									(tableColumn: sqliteTable.idTableColumn, value: keysInfo.value),
-								   ])
+				// Insert new keys
+				keysInfo.keys.forEach() {
+					// Insert this key
+					sqliteTable.insertRow([
+											(tableColumn: sqliteTable.keyTableColumn, value: $0),
+											(tableColumn: idTableColumn, value: keysInfo.value),
+										  ])
+				}
 			}
+			if !removedIDs.isEmpty {
+				// Delete removed document IDs
+				sqliteTable.deleteRows(idTableColumn, values: removedIDs)
+			}
+			self.indexesMasterTable.update(
+					[(self.indexesMasterTable.lastRevisionTableColumn, lastRevision)],
+					where: SQLiteWhere(tableColumn: self.indexesMasterTable.nameTableColumn, value: name))
 		}
-		if !removedIDs.isEmpty {
-			// Delete removed document IDs
-			sqliteTable.delete(where: SQLiteWhere(tableColumn: sqliteTable.idTableColumn, values: removedIDs))
-		}
-		self.indexesMasterTable.update(
-				[(self.indexesMasterTable.lastRevisionTableColumn, lastRevision)],
-				where: SQLiteWhere(tableColumn: self.indexesMasterTable.nameTableColumn, value: name))
 	}
 }

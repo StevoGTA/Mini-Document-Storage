@@ -42,15 +42,21 @@ public class MDSDocumentBackingCache<T> {
 	// MARK: Properties
 	private	let	limit :Int
 
-	private	var	referenceMap = [/* document id */ String : Reference<T>]()
-	private	var	references = [Reference<T>]()
 	private	var	lock = ReadPreferringReadWriteLock()
+	private	var	referenceMap = [/* document id */ String : Reference<T>]()
+	private	var	timer :Timer?
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
 	public init(limit :Int = 1_000_000) {
 		// Store
 		self.limit = limit
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	deinit {
+    	// Cleanup
+    	self.timer?.invalidate()
 	}
 
 	// MARK: Instance methods
@@ -61,13 +67,12 @@ public class MDSDocumentBackingCache<T> {
 			// Do all documents
 			documentInfos.forEach() {
 				// Add to cache
-				let	reference = Reference(documentID: $0.documentID, documentBacking: $0.documentBacking)
-				self.referenceMap[$0.documentID] = reference
-				self.references.append(reference)
+				self.referenceMap[$0.documentID] =
+						Reference(documentID: $0.documentID, documentBacking: $0.documentBacking)
 			}
 
-			// Refresh references
-			refreshReferences()
+			// Reset pruning timer if needed
+			resetPruningTimerIfNeeded()
 		}
 	}
 
@@ -114,41 +119,57 @@ public class MDSDocumentBackingCache<T> {
 	public func remove(_ documentIDs :[String]) {
 		// Remove from map
 		self.lock.write() {
-			// Setup map of document IDs => array offsets
-			var	map = [String : Int]()
-			self.references.enumerated().forEach() { map[$0.element.documentID] = $0.offset }
-
-			// Compose indexSet of array offsets
-			var	indexSet = IndexSet()
-			documentIDs.forEach() {
-				// Check if this document ID is in the map
-				if let index = map[$0] {
-					// Add this index
-					indexSet.insert(index)
-				}
-			}
-
 			// Remove from storage
 			documentIDs.forEach() { self.referenceMap[$0] = nil }
-			self.references.remove(for: indexSet)
+
+			// Reset pruning timer if needed
+			resetPruningTimerIfNeeded()
 		}
 	}
 
 	// MARK: Private methods
 	//------------------------------------------------------------------------------------------------------------------
-	private func refreshReferences() {
-		// Only need to consider things if we have moved past the document limit
-		if self.references.count > self.limit {
-			// Sort by last referenced date to move the least referenced documents to the top of the array
-			self.references.sort() { $0.lastReferencedDate < $1.lastReferencedDate }
+	private func resetPruningTimerIfNeeded() {
+		// Invalidate existing timer
+		self.timer?.invalidate()
+		self.timer = nil
 
-			// Prune to remove documents beyond limit
-			let	countToRemove = self.references.count - self.limit
-			let	removedReferences = self.references[0..<countToRemove]
-			self.references.removeFirst(countToRemove)
-			removedReferences.forEach() {
-				// Drop from cache
-				self.referenceMap[$0.documentID] = nil
+		// Check if need to prune
+		if self.referenceMap.count > self.limit {
+			// Need to prune
+			self.timer = Timer.scheduledTimer(timeInterval: 5.0, runLoop: RunLoop.main) { [weak self] _ in
+				// Ensure we are still around
+				guard let strongSelf = self else { return }
+
+				// Prune
+				strongSelf.lock.write() {
+					// Only need to consider things if we have moved past the document limit
+					let	countToRemove = strongSelf.referenceMap.count - strongSelf.limit
+					if countToRemove > 0 {
+						// Iterate all references
+						var	referencesToRemove = [Reference<T>]()
+						var	earliestReferencedDate = Date.distantFuture
+						strongSelf.referenceMap.values.forEach() {
+							// Compare date
+							if $0.lastReferencedDate < earliestReferencedDate {
+								// Update references to remove
+								referencesToRemove.append($0)
+								referencesToRemove.sort() { $0.lastReferencedDate < $1.lastReferencedDate }
+								if referencesToRemove.count > countToRemove {
+									// Pop the last
+									let	reference = referencesToRemove.popLast()!
+									earliestReferencedDate = reference.lastReferencedDate
+								}
+							}
+						}
+
+						// Remove
+						referencesToRemove.forEach() { strongSelf.referenceMap[$0.documentID] = nil }
+					}
+				}
+
+				// Cleanup
+				strongSelf.timer = nil
 			}
 		}
 	}

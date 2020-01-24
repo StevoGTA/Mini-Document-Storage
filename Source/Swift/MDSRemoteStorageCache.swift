@@ -63,10 +63,10 @@ public class MDSRemoteStorageCache {
 			if version == nil {
 				// Initialize version
 				version = 1
-				_ = self.infoTable.insert([
-											(self.infoTable.keyTableColumn, "version"),
-											(self.infoTable.valueTableColumn, version!),
-										  ])
+				_ = self.infoTable.insertRow([
+												(self.infoTable.keyTableColumn, "version"),
+												(self.infoTable.valueTableColumn, version!),
+											 ])
 			}
 		} catch {
 			// Error
@@ -134,7 +134,7 @@ public class MDSRemoteStorageCache {
 			// Iterate all document infos
 			documentInfos.forEach() {
 				// Insert or replace
-				sqliteTable.insertOrReplace(
+				sqliteTable.insertOrReplaceRow(
 						[
 							(tableColumn: sqliteTable.idTableColumn, value: $0.id),
 							(tableColumn: sqliteTable.revisionTableColumn, value: $0.revision),

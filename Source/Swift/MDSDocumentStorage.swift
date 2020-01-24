@@ -19,8 +19,14 @@ public enum MDSBatchResult {
 // MARK: - MDSDocumentStorage protocol
 public protocol MDSDocumentStorage : class {
 
+	// MARK: Properties
+	var	id :String { get }
+
 	// MARK: Instance methods
-	func newDocument<T : MDSDocument>(creationProc :MDSDocument.CreationProc<T>) -> T
+	func extraValue<T>(for key :String) -> T?
+	func store<T>(extraValue :T?, for key :String)
+
+	func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T) -> T
 
 	func document<T : MDSDocument>(for documentID :String) -> T?
 
@@ -29,24 +35,24 @@ public protocol MDSDocumentStorage : class {
 
 	func value(for property :String, in document :MDSDocument) -> Any?
 	func date(for property :String, in document :MDSDocument) -> Date?
-	func set(_ value :Any?, for property :String, in document :MDSDocument)
+	func set<T : MDSDocument>(_ value :Any?, for property :String, in document :T)
 
 	func remove(_ document :MDSDocument)
 
-	func enumerate<T : MDSDocument>(proc :MDSDocument.ApplyProc<T>)
-	func enumerate<T : MDSDocument>(documentIDs :[String], proc :MDSDocument.ApplyProc<T>)
+	func enumerate<T : MDSDocument>(proc :(_ document : T) -> Void)
+	func enumerate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void)
 
-	func batch(_ proc :() -> MDSBatchResult)
+	func batch(_ proc :() throws -> MDSBatchResult) rethrows
 
 	func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
 			info :[String : Any], isUpToDate :Bool, includeSelector :String,
-			includeProc :@escaping MDSDocument.IncludeProc<T>)
+			includeProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool)
 	func queryCollectionDocumentCount(name :String) -> UInt
-	func enumerateCollection<T : MDSDocument>(name :String, proc :MDSDocument.ApplyProc<T>)
+	func enumerateCollection<T : MDSDocument>(name :String, proc :(_ document : T) -> Void)
 
 	func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
-			isUpToDate :Bool, keysSelector :String, keysProc :@escaping MDSDocument.KeysProc<T>)
-	func enumerateIndex<T : MDSDocument>(name :String, keys :[String], proc :MDSDocument.IndexApplyProc<T>)
+			isUpToDate :Bool, keysSelector :String, keysProc :@escaping (_ document :T) -> [String])
+	func enumerateIndex<T : MDSDocument>(name :String, keys :[String], proc :(_ key :String, _ document :T) -> Void)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -55,10 +61,10 @@ extension MDSDocumentStorage {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	func newDocument<T : MDSDocument>() -> T { return newDocument() { return T(id: $0, documentStorage: $1) } }
+	public func newDocument<T : MDSDocument>() -> T { return newDocument() { return T(id: $0, documentStorage: $1) } }
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documents<T :MDSDocument>() -> [T] {
+	public func documents<T :MDSDocument>() -> [T] {
 		// Setup
 		var	documents = [T]()
 
@@ -69,7 +75,7 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documents<T :MDSDocument>(for documentIDs :[String]) -> [T] {
+	public func documents<T :MDSDocument>(for documentIDs :[String]) -> [T] {
 		// Setup
 		var	documents = [T]()
 
@@ -80,24 +86,24 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerCollection<T : MDSDocument>(named name :String, version :UInt = 1, relevantProperties :[String],
-			info :[String : Any] = [:], isUpToDate :Bool = true, includeSelector :String = "",
-			includeProc :@escaping MDSDocument.IncludeProc<T>) {
+	public func registerCollection<T : MDSDocument>(named name :String, version :UInt = 1, relevantProperties :[String],
+			info :[String : Any] = [:], isUpToDate :Bool = false, includeSelector :String = "",
+			includeProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool) {
 		// Register collection
 		registerCollection(named: name, version: version, relevantProperties: relevantProperties,
 				info: info, isUpToDate: isUpToDate, includeSelector: includeSelector, includeProc: includeProc)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerIndex<T : MDSDocument>(named name :String, version :UInt = 1, relevantProperties :[String],
-			isUpToDate :Bool = true, keysSelector :String = "", keysProc :@escaping MDSDocument.KeysProc<T>) {
+	public func registerIndex<T : MDSDocument>(named name :String, version :UInt = 1, relevantProperties :[String],
+			isUpToDate :Bool = false, keysSelector :String = "", keysProc :@escaping (_ document :T) -> [String]) {
 		// Register index
 		registerIndex(named: name, version: version, relevantProperties: relevantProperties, isUpToDate: isUpToDate,
 				keysSelector: keysSelector, keysProc: keysProc)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentMap<T : MDSDocument>(forIndexNamed name :String, keys :[String]) -> [String : T] {
+	public func documentMap<T : MDSDocument>(forIndexNamed name :String, keys :[String]) -> [String : T] {
 		// Setup
 		var	documentMap = [String : T]()
 

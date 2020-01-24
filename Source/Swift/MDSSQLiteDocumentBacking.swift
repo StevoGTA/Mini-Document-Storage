@@ -98,6 +98,9 @@ class MDSSQLiteDocumentBacking {
 	//------------------------------------------------------------------------------------------------------------------
 	static func documentInfos(for documentIDs :[String], of documentType :String, with sqliteCore :MDSSQLiteCore) ->
 			[DocumentInfo] {
+		// Preflight
+		guard !documentIDs.isEmpty else { return [] }
+		
 		// Setup
 		let	(infoTable, contentTable) = sqliteCore.documentTables(for: documentType)
 
@@ -211,7 +214,8 @@ class MDSSQLiteDocumentBacking {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	init(documentID :String, documentType :String, propertyMap :PropertyMap, with sqliteCore :MDSSQLiteCore) {
+	init(documentID :String, documentType :String, creationDate :Date? = nil, modificationDate :Date? = nil,
+			propertyMap :PropertyMap, with sqliteCore :MDSSQLiteCore) {
 		// Setup
 		let	(infoTable, contentTable) = sqliteCore.documentTables(for: documentType)
 
@@ -221,9 +225,8 @@ class MDSSQLiteDocumentBacking {
 		// Setup
 		let	date = Date()
 
-		self.creationDate = date
-
-		self.modificationDate = date
+		self.creationDate = creationDate ?? date
+		self.modificationDate = modificationDate ?? date
 
 		self.propertyMap = propertyMap
 
@@ -232,16 +235,16 @@ class MDSSQLiteDocumentBacking {
 
 		// Add to database
 		self.id =
-				infoTable.insert([
-									(infoTable.documentIDTableColumn, documentID),
-									(infoTable.revisionTableColumn, revision),
-								 ])
-		_ = contentTable.insert([
+				infoTable.insertRow([
+										(infoTable.documentIDTableColumn, documentID),
+										(infoTable.revisionTableColumn, revision),
+									])
+		_ = contentTable.insertRow([
 									(contentTable.idTableColumn, self.id),
 									(contentTable.creationDateTableColumn, self.creationDate.standardized),
 									(contentTable.modificationDateTableColumn, self.modificationDate.standardized),
 									(contentTable.jsonTableColumn, data),
-								])
+								   ])
 	}
 
 	// MARK: Instance methods
@@ -315,7 +318,7 @@ class MDSSQLiteDocumentBacking {
 		let	(infoTable, contentTable) = sqliteCore.documentTables(for: documentType)
 
 		// Delete
-		infoTable.delete(where: SQLiteWhere(tableColumn: infoTable.idTableColumn, value: self.id))
-		contentTable.delete(where: SQLiteWhere(tableColumn: contentTable.idTableColumn, value: self.id))
+		infoTable.deleteRows(infoTable.idTableColumn, values: [self.id])
+		contentTable.deleteRows(contentTable.idTableColumn, values: [self.id])
 	}
 }
