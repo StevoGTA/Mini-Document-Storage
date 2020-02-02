@@ -216,6 +216,9 @@ extension MDSDocument {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func remove(for key :String) { self.documentStorage.set(nil, for: key, in: self) }
+	
+	//------------------------------------------------------------------------------------------------------------------
 	public func remove() { self.documentStorage.remove(self) }
 }
 
