@@ -21,9 +21,6 @@ class MDSSQLiteDocumentBacking {
 		let	revision :Int
 	}
 
-	typealias DocumentInfo = (documentID :String, documentBacking :MDSSQLiteDocumentBacking)
-	typealias PropertyMap = [/* Property */ String : /* Value */ Any]
-
 	// MARK: Properties
 			let	id :Int64
 			let	creationDate :Date
@@ -31,34 +28,38 @@ class MDSSQLiteDocumentBacking {
 			var	modificationDate :Date
 			var	revision :Int
 
-	private	var	propertyMap :PropertyMap
+	private	var	propertyMap :MDSDocument.PropertyMap
 	private	var	propertyMapLock = ReadPreferringReadWriteLock()
 
 	// MARK: Class methods
 	//------------------------------------------------------------------------------------------------------------------
-	static func infos(for documentType :String, with sqliteCore :MDSSQLiteCore) -> [MDSSQLiteDocumentBacking.Info] {
+	static func infos(for documentType :String, since revision :Int? = nil, with sqliteCore :MDSSQLiteCore) ->
+			[MDSSQLiteDocumentBacking.Info] {
 		// Setup
 		let	(infoTable, _) = sqliteCore.documentTables(for: documentType)
 
+		// Select
+		let	sqliteWhere :SQLiteWhere? =
+					(revision != nil) ?
+							SQLiteWhere(tableColumn: infoTable.revisionTableColumn, comparison: ">", value: revision!) :
+							nil
 		var	infos = [MDSSQLiteDocumentBacking.Info]()
-
-		// Select all
-		try! infoTable.select() {
+		try! infoTable.select(where: sqliteWhere) {
 			// Process results
 			let	id :Int64 = $0.integer(for: infoTable.idTableColumn)!
 			let	documentID = $0.text(for: infoTable.documentIDTableColumn)!
 			let	revision :Int = $0.integer(for: infoTable.revisionTableColumn)!
 
-			// Add to array
-			infos.append(Info(id: id, documentID: documentID, revision: revision))
+			// Append
+			infos.append(MDSSQLiteDocumentBacking.Info(id: id, documentID: documentID, revision: revision))
 		}
 
 		return infos
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	static func documentInfos(for infos :[Info], of documentType :String, with sqliteCore :MDSSQLiteCore) ->
-			[DocumentInfo] {
+	static func documentBackingInfos(for infos :[Info], of documentType :String, with sqliteCore :MDSSQLiteCore) ->
+			[MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>] {
 		// Setup
 		let	(_, contentTable) = sqliteCore.documentTables(for: documentType)
 
@@ -66,7 +67,7 @@ class MDSSQLiteDocumentBacking {
 		infos.forEach() { infoMap[$0.id] = $0 }
 
 		// Select
-		var	documentInfos = [DocumentInfo]()
+		var	documentBackingInfos = [MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>]()
 		try! contentTable.select(
 				tableColumns: [
 								contentTable.idTableColumn,
@@ -86,51 +87,44 @@ class MDSSQLiteDocumentBacking {
 					let	info = infoMap[id]!
 
 					// Add to array
-					documentInfos.append(
-							(info.documentID,
-									MDSSQLiteDocumentBacking(info: info, creationDate: creationDate,
-											modificationDate: modificationDate, propertyMap: propertyMap)))
+					documentBackingInfos.append(
+							MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>(documentID: info.documentID,
+									documentBacking:
+											MDSSQLiteDocumentBacking(info: info, creationDate: creationDate,
+													modificationDate: modificationDate, propertyMap: propertyMap)))
 				}
 
-		return documentInfos
+		return documentBackingInfos
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	static func documentInfos(for documentIDs :[String], of documentType :String, with sqliteCore :MDSSQLiteCore) ->
-			[DocumentInfo] {
+	static func documentBackingInfos(for documentIDs :[String], of documentType :String, with sqliteCore :MDSSQLiteCore)
+			-> [MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>] {
 		// Preflight
 		guard !documentIDs.isEmpty else { return [] }
 		
 		// Setup
 		let	(infoTable, contentTable) = sqliteCore.documentTables(for: documentType)
 
-		return documentInfos(infoTable: infoTable, contentTable: contentTable,
+		return documentBackingInfos(infoTable: infoTable, contentTable: contentTable,
 				where: SQLiteWhere(tableColumn: infoTable.documentIDTableColumn, values: documentIDs))
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	static func documentInfos(since revision :Int, of documentType :String, with sqliteCore :MDSSQLiteCore) ->
-			[DocumentInfo] {
+	static func documentBackingInfos(of documentType :String, with sqliteCore :MDSSQLiteCore,
+			sqliteInnerJoin :SQLiteInnerJoin, where _where :SQLiteWhere? = nil) ->
+			[MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>] {
 		// Setup
 		let	(infoTable, contentTable) = sqliteCore.documentTables(for: documentType)
 
-		return documentInfos(infoTable: infoTable, contentTable: contentTable,
-				where: SQLiteWhere(tableColumn: infoTable.revisionTableColumn, comparison: ">", value: revision))
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	static func documentInfos(of documentType :String, with sqliteCore :MDSSQLiteCore,
-			sqliteInnerJoin :SQLiteInnerJoin, where _where :SQLiteWhere? = nil) -> [DocumentInfo] {
-		// Setup
-		let	(infoTable, contentTable) = sqliteCore.documentTables(for: documentType)
-
-		return documentInfos(infoTable: infoTable, contentTable: contentTable, sqliteInnerJoin: sqliteInnerJoin,
+		return documentBackingInfos(infoTable: infoTable, contentTable: contentTable, sqliteInnerJoin: sqliteInnerJoin,
 				where: _where)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	static private func documentInfos(infoTable :SQLiteTable, contentTable :SQLiteTable,
-			sqliteInnerJoin :SQLiteInnerJoin? = nil, where _where :SQLiteWhere? = nil) -> [DocumentInfo] {
+	static private func documentBackingInfos(infoTable :SQLiteTable, contentTable :SQLiteTable,
+			sqliteInnerJoin :SQLiteInnerJoin? = nil, where _where :SQLiteWhere? = nil) ->
+			[MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>] {
 		// Setup
 		let	sqliteInnerJoinUse =
 					(sqliteInnerJoin != nil) ?
@@ -138,7 +132,7 @@ class MDSSQLiteDocumentBacking {
 							SQLiteInnerJoin(infoTable, tableColumn: infoTable.idTableColumn, to: contentTable)
 
 		// Select
-		var	documentInfos = [DocumentInfo]()
+		var	documentInfos = [MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>]()
 		try! infoTable.select(innerJoin: sqliteInnerJoinUse, where: _where) {
 			// Process results
 			let	id :Int64 = $0.integer(for: infoTable.idTableColumn)!
@@ -152,19 +146,21 @@ class MDSSQLiteDocumentBacking {
 
 			// Create
 			documentInfos.append(
-					(documentID,
-							MDSSQLiteDocumentBacking(info: Info(id: id, documentID: documentID, revision: revision),
-									creationDate: creationDate, modificationDate: modificationDate,
-									propertyMap: propertyMap)))
+					MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>(documentID: documentID,
+							documentBacking:
+									MDSSQLiteDocumentBacking(
+											info: Info(id: id, documentID: documentID, revision: revision),
+											creationDate: creationDate, modificationDate: modificationDate,
+											propertyMap: propertyMap)))
 		}
 
 		return documentInfos
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	static func documentInfoMap(of documentType :String, with sqliteCore :MDSSQLiteCore,
+	static func documentBackingInfoMap(of documentType :String, with sqliteCore :MDSSQLiteCore,
 			keyTableColumn :SQLiteTableColumn, sqliteInnerJoin :SQLiteInnerJoin? = nil,
-			where _where :SQLiteWhere? = nil) -> [String : DocumentInfo] {
+			where _where :SQLiteWhere? = nil) -> [String : MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>] {
 		// Setup
 		let	(infoTable, contentTable) = sqliteCore.documentTables(for: documentType)
 
@@ -175,7 +171,7 @@ class MDSSQLiteDocumentBacking {
 							SQLiteInnerJoin(infoTable, tableColumn: infoTable.idTableColumn, to: contentTable)
 
 		// Select
-		var	documentInfoMap = [String : DocumentInfo]()
+		var	documentBackingInfoMap = [String : MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>]()
 		try! infoTable.select(innerJoin: sqliteInnerJoinUse, where: _where) {
 			// Process results
 			let	key = $0.text(for: keyTableColumn)!
@@ -189,19 +185,21 @@ class MDSSQLiteDocumentBacking {
 								with: $0.blob(for: contentTable.jsonTableColumn)!) as! [String : Any]
 
 			// Create
-			documentInfoMap[key] =
-					(documentID,
-							MDSSQLiteDocumentBacking(info: Info(id: id, documentID: documentID, revision: revision),
-									creationDate: creationDate, modificationDate: modificationDate,
-									propertyMap: propertyMap))
+			documentBackingInfoMap[key] =
+					MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>(documentID: documentID,
+							documentBacking:
+									MDSSQLiteDocumentBacking(
+											info: Info(id: id, documentID: documentID, revision: revision),
+											creationDate: creationDate, modificationDate: modificationDate,
+											propertyMap: propertyMap))
 		}
 
-		return documentInfoMap
+		return documentBackingInfoMap
 	}
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	init(info :Info, creationDate :Date, modificationDate :Date, propertyMap :PropertyMap) {
+	init(info :Info, creationDate :Date, modificationDate :Date, propertyMap :MDSDocument.PropertyMap) {
 		// Store
 		self.creationDate = creationDate
 
@@ -214,21 +212,20 @@ class MDSSQLiteDocumentBacking {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	init(documentID :String, documentType :String, creationDate :Date? = nil, modificationDate :Date? = nil,
-			propertyMap :PropertyMap, with sqliteCore :MDSSQLiteCore) {
+	init(documentInfo :MDSDocumentInfo, with sqliteCore :MDSSQLiteCore) {
 		// Setup
-		let	(infoTable, contentTable) = sqliteCore.documentTables(for: documentType)
+		let	(infoTable, contentTable) = sqliteCore.documentTables(for: documentInfo.documentType)
 
 		// Store
-		self.revision = sqliteCore.nextRevision(for: documentType)
+		self.revision = sqliteCore.nextRevision(for: documentInfo.documentType)
 
 		// Setup
 		let	date = Date()
 
-		self.creationDate = creationDate ?? date
-		self.modificationDate = modificationDate ?? date
+		self.creationDate = documentInfo.creationDate ?? date
+		self.modificationDate = documentInfo.modificationDate ?? date
 
-		self.propertyMap = propertyMap
+		self.propertyMap = documentInfo.propertyMap
 
 		// Prepare to update database
 		let	data :Data = try! JSONSerialization.data(withJSONObject: self.propertyMap)
@@ -236,8 +233,8 @@ class MDSSQLiteDocumentBacking {
 		// Add to database
 		self.id =
 				infoTable.insertRow([
-										(infoTable.documentIDTableColumn, documentID),
-										(infoTable.revisionTableColumn, revision),
+										(infoTable.documentIDTableColumn, documentInfo.documentID),
+										(infoTable.revisionTableColumn, self.revision),
 									])
 		_ = contentTable.insertRow([
 									(contentTable.idTableColumn, self.id),
@@ -268,7 +265,7 @@ class MDSSQLiteDocumentBacking {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func update(documentType :String, updatedPropertyMap :PropertyMap?, removedProperties :Set<String>?,
+	func update(documentType :String, updatedPropertyMap :MDSDocument.PropertyMap?, removedProperties :Set<String>?,
 			with sqliteCore :MDSSQLiteCore, commitChange :Bool = true) {
 		// Update
 		self.propertyMapLock.write() {

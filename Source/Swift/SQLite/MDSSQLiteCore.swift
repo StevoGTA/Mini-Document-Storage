@@ -145,9 +145,11 @@ class MDSSQLiteCore {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func documentTables(for documentType :String) -> DocumentTables {
-guard !documentType.isEmpty else {
-	fatalError("documentType is empty")
-}
+		// Ensure we actually have a document type
+		guard !documentType.isEmpty else {
+			fatalError("documentType is empty")
+		}
+
 		// Check for already having tables
 		if let documentTables = self.documentTablesMap.value(for: documentType) {
 			// Have tables
@@ -443,11 +445,11 @@ guard !documentType.isEmpty else {
 			let	sqliteTable = self.indexTablesMap.value(for: name)!
 			let	idTableColumn = sqliteTable.idTableColumn
 
-			// Update tables
-			keysInfos.forEach() { keysInfo in
-				// Delete old keys
-				sqliteTable.deleteRows(idTableColumn, values: [keysInfo.value])
+			let	idsToRemove = removedIDs + keysInfos.map({ $0.value })
 
+			// Update tables
+			sqliteTable.deleteRows(idTableColumn, values: idsToRemove)
+			keysInfos.forEach() { keysInfo in
 				// Insert new keys
 				keysInfo.keys.forEach() {
 					// Insert this key
@@ -456,10 +458,6 @@ guard !documentType.isEmpty else {
 											(tableColumn: idTableColumn, value: keysInfo.value),
 										  ])
 				}
-			}
-			if !removedIDs.isEmpty {
-				// Delete removed document IDs
-				sqliteTable.deleteRows(idTableColumn, values: removedIDs)
 			}
 			self.indexesMasterTable.update(
 					[(self.indexesMasterTable.lastRevisionTableColumn, lastRevision)],

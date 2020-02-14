@@ -10,10 +10,6 @@
 // MARK: MDSIndex
 protocol MDSIndex {
 
-	// MARK: Types
-	typealias BringUpToDateDocumentInfo<U> = (document :MDSDocument, revision :Int, value :U)
-	typealias UpdateDocumentInfo<U> = (document :MDSDocument, revision :Int, value :U, changedProperties :[String]?)
-
 	// MARK: Properties
 	var	name :String { get }
 	var	documentType :String { get }
@@ -21,9 +17,9 @@ protocol MDSIndex {
 	var	lastRevision :Int { get }
 
 	// MARK: Instance methods
-	func update<U>(_ documentInfos :[UpdateDocumentInfo<U>]) ->
+	func update<U>(_ documentInfos :[MDSDocumentUpdateInfo<U>]) ->
 			(keysInfos :[(keys :[String], value :U)], lastRevision :Int)
-	func bringUpToDate<U>(_ documentInfos :[BringUpToDateDocumentInfo<U>]) ->
+	func bringUpToDate<U>(_ documentInfos :[MDSDocumentBringUpToDateInfo<U>]) ->
 			(keysInfos :[(keys :[String], value :U)], lastRevision :Int)
 }
 
@@ -38,7 +34,7 @@ class MDSIndexSpecialized<T : MDSDocument> : MDSIndex {
 	var	documentType :String { return T.documentType }
 	var	lastRevision :Int
 
-	func update<U>(_ documentInfos :[UpdateDocumentInfo<U>]) ->
+	func update<U>(_ documentInfos :[MDSDocumentUpdateInfo<U>]) ->
 			(keysInfos :[(keys :[String], value :U)], lastRevision :Int) {
 		// Compose results
 		var	keysInfos = [(keys :[String], value :U)]()
@@ -57,7 +53,7 @@ class MDSIndexSpecialized<T : MDSDocument> : MDSIndex {
 		return (keysInfos, self.lastRevision)
 	}
 
-	func bringUpToDate<U>(_ documentInfos :[BringUpToDateDocumentInfo<U>]) ->
+	func bringUpToDate<U>(_ documentInfos :[MDSDocumentBringUpToDateInfo<U>]) ->
 			(keysInfos :[(keys :[String], value :U)], lastRevision :Int) {
 		// Compose results
 		var	keysInfos = [(keys :[String], value :U)]()

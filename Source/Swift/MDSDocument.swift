@@ -12,6 +12,9 @@ import Foundation
 // MARK: MDSDocument
 public protocol MDSDocument {
 
+	// MARK: Types
+	typealias PropertyMap = [/* Property */ String : /* Value */ Any]
+
 	// MARK: Properties
 	static	var	documentType :String { get }
 
@@ -223,7 +226,7 @@ extension MDSDocument {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: MDSDocumentInstance
+// MARK: - MDSDocumentInstance
 public class MDSDocumentInstance : Hashable, MDSDocument {
 
 	// MARK: Equatable implementation
@@ -244,5 +247,69 @@ public class MDSDocumentInstance : Hashable, MDSDocument {
 		// Store
 		self.id = id
 		self.documentStorage = documentStorage
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSDocumentInfo
+struct MDSDocumentInfo {
+
+	// MARK: Properties
+	let	documentID :String
+	let	documentType :String
+	let	creationDate :Date?
+	let	modificationDate :Date?
+	let	propertyMap :MDSDocument.PropertyMap
+
+	// Lifecycle methods
+	//------------------------------------------------------------------------------------------------------------------
+	init(documentID :String, documentType :String, creationDate :Date? = nil, modificationDate :Date? = nil,
+			propertyMap :MDSDocument.PropertyMap) {
+		// Store
+		self.documentID = documentID
+		self.documentType = documentType
+		self.creationDate = creationDate
+		self.modificationDate = modificationDate
+		self.propertyMap = propertyMap
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSDocumentBackingInfo
+public struct MDSDocumentBackingInfo<T> {
+
+	// MARK: Properties
+	let	documentID :String
+	let	documentBacking :T
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSDocumentBringUpToDateInfo
+struct MDSDocumentBringUpToDateInfo<T> {
+
+	// MARK: Properties
+	let	document :MDSDocument
+	let	revision :Int
+	let	value :T
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSDocumentUpdateInfo
+struct MDSDocumentUpdateInfo<T> {
+
+	// MARK: Properties
+	let	document :MDSDocument
+	let	revision :Int
+	let	value :T
+	let	changedProperties :[String]?
+
+	// Lifecycle methods
+	//------------------------------------------------------------------------------------------------------------------
+	init(document :MDSDocument, revision :Int, value :T, changedProperties :[String]? = nil) {
+		// Store
+		self.document = document
+		self.revision = revision
+		self.value = value
+		self.changedProperties = changedProperties
 	}
 }

@@ -13,18 +13,15 @@ import Foundation
 fileprivate class Reference<T> {
 
 	// MARK: Properties
-	let	documentID :String
+	let	documentBackingInfo :MDSDocumentBackingInfo<T>
 
-	var	documentBacking :T
 	var	lastReferencedDate :Date
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	init(documentID :String, documentBacking :T) {
+	init(documentInfo :MDSDocumentBackingInfo<T>) {
 		// Store
-		self.documentID = documentID
-
-		self.documentBacking = documentBacking
+		self.documentBackingInfo = documentInfo
 
 		// Setup
 		self.lastReferencedDate = Date()
@@ -61,15 +58,11 @@ public class MDSDocumentBackingCache<T> {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	public func add(_ documentInfos :[(documentID :String, documentBacking :T)]) {
+	public func add(_ documentBackingInfos :[MDSDocumentBackingInfo<T>]) {
 		// Update
 		self.lock.write() {
-			// Do all documents
-			documentInfos.forEach() {
-				// Add to cache
-				self.referenceMap[$0.documentID] =
-						Reference(documentID: $0.documentID, documentBacking: $0.documentBacking)
-			}
+			// Do all document infos
+			documentBackingInfos.forEach() { self.referenceMap[$0.documentID] = Reference(documentInfo: $0) }
 
 			// Reset pruning timer if needed
 			resetPruningTimerIfNeeded()
@@ -85,7 +78,7 @@ public class MDSDocumentBackingCache<T> {
 				// Note was referenced
 				reference.noteWasReferenced()
 
-				return reference.documentBacking
+				return reference.documentBackingInfo.documentBacking
 			} else {
 				// Not found
 				return nil
@@ -94,25 +87,49 @@ public class MDSDocumentBackingCache<T> {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func query(_ documentIDs :[String]) -> (foundDocumentIDs :Set<String>, notFoundDocumentIDs :Set<String>) {
+	public func queryDocumentIDs(_ documentIDs :[String]) ->
+			(foundDocumentIDs :[String], notFoundDocumentIDs :[String]) {
 		// Setup
-		var	foundDocumentIDs = Set<String>()
-		var	notFoundDocumentIDs = Set<String>()
+		var	foundDocumentIDs = [String]()
+		var	notFoundDocumentIDs = [String]()
 
 		// Iterate document IDs
 		self.lock.read() { documentIDs.forEach() {
 			// Look up reference for this document ID
 			if let reference = self.referenceMap[$0] {
 				// Found
-				foundDocumentIDs.insert($0)
+				foundDocumentIDs.append($0)
 				reference.noteWasReferenced()
 			} else {
 				// Not found
-				notFoundDocumentIDs.insert($0)
+				notFoundDocumentIDs.append($0)
 			}
 		} }
 
 		return (foundDocumentIDs, notFoundDocumentIDs)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func queryDocumentBackingInfos(_ documentIDs :[String]) ->
+			(foundDocumentBackingInfos :[MDSDocumentBackingInfo<T>], notFoundDocumentIDs :[String]) {
+		// Setup
+		var	foundDocumentInfos = [MDSDocumentBackingInfo<T>]()
+		var	notFoundDocumentIDs = [String]()
+
+		// Iterate document IDs
+		self.lock.read() { documentIDs.forEach() {
+			// Look up reference for this document ID
+			if let reference = self.referenceMap[$0] {
+				// Found
+				foundDocumentInfos.append(reference.documentBackingInfo)
+				reference.noteWasReferenced()
+			} else {
+				// Not found
+				notFoundDocumentIDs.append($0)
+			}
+		} }
+
+		return (foundDocumentInfos, notFoundDocumentIDs)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -164,7 +181,8 @@ public class MDSDocumentBackingCache<T> {
 						}
 
 						// Remove
-						referencesToRemove.forEach() { strongSelf.referenceMap[$0.documentID] = nil }
+						referencesToRemove.forEach()
+								{ strongSelf.referenceMap[$0.documentBackingInfo.documentID] = nil }
 					}
 				}
 

@@ -7,11 +7,8 @@
 //
 
 //----------------------------------------------------------------------------------------------------------------------
+// MARK: MDSCollection
 protocol MDSCollection {
-
-	// MARK: Types
-	typealias BringUpToDateDocumentInfo<U> = (document :MDSDocument, revision :Int, value :U)
-	typealias UpdateDocumentInfo<U> = (document :MDSDocument, revision :Int, value :U, changedProperties :[String]?)
 
 	// MARK: Properties
 	var	name :String { get }
@@ -20,9 +17,9 @@ protocol MDSCollection {
 	var	lastRevision :Int { get }
 
 	// MARK: Instance methods
-	func update<U>(_ documentInfos :[(document :MDSDocument, revision :Int, value :U, changedProperties :[String]?)]) ->
+	func update<U>(_ documentInfos :[MDSDocumentUpdateInfo<U>]) ->
 			(includedValues :[U], notIncludedValues :[U], lastRevision :Int)
-	func bringUpToDate<U>(_ documentInfos :[BringUpToDateDocumentInfo<U>]) ->
+	func bringUpToDate<U>(_ documentInfos :[MDSDocumentBringUpToDateInfo<U>]) ->
 			(includedValues :[U], notIncludedValues :[U], lastRevision :Int)
 }
 
@@ -37,7 +34,7 @@ class MDSCollectionSpecialized<T : MDSDocument> : MDSCollection {
 	var	documentType :String { return T.documentType }
 	var	lastRevision :Int
 
-	func update<U>(_ documentInfos :[UpdateDocumentInfo<U>]) ->
+	func update<U>(_ documentInfos :[MDSDocumentUpdateInfo<U>]) ->
 			(includedValues :[U], notIncludedValues :[U], lastRevision :Int) {
 		// Compose results
 		var	includedValues = [U]()
@@ -63,7 +60,7 @@ class MDSCollectionSpecialized<T : MDSDocument> : MDSCollection {
 		return (includedValues, notIncludedValues, self.lastRevision)
 	}
 
-	func bringUpToDate<U>(_ documentInfos :[BringUpToDateDocumentInfo<U>]) ->
+	func bringUpToDate<U>(_ documentInfos :[MDSDocumentBringUpToDateInfo<U>]) ->
 			(includedValues :[U], notIncludedValues :[U], lastRevision :Int) {
 		// Compose results
 		var	includedValues = [U]()
