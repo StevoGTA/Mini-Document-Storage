@@ -1,6 +1,6 @@
 //
 //  MDSSQLiteCore.swift
-//  Media Tools
+//  Mini Document Storage
 //
 //  Created by Stevo on 10/29/19.
 //  Copyright © 2019 Stevo Brock. All rights reserved.

@@ -1,5 +1,6 @@
 //
 //  MDSSQLite.swift
+//  Mini Document Storage
 //
 //  Created by Stevo on 10/9/18.
 //  Copyright © 2018 Stevo Brock. All rights reserved.
@@ -272,7 +273,9 @@ public class MDSSQLite : MDSDocumentStorage {
 		// Check for not found document IDs
 		if !notFoundDocumentIDs.isEmpty {
 			// Retrieve document backings
-			let	notFoundInfos = infos.filter() { notFoundDocumentIDs.contains($0.documentID) }
+			var	notFoundInfos = [MDSSQLiteDocumentBacking.Info]()
+			notFoundDocumentIDs.forEach() { notFoundInfos.append(map[$0]!) }
+
 			let	documentInfos =
 						MDSSQLiteDocumentBacking.documentBackingInfos(for: notFoundInfos, of: T.documentType,
 								with: self.sqliteCore)
