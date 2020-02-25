@@ -231,8 +231,8 @@ public class MDSEphemeral : MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
-			values :[String], isUpToDate :Bool, includeSelector :String,
-			includeProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool) {
+			values :[String], isUpToDate :Bool, isIncludedSelector :String,
+			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool) {
 		// Not yet implemented
 		fatalError("registerCollection(...) has not been implemented")
 	}

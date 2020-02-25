@@ -13,10 +13,23 @@ import Foundation
 public class MDSRemoteStorageCache {
 
 	// MARK: Types
-	public typealias DocumentReference = (id :String, revision :Int)
-	public typealias DocumentInfo =
-			(id :String, revision :Int, active :Bool, creationDate :Date, modificationDate :Date,
-					propertyMap :[String : Any])
+	public struct DocumentReference {
+
+		// MARK: Properties
+		let	id :String
+		let	revision :Int
+	}
+
+	public struct DocumentInfo {
+
+		// MARK: Properties
+		let id :String
+		let	revision :Int
+		let	active :Bool
+		let	creationDate :Date
+		let	modificationDate :Date
+		let	propertyMap :[String : Any]
+	}
 
 	// MARK: Properties
 	private	var	sqliteDatabase :SQLiteDatabase!
@@ -82,7 +95,7 @@ public class MDSRemoteStorageCache {
 			(documentInfos :[DocumentInfo], documentReferencesNotResolved :[DocumentReference]) {
 		// Setup
 		let	sqliteTable = self.sqliteTable(for: documentType)
-		let	referenceMap = Dictionary(uniqueKeysWithValues: references.lazy.map({ ($0, $1) }))
+		let	referenceMap = Dictionary(uniqueKeysWithValues: references.lazy.map({ ($0.id, $0.revision) }))
 
 		let	idTableColumn = sqliteTable.idTableColumn
 		let	revisionTableColumn = sqliteTable.revisionTableColumn
@@ -110,10 +123,13 @@ public class MDSRemoteStorageCache {
 									try! JSONSerialization.jsonObject(with: $0.blob(for: jsonTableColumn)!, options: [])
 											as! [String : Any]
 
-						documentInfos.append((id, revision, active == 1, creationDate, modificationDate, propertyMap))
+						documentInfos.append(
+								DocumentInfo(id: id, revision: revision, active: active == 1,
+										creationDate: creationDate, modificationDate: modificationDate,
+										propertyMap: propertyMap))
 					} else {
 						// Revision does not match
-						documentReferencesNotResolved.append((id, referenceMap[id]!))
+						documentReferencesNotResolved.append(DocumentReference(id: id, revision: referenceMap[id]!))
 					}
 
 					// Update
@@ -121,7 +137,8 @@ public class MDSRemoteStorageCache {
 				}
 
 		// Add references not found in database
-		documentIDs.forEach() { documentReferencesNotResolved.append(($0, referenceMap[$0]!)) }
+		documentIDs.forEach()
+				{ documentReferencesNotResolved.append(DocumentReference(id: $0, revision: referenceMap[$0]!)) }
 
 		return (documentInfos, documentReferencesNotResolved)
 	}

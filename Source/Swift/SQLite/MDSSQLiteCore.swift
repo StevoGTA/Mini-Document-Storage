@@ -42,6 +42,7 @@ class MDSSQLiteCore {
 
 	typealias CollectionUpdateInfo = (includedIDs :[Int64], notIncludedIDs :[Int64], lastRevision :Int)
 	typealias IndexUpdateInfo = (keysInfos :[(keys :[String], value :Int64)], removedIDs :[Int64], lastRevision :Int)
+
 	struct BatchInfo {
 
 		// MARK: Properties

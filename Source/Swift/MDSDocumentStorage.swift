@@ -45,8 +45,8 @@ public protocol MDSDocumentStorage : class {
 	func batch(_ proc :() throws -> MDSBatchResult) rethrows
 
 	func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
-			info :[String : Any], isUpToDate :Bool, includeSelector :String,
-			includeProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool)
+			info :[String : Any], isUpToDate :Bool, isIncludedSelector :String,
+			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool)
 	func queryCollectionDocumentCount(name :String) -> UInt
 	func enumerateCollection<T : MDSDocument>(name :String, proc :(_ document : T) -> Void)
 
@@ -87,11 +87,12 @@ extension MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerCollection<T : MDSDocument>(named name :String, version :UInt = 1, relevantProperties :[String],
-			info :[String : Any] = [:], isUpToDate :Bool = false, includeSelector :String = "",
-			includeProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool) {
+			info :[String : Any] = [:], isUpToDate :Bool = false, isIncludedSelector :String = "",
+			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool) {
 		// Register collection
 		registerCollection(named: name, version: version, relevantProperties: relevantProperties,
-				info: info, isUpToDate: isUpToDate, includeSelector: includeSelector, includeProc: includeProc)
+				info: info, isUpToDate: isUpToDate, isIncludedSelector: isIncludedSelector,
+				isIncludedProc: isIncludedProc)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

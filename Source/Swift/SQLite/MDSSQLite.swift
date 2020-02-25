@@ -256,43 +256,25 @@ public class MDSSQLite : MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func enumerate<T : MDSDocument>(proc :(_ document : T) -> Void) {
-		// Setup
-		let	infos = MDSSQLiteDocumentBacking.infos(for: T.documentType, with: self.sqliteCore)
-		guard !infos.isEmpty else { return }
+		// Run lean
+		autoreleasepool() {
+			// Setup
+			let	infos = MDSSQLiteDocumentBacking.infos(for: T.documentType, with: self.sqliteCore)
+			guard !infos.isEmpty else { return }
 
-		// Compose map of documentIDs to infos
-		var	map = [/* Document ID */ String : MDSSQLiteDocumentBacking.Info]()
-		infos.forEach() { map[$0.documentID] = $0 }
-
-		// Collate documentIDs
-		let (foundDocumentIDs, notFoundDocumentIDs) = self.documentBackingCache.queryDocumentIDs(Array(map.keys))
-
-		// Call proc on all documentIDs already in cache
-		foundDocumentIDs.forEach() { proc(T(id: $0, documentStorage: self)) }
-
-		// Check for not found document IDs
-		if !notFoundDocumentIDs.isEmpty {
-			// Retrieve document backings
-			var	notFoundInfos = [MDSSQLiteDocumentBacking.Info]()
-			notFoundDocumentIDs.forEach() { notFoundInfos.append(map[$0]!) }
-
-			let	documentInfos =
-						MDSSQLiteDocumentBacking.documentBackingInfos(for: notFoundInfos, of: T.documentType,
-								with: self.sqliteCore)
-
-			// Update cache
-			self.documentBackingCache.add(documentInfos)
-
-			// Call proc on all documentIDs that needed to be retrieved
-			notFoundDocumentIDs.forEach() { proc(T(id: $0, documentStorage: self)) }
+			// Enumerate
+			enumerate(infos: infos, with: proc)
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func enumerate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void) {
-		// Enumerate
-		enumerate(documentIDs: documentIDs, documentType: T.documentType,
-				documentCreationProc: { T(id: $0, documentStorage: $1) }) { _ = $1; proc($0 as! T) }
+		// Run lean
+		autoreleasepool() {
+			// Enumerate
+			enumerate(documentIDs: documentIDs, documentType: T.documentType,
+					documentCreationProc: { T(id: $0, documentStorage: $1) }) { _ = $1; proc($0 as! T) }
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -303,8 +285,12 @@ public class MDSSQLite : MDSDocumentStorage {
 		// Store
 		self.batchInfoMap.set(batchInfo, for: Thread.current)
 
-		// Call proc
-		let	result = try proc()
+		// Run lean
+		var	result = MDSBatchResult.commit
+		try autoreleasepool() {
+			// Call proc
+			result = try proc()
+		}
 
 		// Check result
 		if result == .commit {
@@ -402,8 +388,8 @@ public class MDSSQLite : MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
-			info :[String : Any], isUpToDate :Bool, includeSelector :String,
-			includeProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool) {
+			info :[String : Any], isUpToDate :Bool, isIncludedSelector :String,
+			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool) {
 		// Ensure we have the document tables
 		_ = self.sqliteCore.documentTables(for: T.documentType)
 
@@ -415,7 +401,7 @@ public class MDSSQLite : MDSDocumentStorage {
 		// Create collection
 		let	collection =
 					MDSCollectionSpecialized(name: name, relevantProperties: relevantProperties,
-							lastRevision: lastRevision, includeProc: includeProc, info: info)
+							lastRevision: lastRevision, isIncludedProc: isIncludedProc, info: info)
 
 		// Add to maps
 		self.collectionsByNameMap.set(collection, for: name)
@@ -427,28 +413,34 @@ public class MDSSQLite : MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func queryCollectionDocumentCount(name :String) -> UInt {
-		// Bring up to date
-		bringCollectionUpToDate(name: name)
+		// Run lean
+		autoreleasepool() {
+			// Bring up to date
+			bringCollectionUpToDate(name: name)
+		}
 
 		return self.sqliteCore.queryCollectionDocumentCount(name: name)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func enumerateCollection<T : MDSDocument>(name :String, proc :(_ document : T) -> Void) {
-		// Bring up to date
-		bringCollectionUpToDate(name: name)
+		// Run lean
+		autoreleasepool() {
+			// Bring up to date
+			bringCollectionUpToDate(name: name)
 
-		// Collect document infos
-		let	(infoTable, _) = self.sqliteCore.documentTables(for: T.documentType)
-		let	collectionContentsTable = self.sqliteCore.sqliteTable(forCollectionNamed: name)
-		let	documentInfos =
-					MDSSQLiteDocumentBacking.documentBackingInfos(of: T.documentType, with: self.sqliteCore,
-							sqliteInnerJoin:
-									SQLiteInnerJoin(infoTable, tableColumn: infoTable.idTableColumn,
-											to: collectionContentsTable))
+			// Collect infos
+			let	(infoTable, _) = self.sqliteCore.documentTables(for: T.documentType)
+			let	collectionContentsTable = self.sqliteCore.sqliteTable(forCollectionNamed: name)
+			let	infos =
+						MDSSQLiteDocumentBacking.infos(for: T.documentType, with: self.sqliteCore,
+								sqliteInnerJoin:
+										SQLiteInnerJoin(infoTable, tableColumn: infoTable.idTableColumn,
+												to: collectionContentsTable))
 
-		// Enumerate
-		documentInfos.forEach() { proc(T(id: $0.documentID, documentStorage: self)) }
+			// Enumerate
+			enumerate(infos: infos, with: proc)
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -478,24 +470,27 @@ public class MDSSQLite : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func enumerateIndex<T : MDSDocument>(name :String, keys :[String],
 			proc :(_ key :String, _ document :T) -> Void) {
-		// Bring up to date
-		bringIndexUpToDate(name: name)
+		// Run lean
+		autoreleasepool() {
+			// Bring up to date
+			bringIndexUpToDate(name: name)
 
-		// Collect document infos
-		let	(infoTable, _) = self.sqliteCore.documentTables(for: T.documentType)
-		let	indexContentsTable = self.sqliteCore.sqliteTable(forIndexNamed: name)
-		let	documentInfoMap =
-					MDSSQLiteDocumentBacking.documentBackingInfoMap(of: T.documentType, with: self.sqliteCore,
-							keyTableColumn: indexContentsTable.keyTableColumn,
-							sqliteInnerJoin:
-									SQLiteInnerJoin(infoTable, tableColumn: infoTable.idTableColumn,
-											to: indexContentsTable),
-							where:
-									SQLiteWhere(table: indexContentsTable,
-											tableColumn: indexContentsTable.keyTableColumn, values: keys))
+			// Collect document infos
+			let	(infoTable, _) = self.sqliteCore.documentTables(for: T.documentType)
+			let	indexContentsTable = self.sqliteCore.sqliteTable(forIndexNamed: name)
+			let	documentInfoMap =
+						MDSSQLiteDocumentBacking.documentBackingInfoMap(of: T.documentType, with: self.sqliteCore,
+								keyTableColumn: indexContentsTable.keyTableColumn,
+								sqliteInnerJoin:
+										SQLiteInnerJoin(infoTable, tableColumn: infoTable.idTableColumn,
+												to: indexContentsTable),
+								where:
+										SQLiteWhere(table: indexContentsTable,
+												tableColumn: indexContentsTable.keyTableColumn, values: keys))
 
-		// Enumerate
-		documentInfoMap.forEach() { proc($0.key, T(id: $0.value.documentID, documentStorage: self)) }
+			// Enumerate
+			documentInfoMap.forEach() { proc($0.key, T(id: $0.value.documentID, documentStorage: self)) }
+		}
 	}
 
 	// MARK: Types
@@ -643,6 +638,36 @@ public class MDSSQLite : MDSDocumentStorage {
 
 			// Call proc on all documentIDs that needed to be retrieved
 			documentInfos.forEach() { proc(documentCreationProc($0.documentID, self), $0.documentBacking) }
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func enumerate<T : MDSDocument>(infos :[MDSSQLiteDocumentBacking.Info], with proc :(_ document :T) -> Void) {
+		// Compose map of documentIDs to infos
+		var	map = [/* Document ID */ String : MDSSQLiteDocumentBacking.Info]()
+		infos.forEach() { map[$0.documentID] = $0 }
+
+		// Collate documentIDs
+		let (foundDocumentIDs, notFoundDocumentIDs) = self.documentBackingCache.queryDocumentIDs(Array(map.keys))
+
+		// Call proc on all documentIDs already in cache
+		foundDocumentIDs.forEach() { proc(T(id: $0, documentStorage: self)) }
+
+		// Check for not found document IDs
+		if !notFoundDocumentIDs.isEmpty {
+			// Retrieve document backings
+			var	notFoundInfos = [MDSSQLiteDocumentBacking.Info]()
+			notFoundDocumentIDs.forEach() { notFoundInfos.append(map[$0]!) }
+
+			let	documentInfos =
+						MDSSQLiteDocumentBacking.documentBackingInfos(for: notFoundInfos, of: T.documentType,
+								with: self.sqliteCore)
+
+			// Update cache
+			self.documentBackingCache.add(documentInfos)
+
+			// Call proc on all documentIDs that needed to be retrieved
+			notFoundDocumentIDs.forEach() { proc(T(id: $0, documentStorage: self)) }
 		}
 	}
 

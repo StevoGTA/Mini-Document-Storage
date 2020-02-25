@@ -58,6 +58,27 @@ class MDSSQLiteDocumentBacking {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	static func infos(for documentType :String, with sqliteCore :MDSSQLiteCore, sqliteInnerJoin :SQLiteInnerJoin) ->
+			[MDSSQLiteDocumentBacking.Info] {
+		// Setup
+		let	(infoTable, _) = sqliteCore.documentTables(for: documentType)
+
+		// Select
+		var	infos = [MDSSQLiteDocumentBacking.Info]()
+		try! infoTable.select(innerJoin: sqliteInnerJoin) {
+			// Process results
+			let	id :Int64 = $0.integer(for: infoTable.idTableColumn)!
+			let	documentID = $0.text(for: infoTable.documentIDTableColumn)!
+			let	revision :Int = $0.integer(for: infoTable.revisionTableColumn)!
+
+			// Append
+			infos.append(MDSSQLiteDocumentBacking.Info(id: id, documentID: documentID, revision: revision))
+		}
+
+		return infos
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	static func documentBackingInfos(for infos :[Info], of documentType :String, with sqliteCore :MDSSQLiteCore) ->
 			[MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>] {
 		// Setup
@@ -110,52 +131,6 @@ class MDSSQLiteDocumentBacking {
 				where: SQLiteWhere(tableColumn: infoTable.documentIDTableColumn, values: documentIDs))
 	}
 
-	//------------------------------------------------------------------------------------------------------------------
-	static func documentBackingInfos(of documentType :String, with sqliteCore :MDSSQLiteCore,
-			sqliteInnerJoin :SQLiteInnerJoin, where _where :SQLiteWhere? = nil) ->
-			[MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>] {
-		// Setup
-		let	(infoTable, contentTable) = sqliteCore.documentTables(for: documentType)
-
-		return documentBackingInfos(infoTable: infoTable, contentTable: contentTable, sqliteInnerJoin: sqliteInnerJoin,
-				where: _where)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	static private func documentBackingInfos(infoTable :SQLiteTable, contentTable :SQLiteTable,
-			sqliteInnerJoin :SQLiteInnerJoin? = nil, where _where :SQLiteWhere? = nil) ->
-			[MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>] {
-		// Setup
-		let	sqliteInnerJoinUse =
-					(sqliteInnerJoin != nil) ?
-							sqliteInnerJoin!.and(infoTable, tableColumn: infoTable.idTableColumn, to: contentTable) :
-							SQLiteInnerJoin(infoTable, tableColumn: infoTable.idTableColumn, to: contentTable)
-
-		// Select
-		var	documentInfos = [MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>]()
-		try! infoTable.select(innerJoin: sqliteInnerJoinUse, where: _where) {
-			// Process results
-			let	id :Int64 = $0.integer(for: infoTable.idTableColumn)!
-			let	documentID = $0.text(for: infoTable.documentIDTableColumn)!
-			let	revision :Int = $0.integer(for: infoTable.revisionTableColumn)!
-			let	creationDate = Date(fromStandardized: $0.text(for: contentTable.creationDateTableColumn)!)!
-			let	modificationDate = Date(fromStandardized: $0.text(for: contentTable.modificationDateTableColumn)!)!
-			let	propertyMap =
-						try! JSONSerialization.jsonObject(
-								with: $0.blob(for: contentTable.jsonTableColumn)!) as! [String : Any]
-
-			// Create
-			documentInfos.append(
-					MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>(documentID: documentID,
-							documentBacking:
-									MDSSQLiteDocumentBacking(
-											info: Info(id: id, documentID: documentID, revision: revision),
-											creationDate: creationDate, modificationDate: modificationDate,
-											propertyMap: propertyMap)))
-		}
-
-		return documentInfos
-	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	static func documentBackingInfoMap(of documentType :String, with sqliteCore :MDSSQLiteCore,
@@ -318,4 +293,42 @@ class MDSSQLiteDocumentBacking {
 		infoTable.deleteRows(infoTable.idTableColumn, values: [self.id])
 		contentTable.deleteRows(contentTable.idTableColumn, values: [self.id])
 	}
+
+	// MARK: Private methods
+	//------------------------------------------------------------------------------------------------------------------
+	static private func documentBackingInfos(infoTable :SQLiteTable, contentTable :SQLiteTable,
+			sqliteInnerJoin :SQLiteInnerJoin? = nil, where _where :SQLiteWhere? = nil) ->
+			[MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>] {
+		// Setup
+		let	sqliteInnerJoinUse =
+					(sqliteInnerJoin != nil) ?
+							sqliteInnerJoin!.and(infoTable, tableColumn: infoTable.idTableColumn, to: contentTable) :
+							SQLiteInnerJoin(infoTable, tableColumn: infoTable.idTableColumn, to: contentTable)
+
+		// Select
+		var	documentInfos = [MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>]()
+		try! infoTable.select(innerJoin: sqliteInnerJoinUse, where: _where) {
+			// Process results
+			let	id :Int64 = $0.integer(for: infoTable.idTableColumn)!
+			let	documentID = $0.text(for: infoTable.documentIDTableColumn)!
+			let	revision :Int = $0.integer(for: infoTable.revisionTableColumn)!
+			let	creationDate = Date(fromStandardized: $0.text(for: contentTable.creationDateTableColumn)!)!
+			let	modificationDate = Date(fromStandardized: $0.text(for: contentTable.modificationDateTableColumn)!)!
+			let	propertyMap =
+						try! JSONSerialization.jsonObject(
+								with: $0.blob(for: contentTable.jsonTableColumn)!) as! [String : Any]
+
+			// Create
+			documentInfos.append(
+					MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>(documentID: documentID,
+							documentBacking:
+									MDSSQLiteDocumentBacking(
+											info: Info(id: id, documentID: documentID, revision: revision),
+											creationDate: creationDate, modificationDate: modificationDate,
+											propertyMap: propertyMap)))
+		}
+
+		return documentInfos
+	}
+
 }

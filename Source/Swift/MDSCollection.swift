@@ -45,7 +45,7 @@ class MDSCollectionSpecialized<T : MDSDocument> : MDSCollection {
 					else { return }
 
 			// Query
-			if self.includeProc($0.document as! T, self.info) {
+			if self.isIncludedProc($0.document as! T, self.info) {
 				// Included
 				includedValues.append($0.value)
 			} else {
@@ -67,7 +67,7 @@ class MDSCollectionSpecialized<T : MDSDocument> : MDSCollection {
 		var	notIncludedValues = [U]()
 		documentInfos.forEach() {
 			// Query
-			if self.includeProc($0.document as! T, self.info) {
+			if self.isIncludedProc($0.document as! T, self.info) {
 				// Included
 				includedValues.append($0.value)
 			} else {
@@ -83,20 +83,20 @@ class MDSCollectionSpecialized<T : MDSDocument> : MDSCollection {
 	}
 
 	// MARK: Properties
-	private	let	includeProc :(_ document :T, _ info :[String : Any]) -> Bool
+	private	let	isIncludedProc :(_ document :T, _ info :[String : Any]) -> Bool
 	private	let	info :[String : Any]
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
 	init(name :String, relevantProperties :[String], lastRevision :Int,
-			includeProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool, info :[String : Any]) {
+			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool, info :[String : Any]) {
 		// Store
 		self.name = name
 		self.relevantProperties = Set<String>(relevantProperties)
 
 		self.lastRevision = lastRevision
 
-		self.includeProc = includeProc
+		self.isIncludedProc = isIncludedProc
 		self.info = info
 	}
 }
