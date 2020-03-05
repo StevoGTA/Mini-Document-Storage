@@ -357,15 +357,16 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		// May need to try this more than once
 		while true {
 			// Perform blocking
-			let	(count, error) =
+			let	(count, needsUpdate, error) =
 						DispatchQueue.performBlocking() { completionProc in
 							// Call network client
-							self.networkClient.retrieveCollectionDocumentCount(name: name) { completionProc(($0, $1)) }
+							self.networkClient.retrieveCollectionDocumentCount(name: name)
+									{ completionProc(($0, $1, $2)) }
 						}
 			if count != nil {
 				// Success
 				return UInt(count!)
-			} else if let nsError = error as NSError?, nsError.domain == "LightIronNetworkClient", nsError.code == 409 {
+			} else if (needsUpdate ?? false) {
 				// Collection is not up to date
 				updateCollection(named: name)
 			} else if error != nil {
@@ -382,17 +383,18 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		// May need to try this more than once
 		while true {
 			// Perform blocking
-			let	(infos, error) =
+			let	(infos, needsUpdate, error) =
 						DispatchQueue.performBlocking() { completionProc in
 							// Call network client
-							self.networkClient.retrieveCollectionDocumentInfos(name: name) { completionProc(($0, $1)) }
+							self.networkClient.retrieveCollectionDocumentInfos(name: name)
+									{ completionProc(($0, $1, $2)) }
 						}
 			if infos != nil {
 				// Success
 				documents(for: infos!, creationProc: { T(id: $0, documentStorage: $1) }).forEach({ proc($0) })
 
 				return
-			} else if let nsError = error as NSError?, nsError.domain == "LightIronNetworkClient", nsError.code == 409 {
+			} else if (needsUpdate ?? false) {
 				// Collection is not up to date
 				updateCollection(named: name)
 			} else if error != nil {
@@ -437,17 +439,17 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		var	documentInfosMap = [String : Any]()
 		while true {
 			// Perform blocking
-			let	(_documentInfosMap, error) =
+			let	(_documentInfosMap, needsUpdate, error) =
 						DispatchQueue.performBlocking() { completionProc in
 							// Call network client
 							self.networkClient.retrieveIndexDocumentInfosMap(name: name, keys: keys)
-									{ completionProc(($0, $1)) }
+									{ completionProc(($0, $1, $2)) }
 						}
 			if _documentInfosMap != nil {
 				// Success
 				documentInfosMap = _documentInfosMap!
 				break
-			} else if let nsError = error as NSError?, nsError.domain == "LightIronNetworkClient", nsError.code == 409 {
+			} else if (needsUpdate ?? false) {
 				// Collection is not up to date
 				updateIndex(named: name)
 			} else if error != nil {

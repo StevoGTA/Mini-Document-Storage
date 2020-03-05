@@ -33,9 +33,10 @@ public protocol MDSRemoteStorageNetworkClient {
 	func updateCollection(name :String, documentCount :UInt,
 			completionProc :@escaping (_ info :[String : Any]?, _ error :Error?) -> Void)
 	func retrieveCollectionDocumentCount(name :String,
-			completionProc :@escaping(_ documentCount :UInt?, _ error :Error?) -> Void)
+			completionProc :@escaping(_ documentCount :UInt?, _ needsUpdate :Bool?, _ error :Error?) -> Void)
 	func retrieveCollectionDocumentInfos(name :String,
-			completionProc :@escaping (_ documentInfos :[[String : Any]]?, _ error :Error?) -> Void)
+			completionProc
+					:@escaping (_ documentInfos :[[String : Any]]?, _ needsUpdate :Bool?, _ error :Error?) -> Void)
 
 	//------------------------------------------------------------------------------------------------------------------
 	func registerIndex(name :String, documentType :String, version :UInt,
@@ -44,5 +45,6 @@ public protocol MDSRemoteStorageNetworkClient {
 	func updateIndex(name :String, documentCount :UInt,
 			completionProc :@escaping (_ info :[String : Any]?, _ error :Error?) -> Void)
 	func retrieveIndexDocumentInfosMap(name :String, keys :[String],
-			completionProc :@escaping (_ documentInfosMap :[String : Any]?, _ error :Error?) -> Void)
+			completionProc
+					:@escaping (_ documentInfosMap :[String : Any]?, _ needsUpdate :Bool?, _ error :Error?) -> Void)
 }
