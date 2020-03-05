@@ -390,6 +390,9 @@ public class MDSSQLite : MDSDocumentStorage {
 	public func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
 			info :[String : Any], isUpToDate :Bool, isIncludedSelector :String,
 			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool) {
+		// Ensure this collection has not already been registered
+		guard self.collectionsByNameMap.value(for: name) == nil else { return }
+
 		// Ensure we have the document tables
 		_ = self.sqliteCore.documentTables(for: T.documentType)
 
@@ -446,6 +449,9 @@ public class MDSSQLite : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
 			isUpToDate :Bool, keysSelector :String, keysProc :@escaping (_ document :T) -> [String]) {
+		// Ensure this collection has not already been registered
+		guard self.indexesByNameMap.value(for: name) == nil else { return }
+
 		// Ensure we have the document tables
 		_ = self.sqliteCore.documentTables(for: T.documentType)
 
