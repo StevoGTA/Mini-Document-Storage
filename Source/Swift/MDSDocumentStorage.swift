@@ -90,9 +90,8 @@ extension MDSDocumentStorage {
 			info :[String : Any] = [:], isUpToDate :Bool = false, isIncludedSelector :String = "",
 			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool) {
 		// Register collection
-		registerCollection(named: name, version: version, relevantProperties: relevantProperties,
-				info: info, isUpToDate: isUpToDate, isIncludedSelector: isIncludedSelector,
-				isIncludedProc: isIncludedProc)
+		registerCollection(named: name, version: version, relevantProperties: relevantProperties, info: info,
+				isUpToDate: isUpToDate, isIncludedSelector: isIncludedSelector, isIncludedProc: isIncludedProc)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
