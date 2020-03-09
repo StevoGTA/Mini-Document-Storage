@@ -725,8 +725,8 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		infos!.forEach() {
 			// Get info
 			let	documentID = $0["documentID"] as! String
-			let	creationDate = Date(fromLIStandardized: $0["creationDate"] as! String)!
-			let	modificationDate = Date(fromLIStandardized: $0["modificationDate"] as! String)!
+			let	creationDate = Date(fromStandardized: $0["creationDate"] as! String)!
+			let	modificationDate = Date(fromStandardized: $0["modificationDate"] as! String)!
 			let	revision = $0["revision"] as! Int
 			let	active = ($0["active"] as! Int) == 1
 			let	json = $0["json"] as! [String : Any]
@@ -782,7 +782,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 			let	documentID = documentInfos[$0.offset].documentID
 			let	creationDate = documentBacking.creationDate
-			let	modificationDate = Date(fromLIStandardized: $0.element["modificationDate"] as! String)!
+			let	modificationDate = Date(fromStandardized: $0.element["modificationDate"] as! String)!
 			let	revision = $0.element["revision"] as! Int
 			let	active = ($0.element["active"] as! Int) == 1
 			let	json = $0.element["json"] as! [String : Any]
