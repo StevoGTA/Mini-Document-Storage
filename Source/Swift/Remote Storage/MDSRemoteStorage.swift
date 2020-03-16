@@ -460,15 +460,23 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			}
 		}
 
-		// Map keys to document IDs
+		// Map keys to document IDs - Note that there may be some keys that map to the same document
 		var	keysToDocumentIDsMap = [String : String]()
 		var	documentInfos = [[String : Any]]()
+		var	documentIDsProcessed = Set<String>()
 		documentInfosMap.forEach() {
 			// Check if we have document info for this key
 			if let info = $0.value as? [String : Any] {
 				// We have document info for this key
+				let	documentID = info["documentID"] as! String
+
+				// Update
 				keysToDocumentIDsMap[$0.key] = (info["documentID"] as! String)
-				documentInfos.append(info)
+				if !documentIDsProcessed.contains(documentID) {
+					// Append this info
+					documentInfos.append(info)
+					documentIDsProcessed.insert(documentID)
+				}
 			}
 		}
 
