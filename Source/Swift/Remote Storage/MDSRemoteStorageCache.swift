@@ -38,54 +38,38 @@ public class MDSRemoteStorageCache {
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	public init(storageFolderURL :URL, uniqueID :String) {
+	public init(storageFolderURL :URL, uniqueID :String) throws {
 		// Create if needed
 		if !FileManager.default.fileExists(atPath: storageFolderURL.path) {
-			// Catch errors
-			do {
-				// Create folder
-				try FileManager.default.createDirectory(at: storageFolderURL, withIntermediateDirectories: true,
-						attributes: nil)
-			} catch {
-				// Error
-				LILogc("MDSRemoteStorageCache unable to create folder at \(storageFolderURL.path).")
-
-				return
-			}
+			// Create folder
+			try FileManager.default.createDirectory(at: storageFolderURL, withIntermediateDirectories: true,
+					attributes: nil)
 		}
 
-		// Catch errors
-		do {
-			// Setup SQLite database
-			self.sqliteDatabase = try SQLiteDatabase(url: storageFolderURL.appendingPathComponent(uniqueID))
+		// Setup SQLite database
+		self.sqliteDatabase = try SQLiteDatabase(url: storageFolderURL.appendingPathComponent(uniqueID))
 
-			self.infoTable =
-					self.sqliteDatabase.table(name: "Info", options: [.withoutRowID],
-							tableColumns: [
-											SQLiteTableColumn("key", .text, [.primaryKey, .unique, .notNull]),
-											SQLiteTableColumn("value", .text, [.notNull]),
-										  ])
-			self.infoTable.create()
+		self.infoTable =
+				self.sqliteDatabase.table(name: "Info", options: [.withoutRowID],
+						tableColumns: [
+										SQLiteTableColumn("key", .text, [.primaryKey, .unique, .notNull]),
+										SQLiteTableColumn("value", .text, [.notNull]),
+									  ])
+		self.infoTable.create()
 
-			var	version :Int?
-			try! self.infoTable.select(tableColumns: [self.infoTable.valueTableColumn],
-					where: SQLiteWhere(tableColumn: self.infoTable.keyTableColumn, value: "version")) {
-				// Process values
-				version = Int($0.text(for: self.infoTable.valueTableColumn)!)!
-			}
-			if version == nil {
-				// Initialize version
-				version = 1
-				_ = self.infoTable.insertRow([
-												(self.infoTable.keyTableColumn, "version"),
-												(self.infoTable.valueTableColumn, version!),
-											 ])
-			}
-		} catch {
-			// Error
-			LILogc("MDSRemoteStorageCache unable to initialize database.")
-
-			return
+		var	version :Int?
+		try! self.infoTable.select(tableColumns: [self.infoTable.valueTableColumn],
+				where: SQLiteWhere(tableColumn: self.infoTable.keyTableColumn, value: "version")) {
+			// Process values
+			version = Int($0.text(for: self.infoTable.valueTableColumn)!)!
+		}
+		if version == nil {
+			// Initialize version
+			version = 1
+			_ = self.infoTable.insertRow([
+											(self.infoTable.keyTableColumn, "version"),
+											(self.infoTable.valueTableColumn, version!),
+										 ])
 		}
 	}
 
