@@ -50,6 +50,24 @@ extension MDSDocument {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func data(for key :String) -> Data? {
+		// Retrieve Base64-encoded string
+		guard let string = self.documentStorage.value(for: key, in: self) as? String else { return nil }
+
+		return Data(base64Encoded: string)
+	}
+	@discardableResult public func set(_ value :Data?, for key :String) -> Data? {
+		// Check if different
+		let	previousValue = data(for: key)
+		guard value != previousValue else { return value }
+
+		// Set value
+		self.documentStorage.set(value?.base64EncodedString(), for: key, in: self)
+
+		return previousValue
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func date(for key :String) -> Date? { return self.documentStorage.date(for: key, in: self) }
 	@discardableResult public func set(_ value :Date?, for key :String) -> Date? {
 		// Check if different
