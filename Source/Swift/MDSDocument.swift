@@ -28,8 +28,8 @@ public protocol MDSDocument {
 extension MDSDocument {
 
 	// MARK: Properties
-			public	var	creationDate :Date { return self.documentStorage.creationDate(for: self) }
-			public	var	modificationDate :Date { return self.documentStorage.modificationDate(for: self) }
+	public	var	creationDate :Date { return self.documentStorage.creationDate(for: self) }
+	public	var	modificationDate :Date { return self.documentStorage.modificationDate(for: self) }
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -229,13 +229,7 @@ extension MDSDocument {
 // MARK: - MDSDocumentInstance
 public class MDSDocumentInstance : Hashable, MDSDocument {
 
-	// MARK: Equatable implementation
-	static	public	func == (lhs: MDSDocumentInstance, rhs: MDSDocumentInstance) -> Bool { return lhs.id == rhs.id }
-
-	// MARK: Hashable implementation
-	public func hash(into hasher: inout Hasher) { hasher.combine(self.id) }
-
-	// MARK: MDSDocument implementation
+	// MARK: Properties
 	class	public	var documentType: String { return "" }
 
 			public	let	id :String
@@ -248,30 +242,12 @@ public class MDSDocumentInstance : Hashable, MDSDocument {
 		self.id = id
 		self.documentStorage = documentStorage
 	}
-}
 
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSDocumentInfo
-struct MDSDocumentInfo {
+	// MARK: Equatable implementation
+	static	public	func == (lhs: MDSDocumentInstance, rhs: MDSDocumentInstance) -> Bool { return lhs.id == rhs.id }
 
-	// MARK: Properties
-	let	documentID :String
-	let	documentType :String
-	let	creationDate :Date?
-	let	modificationDate :Date?
-	let	propertyMap :MDSDocument.PropertyMap
-
-	// Lifecycle methods
-	//------------------------------------------------------------------------------------------------------------------
-	init(documentID :String, documentType :String, creationDate :Date? = nil, modificationDate :Date? = nil,
-			propertyMap :MDSDocument.PropertyMap) {
-		// Store
-		self.documentID = documentID
-		self.documentType = documentType
-		self.creationDate = creationDate
-		self.modificationDate = modificationDate
-		self.propertyMap = propertyMap
-	}
+	// MARK: Hashable implementation
+	public func hash(into hasher: inout Hasher) { hasher.combine(self.id) }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -284,32 +260,65 @@ public struct MDSDocumentBackingInfo<T> {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSDocumentBringUpToDateInfo
-struct MDSDocumentBringUpToDateInfo<T> {
+// MARK: - MDSDocumentRevisionInfo
+struct MDSDocumentRevisionInfo {
 
 	// MARK: Properties
-	let	document :MDSDocument
+	let	documentID :String
 	let	revision :Int
-	let	value :T
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSDocumentFullInfo
+struct MDSDocumentFullInfo {
+
+	// MARK: Properties
+	let	documentID :String
+	let	revision :Int
+	let	creationDate :Date
+	let	modificationDate :Date
+	let	propertyMap :MDSDocument.PropertyMap
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSDocumentCreateInfo
+struct MDSDocumentCreateInfo {
+
+	// MARK: Properties
+	let	documentID :String?
+	let	creationDate :Date?
+	let	modificationDate :Date?
+	let	propertyMap :MDSDocument.PropertyMap
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSDocumentUpdateInfo
-struct MDSDocumentUpdateInfo<T> {
+struct MDSDocumentUpdateInfo {
+
+	// MARK: Properties
+	let	documentID :String
+	let	updated :MDSDocument.PropertyMap
+	let	removed :[String]
+	let	active :Bool
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSUpdateInfo
+struct MDSUpdateInfo<T> {
 
 	// MARK: Properties
 	let	document :MDSDocument
 	let	revision :Int
 	let	value :T
 	let	changedProperties :[String]?
+}
 
-	// Lifecycle methods
-	//------------------------------------------------------------------------------------------------------------------
-	init(document :MDSDocument, revision :Int, value :T, changedProperties :[String]? = nil) {
-		// Store
-		self.document = document
-		self.revision = revision
-		self.value = value
-		self.changedProperties = changedProperties
-	}
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSBringUpToDateInfo
+struct MDSBringUpToDateInfo<T> {
+
+	// MARK: Properties
+	let	document :MDSDocument
+	let	revision :Int
+	let	value :T
 }

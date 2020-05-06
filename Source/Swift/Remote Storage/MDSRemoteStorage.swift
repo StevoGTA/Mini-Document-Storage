@@ -12,9 +12,43 @@ import Foundation
 // MARK: MDSRemoteStorage
 open class MDSRemoteStorage : MDSDocumentStorage {
 
-	// MARK: MDSDocumentStorage implementation
-	public var id: String = UUID().uuidString
+	// MARK: Types
+	struct DocumentBacking {
 
+		// MARK: Properties
+		let	type :String
+		let	creationDate :Date
+		let	active :Bool
+
+		var	modificationDate :Date
+		var	revision :Int
+		var	json :[String : Any]
+	}
+
+	typealias DocumentCreationProc = (_ id :String, _ documentStorage :MDSDocumentStorage) -> MDSDocument
+
+	// MARK: Properties
+	public	var	id :String = UUID().uuidString
+
+	private	let	networkClient :MDSRemoteStorageNetworkClient
+	private	let	cache :MDSRemoteStorageCache
+	private	let	batchInfoMap = LockingDictionary<Thread, MDSBatchInfo<DocumentBacking>>()
+	private	let	documentBackingCache = MDSDocumentBackingCache<DocumentBacking>()
+	private	let	documentsBeingCreatedPropertyMapMap = LockingDictionary<String, MDSDocument.PropertyMap>()
+
+	private	var	extraValues :[/* Key */ String : Any]?
+
+	private	var	documentCreationProcMap = LockingDictionary<String, DocumentCreationProc>()
+
+	// MARK: Lifecycle methods
+	//------------------------------------------------------------------------------------------------------------------
+	public init(networkClient :MDSRemoteStorageNetworkClient, cache :MDSRemoteStorageCache) {
+		// Store
+		self.networkClient = networkClient
+		self.cache = cache
+	}
+
+	// MARK: MDSDocumentStorage implementation
 	//------------------------------------------------------------------------------------------------------------------
 	public func extraValue<T>(for key :String) -> T? { return self.extraValues?[key] as? T }
 
@@ -72,7 +106,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func document<T : MDSDocument>(for documentID :String) -> T? {
 		var	document :T?
-		enumerate(documentIDs: [documentID]) { document = $0 }
+		iterate(documentIDs: [documentID]) { document = $0 }
 
 		return document
 	}
@@ -128,7 +162,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func date(for property :String, in document :MDSDocument) -> Date? {
 		// Return date
-		return Date(fromStandardized: value(for: property, in: document) as? String)
+		return Date(fromRFC3339Extended: value(for: property, in: document) as? String)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -137,7 +171,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		let	valueUse :Any?
 		if let date = value as? Date {
 			// Date
-			valueUse = date.standardized
+			valueUse = date.rfc3339Extended
 		} else {
 			// Everythng else
 			valueUse = value
@@ -207,7 +241,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func enumerate<T : MDSDocument>(proc :(_ document : T) -> Void) {
+	public func iterate<T : MDSDocument>(proc :(_ document : T) -> Void) {
 		// Perform blocking
 		let	(infos, error) =
 					DispatchQueue.performBlocking() { completionProc in
@@ -222,12 +256,12 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			return
 		}
 
-		// Enumerate documents
+		// Iterate documents
 		documents(for: infos!, creationProc: { T(id: $0, documentStorage: $1) }).forEach({ proc($0) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func enumerate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void) {
+	public func iterate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void) {
 		// Check for batch
 		var	documentIDsToRetrieve = [String]()
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
@@ -307,8 +341,8 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						createdInfos.append(
 								[
 									"documentID": documentID,
-									"creationDate": batchDocumentInfo.creationDate.standardized,
-									"modificationDate": batchDocumentInfo.modificationDate.standardized,
+									"creationDate": batchDocumentInfo.creationDate.rfc3339Extended,
+									"modificationDate": batchDocumentInfo.modificationDate.rfc3339Extended,
 									"json": batchDocumentInfo.updatedPropertyMap ?? [:],
 								])
 					}
@@ -379,7 +413,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func enumerateCollection<T : MDSDocument>(name :String, proc :(_ document : T) -> Void) {
+	public func iterateCollection<T : MDSDocument>(name :String, proc :(_ document : T) -> Void) {
 		// May need to try this more than once
 		while true {
 			// Perform blocking
@@ -433,7 +467,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func enumerateIndex<T : MDSDocument>(name :String, keys :[String],
+	public func iterateIndex<T : MDSDocument>(name :String, keys :[String],
 			proc :(_ key :String, _ document :T) -> Void) {
 		// May need to try this more than once
 		var	documentInfosMap = [String : Any]()
@@ -480,46 +514,12 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			}
 		}
 
-		// Enumerate documents
+		// Iterate documents
 		let	documents :[T] =
 					self.documents(for: documentInfos,
 							creationProc: self.documentCreationProcMap.value(for: T.documentType)!)
 		let	documentsMap = Dictionary(documents.map({ return ($0.id, $0) }))
 		keysToDocumentIDsMap.forEach() { proc($0.key, documentsMap[$0.value]!) }
-	}
-
-	// MARK: Types
-	struct DocumentBacking {
-
-		// MARK: Properties
-		let	type :String
-		let	creationDate :Date
-		let	active :Bool
-
-		var	modificationDate :Date
-		var	revision :Int
-		var	json :[String : Any]
-	}
-
-	typealias DocumentCreationProc = (_ id :String, _ documentStorage :MDSDocumentStorage) -> MDSDocument
-
-	// MARK: Properties
-	private	let	networkClient :MDSRemoteStorageNetworkClient
-	private	let	cache :MDSRemoteStorageCache
-	private	let	batchInfoMap = LockingDictionary<Thread, MDSBatchInfo<DocumentBacking>>()
-	private	let	documentBackingCache = MDSDocumentBackingCache<DocumentBacking>()
-	private	let	documentsBeingCreatedPropertyMapMap = LockingDictionary<String, MDSDocument.PropertyMap>()
-
-	private	var	extraValues :[/* Key */ String : Any]?
-
-	private	var	documentCreationProcMap = LockingDictionary<String, DocumentCreationProc>()
-
-	// MARK: Lifecycle methods
-	//------------------------------------------------------------------------------------------------------------------
-	public init(networkClient :MDSRemoteStorageNetworkClient, cache :MDSRemoteStorageCache) {
-		// Store
-		self.networkClient = networkClient
-		self.cache = cache
 	}
 
 	// MARK: Private methods
@@ -683,8 +683,8 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		returnInfos!.enumerated().forEach() {
 			// Get info
 			let	documentID = $0.element["documentID"] as! String
-			let	creationDate = Date(fromStandardized: ($0.element["creationDate"] as! String))!
-			let	modificationDate = Date(fromStandardized: ($0.element["modificationDate"] as! String))!
+			let	creationDate = Date(fromRFC3339Extended: ($0.element["creationDate"] as! String))!
+			let	modificationDate = Date(fromRFC3339Extended: ($0.element["modificationDate"] as! String))!
 			let	revision = $0.element["revision"] as! Int
 			let	json = (infos[$0.offset]["json"] as? [String : Any]) ?? [:]
 
@@ -733,8 +733,8 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		infos!.forEach() {
 			// Get info
 			let	documentID = $0["documentID"] as! String
-			let	creationDate = Date(fromStandardized: $0["creationDate"] as! String)!
-			let	modificationDate = Date(fromStandardized: $0["modificationDate"] as! String)!
+			let	creationDate = Date(fromRFC3339Extended: $0["creationDate"] as? String)!
+			let	modificationDate = Date(fromRFC3339Extended: $0["modificationDate"] as? String)!
 			let	revision = $0["revision"] as! Int
 			let	active = ($0["active"] as! Int) == 1
 			let	json = $0["json"] as! [String : Any]
@@ -790,7 +790,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 			let	documentID = documentInfos[$0.offset].documentID
 			let	creationDate = documentBacking.creationDate
-			let	modificationDate = Date(fromStandardized: $0.element["modificationDate"] as! String)!
+			let	modificationDate = Date(fromRFC3339Extended: $0.element["modificationDate"] as? String)!
 			let	revision = $0.element["revision"] as! Int
 			let	active = ($0.element["active"] as! Int) == 1
 			let	json = $0.element["json"] as! [String : Any]

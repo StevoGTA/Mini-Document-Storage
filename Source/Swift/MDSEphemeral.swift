@@ -12,29 +12,39 @@ import Foundation
 // MARK: MDSEphemeral
 public class MDSEphemeral : MDSDocumentStorage {
 
+	// MARK: Properties
+	public	var	id :String = UUID().uuidString
+
+//	private	var	extraValues :[/* Key */ String : Any]?
+
+	private	var	mdsBatchInfoMap = [Thread : MDSBatchInfo<[String : Any]>]()
+	private	var	mdsBatchInfoMapLock = ReadPreferringReadWriteLock()
+
+	private	var	documentMap = [/* Document ID */ String : [String : Any]]()
+	private	var	documentMapLock = ReadPreferringReadWriteLock()
+	private	var	documentTypeMap = [/* Document Type */ String : Set<String>]()
+
 	// MARK: MDSDocumentStorage implementation
-	public var id: String = UUID().uuidString
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func extraValue<T>(for key :String) -> T? { return self.extraValues?[key] as? T }
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func store<T>(extraValue :T?, for key :String) {
-		// Store
-		if (self.extraValues == nil) && (extraValue != nil) {
-			// First one
-			self.extraValues = [key : extraValue!]
-		} else {
-			// Update
-			self.extraValues?[key] = extraValue
-
-			// Check for empty
-			if self.extraValues?.isEmpty ?? false {
-				// No more values
-				self.extraValues = nil
-			}
-		}
-	}
+//	//------------------------------------------------------------------------------------------------------------------
+//	public func extraValue<T>(for key :String) -> T? { return self.extraValues?[key] as? T }
+//
+//	//------------------------------------------------------------------------------------------------------------------
+//	public func store<T>(extraValue :T?, for key :String) {
+//		// Store
+//		if (self.extraValues == nil) && (extraValue != nil) {
+//			// First one
+//			self.extraValues = [key : extraValue!]
+//		} else {
+//			// Update
+//			self.extraValues?[key] = extraValue
+//
+//			// Check for empty
+//			if self.extraValues?.isEmpty ?? false {
+//				// No more values
+//				self.extraValues = nil
+//			}
+//		}
+//	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
@@ -161,7 +171,7 @@ public class MDSEphemeral : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func enumerate<T : MDSDocument>(proc :(_ document : T) -> Void) {
+	public func iterate<T : MDSDocument>(proc :(_ document : T) -> Void) {
 		// Collect document IDs
 		let	documentIDs = self.documentMapLock.read() { return self.documentTypeMap[T.documentType] ?? Set<String>() }
 
@@ -170,7 +180,7 @@ public class MDSEphemeral : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func enumerate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void) {
+	public func iterate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void) {
 		// Iterate all
 		documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) }
 	}
@@ -244,9 +254,9 @@ public class MDSEphemeral : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func enumerateCollection<T : MDSDocument>(name :String, proc :(_ document : T) -> Void) {
+	public func iterateCollection<T : MDSDocument>(name :String, proc :(_ document : T) -> Void) {
 		// Not yet implemented
-		fatalError("enumerateCollection(...) has not been implemented")
+		fatalError("iterateCollection(...) has not been implemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -257,19 +267,9 @@ public class MDSEphemeral : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func enumerateIndex<T : MDSDocument>(name :String, keys :[String],
+	public func iterateIndex<T : MDSDocument>(name :String, keys :[String],
 			proc :(_ key :String, _ document :T) -> Void) {
 		// Not yet implemented
-		fatalError("enumerateIndex(...) has not been implemented")
+		fatalError("iterateIndex(...) has not been implemented")
 	}
-
-	// MARK: Properties
-	private	var	extraValues :[/* Key */ String : Any]?
-
-	private	var	mdsBatchInfoMap = [Thread : MDSBatchInfo<[String : Any]>]()
-	private	var	mdsBatchInfoMapLock = ReadPreferringReadWriteLock()
-
-	private	var	documentMap = [/* Document ID */ String : [String : Any]]()
-	private	var	documentMapLock = ReadPreferringReadWriteLock()
-	private	var	documentTypeMap = [/* Document Type */ String : Set<String>]()
 }

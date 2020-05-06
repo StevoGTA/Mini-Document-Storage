@@ -17,9 +17,9 @@ protocol MDSCollection {
 	var	lastRevision :Int { get }
 
 	// MARK: Instance methods
-	func update<U>(_ documentInfos :[MDSDocumentUpdateInfo<U>]) ->
+	func update<U>(_ updateInfos :[MDSUpdateInfo<U>]) ->
 			(includedValues :[U], notIncludedValues :[U], lastRevision :Int)
-	func bringUpToDate<U>(_ documentInfos :[MDSDocumentBringUpToDateInfo<U>]) ->
+	func bringUpToDate<U>(_ bringUpToDateInfos :[MDSBringUpToDateInfo<U>]) ->
 			(includedValues :[U], notIncludedValues :[U], lastRevision :Int)
 }
 
@@ -27,19 +27,38 @@ protocol MDSCollection {
 // MARK: - MDSCollectionSpecialized
 class MDSCollectionSpecialized<T : MDSDocument> : MDSCollection {
 
+	// MARK: Properties
+			let	name :String
+			let	relevantProperties: Set<String>
+
+			var	documentType :String { return T.documentType }
+			var	lastRevision :Int
+
+	private	let	isIncludedProc :(_ document :T, _ info :[String : Any]) -> Bool
+	private	let	info :[String : Any]
+
+	// MARK: Lifecycle methods
+	//------------------------------------------------------------------------------------------------------------------
+	init(name :String, relevantProperties :[String], lastRevision :Int,
+			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool, info :[String : Any]) {
+		// Store
+		self.name = name
+		self.relevantProperties = Set<String>(relevantProperties)
+
+		self.lastRevision = lastRevision
+
+		self.isIncludedProc = isIncludedProc
+		self.info = info
+	}
+
 	// MARK: MDSCollection implementation
-	let	name :String
-	let	relevantProperties: Set<String>
-
-	var	documentType :String { return T.documentType }
-	var	lastRevision :Int
-
-	func update<U>(_ documentInfos :[MDSDocumentUpdateInfo<U>]) ->
+	//------------------------------------------------------------------------------------------------------------------
+	func update<U>(_ updateInfos :[MDSUpdateInfo<U>]) ->
 			(includedValues :[U], notIncludedValues :[U], lastRevision :Int) {
 		// Compose results
 		var	includedValues = [U]()
 		var	notIncludedValues = [U]()
-		documentInfos.forEach() {
+		updateInfos.forEach() {
 			// Check if there is something to do
 			guard ($0.changedProperties == nil) || !self.relevantProperties.intersection($0.changedProperties!).isEmpty
 					else { return }
@@ -60,12 +79,13 @@ class MDSCollectionSpecialized<T : MDSDocument> : MDSCollection {
 		return (includedValues, notIncludedValues, self.lastRevision)
 	}
 
-	func bringUpToDate<U>(_ documentInfos :[MDSDocumentBringUpToDateInfo<U>]) ->
+	//------------------------------------------------------------------------------------------------------------------
+	func bringUpToDate<U>(_ bringUpToDateInfos :[MDSBringUpToDateInfo<U>]) ->
 			(includedValues :[U], notIncludedValues :[U], lastRevision :Int) {
 		// Compose results
 		var	includedValues = [U]()
 		var	notIncludedValues = [U]()
-		documentInfos.forEach() {
+		bringUpToDateInfos.forEach() {
 			// Query
 			if self.isIncludedProc($0.document as! T, self.info) {
 				// Included
@@ -80,23 +100,5 @@ class MDSCollectionSpecialized<T : MDSDocument> : MDSCollection {
 		}
 
 		return (includedValues, notIncludedValues, self.lastRevision)
-	}
-
-	// MARK: Properties
-	private	let	isIncludedProc :(_ document :T, _ info :[String : Any]) -> Bool
-	private	let	info :[String : Any]
-
-	// MARK: Lifecycle methods
-	//------------------------------------------------------------------------------------------------------------------
-	init(name :String, relevantProperties :[String], lastRevision :Int,
-			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool, info :[String : Any]) {
-		// Store
-		self.name = name
-		self.relevantProperties = Set<String>(relevantProperties)
-
-		self.lastRevision = lastRevision
-
-		self.isIncludedProc = isIncludedProc
-		self.info = info
 	}
 }

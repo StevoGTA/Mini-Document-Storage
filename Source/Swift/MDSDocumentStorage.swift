@@ -23,8 +23,8 @@ public protocol MDSDocumentStorage : class {
 	var	id :String { get }
 
 	// MARK: Instance methods
-	func extraValue<T>(for key :String) -> T?
-	func store<T>(extraValue :T?, for key :String)
+//	func extraValue<T>(for key :String) -> T?
+//	func store<T>(extraValue :T?, for key :String)
 
 	func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T) -> T
 
@@ -39,8 +39,8 @@ public protocol MDSDocumentStorage : class {
 
 	func remove(_ document :MDSDocument)
 
-	func enumerate<T : MDSDocument>(proc :(_ document : T) -> Void)
-	func enumerate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void)
+	func iterate<T : MDSDocument>(proc :(_ document : T) -> Void)
+	func iterate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void)
 
 	func batch(_ proc :() throws -> MDSBatchResult) rethrows
 
@@ -48,11 +48,11 @@ public protocol MDSDocumentStorage : class {
 			info :[String : Any], isUpToDate :Bool, isIncludedSelector :String,
 			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool)
 	func queryCollectionDocumentCount(name :String) -> UInt
-	func enumerateCollection<T : MDSDocument>(name :String, proc :(_ document : T) -> Void)
+	func iterateCollection<T : MDSDocument>(name :String, proc :(_ document : T) -> Void)
 
 	func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
 			isUpToDate :Bool, keysSelector :String, keysProc :@escaping (_ document :T) -> [String])
-	func enumerateIndex<T : MDSDocument>(name :String, keys :[String], proc :(_ key :String, _ document :T) -> Void)
+	func iterateIndex<T : MDSDocument>(name :String, keys :[String], proc :(_ key :String, _ document :T) -> Void)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -68,8 +68,8 @@ extension MDSDocumentStorage {
 		// Setup
 		var	documents = [T]()
 
-		// Enumerate all documents
-		enumerate(proc: { (document :T) -> Void in documents.append(document) })
+		// Iterate all documents
+		iterate(proc: { (document :T) -> Void in documents.append(document) })
 
 		return documents
 	}
@@ -79,8 +79,8 @@ extension MDSDocumentStorage {
 		// Setup
 		var	documents = [T]()
 
-		// Enumerate documents for document ids
-		enumerate(documentIDs: documentIDs, proc: { (document :T) -> Void in documents.append(document) })
+		// Iterate documents for document ids
+		iterate(documentIDs: documentIDs, proc: { (document :T) -> Void in documents.append(document) })
 
 		return documents
 	}
@@ -107,7 +107,7 @@ extension MDSDocumentStorage {
 		// Setup
 		var	documentMap = [String : T]()
 
-		enumerateIndex(name: name, keys: keys) { (key :String, document :T) in documentMap[key] = document }
+		iterateIndex(name: name, keys: keys) { (key :String, document :T) in documentMap[key] = document }
 
 		return documentMap
 	}

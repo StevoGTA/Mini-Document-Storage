@@ -68,6 +68,44 @@ class MDSSQLiteCore {
 
 	private	var	batchInfoMap = LockingDictionary<Thread, BatchInfo>()
 
+	// MARK: Class methods
+	//------------------------------------------------------------------------------------------------------------------
+	static func info(infoTable :SQLiteTable, resultsRow :SQLiteResultsRow) ->
+			(id :Int64, documentRevisionInfo :MDSDocumentRevisionInfo, active :Bool) {
+		// Process results
+		let	id :Int64 = resultsRow.integer(for: infoTable.idTableColumn)!
+		let	documentID = resultsRow.text(for: infoTable.documentIDTableColumn)!
+		let	revision :Int = resultsRow.integer(for: infoTable.revisionTableColumn)!
+		let	active :Bool = resultsRow.integer(for: infoTable.activeTableColumn)! == 1
+
+		return (id, MDSDocumentRevisionInfo(documentID: documentID, revision: revision), active)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	static func documentBackingInfo(id :Int64, documentRevisionInfo :MDSDocumentRevisionInfo, contentTable :SQLiteTable,
+			resultsRow :SQLiteResultsRow) -> MDSDocumentBackingInfo<MDSSQLiteDocumentBacking> {
+		// Process results
+		let	creationDate = Date(fromRFC3339Extended: resultsRow.text(for: contentTable.creationDateTableColumn)!)!
+		let	modificationDate =
+					Date(fromRFC3339Extended: resultsRow.text(for: contentTable.modificationDateTableColumn)!)!
+		let	propertyMap =
+					try! JSONSerialization.jsonObject(
+							with: resultsRow.blob(for: contentTable.jsonTableColumn)!) as! [String : Any]
+
+		return
+				MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>(documentID: documentRevisionInfo.documentID,
+						documentBacking:
+								MDSSQLiteDocumentBacking(id: id, revision: documentRevisionInfo.revision,
+										creationDate: creationDate, modificationDate: modificationDate,
+										propertyMap: propertyMap))
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	static func key(for indexContentsTable :SQLiteTable, resultsRow :SQLiteResultsRow) -> String {
+		// Return key
+		resultsRow.text(for: indexContentsTable.keyTableColumn)!
+	}
+
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
 	init(sqliteDatabase :SQLiteDatabase) {
@@ -79,7 +117,7 @@ class MDSSQLiteCore {
 				self.sqliteDatabase.table(name: "Info", options: [.withoutRowID],
 						tableColumns: [
 										SQLiteTableColumn("key", .text, [.primaryKey, .unique, .notNull]),
-										SQLiteTableColumn("value", .text, [.notNull])
+										SQLiteTableColumn("value", .text, [.notNull]),
 									  ])
 		self.infoTable.create()
 
@@ -87,7 +125,7 @@ class MDSSQLiteCore {
 				self.sqliteDatabase.table(name: "Documents",
 						tableColumns: [
 										SQLiteTableColumn("type", .text, [.notNull, .unique]),
-										SQLiteTableColumn("lastRevision", .integer4, [.notNull])
+										SQLiteTableColumn("lastRevision", .integer4, [.notNull]),
 									  ])
 		self.documentsMasterTable.create()
 
@@ -136,6 +174,19 @@ class MDSSQLiteCore {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func string(for key :String) -> String? {
+		// Retrieve value
+		var	value :String?
+		try! self.infoTable.select(tableColumns: [self.infoTable.valueTableColumn],
+				where: SQLiteWhere(tableColumn: self.infoTable.keyTableColumn, value: key)) {
+					// Process results
+					value = $0.text(for: self.infoTable.valueTableColumn)!
+				}
+
+		return value
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func set(_ value :Any, for key :String) {
 		// Store value
 		self.infoTable.insertOrReplaceRow([
@@ -164,7 +215,8 @@ class MDSSQLiteCore {
 								tableColumns: [
 												SQLiteTableColumn("id", .integer, [.primaryKey, .autoincrement]),
 												SQLiteTableColumn("documentID", .text, [.notNull, .unique]),
-												SQLiteTableColumn("revision", .integer4, [.notNull])
+												SQLiteTableColumn("revision", .integer4, [.notNull]),
+												SQLiteTableColumn("active", .integer1, [.notNull]),
 											  ])
 			let	contentTable =
 						self.sqliteDatabase.table(name: "\(tableTitleRoot)Contents",
@@ -172,7 +224,7 @@ class MDSSQLiteCore {
 												contentIDTableColumn,
 												SQLiteTableColumn("creationDate", .textWith(size: 23), [.notNull]),
 												SQLiteTableColumn("modificationDate", .textWith(size: 23), [.notNull]),
-												SQLiteTableColumn("json", .blob, [.notNull])
+												SQLiteTableColumn("json", .blob, [.notNull]),
 											  ],
 								references: [(contentIDTableColumn, infoTable, infoTable.idTableColumn)])
 
@@ -251,6 +303,74 @@ class MDSSQLiteCore {
 			self.updateIndex(name: $0.key, keysInfos: $0.value.keysInfos, removedIDs: $0.value.removedIDs,
 					lastRevision: $0.value.lastRevision)
 		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func new(documentType :String, documentID :String, creationDate :Date? = nil, modificationDate :Date? = nil,
+			propertyMap :MDSDocument.PropertyMap) ->
+			(id :Int64, revision :Int, creationDate :Date, modificatinoDate :Date) {
+		// Setup
+		let	revision = nextRevision(for: documentType)
+		let	creationDate = creationDate ?? Date()
+		let	modificationDate = modificationDate ?? creationDate
+
+		let	data :Data = try! JSONSerialization.data(withJSONObject: propertyMap)
+
+		// Add to database
+		let	(infoTable, contentTable) = documentTables(for: documentType)
+		let	id =
+				infoTable.insertRow([
+										(infoTable.documentIDTableColumn, documentID),
+										(infoTable.revisionTableColumn, revision),
+										(infoTable.activeTableColumn, 1),
+									])
+		_ = contentTable.insertRow([
+									(contentTable.idTableColumn, id),
+									(contentTable.creationDateTableColumn, creationDate.rfc3339Extended),
+									(contentTable.modificationDateTableColumn, modificationDate.rfc3339Extended),
+									(contentTable.jsonTableColumn, data),
+								   ])
+
+		return (id, revision, creationDate, modificationDate)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func update(documentType :String, id :Int64, propertyMap :MDSDocument.PropertyMap) ->
+			(revision :Int, modificationDate :Date) {
+		// Setup
+		let	revision = nextRevision(for: documentType)
+		let	modificationDate = Date()
+		let	data = try! JSONSerialization.data(withJSONObject: propertyMap)
+
+		// Update
+		let	(infoTable, contentTable) = documentTables(for: documentType)
+		infoTable.update([(infoTable.revisionTableColumn, revision)],
+				where: SQLiteWhere(tableColumn: infoTable.idTableColumn, value: id))
+		contentTable.update(
+				[
+					(contentTable.modificationDateTableColumn, modificationDate.rfc3339Extended),
+					(contentTable.jsonTableColumn, data)
+				],
+				where: SQLiteWhere(tableColumn: contentTable.idTableColumn, value: id))
+
+		return (revision, modificationDate)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func remove(documentType :String, id :Int64) {
+		// Setup
+		let	data = try! JSONSerialization.data(withJSONObject: [:], options: [])
+
+		// Mark as not active
+		let	(infoTable, contentTable) = documentTables(for: documentType)
+		infoTable.update([(infoTable.activeTableColumn, 0)],
+				where: SQLiteWhere(tableColumn: infoTable.idTableColumn, value: id))
+		contentTable.update(
+				[
+					(contentTable.modificationDateTableColumn, Date().rfc3339Extended),
+					(contentTable.jsonTableColumn, data)
+				],
+				where: SQLiteWhere(tableColumn: contentTable.idTableColumn, value: id))
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
