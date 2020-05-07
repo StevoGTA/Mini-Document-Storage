@@ -69,8 +69,6 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 	private	let	documentsBeingCreatedPropertyMapMap = LockingDictionary<String, MDSDocument.PropertyMap>()
 	private	let	sqliteCore :MDSSQLiteCore
 
-//	private	var	extraValues :[/* Key */ String : Any]?
-
 	private	var	documentCreationProcMap = LockingDictionary<String, DocumentCreationProc>()
 
 	private	var	collectionsByNameMap = LockingDictionary</* Name */ String, MDSCollection>()
@@ -98,27 +96,6 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 	}
 
 	// MARK: MDSDocumentStorage implementation
-//	//------------------------------------------------------------------------------------------------------------------
-//	public func extraValue<T>(for key :String) -> T? { self.extraValues?[key] as? T }
-//
-//	//------------------------------------------------------------------------------------------------------------------
-//	public func store<T>(extraValue :T?, for key :String) {
-//		// Store
-//		if (self.extraValues == nil) && (extraValue != nil) {
-//			// First one
-//			self.extraValues = [key : extraValue!]
-//		} else {
-//			// Update
-//			self.extraValues?[key] = extraValue
-//
-//			// Check for empty
-//			if self.extraValues?.isEmpty ?? false {
-//				// No more values
-//				self.extraValues = nil
-//			}
-//		}
-//	}
-
 	//------------------------------------------------------------------------------------------------------------------
 	public func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
 			-> T {

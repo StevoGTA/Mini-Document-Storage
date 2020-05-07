@@ -23,9 +23,6 @@ public protocol MDSDocumentStorage : class {
 	var	id :String { get }
 
 	// MARK: Instance methods
-//	func extraValue<T>(for key :String) -> T?
-//	func store<T>(extraValue :T?, for key :String)
-
 	func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T) -> T
 
 	func document<T : MDSDocument>(for documentID :String) -> T?
