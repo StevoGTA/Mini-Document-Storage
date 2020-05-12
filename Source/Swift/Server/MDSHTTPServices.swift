@@ -1,6 +1,6 @@
 //
 //  MDSHTTPServices.swift
-//  Media Tools
+//  Mini Document Storage
 //
 //  Created by Stevo on 4/2/20.
 //  Copyright © 2020 Stevo Brock. All rights reserved.

@@ -36,8 +36,6 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	private	let	documentBackingCache = MDSDocumentBackingCache<DocumentBacking>()
 	private	let	documentsBeingCreatedPropertyMapMap = LockingDictionary<String, MDSDocument.PropertyMap>()
 
-	private	var	extraValues :[/* Key */ String : Any]?
-
 	private	var	documentCreationProcMap = LockingDictionary<String, DocumentCreationProc>()
 
 	// MARK: Lifecycle methods
@@ -49,27 +47,6 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	// MARK: MDSDocumentStorage implementation
-	//------------------------------------------------------------------------------------------------------------------
-	public func extraValue<T>(for key :String) -> T? { return self.extraValues?[key] as? T }
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func store<T>(extraValue :T?, for key :String) {
-		// Store
-		if (self.extraValues == nil) && (extraValue != nil) {
-			// First one
-			self.extraValues = [key : extraValue!]
-		} else {
-			// Update
-			self.extraValues?[key] = extraValue
-
-			// Check for empty
-			if self.extraValues?.isEmpty ?? false {
-				// No more values
-				self.extraValues = nil
-			}
-		}
-	}
-
 	//------------------------------------------------------------------------------------------------------------------
 	public func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
 			-> T {
@@ -811,8 +788,8 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		self.cache.add(updatedDocumentInfos, for: documentType)
 	}
 
-
 	// MARK: Temporary sandbox
+	//------------------------------------------------------------------------------------------------------------------
 	// Will move this out when proper error handling is implemented
 	private	var	recentErrors = LockingArray<Error>()
 	public func queryRecentErrorsAndReset() -> [Error]? {
