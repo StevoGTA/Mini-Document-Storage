@@ -14,6 +14,7 @@ public protocol MDSDocument {
 
 	// MARK: Types
 	typealias PropertyMap = [/* Property */ String : /* Value */ Any]
+	typealias CreationProc = (_ id :String, _ documentStorage :MDSDocumentStorage) -> MDSDocument
 
 	// MARK: Properties
 	static	var	documentType :String { get }

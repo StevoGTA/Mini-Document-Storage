@@ -56,9 +56,6 @@ struct MDSSQLiteDocumentInfo {
 // MARK: - MDSSQLite
 public class MDSSQLite : MDSDocumentStorageServerBacking {
 
-	// MARK: Types
-	typealias DocumentCreationProc = (_ id :String, _ documentStorage :MDSDocumentStorage) -> MDSDocument
-
 	// MARK: Properties
 	public	var	id :String = UUID().uuidString
 
@@ -69,7 +66,7 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 	private	let	documentsBeingCreatedPropertyMapMap = LockingDictionary<String, MDSDocument.PropertyMap>()
 	private	let	sqliteCore :MDSSQLiteCore
 
-	private	var	documentCreationProcMap = LockingDictionary<String, DocumentCreationProc>()
+	private	var	documentCreationProcMap = LockingDictionary<String, MDSDocument.CreationProc>()
 
 	private	var	collectionsByNameMap = LockingDictionary</* Name */ String, MDSCollection>()
 	private	var	collectionsByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSCollection>()
@@ -364,7 +361,7 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 					batchDocumentInfosMap.forEach() { documentID, batchDocumentInfo in
 						// Is removed?
 						if !batchDocumentInfo.removed {
-							// Update document
+							// Add/update document
 							if let documentBacking = batchDocumentInfo.reference {
 								// Update document
 								documentBacking.update(documentType: documentType,
@@ -478,7 +475,7 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
 			isUpToDate :Bool, keysSelector :String, keysProc :@escaping (_ document :T) -> [String]) {
-		// Ensure this collection has not already been registered
+		// Ensure this index has not already been registered
 		guard self.indexesByNameMap.value(for: name) == nil else { return }
 
 		// Ensure we have the document tables
