@@ -12,21 +12,77 @@ import Foundation
 // MARK: MDSEphemeral
 public class MDSEphemeral : MDSDocumentStorage {
 
+	// MARK: Types
+	class DocumentBacking {
+
+		// MARK: Properties
+		let	creationDate :Date
+
+		var	modificationDate :Date
+		var	propertyMap :[String : Any]
+
+		// MARK: Lifecycle methods
+		//--------------------------------------------------------------------------------------------------------------
+		init(creationDate :Date, modificationDate :Date, propertyMap :[String : Any]) {
+			// Store
+			self.creationDate = creationDate
+
+			self.modificationDate = modificationDate
+			self.propertyMap = propertyMap
+		}
+
+		// MARK: Instance methods
+		//--------------------------------------------------------------------------------------------------------------
+		func update(updatedPropertyMap :MDSDocument.PropertyMap? = nil, removedProperties :Set<String>? = nil) {
+			// Update
+			self.propertyMap.merge(updatedPropertyMap ?? [:], uniquingKeysWith: { $1 })
+			removedProperties?.forEach() { self.propertyMap[$0] = nil }
+		}
+	}
+
 	// MARK: Properties
-	public	var	id :String = UUID().uuidString
+	public	let	id :String = UUID().uuidString
 
-	private	var	batchInfoMap = LockingDictionary<Thread, MDSBatchInfo<[String : Any]>>()
+	private	var	info = [String : String]()
 
-	private	var	documentBackingMap = [/* Document ID */ String : [String : Any]]()
+	private	let	batchInfoMap = LockingDictionary<Thread, MDSBatchInfo<[String : Any]>>()
+
+	private	let	documentsBeingCreatedPropertyMapMap = LockingDictionary<String, MDSDocument.PropertyMap>()
+	private	let	documentMapsLock = ReadPreferringReadWriteLock()
+	private	let	documentCreationProcMap = LockingDictionary<String, MDSDocument.CreationProc>()
+	private	var	documentBackingMap = [/* Document ID */ String : DocumentBacking]()
 	private	var	documentTypeMap = [/* Document Type */ String : Set<String>]()
-	private	var	documentMapsLock = ReadPreferringReadWriteLock()
-	private	var	documentCreationProcMap = LockingDictionary<String, MDSDocument.CreationProc>()
 
-	private	var	indexesByNameMap = LockingDictionary</* Name */ String, MDSIndex>()
-	private	var	indexesByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSIndex>()
-	private	var	indexValuesMap = LockingDictionary</* Name */ String, [/* Key */ String : /* Document ID */ String]>()
+	private	let	collectionsByNameMap = LockingDictionary</* Name */ String, MDSCollection>()
+	private	let	collectionsByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSCollection>()
+	private	let	collectionValuesMap = LockingDictionary</* Name */ String, /* Document IDs */ [String]>()
+
+	private	let	indexesByNameMap = LockingDictionary</* Name */ String, MDSIndex>()
+	private	let	indexesByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSIndex>()
+	private	let	indexValuesMap = LockingDictionary</* Name */ String, [/* Key */ String : /* Document ID */ String]>()
+
+	// MARK: Lifecycle methods
+	//------------------------------------------------------------------------------------------------------------------
+	public init() {}
 
 	// MARK: MDSDocumentStorage implementation
+	//------------------------------------------------------------------------------------------------------------------
+	public func info(for keys :[String]) -> [String : String] {
+		// Setup
+		var	info = [String : String]()
+
+		// Iterate keys
+		keys.forEach() { info[$0] = self.info[$0] }
+
+		return info
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func set(_ info :[String : String]) {
+		// Merge
+		self.info.merge(info, uniquingKeysWith: { $1 })
+	}
+
 	//------------------------------------------------------------------------------------------------------------------
 	public func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
 			-> T {
@@ -36,20 +92,30 @@ public class MDSEphemeral : MDSDocumentStorage {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
 			// In batch
-			_ = batchInfo.addDocument(documentType: T.documentType, documentID: documentID, creationDate: Date(),
-					modificationDate: Date())
+			let	date = Date()
+			_ = batchInfo.addDocument(documentType: T.documentType, documentID: documentID, creationDate: date,
+					modificationDate: date)
 
 			return creationProc(documentID, self)
 		} else {
-			// Add document
-			self.documentMapsLock.write() {
-				// Update maps
-				self.documentTypeMap.appendSetValueElement(key: T.documentType, value: documentID)
-				self.documentBackingMap[documentID] = [:]
-			}
+			// Will be creating document
+			self.documentsBeingCreatedPropertyMapMap.set(MDSDocument.PropertyMap(), for: documentID)
 
 			// Create
 			let	document = creationProc(documentID, self)
+
+			// Remove property map
+			let	propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: documentID)!
+			self.documentsBeingCreatedPropertyMapMap.remove(documentID)
+
+			// Add document
+			let	date = Date()
+			self.documentMapsLock.write() {
+				// Update maps
+				self.documentTypeMap.appendSetValueElement(key: T.documentType, value: documentID)
+				self.documentBackingMap[documentID] =
+						DocumentBacking(creationDate: date, modificationDate: date, propertyMap: propertyMap)
+			}
 
 			// Update collections and indexes
 			let	updateInfos :[MDSUpdateInfo<String>] =
@@ -75,8 +141,11 @@ public class MDSEphemeral : MDSDocumentStorage {
 				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
 			// In batch
 			return batchDocumentInfo.creationDate
+		} else if self.documentsBeingCreatedPropertyMapMap.value(for: document.id) != nil {
+			// Being created
+			return Date()
 		} else {
-			// Not in batch
+			// "Idle"
 			return Date()
 		}
 	}
@@ -88,8 +157,11 @@ public class MDSEphemeral : MDSDocumentStorage {
 				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
 			// In batch
 			return batchDocumentInfo.modificationDate
+		} else if self.documentsBeingCreatedPropertyMapMap.value(for: document.id) != nil {
+			// Being created
+			return Date()
 		} else {
-			// Not in batch
+			// "Idle"
 			return Date()
 		}
 	}
@@ -101,9 +173,12 @@ public class MDSEphemeral : MDSDocumentStorage {
 				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
 			// In batch
 			return batchDocumentInfo.value(for: property)
+		} else if let propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: document.id) {
+			// Being created
+			return propertyMap[property]
 		} else {
-			// Not in batch
-			return self.documentMapsLock.read() { return self.documentBackingMap[document.id]?[property] }
+			// "Idle"
+			return self.documentMapsLock.read() { return self.documentBackingMap[document.id]?.propertyMap[property] }
 		}
 	}
 
@@ -130,13 +205,17 @@ public class MDSEphemeral : MDSDocumentStorage {
 						creationDate: Date(), modificationDate: Date(), valueProc: { property in
 									// Play nice with others
 									self.documentMapsLock.read()
-										{ return self.documentBackingMap[document.id]?[property] }
+										{ return self.documentBackingMap[document.id]?.propertyMap[property] }
 								})
 						.set(value, for: property)
 			}
+		} else if var propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: document.id) {
+			// Being created
+			propertyMap[property] = value
+			self.documentsBeingCreatedPropertyMapMap.set(propertyMap, for: document.id)
 		} else {
-			// Not in batch
-			self.documentMapsLock.write() { self.documentBackingMap[document.id]?[property] = value }
+			// Update document
+			self.documentMapsLock.write() { self.documentBackingMap[document.id]?.propertyMap[property] = value }
 
 			// Update collections and indexes
 			let	updateInfos :[MDSUpdateInfo<String>] =
@@ -213,14 +292,10 @@ public class MDSEphemeral : MDSDocumentStorage {
 							// Add/update document
 						self.documentMapsLock.write() {
 							// Retrieve existing document
-							if var documentBacking = self.documentBackingMap[documentID] {
-								// Update document
-								self.documentBackingMap[documentID] = nil
-								documentBacking =
-										documentBacking.merging(batchDocumentInfo.updatedPropertyMap ?? [:],
-												uniquingKeysWith: { $1 })
-								batchDocumentInfo.removedProperties?.forEach() { documentBacking[$0] = nil }
-								self.documentBackingMap[documentID] = documentBacking
+							if let documentBacking = self.documentBackingMap[documentID] {
+								// Update document backing
+								documentBacking.update(updatedPropertyMap: batchDocumentInfo.updatedPropertyMap,
+										removedProperties: batchDocumentInfo.removedProperties)
 
 								// Check if we have creation proc
 								if let creationProc = self.documentCreationProcMap.value(for: documentType) {
@@ -237,7 +312,10 @@ public class MDSEphemeral : MDSDocumentStorage {
 								}
 							} else {
 								// Add document
-								self.documentBackingMap[documentID] = batchDocumentInfo.updatedPropertyMap ?? [:]
+								self.documentBackingMap[documentID] =
+										DocumentBacking(creationDate: batchDocumentInfo.creationDate,
+												modificationDate: batchDocumentInfo.modificationDate,
+												propertyMap: batchDocumentInfo.updatedPropertyMap ?? [:])
 								self.documentTypeMap.appendSetValueElement(key: batchDocumentInfo.documentType,
 										value: documentID)
 
@@ -278,20 +356,32 @@ public class MDSEphemeral : MDSDocumentStorage {
 	public func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
 			info :[String : Any], isUpToDate :Bool, isIncludedSelector :String,
 			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool) {
-		// Not yet implemented
-		fatalError("registerCollection(...) has not been implemented")
+		// Ensure this collection has not already been registered
+		guard self.collectionsByNameMap.value(for: name) == nil else { return }
+
+		// Create collection
+		let	collection =
+					MDSCollectionSpecialized(name: name, relevantProperties: relevantProperties, lastRevision: 0,
+							isIncludedProc: isIncludedProc, info: info)
+
+		// Add to maps
+		self.collectionsByNameMap.set(collection, for: name)
+		self.collectionsByDocumentTypeMap.appendArrayValue(collection, for: T.documentType)
+
+		// Update creation proc map
+		self.documentCreationProcMap.set({ T(id: $0, documentStorage: $1) }, for: T.documentType)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func queryCollectionDocumentCount(name :String) -> UInt {
-		// Not yet implemented
-		fatalError("queryCollectionDocumentCount(...) has not been implemented")
+		// Return count
+		return UInt((self.collectionValuesMap.value(for: name) ?? []).count)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func iterateCollection<T : MDSDocument>(name :String, proc :(_ document : T) -> Void) {
-		// Not yet implemented
-		fatalError("iterateCollection(...) has not been implemented")
+		// Iterate
+		self.collectionValuesMap.value(for: name)?.forEach() { proc(T(id: $0, documentStorage: self)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -328,45 +418,41 @@ public class MDSEphemeral : MDSDocumentStorage {
 		}
 	}
 
-	// MARK: Lifecycle methods
-	//------------------------------------------------------------------------------------------------------------------
-	public init() {}
-
 	// MARK: Private methods
 	//------------------------------------------------------------------------------------------------------------------
 	private func updateCollections(for documentType :String, updateInfos :[MDSUpdateInfo<String>],
 			processNotIncluded :Bool = true) {
-//		// Iterate all collections for this document type
-//		self.collectionsByDocumentTypeMap.values(for: documentType)?.forEach() {
-//			// Update
-//			let	(includedIDs, notIncludedIDs, lastRevision) = $0.update(updateInfos)
-//
-//			// Update
-//			self.sqliteCore.updateCollection(name: $0.name, includedIDs: includedIDs,
-//					notIncludedIDs: processNotIncluded ? notIncludedIDs : [], lastRevision: lastRevision)
-//		}
+		// Iterate all collections for this document type
+		self.collectionsByDocumentTypeMap.values(for: documentType)?.forEach() {
+			// Query update info
+			let	(includedIDs, notIncludedIDs, _) = $0.update(updateInfos)
+
+			// Update storage
+			let	notIncludedIDsSet = Set<String>(notIncludedIDs)
+			self.collectionValuesMap.update(for: $0.name)
+				{ ($0 ?? []).filter({ !notIncludedIDsSet.contains($0) }) + includedIDs }
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func updateIndexes(for documentType :String, updateInfos :[MDSUpdateInfo<String>]) {
 		// Iterate all indexes for this document type
 		self.indexesByDocumentTypeMap.values(for: documentType)?.forEach() {
-			// Update
+			// Query update info
 			let	(keysInfos, _) = $0.update(updateInfos)
 			guard !keysInfos.isEmpty else { return }
 
-			// Retrieve existing values map
-			var	indexValues = self.indexValuesMap.value(for: $0.name) ?? [:]
-
-			// Filter out document IDs included in update
+			// Update storage
 			let	documentIDs = Set<String>(keysInfos.map({ $0.value }))
-			indexValues = indexValues.filter({ !documentIDs.contains($0.value) })
+			self.indexValuesMap.update(for: $0.name) {
+				// Filter out document IDs included in update
+				var	updatedValues = ($0 ?? [:]).filter({ !documentIDs.contains($0.value) })
 
-			// Add/Update keys => document IDs
-			keysInfos.forEach() { keys, value in keys.forEach() { indexValues[$0] = value } }
+				// Add/Update keys => document IDs
+				keysInfos.forEach() { keys, value in keys.forEach() { updatedValues[$0] = value } }
 
-			// Store
-			self.indexValuesMap.set(indexValues, for: $0.name)
+				return updatedValues
+			}
 		}
 	}
 }

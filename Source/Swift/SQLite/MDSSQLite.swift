@@ -94,6 +94,18 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 
 	// MARK: MDSDocumentStorage implementation
 	//------------------------------------------------------------------------------------------------------------------
+	public func info(for keys :[String]) -> [String : String] {
+		// Return dictionary
+		return [String : String](keys){ self.sqliteCore.string(for: $0) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func set(_ valueMap :[String : String]) {
+		// Update
+		valueMap.forEach() { self.sqliteCore.set($0.value, for: $0.key) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
 			-> T {
 		// Setup
@@ -115,7 +127,7 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 
 			// Remove property map
 			let	propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: documentID)!
-			self.documentsBeingCreatedPropertyMapMap.remove([documentID])
+			self.documentsBeingCreatedPropertyMapMap.remove(documentID)
 
 			// Add document
 			let	documentBacking =
@@ -163,7 +175,7 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 			// Being created
 			return Date()
 		} else {
-			// Not in batch
+			// "Idle"
 			return documentBacking(documentType: type(of: document).documentType, documentID: document.id)!.creationDate
 		}
 	}
@@ -179,7 +191,7 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 			// Being created
 			return Date()
 		} else {
-			// Not in batch
+			// "Idle"
 			return documentBacking(documentType: type(of: document).documentType, documentID: document.id)!
 					.modificationDate
 		}
@@ -196,7 +208,7 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 			// Being created
 			return propertyMap[property]
 		} else {
-			// Not in batch
+			// "Idle"
 			return documentBacking(documentType: type(of: document).documentType, documentID: document.id)!
 					.value(for: property)
 		}
@@ -510,18 +522,6 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 	}
 
 	// MARK: MDSDocumentStorageServerBacking methods
-	//------------------------------------------------------------------------------------------------------------------
-	func info(for keys :[String]) -> [String : String] {
-		// Return dictionary
-		return [String : String](keys){ self.sqliteCore.string(for: $0) }
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func update(_ valueMap :[String : String]) {
-		// Update
-		valueMap.forEach() { self.sqliteCore.set($0.value, for: $0.key) }
-	}
-
 	//------------------------------------------------------------------------------------------------------------------
 	func newDocuments(documentType :String, documentCreateInfos :[MDSDocumentCreateInfo]) {
 		// Batch

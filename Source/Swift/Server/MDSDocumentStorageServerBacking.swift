@@ -13,9 +13,6 @@ import Foundation
 protocol MDSDocumentStorageServerBacking : MDSDocumentStorage {
 
 	// MARK: Instance methods
-	func info(for keys :[String]) -> [String : String]
-	func update(_ valueMap :[String : String])
-
 	func newDocuments(documentType :String, documentCreateInfos :[MDSDocumentCreateInfo])
 	func iterate(documentType :String, documentIDs :[String],
 			proc :@escaping (_ documentRevisionInfo :MDSDocumentRevisionInfo) -> Void)

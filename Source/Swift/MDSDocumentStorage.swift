@@ -23,6 +23,9 @@ public protocol MDSDocumentStorage : class {
 	var	id :String { get }
 
 	// MARK: Instance methods
+	func info(for keys :[String]) -> [String : String]
+	func set(_ info :[String : String])
+
 	func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T) -> T
 
 	func document<T : MDSDocument>(for documentID :String) -> T?
@@ -58,7 +61,7 @@ extension MDSDocumentStorage {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	public func newDocument<T : MDSDocument>() -> T { return newDocument() { return T(id: $0, documentStorage: $1) } }
+	public func newDocument<T : MDSDocument>() -> T { newDocument() { T(id: $0, documentStorage: $1) } }
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documents<T :MDSDocument>() -> [T] {
@@ -89,6 +92,17 @@ extension MDSDocumentStorage {
 		// Register collection
 		registerCollection(named: name, version: version, relevantProperties: relevantProperties, info: info,
 				isUpToDate: isUpToDate, isIncludedSelector: isIncludedSelector, isIncludedProc: isIncludedProc)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func documents<T : MDSDocument>(forCollectionNamed name :String) -> [T] {
+		// Setup
+		var	documents = [T]()
+
+		// Iterate
+		iterateCollection(name: name) { documents.append($0) }
+
+		return documents
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

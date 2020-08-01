@@ -48,6 +48,44 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 	// MARK: MDSDocumentStorage implementation
 	//------------------------------------------------------------------------------------------------------------------
+	public func info(for keys :[String]) -> [String : String] {
+		// Preflight
+		guard !keys.isEmpty else { return [:] }
+
+		// Perform blocking
+		let	(returnInfo, error) =
+					DispatchQueue.performBlocking() { completionProc in
+						// Call network client
+						self.networkClient.retrieveInfo(keys: keys) { completionProc(($0, $1)) }
+					}
+		guard error == nil else {
+			// Store error
+			self.recentErrors.append(error!)
+
+			return [:]
+		}
+
+		return returnInfo
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func set(_ info :[String : String]) {
+		// Preflight
+		guard !info.isEmpty else { return [] }
+
+		// Perform blocking
+		let	error =
+					DispatchQueue.performBlocking() { completionProc in
+						// Call network client
+						self.networkClient.updateInfo(info: info) { completionProc($0) }
+					}
+		if error != nil {
+			// Store error
+			self.recentErrors.append(error!)
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
 			-> T {
 		// Setup
