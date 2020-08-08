@@ -55,7 +55,7 @@ public class MDSEphemeral : MDSDocumentStorage {
 
 	private	let	collectionsByNameMap = LockingDictionary</* Name */ String, MDSCollection>()
 	private	let	collectionsByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSCollection>()
-	private	let	collectionValuesMap = LockingDictionary</* Name */ String, /* Document IDs */ [String]>()
+	private	let	collectionValuesMap = LockingDictionary</* Name */ String, /* Document IDs */ Set<String>>()
 
 	private	let	indexesByNameMap = LockingDictionary</* Name */ String, MDSIndex>()
 	private	let	indexesByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSIndex>()
@@ -428,9 +428,14 @@ public class MDSEphemeral : MDSDocumentStorage {
 			let	(includedIDs, notIncludedIDs, _) = $0.update(updateInfos)
 
 			// Update storage
-			let	notIncludedIDsSet = Set<String>(notIncludedIDs)
-			self.collectionValuesMap.update(for: $0.name)
-				{ ($0 ?? []).filter({ !notIncludedIDsSet.contains($0) }) + includedIDs }
+			self.collectionValuesMap.update(for: $0.name) {
+				// Setup
+				var	documentIDs = $0 ?? Set<String>()
+				documentIDs.formSymmetricDifference(notIncludedIDs)
+				documentIDs.formUnion(includedIDs)
+
+				return documentIDs
+			}
 		}
 	}
 
