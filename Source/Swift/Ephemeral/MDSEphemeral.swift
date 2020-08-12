@@ -428,14 +428,8 @@ public class MDSEphemeral : MDSDocumentStorage {
 			let	(includedIDs, notIncludedIDs, _) = $0.update(updateInfos)
 
 			// Update storage
-			self.collectionValuesMap.update(for: $0.name) {
-				// Setup
-				var	documentIDs = $0 ?? Set<String>()
-				documentIDs.formSymmetricDifference(notIncludedIDs)
-				documentIDs.formUnion(includedIDs)
-
-				return documentIDs
-			}
+			self.collectionValuesMap.update(for: $0.name)
+				{ ($0 ?? Set<String>()).subtracting(notIncludedIDs).union(includedIDs) }
 		}
 	}
 
