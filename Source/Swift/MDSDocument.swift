@@ -9,12 +9,22 @@
 import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: MDSDocument
+// MARK: MDSDocumentChangeKind
+public enum MDSDocumentChangeKind {
+	case created
+	case updated
+	case removed
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSDocument
 public protocol MDSDocument {
 
 	// MARK: Types
 	typealias PropertyMap = [/* Property */ String : /* Value */ Any]
+
 	typealias CreationProc = (_ id :String, _ documentStorage :MDSDocumentStorage) -> MDSDocument
+	typealias ChangedProc = (_ document :MDSDocument, _ kind :MDSDocumentChangeKind) -> Void
 
 	// MARK: Properties
 	static	var	documentType :String { get }

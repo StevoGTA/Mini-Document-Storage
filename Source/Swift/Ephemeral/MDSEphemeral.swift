@@ -61,6 +61,8 @@ public class MDSEphemeral : MDSDocumentStorage {
 	private	let	indexesByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSIndex>()
 	private	let	indexValuesMap = LockingDictionary</* Name */ String, [/* Key */ String : /* Document ID */ String]>()
 
+	private	var	documentChangedProcsMap = LockingDictionary</* Document Type */ String, [MDSDocument.ChangedProc]>()
+
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
 	public init() {}
@@ -124,6 +126,9 @@ public class MDSEphemeral : MDSDocumentStorage {
 			updateCollections(for: T.documentType, updateInfos: updateInfos)
 			updateIndexes(for: T.documentType, updateInfos: updateInfos)
 
+			// Call document changed procs
+			self.documentChangedProcsMap.value(for: T.documentType)?.forEach() { $0(document, .created) }
+
 			return document
 		}
 	}
@@ -146,7 +151,7 @@ public class MDSEphemeral : MDSDocumentStorage {
 			return Date()
 		} else {
 			// "Idle"
-			return Date()
+			return self.documentMapsLock.read() { return self.documentBackingMap[document.id]?.creationDate ?? Date() }
 		}
 	}
 
@@ -162,7 +167,8 @@ public class MDSEphemeral : MDSDocumentStorage {
 			return Date()
 		} else {
 			// "Idle"
-			return Date()
+			return self.documentMapsLock.read()
+				{ return self.documentBackingMap[document.id]?.modificationDate ?? Date() }
 		}
 	}
 
@@ -223,6 +229,9 @@ public class MDSEphemeral : MDSDocumentStorage {
 								changedProperties: [property])]
 			updateCollections(for: documentType, updateInfos: updateInfos)
 			updateIndexes(for: documentType, updateInfos: updateInfos)
+
+			// Call document changed procs
+			self.documentChangedProcsMap.value(for: T.documentType)?.forEach() { $0(document, .updated) }
 		}
 	}
 
@@ -249,6 +258,9 @@ public class MDSEphemeral : MDSDocumentStorage {
 				self.documentBackingMap[document.id] = nil
 				self.documentTypeMap.removeSetValueElement(key: documentType, value: document.id)
 			}
+
+			// Call document changed procs
+			self.documentChangedProcsMap.value(for: documentType)?.forEach() { $0(document, .removed) }
 		}
 	}
 
@@ -289,7 +301,7 @@ public class MDSEphemeral : MDSDocumentStorage {
 				batchDocumentInfosMap.forEach() { documentID, batchDocumentInfo in
 					// Is removed?
 					if !batchDocumentInfo.removed {
-							// Add/update document
+						// Add/update document
 						self.documentMapsLock.write() {
 							// Retrieve existing document
 							if let documentBacking = self.documentBackingMap[documentID] {
@@ -309,6 +321,10 @@ public class MDSEphemeral : MDSDocumentStorage {
 									updateInfos.append(
 											MDSUpdateInfo<String>(document: document, revision: 1, value: documentID,
 													changedProperties: changedProperties))
+
+									// Call document changed procs
+									self.documentChangedProcsMap.value(for: documentType)?.forEach()
+										{ $0(document, .updated) }
 								}
 							} else {
 								// Add document
@@ -328,16 +344,30 @@ public class MDSEphemeral : MDSDocumentStorage {
 									updateInfos.append(
 											MDSUpdateInfo<String>(document: document, revision: 1, value: documentID,
 													changedProperties: nil))
+
+									// Call document changed procs
+									self.documentChangedProcsMap.value(for: documentType)?.forEach()
+										{ $0(document, .created) }
 								}
 							}
 						}
 					} else {
-							// Remove document
+						// Remove document
 						self.documentMapsLock.write() {
 							// Update maps
 							self.documentBackingMap[documentID] = nil
 							self.documentTypeMap.removeSetValueElement(key: batchDocumentInfo.documentType,
 									value: documentID)
+
+							// Check if we have creation proc
+							if let creationProc = self.documentCreationProcMap.value(for: documentType) {
+								// Create document
+								let	document = creationProc(documentID, self)
+
+								// Call document changed procs
+								self.documentChangedProcsMap.value(for: documentType)?.forEach()
+									{ $0(document, .removed) }
+							}
 						}
 					}
 				}
@@ -416,6 +446,12 @@ public class MDSEphemeral : MDSDocumentStorage {
 			// Call proc
 			proc($0, T(id: documentID, documentStorage: self))
 		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func registerDocumentChangedProc(documentType :String, proc :@escaping MDSDocument.ChangedProc) {
+		//  Add
+		self.documentChangedProcsMap.update(for: documentType) { ($0 ?? []) + [proc] }
 	}
 
 	// MARK: Private methods

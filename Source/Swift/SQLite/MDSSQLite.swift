@@ -74,6 +74,8 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 	private	var	indexesByNameMap = LockingDictionary</* Name */ String, MDSIndex>()
 	private	var	indexesByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSIndex>()
 
+	private	var	documentChangedProcsMap = LockingDictionary</* Document Type */ String, [MDSDocument.ChangedProc]>()
+
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
 	public init(folderURL :URL, databaseName :String) throws {
@@ -143,6 +145,9 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 								value: documentBacking.id, changedProperties: nil)]
 			updateCollections(for: T.documentType, updateInfos: updateInfos)
 			updateIndexes(for: T.documentType, updateInfos: updateInfos)
+
+			// Call document changed procs
+			self.documentChangedProcsMap.value(for: T.documentType)?.forEach() { $0(document, .created) }
 
 			return document
 		}
@@ -265,6 +270,9 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 								value: documentBacking.id, changedProperties: [property])]
 			updateCollections(for: documentType, updateInfos: updateInfos)
 			updateIndexes(for: documentType, updateInfos: updateInfos)
+
+			// Call document changed procs
+			self.documentChangedProcsMap.value(for: T.documentType)?.forEach() { $0(document, .updated) }
 		}
 	}
 
@@ -298,6 +306,9 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 
 			// Remove from cache
 			self.documentBackingCache.remove([document.id])
+
+			// Call document changed procs
+			self.documentChangedProcsMap.value(for: documentType)?.forEach() { $0(document, .removed) }
 		}
 	}
 
@@ -393,6 +404,10 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 											MDSUpdateInfo<Int64>(document: document,
 													revision: documentBacking.revision, value: documentBacking.id,
 													changedProperties: changedProperties))
+
+									// Call document changed procs
+									self.documentChangedProcsMap.value(for: documentType)?.forEach()
+										{ $0(document, .updated) }
 								}
 							} else {
 								// Add document
@@ -416,6 +431,10 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 											MDSUpdateInfo<Int64>(document: document,
 													revision: documentBacking.revision, value: documentBacking.id,
 													changedProperties: nil))
+
+									// Call document changed procs
+									self.documentChangedProcsMap.value(for: documentType)?.forEach()
+										{ $0(document, .created) }
 								}
 							}
 						} else if let documentBacking = batchDocumentInfo.reference {
@@ -425,6 +444,16 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 
 							// Remove from collections and indexes
 							removedBatchQueue.add(documentBacking.id)
+
+							// Check if we have creation proc
+							if let creationProc = self.documentCreationProcMap.value(for: documentType) {
+								// Create document
+								let	document = creationProc(documentID, self)
+
+								// Call document changed procs
+								self.documentChangedProcsMap.value(for: documentType)?.forEach()
+									{ $0(document, .removed) }
+							}
 						}
 					}
 
@@ -752,6 +781,12 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 							modificationDate: $1.documentBacking.modificationDate,
 							propertyMap: $1.documentBacking.propertyMap))
 		})
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func registerDocumentChangedProc(documentType :String, proc :@escaping MDSDocument.ChangedProc) {
+		//  Add
+		self.documentChangedProcsMap.update(for: documentType) { ($0 ?? []) + [proc] }
 	}
 
 	// MARK: Instance methods

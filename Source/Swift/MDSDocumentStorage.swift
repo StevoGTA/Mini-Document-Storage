@@ -53,6 +53,8 @@ public protocol MDSDocumentStorage : class {
 	func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
 			isUpToDate :Bool, keysSelector :String, keysProc :@escaping (_ document :T) -> [String])
 	func iterateIndex<T : MDSDocument>(name :String, keys :[String], proc :(_ key :String, _ document :T) -> Void)
+
+	func registerDocumentChangedProc(documentType :String, proc :@escaping MDSDocument.ChangedProc)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -61,7 +63,7 @@ extension MDSDocumentStorage {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	public func value(for key :String) -> String? { info(for: [key])[key] }
+	public func value<T>(for key :String) -> T? { info(for: [key])[key] as? T }
 	
 	//------------------------------------------------------------------------------------------------------------------
 	public func newDocument<T : MDSDocument>() -> T { newDocument() { T(id: $0, documentStorage: $1) } }
