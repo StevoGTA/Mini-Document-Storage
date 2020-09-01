@@ -537,6 +537,13 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		keysToDocumentIDsMap.forEach() { proc($0.key, documentsMap[$0.value]!) }
 	}
 
+	//------------------------------------------------------------------------------------------------------------------
+	public func registerDocumentChangedProc(documentType :String,
+			proc :@escaping (_ document :MDSDocument, _ documentChangeKind :MDSDocumentChangeKind) -> Void) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
 	// MARK: Private methods
 	//------------------------------------------------------------------------------------------------------------------
 	private func documentBacking(for document :MDSDocument) -> DocumentBacking {
