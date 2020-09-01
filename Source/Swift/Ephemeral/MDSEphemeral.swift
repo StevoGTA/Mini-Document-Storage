@@ -259,6 +259,16 @@ public class MDSEphemeral : MDSDocumentStorage {
 				self.documentTypeMap.removeSetValueElement(key: documentType, value: document.id)
 			}
 
+			// Remove from collections and indexes
+			self.collectionValuesMap.keys.forEach() {
+				// Remove document from this collection
+				self.collectionValuesMap.update(for: $0) { $0?.removing(document.id) }
+			}
+			self.indexValuesMap.keys.forEach() {
+				// Remove document from this index
+				self.indexValuesMap.update(for: $0) { $0?.filter({ $0.value != document.id }) }
+			}
+
 			// Call document changed procs
 			self.documentChangedProcsMap.value(for: documentType)?.forEach() { $0(document, .removed) }
 		}
