@@ -337,11 +337,9 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 	public func iterate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void) {
 		// Iterate
 // TODO: For now, don't know how to do SQLite actions during processing results, so cache results, then re-iterate
-		var	documentIDs = [String]()
 		autoreleasepool() {
 			// Iterate
-			iterateDocumentBackingInfos(documentType: T.documentType, documentIDs: documentIDs)
-				{ documentIDs.append($0.documentID) }
+			iterateDocumentBackingInfos(documentType: T.documentType, documentIDs: documentIDs) { _ = $0 }
 		}
 		autoreleasepool() { documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) } }
 	}
