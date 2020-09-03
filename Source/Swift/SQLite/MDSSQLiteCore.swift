@@ -187,12 +187,18 @@ class MDSSQLiteCore {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func set(_ value :Any, for key :String) {
-		// Store value
-		self.infoTable.insertOrReplaceRow([
-											(self.infoTable.keyTableColumn, key),
-											(self.infoTable.valueTableColumn, value),
-										  ])
+	func set(_ value :Any?, for key :String) {
+		// Storing or removing
+		if value != nil {
+			// Store value
+			self.infoTable.insertOrReplaceRow([
+												(self.infoTable.keyTableColumn, key),
+												(self.infoTable.valueTableColumn, value!),
+											  ])
+		} else {
+			// Removing
+			self.infoTable.deleteRows(self.infoTable.keyTableColumn, values: [key])
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

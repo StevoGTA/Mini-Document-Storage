@@ -25,6 +25,7 @@ public protocol MDSDocumentStorage : class {
 	// MARK: Instance methods
 	func info(for keys :[String]) -> [String : String]
 	func set(_ info :[String : String])
+	func remove(keys :[String])
 
 	func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T) -> T
 

@@ -69,21 +69,13 @@ public class MDSEphemeral : MDSDocumentStorage {
 
 	// MARK: MDSDocumentStorage implementation
 	//------------------------------------------------------------------------------------------------------------------
-	public func info(for keys :[String]) -> [String : String] {
-		// Setup
-		var	info = [String : String]()
-
-		// Iterate keys
-		keys.forEach() { info[$0] = self.info[$0] }
-
-		return info
-	}
+	public func info(for keys :[String]) -> [String : String] { return self.info.filter({ keys.contains($0.key) }) }
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func set(_ info :[String : String]) {
-		// Merge
-		self.info.merge(info, uniquingKeysWith: { $1 })
-	}
+	public func set(_ info :[String : String]) { self.info.merge(info, uniquingKeysWith: { $1 }) }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func remove(keys :[String]) { keys.forEach() { self.info[$0] = nil } }
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)

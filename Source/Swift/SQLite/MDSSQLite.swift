@@ -102,10 +102,10 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func set(_ valueMap :[String : String]) {
-		// Update
-		valueMap.forEach() { self.sqliteCore.set($0.value, for: $0.key) }
-	}
+	public func set(_ info :[String : String]) { info.forEach() { self.sqliteCore.set($0.value, for: $0.key) } }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func remove(keys :[String]) { keys.forEach() { self.sqliteCore.set(nil, for: $0) } }
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
