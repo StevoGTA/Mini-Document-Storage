@@ -71,7 +71,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func set(_ info :[String : String]) {
 		// Preflight
-		guard !info.isEmpty else { return [] }
+		guard !info.isEmpty else { return }
 
 		// Perform blocking
 		let	error =
@@ -83,6 +83,12 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			// Store error
 			self.recentErrors.append(error!)
 		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func remove(keys :[String]) {
+		// Unimplemented
+		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
