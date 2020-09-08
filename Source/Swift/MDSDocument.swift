@@ -105,12 +105,15 @@ extension MDSDocument {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	// 9/8/2020 - Stevo removing "NSUserInfo" from the round-trip as it can contain nested NSErrors which are not
+	//	currently converted to dictionaries, which trigger fatal errors when converted to JSON.
+	//	Can re-enable this in the future if required.
 	public func nsError(for key :String) -> NSError? {
 		// Retrieve info
-		guard let info = map(for: key), let domain = info["NSDomain"] as? String, let code = info["NSCode"] as? Int,
-				let userInfo = info["NSUserInfo"] as? [String : Any] else { return nil }
+		guard let info = map(for: key), let domain = info["NSDomain"] as? String, let code = info["NSCode"] as? Int else
+				{ return nil }
 
-		return NSError(domain: domain, code: code, userInfo: userInfo)
+		return NSError(domain: domain, code: code, userInfo: [:])
 	}
 	@discardableResult public func set(_ value :NSError?, for key :String) -> NSError? {
 		// Check if different
@@ -124,7 +127,6 @@ extension MDSDocument {
 										"$class": "NSError",
 										"NSDomain": value!.domain,
 										"NSCode": value!.code,
-										"NSUserInfo": value!.userInfo,
 									   ]
 			self.documentStorage.set(info, for: key, in: self)
 		} else {
