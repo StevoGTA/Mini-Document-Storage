@@ -1020,7 +1020,8 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 					SQLiteInnerJoin(documentTables.infoTable, tableColumn: documentTables.infoTable.idTableColumn,
 									to: documentTables.contentTable)
 							.and(documentTables.infoTable, tableColumn: documentTables.infoTable.idTableColumn,
-									to: indexContentsTable)) {
+									to: indexContentsTable),
+				where: SQLiteWhere(tableColumn: indexContentsTable.keyTableColumn, values: keys)) {
 					// Setup
 					let	key = MDSSQLiteCore.key(for: indexContentsTable, resultsRow: $0)
 
