@@ -113,7 +113,10 @@ extension MDSDocument {
 		guard let info = map(for: key), let domain = info["NSDomain"] as? String, let code = info["NSCode"] as? Int else
 				{ return nil }
 
-		return NSError(domain: domain, code: code, userInfo: [:])
+		var	userInfo = [String : Any]()
+		userInfo[NSLocalizedDescriptionKey] = info[NSLocalizedDescriptionKey]
+
+		return NSError(domain: domain, code: code, userInfo: userInfo)
 	}
 	@discardableResult public func set(_ value :NSError?, for key :String) -> NSError? {
 		// Check if different
@@ -123,11 +126,12 @@ extension MDSDocument {
 		// Set value
 		if value != nil {
 			// Have value
-			let	info :[String : Any] = [
-										"$class": "NSError",
+			var	info :[String : Any] = [
 										"NSDomain": value!.domain,
 										"NSCode": value!.code,
 									   ]
+			info[NSLocalizedDescriptionKey] = value!.userInfo[NSLocalizedDescriptionKey]
+
 			self.documentStorage.set(info, for: key, in: self)
 		} else {
 			// No value
