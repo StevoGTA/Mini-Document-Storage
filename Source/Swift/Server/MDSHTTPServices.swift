@@ -254,7 +254,7 @@ class MDSHTTPServices {
 			documentIDs :[String]) -> DocumentRevisionHTTPEndpointRequest {
 		// Return endpoint request
 		return DocumentRevisionHTTPEndpointRequest(method: .get, path: "/documents/\(documentStorageID)/\(type)",
-				queryParameters: [
+				queryComponents: [
 									"documentID": documentIDs,
 									"fullInfo": 0,
 								 ])
@@ -263,7 +263,7 @@ class MDSHTTPServices {
 			-> DocumentInfoHTTPEndpointRequest {
 		// Return endpoint request
 		return DocumentInfoHTTPEndpointRequest(method: .get, path: "/documents/\(documentStorageID)/\(type)",
-				queryParameters: [
+				queryComponents: [
 									"documentID": documentIDs,
 									"fullInfo": 1,
 								 ])
@@ -272,7 +272,7 @@ class MDSHTTPServices {
 			-> DocumentRevisionHTTPEndpointRequest {
 		// Return endpoint request
 		return DocumentRevisionHTTPEndpointRequest(method: .get, path: "/documents/\(documentStorageID)/\(type)",
-				queryParameters: [
+				queryComponents: [
 									"sinceRevision": sinceRevision,
 									"fullInfo": 0,
 								 ])
@@ -281,7 +281,7 @@ class MDSHTTPServices {
 			DocumentInfoHTTPEndpointRequest {
 		// Return endpoint request
 		return DocumentInfoHTTPEndpointRequest(method: .get, path: "/documents/\(documentStorageID)/\(type)",
-				queryParameters: [
+				queryComponents: [
 									"sinceRevision": sinceRevision,
 									"fullInfo": 1,
 								 ])
@@ -440,13 +440,13 @@ class MDSHTTPServices {
 			DocumentRevisionHTTPEndpointRequest {
 		// Return endpoint request
 		return DocumentRevisionHTTPEndpointRequest(method: .get, path: "/collection/\(documentStorageID)/\(name)",
-				queryParameters: ["fullInfo": 0])
+				queryComponents: ["fullInfo": 0])
 	}
 	static func httpEndpointRequestForGetCollectionInfo(documentStorageID :String, name :String) ->
 			DocumentInfoHTTPEndpointRequest {
 		// Return endpoint request
 		return DocumentInfoHTTPEndpointRequest(method: .get, path: "/collection/\(documentStorageID)/\(name)",
-				queryParameters: ["fullInfo": 1])
+				queryComponents: ["fullInfo": 1])
 	}
 
 	// MARK: PUT Collection
@@ -578,7 +578,7 @@ class MDSHTTPServices {
 			DocumentRevisionMapHTTPEndpointRequest {
 		// Return endpoint request
 		return DocumentRevisionMapHTTPEndpointRequest(method: .get, path: "/index/\(documentStorageID)/\(name)",
-				queryParameters: [
+				queryComponents: [
 									"key": keys,
 									"fullInfo": 0,
 								 ])
@@ -587,7 +587,7 @@ class MDSHTTPServices {
 			DocumentInfoMapHTTPEndpointRequest {
 		// Return endpoint request
 		return DocumentInfoMapHTTPEndpointRequest(method: .get, path: "/index/\(documentStorageID)/\(name)",
-				queryParameters: [
+				queryComponents: [
 									"key": keys,
 									"fullInfo": 1,
 								 ])
@@ -704,7 +704,7 @@ class MDSHTTPServices {
 			JSONHTTPEndpointRequest<[String : String]> {
 		// Return endpoint request
 		return JSONHTTPEndpointRequest(method: .get, path: "/info/\(documentStorageID)",
-				queryParameters: ["key": keys])
+				queryComponents: ["key": keys])
 	}
 
 	//MARK: POST Info
