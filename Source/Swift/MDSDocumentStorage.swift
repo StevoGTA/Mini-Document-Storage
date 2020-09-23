@@ -64,7 +64,7 @@ extension MDSDocumentStorage {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	public func value<T>(for key :String) -> T? { info(for: [key])[key] as? T }
+	public func string(for key :String) -> String? { info(for: [key])[key] }
 	
 	//------------------------------------------------------------------------------------------------------------------
 	public func newDocument<T : MDSDocument>() -> T { newDocument() { T(id: $0, documentStorage: $1) } }
