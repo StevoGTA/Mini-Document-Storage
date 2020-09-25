@@ -46,7 +46,7 @@ extension MDSDocument {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	public func array<T>(for key :String) -> [T]? { self.documentStorage.value(for: key, in: self) as? [T] }
+	public func array(for key :String) -> [Any]? { self.documentStorage.value(for: key, in: self) as? [Any] }
 	public func set<T>(_ value :[T]?, for key :String) { self.documentStorage.set(value, for: key, in: self) }
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -180,11 +180,11 @@ extension MDSDocument {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func set<T>(for key :String) -> Set<T>? {
+	public func set(for key :String) -> Set<AnyHashable>? {
 		// Query value as array
-		if let array = self.documentStorage.value(for: key, in: self) as? [T] {
+		if let array = self.documentStorage.value(for: key, in: self) as? [AnyHashable] {
 			// Have value
-			return Set<T>(array)
+			return Set<AnyHashable>(array)
 		} else {
 			// No value
 			return nil
@@ -243,7 +243,7 @@ extension MDSDocument {
 	//------------------------------------------------------------------------------------------------------------------
 	public func documents<T : MDSDocument>(for key :String) -> [T]? {
 		// Retrieve document ID
-		guard let documentIDs :[String] = array(for: key) else { return nil }
+		guard let documentIDs = array(for: key) as? [String] else { return nil }
 
 		return self.documentStorage.documents(for: documentIDs)
 	}
