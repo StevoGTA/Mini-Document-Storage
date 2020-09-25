@@ -234,8 +234,8 @@ class MDSSQLiteCore {
 								references: [(contentIDTableColumn, infoTable, infoTable.idTableColumn)])
 
 			// Create tables
-			_ = infoTable.create()
-			_ = contentTable.create()
+			infoTable.create()
+			contentTable.create()
 
 			// Store in key value store
 			self.documentTablesMap.set((infoTable, contentTable), for: documentType)
