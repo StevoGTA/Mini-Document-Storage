@@ -50,7 +50,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func info(for keys :[String]) -> [String : String] {
 		// Preflight
-		guard !keys.isEmpty else { return [:] }
+		guard !keys.isEmpty else { [:] }
 
 		// Perform blocking
 		let	(returnInfo, error) =
@@ -126,6 +126,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func document<T : MDSDocument>(for documentID :String) -> T? {
+		// Retrieve document
 		var	document :T?
 		iterate(documentIDs: [documentID]) { document = $0 }
 
@@ -210,7 +211,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 				batchInfo.addDocument(documentType: documentBacking.type, documentID: document.id,
 								reference: documentBacking, creationDate: documentBacking.creationDate,
 								modificationDate: documentBacking.modificationDate,
-								valueProc: { return documentBacking.json[$0] })
+								valueProc: { documentBacking.json[$0] })
 						.set(valueUse, for: property)
 			}
 		} else if var propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: document.id) {
@@ -404,7 +405,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 				collectionLastDocumentRevision: (resultInfo!["collectionLastDocumentRevision"] as! UInt))
 
 		// Update creation proc map
-		self.documentCreationProcMap.set({ return T(id: $0, documentStorage: $1) }, for: T.documentType)
+		self.documentCreationProcMap.set({ T(id: $0, documentStorage: $1) }, for: T.documentType)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -484,7 +485,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 				indexLastDocumentRevision: (info!["indexLastDocumentRevision"] as! UInt))
 
 		// Update creation proc map
-		self.documentCreationProcMap.set({ return T(id: $0, documentStorage: $1) }, for: T.documentType)
+		self.documentCreationProcMap.set({ T(id: $0, documentStorage: $1) }, for: T.documentType)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -539,7 +540,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		let	documents :[T] =
 					self.documents(for: documentInfos,
 							creationProc: self.documentCreationProcMap.value(for: T.documentType)!)
-		let	documentsMap = Dictionary(documents.map({ return ($0.id, $0) }))
+		let	documentsMap = Dictionary(documents.map({ ($0.id, $0) }))
 		keysToDocumentIDsMap.forEach() { proc($0.key, documentsMap[$0.value]!) }
 	}
 
@@ -688,7 +689,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	@discardableResult
 	private func createDocuments(documentType :String, infos :[[String : Any]]) -> [String] {
 		// Preflight
-		guard !infos.isEmpty else { return [] }
+		guard !infos.isEmpty else { [] }
 
 		// Perform blocking
 		let	(returnInfos, error) =
@@ -738,7 +739,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	private func retrieveDocuments(for ids :[String], documentType :String) ->
 			[MDSDocumentBackingInfo<DocumentBacking>] {
 		// Preflight
-		guard !ids.isEmpty else { return [] }
+		guard !ids.isEmpty else { [] }
 
 		// Perform blocking
 		let	(infos, error) =
@@ -793,7 +794,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 		// Setup
 		let	infos :[(documentID :String, updatedPropertyMap :[String : Any], removedKeys :[String], active :Bool)] =
-					documentInfos.map() { return ($0.documentID, $0.updatedPropertyMap, $0.removedKeys, $0.active) }
+					documentInfos.map() { ($0.documentID, $0.updatedPropertyMap, $0.removedKeys, $0.active) }
 
 		// Perform blocking
 		let	(returnInfos, error) =

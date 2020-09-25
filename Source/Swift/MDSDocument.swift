@@ -36,19 +36,21 @@ public protocol MDSDocument {
 	init(id :String, documentStorage :MDSDocumentStorage)
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSDocument extension
 extension MDSDocument {
 
 	// MARK: Properties
-	public	var	creationDate :Date { return self.documentStorage.creationDate(for: self) }
-	public	var	modificationDate :Date { return self.documentStorage.modificationDate(for: self) }
+	public	var	creationDate :Date { self.documentStorage.creationDate(for: self) }
+	public	var	modificationDate :Date { self.documentStorage.modificationDate(for: self) }
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	public func array(for key :String) -> [Any]? { return self.documentStorage.value(for: key, in: self) as? [Any] }
+	public func array<T>(for key :String) -> [T]? { self.documentStorage.value(for: key, in: self) as? [T] }
 	public func set<T>(_ value :[T]?, for key :String) { self.documentStorage.set(value, for: key, in: self) }
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func bool(for key :String) -> Bool? { return self.documentStorage.value(for: key, in: self) as? Bool }
+	public func bool(for key :String) -> Bool? { self.documentStorage.value(for: key, in: self) as? Bool }
 	@discardableResult public func set(_ value :Bool?, for key :String) -> Bool? {
 		// Check if different
 		let	previousValue = bool(for: key)
@@ -79,7 +81,7 @@ extension MDSDocument {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func date(for key :String) -> Date? { return self.documentStorage.date(for: key, in: self) }
+	public func date(for key :String) -> Date? { self.documentStorage.date(for: key, in: self) }
 	@discardableResult public func set(_ value :Date?, for key :String) -> Date? {
 		// Check if different
 		let	previousValue = date(for: key)
@@ -92,7 +94,7 @@ extension MDSDocument {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func double(for key :String) -> Double? { return self.documentStorage.value(for: key, in: self) as? Double }
+	public func double(for key :String) -> Double? { self.documentStorage.value(for: key, in: self) as? Double }
 	@discardableResult public func set(_ value :Double?, for key :String) -> Double? {
 		// Check if different
 		let	previousValue = double(for: key)
@@ -142,7 +144,7 @@ extension MDSDocument {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func int(for key :String) -> Int? { return self.documentStorage.value(for: key, in: self) as? Int }
+	public func int(for key :String) -> Int? { self.documentStorage.value(for: key, in: self) as? Int }
 	@discardableResult public func set(_ value :Int?, for key :String) -> Int? {
 		// Check if different
 		let	previousValue = int(for: key)
@@ -155,7 +157,7 @@ extension MDSDocument {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func int64(for key :String) -> Int64? { return self.documentStorage.value(for: key, in: self) as? Int64 }
+	public func int64(for key :String) -> Int64? { self.documentStorage.value(for: key, in: self) as? Int64 }
 	@discardableResult public func set(_ value :Int64?, for key :String) -> Int64? {
 		// Check if different
 		let	previousValue = int64(for: key)
@@ -178,7 +180,23 @@ extension MDSDocument {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func string(for key :String) -> String? { return self.documentStorage.value(for: key, in: self) as? String }
+	public func set<T>(for key :String) -> Set<T>? {
+		// Query value as array
+		if let array = self.documentStorage.value(for: key, in: self) as? [T] {
+			// Have value
+			return Set<T>(array)
+		} else {
+			// No value
+			return nil
+		}
+	}
+	public func set<T>(_ value :Set<T>?, for key :String) {
+		// Set value
+		self.documentStorage.set((value != nil) ? Array(value!) : nil, for: key, in: self)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func string(for key :String) -> String? { self.documentStorage.value(for: key, in: self) as? String }
 	@discardableResult public func set(_ value :String?, for key :String) -> String? {
 		// Check if different
 		let	previousValue = string(for: key)
@@ -191,7 +209,7 @@ extension MDSDocument {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func uint(for key :String) -> UInt? { return self.documentStorage.value(for: key, in: self) as? UInt }
+	public func uint(for key :String) -> UInt? { self.documentStorage.value(for: key, in: self) as? UInt }
 	@discardableResult public func set(_ value :UInt?, for key :String) -> UInt? {
 		// Check if different
 		let	previousValue = uint(for: key)
@@ -225,7 +243,7 @@ extension MDSDocument {
 	//------------------------------------------------------------------------------------------------------------------
 	public func documents<T : MDSDocument>(for key :String) -> [T]? {
 		// Retrieve document ID
-		guard let documentIDs = array(for: key) as? [String] else { return nil }
+		guard let documentIDs :[String] = array(for: key) else { return nil }
 
 		return self.documentStorage.documents(for: documentIDs)
 	}
@@ -265,7 +283,7 @@ extension MDSDocument {
 public class MDSDocumentInstance : Hashable, MDSDocument {
 
 	// MARK: Properties
-	class	public	var documentType: String { return "" }
+	class	public	var documentType: String { "" }
 
 			public	let	id :String
 			public	let	documentStorage: MDSDocumentStorage
@@ -279,7 +297,7 @@ public class MDSDocumentInstance : Hashable, MDSDocument {
 	}
 
 	// MARK: Equatable implementation
-	static	public	func == (lhs: MDSDocumentInstance, rhs: MDSDocumentInstance) -> Bool { return lhs.id == rhs.id }
+	static	public	func == (lhs: MDSDocumentInstance, rhs: MDSDocumentInstance) -> Bool { lhs.id == rhs.id }
 
 	// MARK: Hashable implementation
 	public func hash(into hasher: inout Hasher) { hasher.combine(self.id) }

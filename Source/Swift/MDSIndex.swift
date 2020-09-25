@@ -31,7 +31,7 @@ class MDSIndexSpecialized<T : MDSDocument> : MDSIndex {
 			let	name :String
 			let	relevantProperties :Set<String>
 
-			var	documentType :String { return T.documentType }
+			var	documentType :String { T.documentType }
 			var	lastRevision :Int
 
 	private	let	keysProc :(_ document :T) -> [String]

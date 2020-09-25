@@ -92,12 +92,11 @@ class MDSSQLiteCore {
 					try! JSONSerialization.jsonObject(
 							with: resultsRow.blob(for: contentTable.jsonTableColumn)!) as! [String : Any]
 
-		return
-				MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>(documentID: documentRevisionInfo.documentID,
-						documentBacking:
-								MDSSQLiteDocumentBacking(id: id, revision: documentRevisionInfo.revision,
-										creationDate: creationDate, modificationDate: modificationDate,
-										propertyMap: propertyMap))
+		return MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>(documentID: documentRevisionInfo.documentID,
+				documentBacking:
+						MDSSQLiteDocumentBacking(id: id, revision: documentRevisionInfo.revision,
+								creationDate: creationDate, modificationDate: modificationDate,
+								propertyMap: propertyMap))
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -246,10 +245,7 @@ class MDSSQLiteCore {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func currentRevision(for documentType :String) -> Int {
-		// Return current revision
-		return self.documentLastRevisionMap.value(for: documentType) ?? 0
-	}
+	func currentRevision(for documentType :String) -> Int { self.documentLastRevisionMap.value(for: documentType) ?? 0 }
 
 	//------------------------------------------------------------------------------------------------------------------
 	func nextRevision(for documentType :String) -> Int {
@@ -449,10 +445,7 @@ class MDSSQLiteCore {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func sqliteTable(forCollectionNamed name :String) -> SQLiteTable {
-		// Return table
-		return self.collectionTablesMap.value(for: name)!
-	}
+	func sqliteTable(forCollectionNamed name :String) -> SQLiteTable { self.collectionTablesMap.value(for: name)! }
 
 	//------------------------------------------------------------------------------------------------------------------
 	func updateCollection(name :String, includedIDs :[Int64], notIncludedIDs :[Int64], lastRevision :Int) {
@@ -485,10 +478,7 @@ class MDSSQLiteCore {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func queryCollectionDocumentCount(name :String) -> UInt {
-		// Return count
-		return self.collectionTablesMap.value(for: name)!.count()
-	}
+	func queryCollectionDocumentCount(name :String) -> UInt { self.collectionTablesMap.value(for: name)!.count() }
 
 	//------------------------------------------------------------------------------------------------------------------
 	func registerIndex(documentType :String, name :String, version :UInt, isUpToDate :Bool) -> Int {
@@ -551,10 +541,7 @@ class MDSSQLiteCore {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func sqliteTable(forIndexNamed name :String) -> SQLiteTable {
-		// Return table
-		return self.indexTablesMap.value(for: name)!
-	}
+	func sqliteTable(forIndexNamed name :String) -> SQLiteTable { self.indexTablesMap.value(for: name)! }
 
 	//------------------------------------------------------------------------------------------------------------------
 	func updateIndex(name :String, keysInfos :[(keys :[String], value :Int64)], removedIDs :[Int64],

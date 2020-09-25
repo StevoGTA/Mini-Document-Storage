@@ -69,7 +69,7 @@ public class MDSEphemeral : MDSDocumentStorage {
 
 	// MARK: MDSDocumentStorage implementation
 	//------------------------------------------------------------------------------------------------------------------
-	public func info(for keys :[String]) -> [String : String] { return self.info.filter({ keys.contains($0.key) }) }
+	public func info(for keys :[String]) -> [String : String] { self.info.filter({ keys.contains($0.key) }) }
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func set(_ info :[String : String]) { self.info.merge(info, uniquingKeysWith: { $1 }) }
@@ -126,10 +126,7 @@ public class MDSEphemeral : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func document<T : MDSDocument>(for documentID :String) -> T? {
-		// Call proc
-		return T(id: documentID, documentStorage: self)
-	}
+	public func document<T : MDSDocument>(for documentID :String) -> T? { T(id: documentID, documentStorage: self) }
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func creationDate(for document :MDSDocument) -> Date {
@@ -203,7 +200,7 @@ public class MDSEphemeral : MDSDocumentStorage {
 						creationDate: Date(), modificationDate: Date(), valueProc: { property in
 									// Play nice with others
 									self.documentMapsLock.read()
-										{ return self.documentBackingMap[document.id]?.propertyMap[property] }
+										{ self.documentBackingMap[document.id]?.propertyMap[property] }
 								})
 						.set(value, for: property)
 			}
@@ -269,7 +266,7 @@ public class MDSEphemeral : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func iterate<T : MDSDocument>(proc :(_ document : T) -> Void) {
 		// Collect document IDs
-		let	documentIDs = self.documentMapsLock.read() { return self.documentTypeMap[T.documentType] ?? Set<String>() }
+		let	documentIDs = self.documentMapsLock.read() { self.documentTypeMap[T.documentType] ?? Set<String>() }
 
 		// Call proc on each storable document
 		documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) }

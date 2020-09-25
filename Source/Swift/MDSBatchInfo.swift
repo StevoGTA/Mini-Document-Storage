@@ -133,7 +133,7 @@ public class MDSBatchInfo<T> {
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
 	public func addDocument(documentType :String, documentID :String, reference :T? = nil, creationDate :Date,
-			modificationDate :Date, valueProc :@escaping MDSBatchDocumentInfo<T>.ValueProc = { _ in return nil }) ->
+			modificationDate :Date, valueProc :@escaping MDSBatchDocumentInfo<T>.ValueProc = { _ in nil }) ->
 			MDSBatchDocumentInfo<T> {
 		// Setup
 		let	batchDocumentInfo =
@@ -149,7 +149,7 @@ public class MDSBatchInfo<T> {
 	//------------------------------------------------------------------------------------------------------------------
 	public func batchDocumentInfo(for documentID :String) -> MDSBatchDocumentInfo<T>? {
 		// Return document
-		return self.batchDocumentInfoMapLock.read() { return self.batchDocumentInfoMap[documentID] }
+		return self.batchDocumentInfoMapLock.read() { self.batchDocumentInfoMap[documentID] }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

@@ -54,8 +54,7 @@ class MDSSQLiteDocumentBacking {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	func value(for property :String) -> Any?
-			{ return self.propertiesLock.read() { return self.propertyMapInternal[property] } }
+	func value(for property :String) -> Any? { self.propertiesLock.read() { self.propertyMapInternal[property] } }
 
 	//------------------------------------------------------------------------------------------------------------------
 	func set(_ value :Any?, for property :String, documentType :String, with sqliteCore :MDSSQLiteCore,

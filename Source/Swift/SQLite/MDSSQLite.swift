@@ -23,7 +23,7 @@ extension MDSSQLiteError : LocalizedError {
 	public	var	errorDescription :String? {
 						switch self {
 							case .documentNotFound(let documentType, let documentID):
-								return "MDSSQLite cannot find document of type \(documentType) with id \"\(documentID)\""
+								"MDSSQLite cannot find document of type \(documentType) with id \"\(documentID)\""
 						}
 					}
 }

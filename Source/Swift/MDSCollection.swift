@@ -31,7 +31,7 @@ class MDSCollectionSpecialized<T : MDSDocument> : MDSCollection {
 			let	name :String
 			let	relevantProperties: Set<String>
 
-			var	documentType :String { return T.documentType }
+			var	documentType :String { T.documentType }
 			var	lastRevision :Int
 
 	private	let	isIncludedProc :(_ document :T, _ info :[String : Any]) -> Bool
