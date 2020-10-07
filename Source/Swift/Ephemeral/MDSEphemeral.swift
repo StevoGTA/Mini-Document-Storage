@@ -543,8 +543,8 @@ public class MDSEphemeral : MDSDocumentStorageServerBacking {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerCollection(named name :String, documentType :String, version :UInt, isIncludedSelector :String,
-			relevantProperties :[String], info :MDSDocument.PropertyMap, isUpToDate :Bool) {
+	func registerCollection(named name :String, documentType :String, version :UInt, relevantProperties :[String],
+			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any]) {
 		// Not implemented
 		fatalError("Unimplemented")
 	}
@@ -587,8 +587,8 @@ public class MDSEphemeral : MDSDocumentStorageServerBacking {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerIndex(named name :String, documentType :String, version :UInt, keySelector :String,
-			relevantProperties :[String]) {
+	func registerIndex(named name :String, documentType :String, version :UInt, relevantProperties :[String],
+			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any]) {
 		// Not implemented
 		fatalError("Unimplemented")
 	}

@@ -208,8 +208,8 @@ class MDSDocumentStorageServer {
 
 			// Register collection
 			documentStorageServerBacking.registerCollection(named: info.name, documentType: info.documentType,
-					version: info.version, isIncludedSelector: info.isIncludedSelector,
-					relevantProperties: info.relevantProperties, info: info.info, isUpToDate: info.isUpToDate)
+					version: info.version, relevantProperties: info.relevantProperties, isUpToDate: info.isUpToDate,
+					isIncludedSelector: info.isIncludedSelector, isIncludedSelectorInfo: info.isIncludedSelectorInfo)
 
 			return (.ok, nil, nil)
 		}
@@ -271,7 +271,8 @@ class MDSDocumentStorageServer {
 
 			// Register index
 			documentStorageServerBacking.registerIndex(named: info.name, documentType: info.documentType,
-					version: info.version, keySelector: info.keySelector, relevantProperties: info.relevantProperties)
+					version: info.version, relevantProperties: info.relevantProperties, isUpToDate: info.isUpToDate,
+					keysSelector: info.keysSelector, keysSelectorInfo: info.keysSelectorInfo)
 
 			return (.ok, nil, nil)
 		}

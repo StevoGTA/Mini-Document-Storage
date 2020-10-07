@@ -24,13 +24,13 @@ protocol MDSDocumentStorageServerBacking : MDSDocumentStorage {
 			proc :(_ documentFullInfo :MDSDocumentFullInfo) -> Void)
 	func updateDocuments(documentType :String, documentUpdateInfos :[MDSDocumentUpdateInfo])
 
-	func registerCollection(named name :String, documentType :String, version :UInt, isIncludedSelector :String,
-			relevantProperties :[String], info :MDSDocument.PropertyMap, isUpToDate :Bool)
+	func registerCollection(named name :String, documentType :String, version :UInt, relevantProperties :[String],
+			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any])
 	func iterateCollection(name :String, proc :@escaping (_ documentRevisionInfo :MDSDocumentRevisionInfo) -> Void)
 	func iterateCollection(name :String, proc :(_ documentFullInfo :MDSDocumentFullInfo) -> Void)
 
-	func registerIndex(named name :String, documentType :String, version :UInt, keySelector :String,
-			relevantProperties :[String])
+	func registerIndex(named name :String, documentType :String, version :UInt, relevantProperties :[String],
+			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any])
 	func iterateIndex(name :String, keys :[String],
 			proc :@escaping (_ key :String, _ documentRevisionInfo :MDSDocumentRevisionInfo) -> Void)
 	func iterateIndex(name :String, keys :[String],
