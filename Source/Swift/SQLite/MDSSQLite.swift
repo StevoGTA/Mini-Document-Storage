@@ -468,8 +468,8 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
-			info :[String : Any], isUpToDate :Bool, isIncludedSelector :String,
-			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool) {
+			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
+			isIncludedProc :@escaping (_ document :T) -> Bool) {
 		// Ensure this collection has not already been registered
 		guard self.collectionsByNameMap.value(for: name) == nil else { return }
 
@@ -479,12 +479,12 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 		// Register collection
 		let	lastRevision =
 					self.sqliteCore.registerCollection(documentType: T.documentType, name: name, version: version,
-							info: info, isUpToDate: isUpToDate)
+							isUpToDate: isUpToDate)
 
 		// Create collection
 		let	collection =
 					MDSCollectionSpecialized(name: name, relevantProperties: relevantProperties,
-							lastRevision: lastRevision, isIncludedProc: isIncludedProc, info: info)
+							lastRevision: lastRevision, isIncludedProc: isIncludedProc)
 
 		// Add to maps
 		self.collectionsByNameMap.set(collection, for: name)
@@ -513,7 +513,8 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
-			isUpToDate :Bool, keysSelector :String, keysProc :@escaping (_ document :T) -> [String]) {
+			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any],
+			keysProc :@escaping (_ document :T) -> [String]) {
 		// Ensure this index has not already been registered
 		guard self.indexesByNameMap.value(for: name) == nil else { return }
 

@@ -382,15 +382,15 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
-			info :[String : Any], isUpToDate :Bool, isIncludedSelector :String,
-			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool) {
+			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
+			isIncludedProc :@escaping (_ document :T) -> Bool) {
 		// Perform blocking
 		let	(resultInfo, error) =
 					DispatchQueue.performBlocking() { completionProc in
 						// Call network client
-						self.networkClient.registerCollection(name: name, documentType: T.documentType,
-								version: version, relevantProperties: relevantProperties, info: info,
-								isUpToDate: isUpToDate, isIncludedSelector: isIncludedSelector)
+						self.networkClient.registerCollection(documentType: T.documentType, name: name,
+								version: version, relevantProperties: relevantProperties, isUpToDate: isUpToDate,
+								isIncludedSelector: isIncludedSelector, isIncludedSelectorInfo: isIncludedSelectorInfo)
 								{ completionProc(($0, $1)) }
 					}
 		guard error == nil else {
@@ -464,13 +464,15 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
-			isUpToDate :Bool, keysSelector :String, keysProc :@escaping (_ document :T) -> [String]) {
+			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any],
+			keysProc :@escaping (_ document :T) -> [String]) {
 		// Perform blocking
 		let	(info, error) =
 					DispatchQueue.performBlocking() { completionProc in
 						// Call network client
-						self.networkClient.registerIndex(name: name, documentType: T.documentType, version: version,
-								relevantProperties: relevantProperties, keysSelector: keysSelector)
+						self.networkClient.registerIndex(documentType: T.documentType, name: name, version: version,
+								relevantProperties: relevantProperties, isUpToDate: isUpToDate,
+								keysSelector: keysSelector, keysSelectorInfo: keysSelectorInfo)
 								{ completionProc(($0, $1)) }
 					}
 		guard error == nil else {

@@ -15,7 +15,7 @@
 		Documents table
 			Columns: type, lastRevision
 		Collections table
-			Columns: name, version, lastRevision, info
+			Columns: name, version, lastRevision
 		Indexes table
 			Columns: name, version, lastRevision
 
@@ -134,7 +134,6 @@ class MDSSQLiteCore {
 										SQLiteTableColumn("name", .text, [.notNull, .unique]),
 										SQLiteTableColumn("version", .integer2, [.notNull]),
 										SQLiteTableColumn("lastRevision", .integer4, [.notNull]),
-										SQLiteTableColumn("info", .blob, [.notNull]),
 									  ])
 		self.collectionsMasterTable.create()
 
@@ -376,25 +375,19 @@ class MDSSQLiteCore {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerCollection(documentType :String, name :String, version :UInt, info :[String : Any], isUpToDate :Bool)
-			-> Int {
+	func registerCollection(documentType :String, name :String, version :UInt, isUpToDate :Bool) -> Int {
 		// Query database
 		var	storedVersion :UInt?
 		var	storedLastRevision :Int?
-		var	storedInfo :[String : Any]?
 		try! self.collectionsMasterTable.select(
 				tableColumns: [
 								self.collectionsMasterTable.versionTableColumn,
 								self.collectionsMasterTable.lastRevisionTableColumn,
-								self.collectionsMasterTable.infoTableColumn,
 							  ],
 				where: SQLiteWhere(tableColumn: self.collectionsMasterTable.nameTableColumn, value: name)) {
 					// Process results
 					storedVersion = $0.integer(for: self.collectionsMasterTable.versionTableColumn)!
 					storedLastRevision = $0.integer(for: self.collectionsMasterTable.lastRevisionTableColumn)!
-					storedInfo =
-							try! JSONSerialization.jsonObject(
-									with: $0.blob(for: self.collectionsMasterTable.infoTableColumn)!) as! [String : Any]
 				}
 
 		// Setup table
@@ -414,10 +407,6 @@ class MDSSQLiteCore {
 			// Updated version
 			lastRevision = 0
 			updateMasterTable = true
-		} else if !info.equals(storedInfo ?? [:]) {
-			// Values changed
-			lastRevision = isUpToDate ? storedLastRevision! : 0
-			updateMasterTable = true
 		} else {
 			// No change
 			lastRevision = storedLastRevision!
@@ -432,8 +421,6 @@ class MDSSQLiteCore {
 						(self.collectionsMasterTable.nameTableColumn, name),
 						(self.collectionsMasterTable.versionTableColumn, version),
 						(self.collectionsMasterTable.lastRevisionTableColumn, lastRevision),
-						(self.collectionsMasterTable.infoTableColumn,
-								try! JSONSerialization.data(withJSONObject: info)),
 					])
 
 			// Update table

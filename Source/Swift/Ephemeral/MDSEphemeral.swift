@@ -383,15 +383,15 @@ public class MDSEphemeral : MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
-			info :[String : Any], isUpToDate :Bool, isIncludedSelector :String,
-			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool) {
+			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
+			isIncludedProc :@escaping (_ document :T) -> Bool) {
 		// Ensure this collection has not already been registered
 		guard self.collectionsByNameMap.value(for: name) == nil else { return }
 
 		// Create collection
 		let	collection =
 					MDSCollectionSpecialized(name: name, relevantProperties: relevantProperties, lastRevision: 0,
-							isIncludedProc: isIncludedProc, info: info)
+							isIncludedProc: isIncludedProc)
 
 		// Add to maps
 		self.collectionsByNameMap.set(collection, for: name)
@@ -415,7 +415,8 @@ public class MDSEphemeral : MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
-			isUpToDate :Bool, keysSelector :String, keysProc :@escaping (_ document :T) -> [String]) {
+			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any],
+			keysProc :@escaping (_ document :T) -> [String]) {
 		// Ensure this index has not already been registered
 		guard self.indexesByNameMap.value(for: name) == nil else { return }
 
