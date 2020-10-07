@@ -94,7 +94,7 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 		}
 	}
 
-	// MARK: MDSDocumentStorage implementation
+	// MARK: MDSDocumentStorage methods
 	//------------------------------------------------------------------------------------------------------------------
 	public func info(for keys :[String]) -> [String : String] {
 		// Return dictionary
@@ -706,7 +706,7 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 	func registerCollection(named name :String, documentType :String, version :UInt, isIncludedSelector :String,
 			relevantProperties :[String], info :MDSDocument.PropertyMap, isUpToDate :Bool) {
 		// Not implemented
-		fatalError("MDSSQLite - registerCollection from remote is not implemented")
+		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -744,7 +744,7 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 	func registerIndex(named name :String, documentType :String, version :UInt, keySelector :String,
 			relevantProperties :[String]) {
 		// Not implemented
-		fatalError("MDSSQLite - registerIndex from remote is not implemented")
+		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

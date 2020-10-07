@@ -10,7 +10,7 @@ import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: MDSEphemeral
-public class MDSEphemeral : MDSDocumentStorage {
+public class MDSEphemeral : MDSDocumentStorageServerBacking {
 
 	// MARK: Types
 	class DocumentBacking {
@@ -19,6 +19,7 @@ public class MDSEphemeral : MDSDocumentStorage {
 		let	creationDate :Date
 
 		var	modificationDate :Date
+		var	revision :Int
 		var	propertyMap :[String : Any]
 
 		// MARK: Lifecycle methods
@@ -28,6 +29,7 @@ public class MDSEphemeral : MDSDocumentStorage {
 			self.creationDate = creationDate
 
 			self.modificationDate = modificationDate
+			self.revision = 1
 			self.propertyMap = propertyMap
 		}
 
@@ -35,6 +37,7 @@ public class MDSEphemeral : MDSDocumentStorage {
 		//--------------------------------------------------------------------------------------------------------------
 		func update(updatedPropertyMap :MDSDocument.PropertyMap? = nil, removedProperties :Set<String>? = nil) {
 			// Update
+			self.revision += 1
 			self.propertyMap.merge(updatedPropertyMap ?? [:], uniquingKeysWith: { $1 })
 			removedProperties?.forEach() { self.propertyMap[$0] = nil }
 		}
@@ -48,8 +51,8 @@ public class MDSEphemeral : MDSDocumentStorage {
 	private	let	batchInfoMap = LockingDictionary<Thread, MDSBatchInfo<[String : Any]>>()
 
 	private	let	documentsBeingCreatedPropertyMapMap = LockingDictionary<String, MDSDocument.PropertyMap>()
-	private	let	documentMapsLock = ReadPreferringReadWriteLock()
 	private	let	documentCreationProcMap = LockingDictionary<String, MDSDocument.CreationProc>()
+	private	let	documentMapsLock = ReadPreferringReadWriteLock()
 	private	var	documentBackingMap = [/* Document ID */ String : DocumentBacking]()
 	private	var	documentTypeMap = [/* Document Type */ String : Set<String>]()
 
@@ -67,7 +70,7 @@ public class MDSEphemeral : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public init() {}
 
-	// MARK: MDSDocumentStorage implementation
+	// MARK: MDSDocumentStorage methods
 	//------------------------------------------------------------------------------------------------------------------
 	public func info(for keys :[String]) -> [String : String] { self.info.filter({ keys.contains($0.key) }) }
 
@@ -404,7 +407,7 @@ public class MDSEphemeral : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func queryCollectionDocumentCount(name :String) -> UInt {
 		// Return count
-		return UInt((self.collectionValuesMap.value(for: name) ?? []).count)
+		return UInt((self.collectionValuesMap.value(for: name) ?? Set<String>()).count)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -435,15 +438,20 @@ public class MDSEphemeral : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func iterateIndex<T : MDSDocument>(name :String, keys :[String],
 			proc :(_ key :String, _ document :T) -> Void) {
-		// Iterate
-		let	indexValues = self.indexValuesMap.value(for: name) ?? [:]
-		keys.forEach() {
-			// Retrieve document
-			guard let documentID = indexValues[$0] else { return }
-			guard self.documentBackingMap[documentID] != nil else { return }
+		// Setup
+		guard let indexValues = self.indexValuesMap.value(for: name) else { return }
 
-			// Call proc
-			proc($0, T(id: documentID, documentStorage: self))
+		// Play nice
+		self.documentMapsLock.read() {
+			// Iterate keys
+			keys.forEach() {
+				// Retrieve document
+				guard let documentID = indexValues[$0] else { return }
+				guard self.documentBackingMap[documentID] != nil else { return }
+
+				// Call proc
+				proc($0, T(id: documentID, documentStorage: self))
+			}
 		}
 	}
 
@@ -451,6 +459,181 @@ public class MDSEphemeral : MDSDocumentStorage {
 	public func registerDocumentChangedProc(documentType :String, proc :@escaping MDSDocument.ChangedProc) {
 		//  Add
 		self.documentChangedProcsMap.update(for: documentType) { ($0 ?? []) + [proc] }
+	}
+
+	// MARK: MDSDocumentStorageServerBacking methods
+	//------------------------------------------------------------------------------------------------------------------
+	func newDocuments(documentType :String, documentCreateInfos :[MDSDocumentCreateInfo]) {
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func iterate(documentType :String, documentIDs :[String],
+			proc :@escaping (_ documentRevisionInfo :MDSDocumentRevisionInfo) -> Void) {
+		// Play nice
+		self.documentMapsLock.read() {
+			// Iterate
+			documentIDs.forEach() {
+				// Call proc
+				proc(MDSDocumentRevisionInfo(documentID: $0, revision: self.documentBackingMap[$0]!.revision))
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func iterate(documentType :String, documentIDs :[String],
+			proc :(_ documentFullInfo :MDSDocumentFullInfo) -> Void) {
+		// Play nice
+		self.documentMapsLock.read() {
+			// Iterate
+			documentIDs.forEach() {
+				// Setup
+				let	documentBacking = self.documentBackingMap[$0]!
+
+				// Call proc
+				proc(
+						MDSDocumentFullInfo(documentID: $0, revision: documentBacking.revision,
+								creationDate: documentBacking.creationDate,
+								modificationDate: documentBacking.modificationDate,
+								propertyMap: documentBacking.propertyMap))
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func iterate(documentType :String, sinceRevision revision :Int,
+			proc :@escaping (_ documentRevisionInfo :MDSDocumentRevisionInfo) -> Void) {
+		// Play nice
+		self.documentMapsLock.read() {
+			// Iterate
+			self.documentTypeMap[documentType]?.forEach() {
+				// Retrieve info
+				if let documentBacking = self.documentBackingMap[$0], documentBacking.revision >= revision {
+					// Call proc
+					proc(MDSDocumentRevisionInfo(documentID: $0, revision:documentBacking.revision))
+				}
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func iterate(documentType :String, sinceRevision revision :Int,
+			proc :(_ documentFullInfo :MDSDocumentFullInfo) -> Void) {
+		// Play nice
+		self.documentMapsLock.read() {
+			// Iterate
+			self.documentTypeMap[documentType]?.forEach() {
+				// Retrieve info
+				if let documentBacking = self.documentBackingMap[$0], documentBacking.revision >= revision {
+					// Call proc
+					proc(
+							MDSDocumentFullInfo(documentID: $0, revision: documentBacking.revision,
+									creationDate: documentBacking.creationDate,
+									modificationDate: documentBacking.modificationDate,
+									propertyMap: documentBacking.propertyMap))
+				}
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func updateDocuments(documentType :String, documentUpdateInfos :[MDSDocumentUpdateInfo]) {
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func registerCollection(named name :String, documentType :String, version :UInt, isIncludedSelector :String,
+			relevantProperties :[String], info :MDSDocument.PropertyMap, isUpToDate :Bool) {
+		// Not implemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func iterateCollection(name :String, proc :@escaping (_ documentRevisionInfo :MDSDocumentRevisionInfo) -> Void) {
+		// Retrieve collection
+		guard let collection = self.collectionValuesMap.value(for: name) else { return }
+
+		// Play nice
+		self.documentMapsLock.read() {
+			// Iterate all documents in collection
+			collection.forEach() {
+				// Call proc
+				proc(MDSDocumentRevisionInfo(documentID: $0, revision: self.documentBackingMap[$0]!.revision))
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func iterateCollection(name :String, proc :(_ documentFullInfo :MDSDocumentFullInfo) -> Void) {
+		// Retrieve collection
+		guard let collection = self.collectionValuesMap.value(for: name) else { return }
+
+		// Play nice
+		self.documentMapsLock.read() {
+			// Iterate all documents in collection
+			collection.forEach() {
+				// Setup
+				let	documentBacking = self.documentBackingMap[$0]!
+
+				// Call proc
+				proc(
+						MDSDocumentFullInfo(documentID: $0, revision: documentBacking.revision,
+								creationDate: documentBacking.creationDate,
+								modificationDate: documentBacking.modificationDate,
+								propertyMap: documentBacking.propertyMap))
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func registerIndex(named name :String, documentType :String, version :UInt, keySelector :String,
+			relevantProperties :[String]) {
+		// Not implemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func iterateIndex(name :String, keys :[String],
+			proc :@escaping (_ key :String, _ documentRevisionInfo :MDSDocumentRevisionInfo) -> Void) {
+		// Iterate
+		guard let indexValues = self.indexValuesMap.value(for: name) else { return }
+
+		// Play nice
+		self.documentMapsLock.read() {
+			// Iterate keys
+			keys.forEach() {
+				// Retrieve document
+				guard let documentID = indexValues[$0] else { return }
+				guard let documentBacking = self.documentBackingMap[documentID] else { return }
+
+				// Call proc
+				proc($0, MDSDocumentRevisionInfo(documentID: documentID, revision: documentBacking.revision))
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func iterateIndex(name :String, keys :[String],
+			proc :(_ key :String, _ documentFullInfo :MDSDocumentFullInfo) -> Void) {
+		// Iterate
+		guard let indexValues = self.indexValuesMap.value(for: name) else { return }
+
+		// Play nice
+		self.documentMapsLock.read() {
+			// Iterate keys
+			keys.forEach() {
+				// Retrieve document
+				guard let documentID = indexValues[$0] else { return }
+				guard let documentBacking = self.documentBackingMap[documentID] else { return }
+
+				// Call proc
+				proc($0,
+						MDSDocumentFullInfo(documentID: $0, revision: documentBacking.revision,
+								creationDate: documentBacking.creationDate,
+								modificationDate: documentBacking.modificationDate,
+								propertyMap: documentBacking.propertyMap))
+			}
+		}
 	}
 
 	// MARK: Private methods
