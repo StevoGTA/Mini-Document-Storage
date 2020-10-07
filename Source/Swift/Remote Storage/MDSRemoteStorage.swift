@@ -50,7 +50,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func info(for keys :[String]) -> [String : String] {
 		// Preflight
-		guard !keys.isEmpty else { [:] }
+		guard !keys.isEmpty else { return [:] }
 
 		// Perform blocking
 		let	(returnInfo, error) =
@@ -65,7 +65,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			return [:]
 		}
 
-		return returnInfo
+		return returnInfo!
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -691,7 +691,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	@discardableResult
 	private func createDocuments(documentType :String, infos :[[String : Any]]) -> [String] {
 		// Preflight
-		guard !infos.isEmpty else { [] }
+		guard !infos.isEmpty else { return [] }
 
 		// Perform blocking
 		let	(returnInfos, error) =
@@ -741,7 +741,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	private func retrieveDocuments(for ids :[String], documentType :String) ->
 			[MDSDocumentBackingInfo<DocumentBacking>] {
 		// Preflight
-		guard !ids.isEmpty else { [] }
+		guard !ids.isEmpty else { return [] }
 
 		// Perform blocking
 		let	(infos, error) =
