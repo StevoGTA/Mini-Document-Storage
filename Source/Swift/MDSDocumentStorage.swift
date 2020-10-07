@@ -46,13 +46,14 @@ public protocol MDSDocumentStorage : class {
 	func batch(_ proc :() throws -> MDSBatchResult) rethrows
 
 	func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
-			info :[String : Any], isUpToDate :Bool, isIncludedSelector :String,
-			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool)
+			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
+			isIncludedProc :@escaping (_ document :T) -> Bool)
 	func queryCollectionDocumentCount(name :String) -> UInt
 	func iterateCollection<T : MDSDocument>(name :String, proc :(_ document : T) -> Void)
 
 	func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
-			isUpToDate :Bool, keysSelector :String, keysProc :@escaping (_ document :T) -> [String])
+			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any],
+			keysProc :@escaping (_ document :T) -> [String])
 	func iterateIndex<T : MDSDocument>(name :String, keys :[String], proc :(_ key :String, _ document :T) -> Void)
 
 	func registerDocumentChangedProc(documentType :String, proc :@escaping MDSDocument.ChangedProc)
@@ -93,11 +94,12 @@ extension MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerCollection<T : MDSDocument>(named name :String, version :UInt = 1, relevantProperties :[String],
-			info :[String : Any] = [:], isUpToDate :Bool = false, isIncludedSelector :String = "",
-			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool) {
+			isUpToDate :Bool = false, isIncludedSelector :String = "", isIncludedSelectorInfo :[String : Any] = [:],
+			isIncludedProc :@escaping (_ document :T) -> Bool) {
 		// Register collection
-		registerCollection(named: name, version: version, relevantProperties: relevantProperties, info: info,
-				isUpToDate: isUpToDate, isIncludedSelector: isIncludedSelector, isIncludedProc: isIncludedProc)
+		registerCollection(named: name, version: version, relevantProperties: relevantProperties,
+				isUpToDate: isUpToDate, isIncludedSelector: isIncludedSelector,
+				isIncludedSelectorInfo: isIncludedSelectorInfo, isIncludedProc: isIncludedProc)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -113,10 +115,11 @@ extension MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerIndex<T : MDSDocument>(named name :String, version :UInt = 1, relevantProperties :[String],
-			isUpToDate :Bool = false, keysSelector :String = "", keysProc :@escaping (_ document :T) -> [String]) {
+			isUpToDate :Bool = false, keysSelector :String = "", keysSelectorInfo :[String : Any] = [:],
+			keysProc :@escaping (_ document :T) -> [String]) {
 		// Register index
 		registerIndex(named: name, version: version, relevantProperties: relevantProperties, isUpToDate: isUpToDate,
-				keysSelector: keysSelector, keysProc: keysProc)
+				keysSelector: keysSelector, keysSelectorInfo: keysSelectorInfo, keysProc: keysProc)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

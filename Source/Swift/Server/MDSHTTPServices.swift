@@ -452,21 +452,21 @@ class MDSHTTPServices {
 	// MARK: PUT Collection
 	//	=> json (body)
 	//		{
-	//			"name" :String,
 	//			"documentType" :String,
+	//			"name" :String,
 	//			"version" :Int,
-	//			"isIncludedSelector" :String,
 	//			"relevantProperties" :(optional) [String]
-	//			"info" :(optional) {
+	//			"isUpToDate" :(optional) Int (0 or 1)
+	//			"isIncludedSelector" :String,
+	//			"isIncludedSelectorInfo" :(optional) {
 	//									"key" :Any,
 	//									...
 	//							   },
-	//			"isUpToDate" :(optional) Int (0 or 1)
 	//		}
 	typealias CollectionPutEndpointInfo =
-				(documentStorageID :String, name :String, documentType :String, version :UInt,
-						isIncludedSelector :String, relevantProperties :[String], info :MDSDocument.PropertyMap,
-						isUpToDate :Bool)
+				(documentStorageID :String, documentType :String, name :String, version :UInt,
+						relevantProperties :[String], isUpToDate :Bool, isIncludedSelector :String,
+						isIncludedSelectorInfo :MDSDocument.PropertyMap)
 	static	let	collectionPutEndpoint =
 						JSONHTTPEndpoint<[String : Any], CollectionPutEndpointInfo>(method: .put,
 								path: "/collection/:documentStorageID")
@@ -475,51 +475,53 @@ class MDSHTTPServices {
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[1]
 
-									guard let name = info["name"] as? String else {
-										// Missing name
-										throw HTTPEndpointError.badRequest(with: "missing name")
-									}
 									guard let documentType = info["documentType"] as? String else {
 										// Missing documentType
 										throw HTTPEndpointError.badRequest(with: "missing documentType")
+									}
+									guard let name = info["name"] as? String else {
+										// Missing name
+										throw HTTPEndpointError.badRequest(with: "missing name")
 									}
 									guard let version = info["version"] as? UInt else {
 										// Missing version
 										throw HTTPEndpointError.badRequest(with: "missing version")
 									}
-									guard let isIncludedSelector = info["isIncludedSelector"] as? String else {
-										// Missing isIncludedSelector
-										throw HTTPEndpointError.badRequest(with: "missing isIncludedSelector")
-									}
 									guard let relevantProperties = info["relevantProperties"] as? [String] else {
 										// Missing relevantProperties
 										throw HTTPEndpointError.badRequest(with: "missing relevantProperties")
-									}
-									guard let updateInfo = info["info"] as? MDSDocument.PropertyMap else {
-										// Missing info
-										throw HTTPEndpointError.badRequest(with: "missing info")
 									}
 									guard let isUpToDate = info["isUpToDate"] as? Bool else {
 										// Missing isUpToDate
 										throw HTTPEndpointError.badRequest(with: "missing isUpToDate")
 									}
+									guard let isIncludedSelector = info["isIncludedSelector"] as? String else {
+										// Missing isIncludedSelector
+										throw HTTPEndpointError.badRequest(with: "missing isIncludedSelector")
+									}
+									guard let isIncludedSelectorInfo =
+											info["isIncludedSelectorInfo"] as? MDSDocument.PropertyMap else {
+										// Missing info
+										throw HTTPEndpointError.badRequest(with: "missing isIncludedSelectorInfo")
+									}
 
-									return (documentStorageID, name, documentType, version, isIncludedSelector,
-											relevantProperties, updateInfo, isUpToDate)
+									return (documentStorageID, documentType, name, version, relevantProperties,
+											isUpToDate, isIncludedSelector, isIncludedSelectorInfo)
 								}
-	static func httpEndpointRequestForPutCollection(documentStorageID :String, name :String, documentType :String,
-			version :UInt, info :[String : Any], isUpToDate :Bool, isIncludedSelector :String) ->
-			SuccessHTTPEndpointRequest {
+	static func httpEndpointRequestForPutCollection(documentStorageID :String, documentType :String, name :String,
+			version :UInt, relevantProperties :[String] = [], isUpToDate :Bool = false, isIncludedSelector :String,
+			isIncludedSelectorInfo :MDSDocument.PropertyMap = [:]) -> SuccessHTTPEndpointRequest {
 		// Return endpoint request
 		return SuccessHTTPEndpointRequest(method: .put, path: "/collection/\(documentStorageID)",
 				jsonBody: [
-							"name": name,
 							"documentType": documentType,
+							"name": name,
 							"version": version,
-							"info": info,
+							"relevantProperties": relevantProperties,
 							"isUpToDate": isUpToDate ? 1 : 0,
 							"isIncludedSelector": isIncludedSelector,
-						  ])
+							"isIncludedSelectorInfo": isIncludedSelectorInfo,
+					  ])
 	}
 
 	// MARK: Patch Collection
@@ -596,15 +598,21 @@ class MDSHTTPServices {
 	// MARK: PUT Index
 	//	=> json (body)
 	//		{
-	//			"name" :String,
 	//			"documentType" :String,
+	//			"name" :String,
 	//			"version" :Int,
-	//			"keySelector" :String,
 	//			"relevantProperties" :(optional) [String]
+	//			"isUpToDate" :(optional) Int (0 or 1)
+	//			"keysSelector" :String,
+	//			"keysSelectorInfo" :(optional) {
+	//									"key" :Any,
+	//									...
+	//							   },
 	//		}
 	typealias IndexPutEndpointInfo =
-				(documentStorageID :String, name :String, documentType :String, version :UInt, keySelector :String,
-						relevantProperties :[String])
+				(documentStorageID :String, documentType :String, name :String, version :UInt,
+						relevantProperties :[String], isUpToDate :Bool, keysSelector :String,
+						keysSelectorInfo: MDSDocument.PropertyMap)
 	static	let	indexPutEndpoint =
 						JSONHTTPEndpoint<[String : Any], IndexPutEndpointInfo>(method: .put,
 								path: "/index/:documentStorageID")
@@ -613,39 +621,52 @@ class MDSHTTPServices {
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[1]
 
-									guard let name = info["name"] as? String else {
-										// Missing name
-										throw HTTPEndpointError.badRequest(with: "missing name")
-									}
 									guard let documentType = info["documentType"] as? String else {
 										// Missing documentType
 										throw HTTPEndpointError.badRequest(with: "missing documentType")
+									}
+									guard let name = info["name"] as? String else {
+										// Missing name
+										throw HTTPEndpointError.badRequest(with: "missing name")
 									}
 									guard let version = info["version"] as? UInt else {
 										// Missing version
 										throw HTTPEndpointError.badRequest(with: "missing version")
 									}
-									guard let keySelector = info["keySelector"] as? String else {
-										// Missing keySelector
-										throw HTTPEndpointError.badRequest(with: "missing keySelector")
-									}
 									guard let relevantProperties = info["relevantProperties"] as? [String] else {
 										// Missing relevantProperties
 										throw HTTPEndpointError.badRequest(with: "missing relevantProperties")
 									}
+									guard let isUpToDate = info["isUpToDate"] as? Bool else {
+										// Missing isUpToDate
+										throw HTTPEndpointError.badRequest(with: "missing isUpToDate")
+									}
+									guard let keysSelector = info["keysSelector"] as? String else {
+										// Missing keySelector
+										throw HTTPEndpointError.badRequest(with: "missing keysSelector")
+									}
+									guard let keysSelectorInfo =
+											info["keysSelectorInfo"] as? MDSDocument.PropertyMap else {
+										// Missing info
+										throw HTTPEndpointError.badRequest(with: "missing keysSelectorInfo")
+									}
 
-									return (documentStorageID, name, documentType, version, keySelector,
-											relevantProperties)
+									return (documentStorageID, documentType, name, version, relevantProperties,
+											isUpToDate, keysSelector, keysSelectorInfo)
 								}
-	static func httpEndpointRequestForPutIndex(documentStorageID :String, name :String, documentType :String,
-			version :UInt, keySelector :String) -> SuccessHTTPEndpointRequest {
+	static func httpEndpointRequestForPutIndex(documentStorageID :String, documentType :String, name :String,
+			version :UInt, relevantProperties :[String] = [], isUpToDate :Bool = false, keysSelector :String,
+			keysSelectorInfo :MDSDocument.PropertyMap = [:]) -> SuccessHTTPEndpointRequest {
 		// Return endpoint request
 		return SuccessHTTPEndpointRequest(method: .put, path: "/index/\(documentStorageID)",
 				jsonBody: [
 							"name": name,
 							"documentType": documentType,
 							"version": version,
-							"keySelector": keySelector,
+							"relevantProperties": relevantProperties,
+							"isUpToDate": isUpToDate ? 1 : 0,
+							"keysSelector": keysSelector,
+							"keysSelectorInfo": keysSelectorInfo,
 						  ])
 	}
 
