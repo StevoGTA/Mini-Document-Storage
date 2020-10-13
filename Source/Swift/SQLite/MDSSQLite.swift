@@ -972,15 +972,22 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 		// Setup
 		let	collection = self.collectionsByNameMap.value(for: name)!
 		let	creationProc = self.documentCreationProcMap.value(for: collection.documentType)!
+		let	batchInfo = self.batchInfoMap.value(for: Thread.current)
 
 		// Collect infos
 		var	bringUpToDateInfos = [MDSBringUpToDateInfo<Int64>]()
 		iterateDocumentBackingInfos(documentType: collection.documentType, sinceRevision: collection.lastRevision,
 				includeInactive: false) {
-					// Append info
-					bringUpToDateInfos.append(
-							MDSBringUpToDateInfo<Int64>(document: creationProc($0.documentID, self),
-									revision: $0.documentBacking.revision, value: $0.documentBacking.id))
+					// Query batch info
+					let batchDocumentInfo = batchInfo?.batchDocumentInfo(for: $0.documentID)
+
+					// Ensure we want to process this document
+					if (batchDocumentInfo == nil) || !batchDocumentInfo!.removed {
+						// Append info
+						bringUpToDateInfos.append(
+								MDSBringUpToDateInfo<Int64>(document: creationProc($0.documentID, self),
+										revision: $0.documentBacking.revision, value: $0.documentBacking.id))
+					}
 				}
 
 		// Bring up to date
@@ -1048,15 +1055,22 @@ public class MDSSQLite : MDSDocumentStorageServerBacking {
 		// Setup
 		let	index = self.indexesByNameMap.value(for: name)!
 		let	creationProc = self.documentCreationProcMap.value(for: index.documentType)!
+		let	batchInfo = self.batchInfoMap.value(for: Thread.current)
 
 		// Collect infos
 		var	bringUpToDateInfos = [MDSBringUpToDateInfo<Int64>]()
 		iterateDocumentBackingInfos(documentType: index.documentType, sinceRevision: index.lastRevision,
 				includeInactive: false) {
-					// Append info
-					bringUpToDateInfos.append(
-							MDSBringUpToDateInfo<Int64>(document: creationProc($0.documentID, self),
-									revision: $0.documentBacking.revision, value: $0.documentBacking.id))
+					// Query batch info
+					let batchDocumentInfo = batchInfo?.batchDocumentInfo(for: $0.documentID)
+
+					// Ensure we want to process this document
+					if (batchDocumentInfo == nil) || !batchDocumentInfo!.removed {
+						// Append info
+						bringUpToDateInfos.append(
+								MDSBringUpToDateInfo<Int64>(document: creationProc($0.documentID, self),
+										revision: $0.documentBacking.revision, value: $0.documentBacking.id))
+					}
 				}
 
 		// Bring up to date
