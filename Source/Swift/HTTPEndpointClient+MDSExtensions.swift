@@ -35,9 +35,8 @@ extension HTTPEndpointClient {
 			_ getDocumentsSinceRevisionHTTPEndpointRequest
 					:MDSHTTPServices.GetDocumentsSinceRevisionHTTPEndpointRequest,
 			identifier :String = "", priority :Priority = .normal,
-			completionProc
-					:@escaping (_ documentFullInfos :[MDSDocumentFullInfo]?, _ isComplete :Bool?,
-							_ error :Error?) -> Void) {
+			processingProc :@escaping (_ documentFullInfos :[MDSDocumentFullInfo]) -> Void,
+			completionProc :@escaping (_ isComplete :Bool?, _ error :Error?) -> Void) {
 		// Setup
 		getDocumentsSinceRevisionHTTPEndpointRequest.completionProc = { response, info, error in
 			// Handle results
@@ -46,22 +45,25 @@ extension HTTPEndpointClient {
 				if let contentRange = response!.contentRange, let size = contentRange.size {
 					// Success
 					DispatchQueue.global().async() {
-						// Convert
-						let	documentFullInfos = info!.map({ MDSDocumentFullInfo(httpServicesInfo: $0) })
-
-						// Switch queues to minimize memory usage
-						DispatchQueue.global().async() {
-							// Call completion proc
-							completionProc(documentFullInfos, documentFullInfos.count == size, nil)
+						// Process in chunks to control memory usage
+						info!.chunk(by: 1000).forEach() { infos in
+							// Run lean
+							autoreleasepool() {
+								// Call completion proc
+								processingProc(infos.map({ MDSDocumentFullInfo(httpServicesInfo: $0) }))
+							}
 						}
+
+						// Call completion proc
+						completionProc(info!.count == size, nil)
 					}
 				} else {
 					// Bad server
-					completionProc(nil, nil, HTTPEndpointClientMDSExtensionsError.didNotReceiveSizeInHeader)
+					completionProc(nil, HTTPEndpointClientMDSExtensionsError.didNotReceiveSizeInHeader)
 				}
 			} else {
 				// Error
-				completionProc(nil, nil,
+				completionProc(nil,
 						error ?? HTTPEndpointStatusError.for(HTTPEndpointStatus(rawValue: response!.statusCode)!))
 			}
 		}

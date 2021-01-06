@@ -312,31 +312,24 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		// May need to try this more than once
 		while true {
 			// Query collection document count
-			let	(documentFullInfos, isComplete, error) =
+			let	(isComplete, error) =
 						DispatchQueue.performBlocking() { completionProc in
 							// Call network client
 							self.httpEndpointClient.queue(
 									MDSHTTPServices.httpEndpointRequestForGetDocuments(
 											documentStorageID: self.documentStorageID, authorization: self.authorization,
 											type: documentType, sinceRevision: lastRevision),
-											completionProc:
-													{ (documentFullInfos :[MDSDocumentFullInfo]?,
-															isComplete :Bool?, error :Error?) in
-														// Call completion proc
-														completionProc((documentFullInfos, isComplete, error))
-													})
+											processingProc: { self.updateDocuments(for: documentType, with: $0) },
+											completionProc: { (isComplete :Bool?, error :Error?) in
+												// Call completion proc
+												completionProc((isComplete, error))
+											})
 						}
 
 			// Handle results
-			if documentFullInfos != nil {
-				// Update documents
-				documentFullInfos!.chunk(by: 1000).forEach() { updateDocuments(for: documentType, with: $0) }
-
-				// Check if need to go again
-				if isComplete! {
-					// Done
-					break
-				}
+			if isComplete! {
+				// Done
+				break
 			} else {
 				// Error
 				self.recentErrors.append(error!)
@@ -855,29 +848,25 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func updateDocuments(for documentType :String, with documentFullInfos :[MDSDocumentFullInfo]) {
-		// Run lean
-		autoreleasepool() {
-			// Update document backing cache
-			let	documentBackingInfos =
-						documentFullInfos.map() {
-							MDSDocumentBackingInfo<DocumentBacking>(documentID: $0.documentID,
-									documentBacking:
-											DocumentBacking(type: documentType, revision: $0.revision,
-													active: $0.active, creationDate: $0.creationDate,
-													modificationDate: $0.modificationDate, propertyMap: $0.propertyMap))
-						}
-			self.documentBackingCache.add(documentBackingInfos)
-		}
-		autoreleasepool() {
-			// Update remote storage cache
-			let	documentInfos =
-						documentFullInfos.map() {
-							MDSRemoteStorageCache.DocumentInfo(id: $0.documentID, revision: $0.revision,
-									active: $0.active, creationDate: $0.creationDate,
-									modificationDate: $0.modificationDate, propertyMap: $0.propertyMap)
-						}
-			self.remoteStorageCache.add(documentInfos, for: documentType)
-		}
+		// Update document backing cache
+		let	documentBackingInfos =
+					documentFullInfos.map() {
+						MDSDocumentBackingInfo<DocumentBacking>(documentID: $0.documentID,
+								documentBacking:
+										DocumentBacking(type: documentType, revision: $0.revision,
+												active: $0.active, creationDate: $0.creationDate,
+												modificationDate: $0.modificationDate, propertyMap: $0.propertyMap))
+					}
+		self.documentBackingCache.add(documentBackingInfos)
+
+		// Update remote storage cache
+		let	documentInfos =
+					documentFullInfos.map() {
+						MDSRemoteStorageCache.DocumentInfo(id: $0.documentID, revision: $0.revision,
+								active: $0.active, creationDate: $0.creationDate,
+								modificationDate: $0.modificationDate, propertyMap: $0.propertyMap)
+					}
+		self.remoteStorageCache.add(documentInfos, for: documentType)
 	}
 
 //	//------------------------------------------------------------------------------------------------------------------
