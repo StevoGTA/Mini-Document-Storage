@@ -328,9 +328,10 @@ struct MDSDocumentFullInfo {
 	// MARK: Properties
 	let	documentID :String
 	let	revision :Int
+	let	active :Bool
 	let	creationDate :Date
 	let	modificationDate :Date
-	let	propertyMap :MDSDocument.PropertyMap
+	let	propertyMap :[String : Any]
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -338,10 +339,20 @@ struct MDSDocumentFullInfo {
 struct MDSDocumentCreateInfo {
 
 	// MARK: Properties
-	let	documentID :String?
+	let	documentID :String
 	let	creationDate :Date?
 	let	modificationDate :Date?
-	let	propertyMap :MDSDocument.PropertyMap
+	let	propertyMap :[String : Any]
+
+	// MARK: Lifecycle methods
+	//------------------------------------------------------------------------------------------------------------------
+	init(documentID :String, creationDate :Date? = nil, modificationDate :Date? = nil, propertyMap :[String : Any]) {
+		// Store
+		self.documentID = documentID
+		self.creationDate = creationDate
+		self.modificationDate = modificationDate
+		self.propertyMap = propertyMap
+	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -350,9 +361,28 @@ struct MDSDocumentUpdateInfo {
 
 	// MARK: Properties
 	let	documentID :String
-	let	updated :MDSDocument.PropertyMap
+	let	updated :[String : Any]
 	let	removed :[String]
 	let	active :Bool
+
+	// MARK: Lifecycle methods
+	//------------------------------------------------------------------------------------------------------------------
+	init(documentID :String, updated :[String : Any] = [:], removed :[String] = [], active :Bool = true) {
+		// Store
+		self.documentID = documentID
+		self.updated = updated
+		self.removed = removed
+		self.active = active
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	init(documentID :String, updated :[String : Any]?, removed :Set<String>?, active :Bool) {
+		// Store
+		self.documentID = documentID
+		self.updated = updated ?? [:]
+		self.removed = Array(removed ?? Set<String>())
+		self.active = active
+	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------

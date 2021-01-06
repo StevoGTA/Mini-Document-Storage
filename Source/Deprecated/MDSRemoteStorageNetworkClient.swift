@@ -13,7 +13,7 @@ public protocol MDSRemoteStorageNetworkClient {
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
 	func retrieveInfo(keys :[String], completionProc :@escaping (_ map :[String : String]?, _ error :Error?) -> Void)
-	func updateInfo(info :[String : String], completionProc :@escaping(_ error :Error?) -> Void)
+	func setInfo(info :[String : String], completionProc :@escaping(_ error :Error?) -> Void)
 
 	//------------------------------------------------------------------------------------------------------------------
 	func createDocuments(documentType :String, infos :[[String : Any]],

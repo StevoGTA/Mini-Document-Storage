@@ -34,20 +34,16 @@ public class MDSRemoteStorageCache {
 	// MARK: Properties
 	private	var	sqliteDatabase :SQLiteDatabase!
 	private	var	infoTable :SQLiteTable!
-	private	var	sqliteTables = [/* document type */ String : SQLiteTable]()
+	private	var	sqliteTables = LockingDictionary</* document type */ String, SQLiteTable>()
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	public init(storageFolderURL :URL, uniqueID :String) throws {
-		// Create if needed
-		if !FileManager.default.fileExists(atPath: storageFolderURL.path) {
-			// Create folder
-			try FileManager.default.createDirectory(at: storageFolderURL, withIntermediateDirectories: true,
-					attributes: nil)
-		}
+	public init(storageFolder :Folder, uniqueID :String = "MDSRemoteStorageCache") throws {
+		// Create folder if needed
+		try FileManager.default.create(storageFolder)
 
 		// Setup SQLite database
-		self.sqliteDatabase = try SQLiteDatabase(url: storageFolderURL.appendingPathComponent(uniqueID))
+		self.sqliteDatabase = try SQLiteDatabase(in: storageFolder, with: uniqueID)
 
 		self.infoTable =
 				self.sqliteDatabase.table(name: "Info", options: [.withoutRowID],
@@ -75,18 +71,94 @@ public class MDSRemoteStorageCache {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentInfos(for documentType :String, with references :[DocumentReference]) ->
-			(documentInfos :[DocumentInfo], documentReferencesNotResolved :[DocumentReference]) {
+	public func int(for key :String) -> Int? {
+		// Retrieve value
+		var	value :Int?
+		try! self.infoTable.select(tableColumns: [self.infoTable.valueTableColumn],
+				where: SQLiteWhere(tableColumn: self.infoTable.keyTableColumn, value: key)) {
+					// Process results
+					value = Int($0.text(for: self.infoTable.valueTableColumn)!)
+				}
+
+		return value
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func string(for key :String) -> String? {
+		// Retrieve value
+		var	value :String?
+		try! self.infoTable.select(tableColumns: [self.infoTable.valueTableColumn],
+				where: SQLiteWhere(tableColumn: self.infoTable.keyTableColumn, value: key)) {
+					// Process results
+					value = $0.text(for: self.infoTable.valueTableColumn)!
+				}
+
+		return value
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func set(_ value :Any?, for key :String) {
+		// Storing or removing
+		if value != nil {
+			// Store value
+			self.infoTable.insertOrReplaceRow([
+												(self.infoTable.keyTableColumn, key),
+												(self.infoTable.valueTableColumn, value!),
+											  ])
+		} else {
+			// Removing
+			self.infoTable.deleteRows(self.infoTable.keyTableColumn, values: [key])
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func activeDocumentInfos(for documentType :String) -> [DocumentInfo] {
 		// Setup
 		let	sqliteTable = self.sqliteTable(for: documentType)
-		let	referenceMap = Dictionary(uniqueKeysWithValues: references.lazy.map({ ($0.id, $0.revision) }))
-
 		let	idTableColumn = sqliteTable.idTableColumn
 		let	revisionTableColumn = sqliteTable.revisionTableColumn
 		let	activeTableColumn = sqliteTable.activeTableColumn
 		let	creationDateTableColumn = sqliteTable.creationDateTableColumn
 		let	modificationDateTableColumn = sqliteTable.modificationDateTableColumn
 		let	jsonTableColumn = sqliteTable.jsonTableColumn
+
+		// Iterate records in database
+		var	documentInfos = [DocumentInfo]()
+		try! sqliteTable.select() {
+			// Process results
+			let	active :Int = $0.integer(for: activeTableColumn)!
+			guard active == 1 else { return }
+
+			let	id = $0.text(for: idTableColumn)!
+			let	revision :Int = $0.integer(for: revisionTableColumn)!
+			let	creationDate = Date(timeIntervalSince1970: $0.real(for: creationDateTableColumn)!)
+			let	modificationDate = Date(timeIntervalSince1970: $0.real(for: modificationDateTableColumn)!)
+			let	propertyMap =
+						try! JSONSerialization.jsonObject(with: $0.blob(for: jsonTableColumn)!, options: [])
+								as! [String : Any]
+
+			// Add to array
+			documentInfos.append(
+					DocumentInfo(id: id, revision: revision, active: true, creationDate: creationDate,
+							modificationDate: modificationDate, propertyMap: propertyMap))
+		}
+
+		return documentInfos
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func documentInfos(for documentType :String, with references :[DocumentReference]) ->
+			(documentInfos :[DocumentInfo], documentReferencesNotResolved :[DocumentReference]) {
+		// Setup
+		let	sqliteTable = self.sqliteTable(for: documentType)
+		let	idTableColumn = sqliteTable.idTableColumn
+		let	revisionTableColumn = sqliteTable.revisionTableColumn
+		let	activeTableColumn = sqliteTable.activeTableColumn
+		let	creationDateTableColumn = sqliteTable.creationDateTableColumn
+		let	modificationDateTableColumn = sqliteTable.modificationDateTableColumn
+		let	jsonTableColumn = sqliteTable.jsonTableColumn
+
+		let	referenceMap = Dictionary(uniqueKeysWithValues: references.lazy.map({ ($0.id, $0.revision) }))
 
 		var	documentIDs = Set<String>(referenceMap.keys)
 
@@ -156,7 +228,7 @@ public class MDSRemoteStorageCache {
 	//------------------------------------------------------------------------------------------------------------------
 	private func sqliteTable(for documentType :String) -> SQLiteTable {
 		// Retrieve or create if needed
-		var	sqliteTable = self.sqliteTables[documentType]
+		var	sqliteTable = self.sqliteTables.value(for: documentType)
 		if sqliteTable == nil {
 			// Create
 			let	name = documentType.prefix(1).uppercased() + documentType.dropFirst() + "s"
@@ -164,7 +236,7 @@ public class MDSRemoteStorageCache {
 			sqliteTable =
 					self.sqliteDatabase.table(name: name, options: [],
 							tableColumns: [
-											SQLiteTableColumn("id", .text, [.primaryKey, .notNull, .unique]),
+											SQLiteTableColumn("id", .text, [.primaryKey, .notNull]),
 											SQLiteTableColumn("revision", .integer4, [.notNull]),
 											SQLiteTableColumn("active", .integer1, [.notNull]),
 											SQLiteTableColumn("creationDate", .real, [.notNull]),
@@ -172,7 +244,7 @@ public class MDSRemoteStorageCache {
 											SQLiteTableColumn("json", .blob, [.notNull]),
 										  ])
 			sqliteTable!.create()
-			self.sqliteTables[documentType] = sqliteTable
+			self.sqliteTables.set(sqliteTable, for: documentType)
 		}
 
 		return sqliteTable!

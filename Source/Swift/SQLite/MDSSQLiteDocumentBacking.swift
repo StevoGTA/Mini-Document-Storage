@@ -15,29 +15,31 @@ class MDSSQLiteDocumentBacking {
 			let	id :Int64
 			let	creationDate :Date
 
-			var	modificationDate :Date
 			var	revision :Int
-			var	propertyMap :MDSDocument.PropertyMap
-					{ self.propertiesLock.read({ self.propertyMapInternal }) }
+			var	modificationDate :Date
+			var	propertyMap :[String : Any] { self.propertiesLock.read({ self.propertyMapInternal }) }
+			var	active :Bool
 
-	private	var	propertyMapInternal :MDSDocument.PropertyMap
+	private	var	propertyMapInternal :[String : Any]
 	private	var	propertiesLock = ReadPreferringReadWriteLock()
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	init(id :Int64, revision :Int, creationDate :Date, modificationDate :Date, propertyMap :MDSDocument.PropertyMap) {
+	init(id :Int64, revision :Int, creationDate :Date, modificationDate :Date, propertyMap :[String : Any],
+			active :Bool) {
 		// Store
 		self.id = id
 		self.creationDate = creationDate
 
-		self.modificationDate = modificationDate
 		self.revision = revision
+		self.modificationDate = modificationDate
 		self.propertyMapInternal = propertyMap
+		self.active = active
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	init(documentType :String, documentID :String, creationDate :Date? = nil, modificationDate :Date? = nil,
-			propertyMap :MDSDocument.PropertyMap, with sqliteCore :MDSSQLiteCore) {
+			propertyMap :[String : Any], with sqliteCore :MDSSQLiteCore) {
 		// Store
 		let	(id, revision, creationDate, modificationDate) =
 					sqliteCore.new(documentType: documentType, documentID: documentID, creationDate: creationDate,
@@ -47,9 +49,10 @@ class MDSSQLiteDocumentBacking {
 		self.id = id
 		self.creationDate = creationDate
 
-		self.modificationDate = modificationDate
 		self.revision = revision
+		self.modificationDate = modificationDate
 		self.propertyMapInternal = propertyMap
+		self.active = true
 	}
 
 	// MARK: Instance methods
@@ -65,7 +68,7 @@ class MDSSQLiteDocumentBacking {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func update(documentType :String, updatedPropertyMap :MDSDocument.PropertyMap? = nil,
+	func update(documentType :String, updatedPropertyMap :[String : Any]? = nil,
 			removedProperties :Set<String>? = nil, with sqliteCore :MDSSQLiteCore, commitChange :Bool = true) {
 		// Update
 		self.propertiesLock.write() {

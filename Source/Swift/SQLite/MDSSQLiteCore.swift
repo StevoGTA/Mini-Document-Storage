@@ -82,8 +82,9 @@ class MDSSQLiteCore {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	static func documentBackingInfo(id :Int64, documentRevisionInfo :MDSDocumentRevisionInfo, contentTable :SQLiteTable,
-			resultsRow :SQLiteResultsRow) -> MDSDocumentBackingInfo<MDSSQLiteDocumentBacking> {
+	static func documentBackingInfo(id :Int64, documentRevisionInfo :MDSDocumentRevisionInfo, active :Bool,
+			contentTable :SQLiteTable, resultsRow :SQLiteResultsRow) ->
+			MDSDocumentBackingInfo<MDSSQLiteDocumentBacking> {
 		// Process results
 		let	creationDate = Date(fromRFC3339Extended: resultsRow.text(for: contentTable.creationDateTableColumn)!)!
 		let	modificationDate =
@@ -96,7 +97,7 @@ class MDSSQLiteCore {
 				documentBacking:
 						MDSSQLiteDocumentBacking(id: id, revision: documentRevisionInfo.revision,
 								creationDate: creationDate, modificationDate: modificationDate,
-								propertyMap: propertyMap))
+								propertyMap: propertyMap, active: active))
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -244,12 +245,9 @@ class MDSSQLiteCore {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func currentRevision(for documentType :String) -> Int { self.documentLastRevisionMap.value(for: documentType) ?? 0 }
-
-	//------------------------------------------------------------------------------------------------------------------
 	func nextRevision(for documentType :String) -> Int {
 		// Compose next revision
-		let	nextRevision = currentRevision(for: documentType) + 1
+		let	nextRevision = (self.documentLastRevisionMap.value(for: documentType) ?? 0) + 1
 
 		// Check if in batch
 		if var batchInfo = self.batchInfoMap.value(for: Thread.current) {
@@ -308,14 +306,12 @@ class MDSSQLiteCore {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func new(documentType :String, documentID :String, creationDate :Date? = nil, modificationDate :Date? = nil,
-			propertyMap :MDSDocument.PropertyMap) ->
-			(id :Int64, revision :Int, creationDate :Date, modificatinoDate :Date) {
+			propertyMap :[String : Any]) -> (id :Int64, revision :Int, creationDate :Date, modificatinoDate :Date) {
 		// Setup
 		let	revision = nextRevision(for: documentType)
 		let	creationDate = creationDate ?? Date()
 		let	modificationDate = modificationDate ?? creationDate
-
-		let	data :Data = try! JSONSerialization.data(withJSONObject: propertyMap)
+		let	jsonData :Data = try! JSONSerialization.data(withJSONObject: propertyMap)
 
 		// Add to database
 		let	(infoTable, contentTable) = documentTables(for: documentType)
@@ -329,14 +325,14 @@ class MDSSQLiteCore {
 									(contentTable.idTableColumn, id),
 									(contentTable.creationDateTableColumn, creationDate.rfc3339Extended),
 									(contentTable.modificationDateTableColumn, modificationDate.rfc3339Extended),
-									(contentTable.jsonTableColumn, data),
+									(contentTable.jsonTableColumn, jsonData),
 								   ])
 
 		return (id, revision, creationDate, modificationDate)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func update(documentType :String, id :Int64, propertyMap :MDSDocument.PropertyMap) ->
+	func update(documentType :String, id :Int64, propertyMap :[String : Any]) ->
 			(revision :Int, modificationDate :Date) {
 		// Setup
 		let	revision = nextRevision(for: documentType)
