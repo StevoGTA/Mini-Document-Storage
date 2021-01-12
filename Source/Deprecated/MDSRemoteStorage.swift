@@ -381,7 +381,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
+	public func registerCollection<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
 			isIncludedProc :@escaping (_ document :T) -> Bool) {
 		// Perform blocking
@@ -401,15 +401,15 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		}
 
 		// Update collection
-		updateCollection(named: name, documentLastRevision: (resultInfo!["documentLastRevision"] as! UInt),
-				collectionLastDocumentRevision: (resultInfo!["collectionLastDocumentRevision"] as! UInt))
+		updateCollection(named: name, documentLastRevision: (resultInfo!["documentLastRevision"] as! Int),
+				collectionLastDocumentRevision: (resultInfo!["collectionLastDocumentRevision"] as! Int))
 
 		// Update creation proc map
 		self.documentCreationProcMap.set({ T(id: $0, documentStorage: $1) }, for: T.documentType)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func queryCollectionDocumentCount(name :String) -> UInt {
+	public func queryCollectionDocumentCount(name :String) -> Int {
 		// May need to try this more than once
 		while true {
 			// Perform blocking
@@ -421,7 +421,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						}
 			if count != nil {
 				// Success
-				return UInt(count!)
+				return count!
 			} else if (needsUpdate ?? false) {
 				// Collection is not up to date
 				updateCollection(named: name)
@@ -463,7 +463,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
+	public func registerIndex<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any],
 			keysProc :@escaping (_ document :T) -> [String]) {
 		// Perform blocking
@@ -483,8 +483,8 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		}
 
 		// Update index
-		updateIndex(named: name, documentLastRevision: (info!["documentLastRevision"] as! UInt),
-				indexLastDocumentRevision: (info!["indexLastDocumentRevision"] as! UInt))
+		updateIndex(named: name, documentLastRevision: (info!["documentLastRevision"] as! Int),
+				indexLastDocumentRevision: (info!["indexLastDocumentRevision"] as! Int))
 
 		// Update creation proc map
 		self.documentCreationProcMap.set({ T(id: $0, documentStorage: $1) }, for: T.documentType)
@@ -629,8 +629,8 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func updateCollection(named name :String, documentLastRevision :UInt? = nil,
-			collectionLastDocumentRevision :UInt? = nil) {
+	private func updateCollection(named name :String, documentLastRevision :Int? = nil,
+			collectionLastDocumentRevision :Int? = nil) {
 		// Setup
 		var	documentLastRevisionUse = documentLastRevision
 		var	collectionLastDocumentRevisionUse = collectionLastDocumentRevision
@@ -653,14 +653,14 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			}
 
 			// Update info
-			documentLastRevisionUse = (info!["documentLastRevision"] as! UInt)
-			collectionLastDocumentRevisionUse = (info!["collectionLastDocumentRevision"] as! UInt)
+			documentLastRevisionUse = (info!["documentLastRevision"] as! Int)
+			collectionLastDocumentRevisionUse = (info!["collectionLastDocumentRevision"] as! Int)
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func updateIndex(named name :String, documentLastRevision :UInt? = nil,
-			indexLastDocumentRevision :UInt? = nil) {
+	private func updateIndex(named name :String, documentLastRevision :Int? = nil,
+			indexLastDocumentRevision :Int? = nil) {
 		// Setup
 		var	documentLastRevisionUse = documentLastRevision
 		var	indexLastDocumentRevisionUse = indexLastDocumentRevision
@@ -682,8 +682,8 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			}
 
 			// Update info
-			documentLastRevisionUse = (info!["documentLastRevision"] as! UInt)
-			indexLastDocumentRevisionUse = (info!["indexLastDocumentRevision"] as! UInt)
+			documentLastRevisionUse = (info!["documentLastRevision"] as! Int)
+			indexLastDocumentRevisionUse = (info!["indexLastDocumentRevision"] as! Int)
 		}
 	}
 

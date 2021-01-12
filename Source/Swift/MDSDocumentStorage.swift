@@ -45,13 +45,13 @@ public protocol MDSDocumentStorage : class {
 
 	func batch(_ proc :() throws -> MDSBatchResult) rethrows
 
-	func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
+	func registerCollection<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
 			isIncludedProc :@escaping (_ document :T) -> Bool)
-	func queryCollectionDocumentCount(name :String) -> UInt
+	func queryCollectionDocumentCount(name :String) -> Int
 	func iterateCollection<T : MDSDocument>(name :String, proc :(_ document : T) -> Void)
 
-	func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
+	func registerIndex<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any],
 			keysProc :@escaping (_ document :T) -> [String])
 	func iterateIndex<T : MDSDocument>(name :String, keys :[String], proc :(_ key :String, _ document :T) -> Void)
@@ -93,7 +93,7 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func registerCollection<T : MDSDocument>(named name :String, version :UInt = 1, relevantProperties :[String],
+	public func registerCollection<T : MDSDocument>(named name :String, version :Int = 1, relevantProperties :[String],
 			isUpToDate :Bool = false, isIncludedSelector :String = "", isIncludedSelectorInfo :[String : Any] = [:],
 			isIncludedProc :@escaping (_ document :T) -> Bool) {
 		// Register collection
@@ -114,7 +114,7 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func registerIndex<T : MDSDocument>(named name :String, version :UInt = 1, relevantProperties :[String],
+	public func registerIndex<T : MDSDocument>(named name :String, version :Int = 1, relevantProperties :[String],
 			isUpToDate :Bool = false, keysSelector :String = "", keysSelectorInfo :[String : Any] = [:],
 			keysProc :@escaping (_ document :T) -> [String]) {
 		// Register index

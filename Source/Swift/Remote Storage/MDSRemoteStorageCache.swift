@@ -97,6 +97,26 @@ public class MDSRemoteStorageCache {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func timeIntervals(for keys :[String]) -> [String : TimeInterval] {
+		// Setup
+		let	keyTableColumn = self.infoTable.keyTableColumn
+		let	valueTableColumn = self.infoTable.valueTableColumn
+
+		// Retrieve values
+		var	map = [String : TimeInterval]()
+		try! self.infoTable.select(where: SQLiteWhere(tableColumn: self.infoTable.keyTableColumn, values: keys)) {
+					// Process results
+					let	key = $0.text(for: keyTableColumn)!
+					let	value = $0.text(for: valueTableColumn)!
+
+					// Add to map
+					map[key] = TimeInterval(value)
+				}
+
+		return map
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func set(_ value :Any?, for key :String) {
 		// Storing or removing
 		if value != nil {
@@ -108,6 +128,22 @@ public class MDSRemoteStorageCache {
 		} else {
 			// Removing
 			self.infoTable.deleteRows(self.infoTable.keyTableColumn, values: [key])
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func set(_ info :[String : Any]) {
+		// Setup
+		let	keyTableColumn = self.infoTable.keyTableColumn
+		let	valueTableColumn = self.infoTable.valueTableColumn
+
+		// Iterate all
+		info.forEach() {
+			// Store value
+			self.infoTable.insertOrReplaceRow([
+												(keyTableColumn, $0.key),
+												(valueTableColumn, $0.value),
+											  ])
 		}
 	}
 

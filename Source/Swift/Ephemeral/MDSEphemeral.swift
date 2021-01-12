@@ -401,7 +401,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
+	public func registerCollection<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
 			isIncludedProc :@escaping (_ document :T) -> Bool) {
 		// Ensure this collection has not already been registered
@@ -421,9 +421,9 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func queryCollectionDocumentCount(name :String) -> UInt {
+	public func queryCollectionDocumentCount(name :String) -> Int {
 		// Return count
-		return UInt((self.collectionValuesMap.value(for: name) ?? Set<String>()).count)
+		return (self.collectionValuesMap.value(for: name) ?? Set<String>()).count
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -433,7 +433,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
+	public func registerIndex<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any],
 			keysProc :@escaping (_ document :T) -> [String]) {
 		// Ensure this index has not already been registered
@@ -530,7 +530,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerCollection(named name :String, documentType :String, version :UInt, relevantProperties :[String],
+	func registerCollection(named name :String, documentType :String, version :Int, relevantProperties :[String],
 			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any]) ->
 			(documentLastRevision: Int, collectionLastDocumentRevision: Int) {
 		// Not implemented
@@ -553,7 +553,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerIndex(named name :String, documentType :String, version :UInt, relevantProperties :[String],
+	func registerIndex(named name :String, documentType :String, version :Int, relevantProperties :[String],
 			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any]) ->
 			(documentLastRevision: Int, collectionLastDocumentRevision: Int) {
 		// Not implemented

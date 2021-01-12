@@ -317,13 +317,14 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 							// Call network client
 							self.httpEndpointClient.queue(
 									MDSHTTPServices.httpEndpointRequestForGetDocuments(
-											documentStorageID: self.documentStorageID, authorization: self.authorization,
-											type: documentType, sinceRevision: lastRevision),
-											processingProc: { self.updateDocuments(for: documentType, with: $0) },
-											completionProc: { (isComplete :Bool?, error :Error?) in
-												// Call completion proc
-												completionProc((isComplete, error))
-											})
+											documentStorageID: self.documentStorageID,
+											authorization: self.authorization, type: documentType,
+											sinceRevision: lastRevision),
+									processingProc: { self.updateDocuments(for: documentType, with: $0) },
+									completionProc: { (isComplete :Bool?, error :Error?) in
+										// Call completion proc
+										completionProc((isComplete, error))
+									})
 						}
 
 			// Handle results
@@ -444,7 +445,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func registerCollection<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
+	public func registerCollection<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
 			isIncludedProc :@escaping (_ document :T) -> Bool) {
 		// Register collection
@@ -474,7 +475,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func queryCollectionDocumentCount(name :String) -> UInt {
+	public func queryCollectionDocumentCount(name :String) -> Int {
 		// May need to try this more than once
 		while true {
 			// Query collection document count
@@ -497,7 +498,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 				continue
 			} else if count != nil {
 				// Success
-				return UInt(count!)
+				return count!
 			} else {
 				// Error
 				self.recentErrors.append(error!)
@@ -554,7 +555,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func registerIndex<T : MDSDocument>(named name :String, version :UInt, relevantProperties :[String],
+	public func registerIndex<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any],
 			keysProc :@escaping (_ document :T) -> [String]) {
 		// Register index

@@ -495,7 +495,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func queryCollectionDocumentCount(name :String) -> UInt {
+	public func queryCollectionDocumentCount(name :String) -> Int {
 		// Run lean
 		autoreleasepool() { _ = bringCollectionUpToDate(name: name) }
 
@@ -680,7 +680,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerCollection(named name :String, documentType :String, version :UInt, relevantProperties :[String],
+	func registerCollection(named name :String, documentType :String, version :Int, relevantProperties :[String],
 			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any]) ->
 			(documentLastRevision: Int, collectionLastDocumentRevision: Int) {
 		// Not implemented
@@ -708,7 +708,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerIndex(named name :String, documentType :String, version :UInt, relevantProperties :[String],
+	func registerIndex(named name :String, documentType :String, version :Int, relevantProperties :[String],
 			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any]) ->
 			(documentLastRevision: Int, collectionLastDocumentRevision: Int) {
 		// Not implemented

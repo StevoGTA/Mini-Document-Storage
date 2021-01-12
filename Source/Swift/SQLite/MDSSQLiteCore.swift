@@ -461,7 +461,7 @@ class MDSSQLiteCore {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func queryCollectionDocumentCount(name :String) -> UInt { self.collectionTablesMap.value(for: name)!.count() }
+	func queryCollectionDocumentCount(name :String) -> Int { self.collectionTablesMap.value(for: name)!.count() }
 
 	//------------------------------------------------------------------------------------------------------------------
 	func registerIndex(documentType :String, name :String, version :Int, isUpToDate :Bool) -> Int {

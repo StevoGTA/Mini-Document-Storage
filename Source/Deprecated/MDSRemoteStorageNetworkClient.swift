@@ -27,23 +27,23 @@ public protocol MDSRemoteStorageNetworkClient {
 			completionProc :@escaping (_ infos :[[String : Any]]?, _ error :Error?) -> Void)
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerCollection(documentType :String, name :String, version :UInt,
+	func registerCollection(documentType :String, name :String, version :Int,
 			relevantProperties :[String], isUpToDate :Bool, isIncludedSelector :String,
 			isIncludedSelectorInfo :[String : Any],
 			completionProc :@escaping (_ info :[String : Any]?, _ error :Error?) -> Void)
-	func updateCollection(name :String, documentCount :UInt,
+	func updateCollection(name :String, documentCount :Int,
 			completionProc :@escaping (_ info :[String : Any]?, _ error :Error?) -> Void)
 	func retrieveCollectionDocumentCount(name :String,
-			completionProc :@escaping(_ documentCount :UInt?, _ needsUpdate :Bool?, _ error :Error?) -> Void)
+			completionProc :@escaping(_ documentCount :Int?, _ needsUpdate :Bool?, _ error :Error?) -> Void)
 	func retrieveCollectionDocumentInfos(name :String,
 			completionProc
 					:@escaping (_ documentInfos :[[String : Any]]?, _ needsUpdate :Bool?, _ error :Error?) -> Void)
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerIndex(documentType :String, name :String, version :UInt,
+	func registerIndex(documentType :String, name :String, version :Int,
 			relevantProperties :[String], isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any],
 			completionProc :@escaping (_ info :[String : Any]?, _ error :Error?) -> Void)
-	func updateIndex(name :String, documentCount :UInt,
+	func updateIndex(name :String, documentCount :Int,
 			completionProc :@escaping (_ info :[String : Any]?, _ error :Error?) -> Void)
 	func retrieveIndexDocumentInfosMap(name :String, keys :[String],
 			completionProc

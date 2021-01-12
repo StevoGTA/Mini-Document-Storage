@@ -351,7 +351,7 @@ class MDSHTTPServices {
 	//							   },
 	//		}
 	typealias RegisterCollectionEndpointInfo =
-				(documentStorageID :String, authorization :String?, documentType :String, name :String, version :UInt,
+				(documentStorageID :String, authorization :String?, documentType :String, name :String, version :Int,
 						relevantProperties :[String], isUpToDate :Bool, isIncludedSelector :String,
 						isIncludedSelectorInfo :[String : Any])
 	static	let	registerCollectionEndpoint =
@@ -370,7 +370,7 @@ class MDSHTTPServices {
 										// Missing name
 										throw HTTPEndpointError.badRequest(with: "missing name")
 									}
-									guard let version = info["version"] as? UInt else {
+									guard let version = info["version"] as? Int else {
 										// Missing version
 										throw HTTPEndpointError.badRequest(with: "missing version")
 									}
@@ -396,7 +396,7 @@ class MDSHTTPServices {
 											relevantProperties, isUpToDate, isIncludedSelector, isIncludedSelectorInfo)
 								}
 	static func httpEndpointRequestForRegisterCollection(documentStorageID :String, authorization :String?,
-			documentType :String, name :String, version :UInt, relevantProperties :[String] = [],
+			documentType :String, name :String, version :Int, relevantProperties :[String] = [],
 			isUpToDate :Bool = false, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any] = [:]) ->
 			JSONHTTPEndpointRequest<[String : Any]> {
 		// Setup
@@ -489,7 +489,7 @@ class MDSHTTPServices {
 	//							   },
 	//		}
 	typealias RegisterIndexEndpointInfo =
-				(documentStorageID :String, authorization :String?, documentType :String, name :String, version :UInt,
+				(documentStorageID :String, authorization :String?, documentType :String, name :String, version :Int,
 						relevantProperties :[String], isUpToDate :Bool, keysSelector :String,
 						keysSelectorInfo: [String : Any])
 	static	let	registerIndexEndpoint =
@@ -508,7 +508,7 @@ class MDSHTTPServices {
 										// Missing name
 										throw HTTPEndpointError.badRequest(with: "missing name")
 									}
-									guard let version = info["version"] as? UInt else {
+									guard let version = info["version"] as? Int else {
 										// Missing version
 										throw HTTPEndpointError.badRequest(with: "missing version")
 									}
@@ -534,7 +534,7 @@ class MDSHTTPServices {
 											relevantProperties, isUpToDate, keysSelector, keysSelectorInfo)
 								}
 	static func httpEndpointRequestForRegisterIndex(documentStorageID :String, authorization :String?,
-			documentType :String, name :String, version :UInt, relevantProperties :[String] = [],
+			documentType :String, name :String, version :Int, relevantProperties :[String] = [],
 			isUpToDate :Bool = false, keysSelector :String, keysSelectorInfo :[String : Any] = [:]) ->
 			JSONHTTPEndpointRequest<[String : Any]> {
 		// Setup
