@@ -126,11 +126,11 @@ public class MDSRemoteStorageCache {
 		var	documentInfos = [DocumentInfo]()
 		try! sqliteTable.select() {
 			// Process results
-			let	active :Int = $0.integer(for: activeTableColumn)!
+			let	active = Int($0.integer(for: activeTableColumn)!)
 			guard active == 1 else { return }
 
 			let	id = $0.text(for: idTableColumn)!
-			let	revision :Int = $0.integer(for: revisionTableColumn)!
+			let	revision = Int($0.integer(for: revisionTableColumn)!)
 			let	creationDate = Date(timeIntervalSince1970: $0.real(for: creationDateTableColumn)!)
 			let	modificationDate = Date(timeIntervalSince1970: $0.real(for: modificationDateTableColumn)!)
 			let	propertyMap =
@@ -169,10 +169,10 @@ public class MDSRemoteStorageCache {
 				values: Array(documentIDs))) {
 					// Retrieve info for this record
 					let	id = $0.text(for: idTableColumn)!
-					let	revision :Int = $0.integer(for: revisionTableColumn)!
+					let	revision = Int($0.integer(for: revisionTableColumn)!)
 					if revision == referenceMap[id] {
 						// Revision matches
-						let	active :Int = $0.integer(for: activeTableColumn)!
+						let	active = Int($0.integer(for: activeTableColumn)!)
 						let	creationDate = Date(timeIntervalSince1970: $0.real(for: creationDateTableColumn)!)
 						let	modificationDate = Date(timeIntervalSince1970: $0.real(for: modificationDateTableColumn)!)
 						let	propertyMap =
@@ -237,8 +237,8 @@ public class MDSRemoteStorageCache {
 					self.sqliteDatabase.table(name: name, options: [],
 							tableColumns: [
 											SQLiteTableColumn("id", .text, [.primaryKey, .notNull]),
-											SQLiteTableColumn("revision", .integer4, [.notNull]),
-											SQLiteTableColumn("active", .integer1, [.notNull]),
+											SQLiteTableColumn("revision", .integer, [.notNull]),
+											SQLiteTableColumn("active", .integer, [.notNull]),
 											SQLiteTableColumn("creationDate", .real, [.notNull]),
 											SQLiteTableColumn("modificationDate", .real, [.notNull]),
 											SQLiteTableColumn("json", .blob, [.notNull]),

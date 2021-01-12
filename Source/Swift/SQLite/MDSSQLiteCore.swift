@@ -75,7 +75,7 @@ class MDSSQLiteCore {
 		// Process results
 		let	id :Int64 = resultsRow.integer(for: infoTable.idTableColumn)!
 		let	documentID = resultsRow.text(for: infoTable.documentIDTableColumn)!
-		let	revision :Int = resultsRow.integer(for: infoTable.revisionTableColumn)!
+		let	revision = Int(resultsRow.integer(for: infoTable.revisionTableColumn)!)
 		let	active :Bool = resultsRow.integer(for: infoTable.activeTableColumn)! == 1
 
 		return (id, MDSDocumentRevisionInfo(documentID: documentID, revision: revision), active)
@@ -125,7 +125,7 @@ class MDSSQLiteCore {
 				self.sqliteDatabase.table(name: "Documents",
 						tableColumns: [
 										SQLiteTableColumn("type", .text, [.notNull, .unique]),
-										SQLiteTableColumn("lastRevision", .integer4, [.notNull]),
+										SQLiteTableColumn("lastRevision", .integer, [.notNull]),
 									  ])
 		self.documentsMasterTable.create()
 
@@ -133,8 +133,8 @@ class MDSSQLiteCore {
 				self.sqliteDatabase.table(name: "Collections",
 						tableColumns: [
 										SQLiteTableColumn("name", .text, [.notNull, .unique]),
-										SQLiteTableColumn("version", .integer2, [.notNull]),
-										SQLiteTableColumn("lastRevision", .integer4, [.notNull]),
+										SQLiteTableColumn("version", .integer, [.notNull]),
+										SQLiteTableColumn("lastRevision", .integer, [.notNull]),
 									  ])
 		self.collectionsMasterTable.create()
 
@@ -142,8 +142,8 @@ class MDSSQLiteCore {
 				self.sqliteDatabase.table(name: "Indexes",
 						tableColumns: [
 										SQLiteTableColumn("name", .text, [.notNull, .unique]),
-										SQLiteTableColumn("version", .integer2, [.notNull]),
-										SQLiteTableColumn("lastRevision", .integer4, [.notNull]),
+										SQLiteTableColumn("version", .integer, [.notNull]),
+										SQLiteTableColumn("lastRevision", .integer, [.notNull]),
 									  ])
 		self.indexesMasterTable.create()
 
@@ -151,7 +151,7 @@ class MDSSQLiteCore {
 		try! self.documentsMasterTable.select() {
 			// Process results
 			let	documentType = $0.text(for: self.documentsMasterTable.typeTableColumn)!
-			let	lastRevision :Int = $0.integer(for: self.documentsMasterTable.lastRevisionTableColumn)!
+			let	lastRevision = Int($0.integer(for: self.documentsMasterTable.lastRevisionTableColumn)!)
 
 			// Add to key value store
 			self.documentLastRevisionMap.set(lastRevision, for: documentType)
@@ -220,15 +220,15 @@ class MDSSQLiteCore {
 								tableColumns: [
 												SQLiteTableColumn("id", .integer, [.primaryKey, .autoincrement]),
 												SQLiteTableColumn("documentID", .text, [.notNull, .unique]),
-												SQLiteTableColumn("revision", .integer4, [.notNull]),
-												SQLiteTableColumn("active", .integer1, [.notNull]),
+												SQLiteTableColumn("revision", .integer, [.notNull]),
+												SQLiteTableColumn("active", .integer, [.notNull]),
 											  ])
 			let	contentTable =
 						self.sqliteDatabase.table(name: "\(tableTitleRoot)Contents",
 								tableColumns: [
 												contentIDTableColumn,
-												SQLiteTableColumn("creationDate", .textWith(size: 23), [.notNull]),
-												SQLiteTableColumn("modificationDate", .textWith(size: 23), [.notNull]),
+												SQLiteTableColumn("creationDate", .text, [.notNull]),
+												SQLiteTableColumn("modificationDate", .text, [.notNull]),
 												SQLiteTableColumn("json", .blob, [.notNull]),
 											  ],
 								references: [(contentIDTableColumn, infoTable, infoTable.idTableColumn)])
@@ -371,9 +371,9 @@ class MDSSQLiteCore {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerCollection(documentType :String, name :String, version :UInt, isUpToDate :Bool) -> Int {
+	func registerCollection(documentType :String, name :String, version :Int, isUpToDate :Bool) -> Int {
 		// Query database
-		var	storedVersion :UInt?
+		var	storedVersion :Int?
 		var	storedLastRevision :Int?
 		try! self.collectionsMasterTable.select(
 				tableColumns: [
@@ -382,8 +382,8 @@ class MDSSQLiteCore {
 							  ],
 				where: SQLiteWhere(tableColumn: self.collectionsMasterTable.nameTableColumn, value: name)) {
 					// Process results
-					storedVersion = $0.integer(for: self.collectionsMasterTable.versionTableColumn)!
-					storedLastRevision = $0.integer(for: self.collectionsMasterTable.lastRevisionTableColumn)!
+					storedVersion = Int($0.integer(for: self.collectionsMasterTable.versionTableColumn)!)
+					storedLastRevision = Int($0.integer(for: self.collectionsMasterTable.lastRevisionTableColumn)!)
 				}
 
 		// Setup table
@@ -464,9 +464,9 @@ class MDSSQLiteCore {
 	func queryCollectionDocumentCount(name :String) -> UInt { self.collectionTablesMap.value(for: name)!.count() }
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerIndex(documentType :String, name :String, version :UInt, isUpToDate :Bool) -> Int {
+	func registerIndex(documentType :String, name :String, version :Int, isUpToDate :Bool) -> Int {
 		// Query database
-		var	storedVersion :UInt?
+		var	storedVersion :Int?
 		var	storedLastRevision :Int?
 		try! self.indexesMasterTable.select(
 				tableColumns: [
@@ -475,8 +475,8 @@ class MDSSQLiteCore {
 							  ],
 				where: SQLiteWhere(tableColumn: self.indexesMasterTable.nameTableColumn, value: name)) {
 					// Process results
-					storedVersion = $0.integer(for: self.indexesMasterTable.versionTableColumn)!
-					storedLastRevision = $0.integer(for: self.indexesMasterTable.lastRevisionTableColumn)!
+					storedVersion = Int($0.integer(for: self.indexesMasterTable.versionTableColumn)!)
+					storedLastRevision = Int($0.integer(for: self.indexesMasterTable.lastRevisionTableColumn)!)
 				}
 
 		// Setup table
