@@ -108,9 +108,9 @@ class MDSHTTPServicesAdapter {
 			// Check requested flavor
 			if let documentIDs = info.documentIDs {
 				// Iterate documentIDs
-				var	documentInfos = [String : [String : Any]]()
+				var	documentInfos = [[String : Any]]()
 				documentStorageServerHandler.iterate(documentType: info.type, documentIDs: documentIDs)
-						{ documentInfos[$0.documentID] = $0.httpServicesInfo }
+						{ documentInfos.append($0.httpServicesInfo) }
 
 				return (.ok, nil, .json(documentInfos))
 			} else {
