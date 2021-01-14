@@ -578,8 +578,11 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		var	documentReferences = [MDSRemoteStorageCache.DocumentReference]()
 		infos.forEach() {
 			// Get info
-			let	documentID = $0["documentID"] as! String
-			let	revision = $0["revision"] as! Int
+// Stevo 1/12/2021 changed to "id" and "r" to minimize payload size until other architectural changes can be implemented.
+//			let	documentID = $0["documentID"] as! String
+//			let	revision = $0["revision"] as! Int
+			let	documentID = ($0["documentID"] ?? $0["id"]) as! String
+			let	revision = ($0["revision"] ?? $0["r"]) as! Int
 
 			// Check if have in cache and is most recent
 			if let documentBacking = self.documentBackingCache.documentBacking(for: documentID),
