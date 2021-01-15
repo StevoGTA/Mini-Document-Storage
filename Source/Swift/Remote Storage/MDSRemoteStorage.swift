@@ -328,7 +328,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						}
 
 			// Handle results
-			if isComplete! {
+			if (isComplete ?? false) {
 				// Done
 				break
 			} else {
@@ -387,7 +387,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 		// Retrieve documents and call proc
 		retrieveDocuments(for: documentIDsToRetrieve, documentType: T.documentType)
-				.forEach() { proc(T(id: $0.documentID, documentStorage: self)) }
+				{ proc(T(id: $0.documentID, documentStorage: self)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -493,7 +493,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						}
 
 			// Handle results
-			if (isUpToDate != nil) && !isUpToDate! {
+			if !(isUpToDate ?? true) {
 				// Not up to date
 				continue
 			} else if count != nil {
@@ -529,13 +529,15 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						}
 
 			// Handle results
-			if (isUpToDate != nil) && !isUpToDate! {
+			if !(isUpToDate ?? true) {
 				// Not up to date
 				continue
 			} else if documentRevisionInfos != nil {
 				// Success
-				documents(for: documentRevisionInfos!, creationProc: { T(id: $0, documentStorage: $1) })
-					.forEach({ proc($0) })
+//				documents(for: documentRevisionInfos!, creationProc: { T(id: $0, documentStorage: $1) })
+//					.forEach({ proc($0) })
+				iterateDocumentIDs(documentType: T.documentType, activeDocumentRevisionInfos: documentRevisionInfos!)
+					{ proc(T(id: $0, documentStorage: self)) }
 
 				// Update
 				startIndex += documentRevisionInfos!.count
@@ -668,8 +670,11 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			return documentBacking
 		} else {
 			// Must retrieve from server
-			return retrieveDocuments(for: [document.id], documentType: type(of: document).documentType).first!
-					.documentBacking
+			var	documentBackings = [DocumentBacking]()
+			retrieveDocuments(for: [document.id], documentType: type(of: document).documentType)
+					{ documentBackings.append($0.documentBacking) }
+
+			return documentBackings.first!
 		}
 	}
 
@@ -735,16 +740,13 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 //	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func documents<T :MDSDocument>(for activeDocumentRevisionInfos :[MDSDocumentRevisionInfo],
-			creationProc :DocumentCreationProc) -> [T] {
-/*
-	Need to take DRIs and update stuffs - which may require additional calls to the server to retrieve the doc contents
-
-*/
+//	private func iterateDocumentIDs<T :MDSDocument>(for activeDocumentRevisionInfos :[MDSDocumentRevisionInfo],
+	private func iterateDocumentIDs(documentType :String, activeDocumentRevisionInfos :[MDSDocumentRevisionInfo],
+			proc :(_ documentID :String) -> Void) {
 		// Setup
-		let	documentType = T.documentType
+//		let	documentType = T.documentType
 
-		var	documents = [T]()
+//		var	documents = [T]()
 
 		// Iterate all infos
 		var	documentReferencesPossiblyInCache = [MDSRemoteStorageCache.DocumentReference]()
@@ -755,7 +757,8 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 				// Check revision
 				if documentBacking.revision == $0.revision {
 					// Use from property storables cache
-					documents.append(creationProc($0.documentID, self) as! T)
+//					documents.append(creationProc($0.documentID, self) as! T)
+					proc($0.documentID)
 				} else {
 					// Must retrieve
 					documentReferencesToRetrieve.append(
@@ -788,22 +791,24 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			self.documentBackingCache.add(documentBackingInfos)
 
 			// Create property storables
-			documentInfos.forEach() { documents.append(creationProc($0.id, self) as! T) }
+//			documentInfos.forEach() { documents.append(creationProc($0.id, self) as! T) }
+			documentInfos.forEach() { proc($0.id) }
 		}
 
 		// Check if have documents to retrieve
 		documentReferencesToRetrieve += documentReferencesNotResolved
 		if !documentReferencesToRetrieve.isEmpty {
 			// Retrieve from server
-			retrieveDocuments(for: documentReferencesToRetrieve.map({ $0.id }), documentType: documentType)
+			retrieveDocuments(for: documentReferencesToRetrieve.map({ $0.id }), documentType: documentType) { _ in }
 
 			// Create property storables
 			documentReferencesToRetrieve
 					.map({ ($0.id, self.documentBackingCache.documentBacking(for: $0.id)!) })
-					.forEach() { documents.append(creationProc($0.0, self) as! T) }
+//					.forEach() { documents.append(creationProc($0.0, self) as! T) }
+					.forEach() { proc($0.0) }
 		}
 
-		return documents
+//		return documents
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -843,7 +848,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		// Check if have documents to retrieve
 		if !documentReferencesNotResolved.isEmpty {
 			// Retrieve from server
-			retrieveDocuments(for: documentReferencesNotResolved.map({ $0.id }), documentType: documentType)
+			retrieveDocuments(for: documentReferencesNotResolved.map({ $0.id }), documentType: documentType) { _ in }
 		}
 	}
 
@@ -991,54 +996,83 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	@discardableResult
-	private func retrieveDocuments(for ids :[String], documentType :String) ->
-			[MDSDocumentBackingInfo<DocumentBacking>] {
+	private func retrieveDocuments(for ids :[String], documentType :String,
+			proc :(_ documentBackingInfo :MDSDocumentBackingInfo<DocumentBacking>) -> Void ) {
 		// Preflight
-		guard !ids.isEmpty else { return [] }
+		guard !ids.isEmpty else { return }
 
-		// Retrieve document infos
-		var	documentFullInfos = [MDSDocumentFullInfo]()
-		let	errors =
-					DispatchQueue.performBlocking() { (completionProc :@escaping(_ errors :[Error]) -> Void) in
-						// Queue
-						self.httpEndpointClient.queue(
-								MDSHTTPServices.httpEndpointRequestForGetDocuments(
-										documentStorageID: self.documentStorageID, authorization: self.authorization,
-										type: documentType, documentIDs: ids),
-								partialResultsProc: { documentFullInfos += $0 ?? []; _ = $1 },
-								completionProc: { completionProc($0) })
+		// Setup
+		let	documentFullInfos = LockingArray<MDSDocumentFullInfo>()
+		let	semaphore = DispatchSemaphore(value: 0)
+		var	allDone = false
+
+		// Queue document retrieval
+		self.httpEndpointClient.queue(
+				MDSHTTPServices.httpEndpointRequestForGetDocuments(
+						documentStorageID: self.documentStorageID,
+						authorization: self.authorization, type: documentType, documentIDs: ids),
+				partialResultsProc: {
+					// Run lean
+					if $0 != nil {
+						// Add to array
+						documentFullInfos.append($0!)
+
+						// Signal
+						semaphore.signal()
 					}
-		guard errors.isEmpty else {
-			// Store errors
-			self.recentErrors += errors
 
-			return []
+					// Ignore error here (will collect below)
+					_ = $1
+				}, completionProc: {
+					// Add errors
+					self.recentErrors += $0
+
+					// All done
+					allDone = true
+
+					// Signal
+					semaphore.signal()
+				})
+
+		// Process results
+		while (!allDone) {
+			// Wait for signal
+			semaphore.wait()
+
+			// Run lean
+			autoreleasepool() {
+				// Get queued document infos
+				let	documentFullInfosToProcess = documentFullInfos.removeAll()
+
+				// Update caches
+				var	documentBackings = [DocumentBacking]()
+				var	documentBackingInfos = [MDSDocumentBackingInfo<DocumentBacking>]()
+				var	documentInfos = [MDSRemoteStorageCache.DocumentInfo]()
+				documentFullInfosToProcess.forEach() {
+					// Get info
+					let	documentBacking =
+								DocumentBacking(type: documentType, revision: $0.revision,
+										active: $0.active, creationDate: $0.creationDate,
+										modificationDate: $0.modificationDate,
+										propertyMap: $0.propertyMap)
+					documentBackings.append(documentBacking)
+					documentBackingInfos.append(
+							MDSDocumentBackingInfo<DocumentBacking>(documentID: $0.documentID,
+									documentBacking: documentBacking))
+					documentInfos.append(
+							MDSRemoteStorageCache.DocumentInfo(id: $0.documentID,
+									revision: $0.revision, active: $0.active,
+									creationDate: $0.creationDate,
+									modificationDate: $0.modificationDate,
+									propertyMap: $0.propertyMap))
+				}
+				self.documentBackingCache.add(documentBackingInfos)
+				self.remoteStorageCache.add(documentInfos, for: documentType)
+
+				// Iterate and call proc
+				documentBackingInfos.forEach() { proc($0) }
+			}
 		}
-
-		// Update caches
-		var	documentBackings = [DocumentBacking]()
-		var	documentBackingInfos = [MDSDocumentBackingInfo<DocumentBacking>]()
-		var	documentInfos = [MDSRemoteStorageCache.DocumentInfo]()
-		documentFullInfos.forEach() {
-			// Get info
-			let	documentBacking =
-						DocumentBacking(type: documentType, revision: $0.revision, active: $0.active,
-								creationDate: $0.creationDate, modificationDate: $0.modificationDate,
-								propertyMap: $0.propertyMap)
-			documentBackings.append(documentBacking)
-			documentBackingInfos.append(
-					MDSDocumentBackingInfo<DocumentBacking>(documentID: $0.documentID,
-							documentBacking: documentBacking))
-			documentInfos.append(
-					MDSRemoteStorageCache.DocumentInfo(id: $0.documentID, revision: $0.revision, active: $0.active,
-							creationDate: $0.creationDate, modificationDate: $0.modificationDate,
-							propertyMap: $0.propertyMap))
-		}
-		self.documentBackingCache.add(documentBackingInfos)
-		self.remoteStorageCache.add(documentInfos, for: documentType)
-
-		return documentBackingInfos
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
