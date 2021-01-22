@@ -433,10 +433,11 @@ class MDSHTTPServices {
 	static func httpEndpointRequestForGetCollectionDocumentCount(documentStorageID :String, authorization :String?,
 			name :String) -> GetCollectionDocumentCountHTTPEndpointRequest {
 		// Setup
+		let	nameUse = name.replacingOccurrences(of: "/", with: "%2F")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
 		return GetCollectionDocumentCountHTTPEndpointRequest(method: .head,
-				path: "/v1/collection/\(documentStorageID)/\(name)", headers: headers)
+				path: "/v1/collection/\(documentStorageID)/\(nameUse)", headers: headers)
 	}
 
 	// MARK: Get Collection Document Infos
@@ -587,9 +588,10 @@ class MDSHTTPServices {
 	static func httpEndpointRequestForGetIndexRevision(documentStorageID :String, authorization :String?, name :String,
 			keys :[String]) -> GetIndexDocumentInfosHTTPEndpointRequest {
 		// Setup
+		let	nameUse = name.replacingOccurrences(of: "/", with: "%2F")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return GetIndexDocumentInfosHTTPEndpointRequest(method: .get, path: "/v1/index/\(documentStorageID)/\(name)",
+		return GetIndexDocumentInfosHTTPEndpointRequest(method: .get, path: "/v1/index/\(documentStorageID)/\(nameUse)",
 				multiValueQueryComponent: ("key", keys), headers: headers)
 	}
 }
