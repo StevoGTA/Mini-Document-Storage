@@ -331,7 +331,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			if (isComplete ?? false) {
 				// Done
 				break
-			} else {
+			} else if error != nil {
 				// Error
 				self.recentErrors.append(error!)
 

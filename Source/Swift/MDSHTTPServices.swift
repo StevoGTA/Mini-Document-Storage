@@ -220,9 +220,9 @@ class MDSHTTPServices {
 	//	=> json (body)
 	//		[
 	//			{
-	//				"documentID" :(optional) String
-	//				"creationDate" :(optional) String
-	//				"modificationDate" :(optional) String
+	//				"documentID" :String (optional)
+	//				"creationDate" :String (optional)
+	//				"modificationDate" :String (optional)
 	//				"json" :[
 	//							"key" :Any,
 	//							...
@@ -342,13 +342,13 @@ class MDSHTTPServices {
 	//			"documentType" :String,
 	//			"name" :String,
 	//			"version" :Int,
-	//			"relevantProperties" :(optional) [String]
-	//			"isUpToDate" :(optional) Int (0 or 1)
+	//			"relevantProperties" :[String]=
+	//			"isUpToDate" :Int (0 or 1)
 	//			"isIncludedSelector" :String,
-	//			"isIncludedSelectorInfo" :(optional) {
-	//									"key" :Any,
-	//									...
-	//							   },
+	//			"isIncludedSelectorInfo" :{
+	//											"key" :Any,
+	//											...
+	//									  },
 	//		}
 	typealias RegisterCollectionEndpointInfo =
 				(documentStorageID :String, authorization :String?, documentType :String, name :String, version :Int,
@@ -481,13 +481,13 @@ class MDSHTTPServices {
 	//			"documentType" :String,
 	//			"name" :String,
 	//			"version" :Int,
-	//			"relevantProperties" :(optional) [String]
-	//			"isUpToDate" :(optional) Int (0 or 1)
+	//			"relevantProperties" :[String]
+	//			"isUpToDate" :Int (0 or 1)
 	//			"keysSelector" :String,
-	//			"keysSelectorInfo" :(optional) {
+	//			"keysSelectorInfo" :{
 	//									"key" :Any,
 	//									...
-	//							   },
+	//							    },
 	//		}
 	typealias RegisterIndexEndpointInfo =
 				(documentStorageID :String, authorization :String?, documentType :String, name :String, version :Int,
