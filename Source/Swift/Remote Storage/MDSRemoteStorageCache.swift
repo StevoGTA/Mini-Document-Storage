@@ -12,25 +12,6 @@ import Foundation
 // MARK: MDSRemoteStorageCache
 public class MDSRemoteStorageCache {
 
-	// MARK: Types
-	public struct DocumentReference {
-
-		// MARK: Properties
-		let	id :String
-		let	revision :Int
-	}
-
-	public struct DocumentInfo {
-
-		// MARK: Properties
-		let id :String
-		let	revision :Int
-		let	active :Bool
-		let	creationDate :Date
-		let	modificationDate :Date
-		let	propertyMap :[String : Any]
-	}
-
 	// MARK: Properties
 	private	var	sqliteDatabase :SQLiteDatabase!
 	private	var	infoTable :SQLiteTable!
@@ -148,7 +129,7 @@ public class MDSRemoteStorageCache {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func activeDocumentInfos(for documentType :String) -> [DocumentInfo] {
+	public func activeDocumentFullInfos(for documentType :String) -> [MDSDocumentFullInfo] {
 		// Setup
 		let	sqliteTable = self.sqliteTable(for: documentType)
 		let	idTableColumn = sqliteTable.idTableColumn
@@ -159,7 +140,7 @@ public class MDSRemoteStorageCache {
 		let	jsonTableColumn = sqliteTable.jsonTableColumn
 
 		// Iterate records in database
-		var	documentInfos = [DocumentInfo]()
+		var	documentFullInfos = [MDSDocumentFullInfo]()
 		try! sqliteTable.select() {
 			// Process results
 			let	active = Int($0.integer(for: activeTableColumn)!)
@@ -174,17 +155,17 @@ public class MDSRemoteStorageCache {
 								as! [String : Any]
 
 			// Add to array
-			documentInfos.append(
-					DocumentInfo(id: id, revision: revision, active: true, creationDate: creationDate,
+			documentFullInfos.append(
+					MDSDocumentFullInfo(documentID: id, revision: revision, active: true, creationDate: creationDate,
 							modificationDate: modificationDate, propertyMap: propertyMap))
 		}
 
-		return documentInfos
+		return documentFullInfos
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentInfos(for documentType :String, with references :[DocumentReference]) ->
-			(documentInfos :[DocumentInfo], documentReferencesNotResolved :[DocumentReference]) {
+	public func info(for documentType :String, with revisionInfos :[MDSDocumentRevisionInfo]) ->
+			(documentFullInfos :[MDSDocumentFullInfo], documentRevisionInfosNotResolved :[MDSDocumentRevisionInfo]) {
 		// Setup
 		let	sqliteTable = self.sqliteTable(for: documentType)
 		let	idTableColumn = sqliteTable.idTableColumn
@@ -194,13 +175,13 @@ public class MDSRemoteStorageCache {
 		let	modificationDateTableColumn = sqliteTable.modificationDateTableColumn
 		let	jsonTableColumn = sqliteTable.jsonTableColumn
 
-		let	referenceMap = Dictionary(uniqueKeysWithValues: references.lazy.map({ ($0.id, $0.revision) }))
+		let	referenceMap = Dictionary(uniqueKeysWithValues: revisionInfos.lazy.map({ ($0.documentID, $0.revision) }))
 
 		var	documentIDs = Set<String>(referenceMap.keys)
 
 		// Iterate records in database
-		var	documentInfos = [DocumentInfo]()
-		var	documentReferencesNotResolved = [DocumentReference]()
+		var	documentFullInfos = [MDSDocumentFullInfo]()
+		var	documentRevisionInfosNotResolved = [MDSDocumentRevisionInfo]()
 		try! sqliteTable.select(where: SQLiteWhere(tableColumn: sqliteTable.idTableColumn,
 				values: Array(documentIDs))) {
 					// Retrieve info for this record
@@ -215,13 +196,14 @@ public class MDSRemoteStorageCache {
 									try! JSONSerialization.jsonObject(with: $0.blob(for: jsonTableColumn)!, options: [])
 											as! [String : Any]
 
-						documentInfos.append(
-								DocumentInfo(id: id, revision: revision, active: active == 1,
+						documentFullInfos.append(
+								MDSDocumentFullInfo(documentID: id, revision: revision, active: active == 1,
 										creationDate: creationDate, modificationDate: modificationDate,
 										propertyMap: propertyMap))
 					} else {
 						// Revision does not match
-						documentReferencesNotResolved.append(DocumentReference(id: id, revision: referenceMap[id]!))
+						documentRevisionInfosNotResolved.append(
+								MDSDocumentRevisionInfo(documentID: id, revision: referenceMap[id]!))
 					}
 
 					// Update
@@ -230,22 +212,23 @@ public class MDSRemoteStorageCache {
 
 		// Add references not found in database
 		documentIDs.forEach()
-				{ documentReferencesNotResolved.append(DocumentReference(id: $0, revision: referenceMap[$0]!)) }
+			{ documentRevisionInfosNotResolved.append(
+					MDSDocumentRevisionInfo(documentID: $0, revision: referenceMap[$0]!)) }
 
-		return (documentInfos, documentReferencesNotResolved)
+		return (documentFullInfos, documentRevisionInfosNotResolved)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func add(_ documentInfos :[DocumentInfo], for documentType :String) {
+	public func add(_ documentFullInfos :[MDSDocumentFullInfo], for documentType :String) {
 		// Setup
 		let	sqliteTable = self.sqliteTable(for: documentType)
 		self.sqliteDatabase.performAsTransaction() {
 			// Iterate all document infos
-			documentInfos.forEach() {
+			documentFullInfos.forEach() {
 				// Insert or replace
 				sqliteTable.insertOrReplaceRow(
 						[
-							(tableColumn: sqliteTable.idTableColumn, value: $0.id),
+							(tableColumn: sqliteTable.idTableColumn, value: $0.documentID),
 							(tableColumn: sqliteTable.revisionTableColumn, value: $0.revision),
 							(tableColumn: sqliteTable.activeTableColumn, value: $0.active ? 1 : 0),
 							(tableColumn: sqliteTable.creationDateTableColumn,

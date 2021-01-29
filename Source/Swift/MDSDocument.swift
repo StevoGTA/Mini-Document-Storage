@@ -314,7 +314,7 @@ public struct MDSDocumentBackingInfo<T> {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSDocumentRevisionInfo
-struct MDSDocumentRevisionInfo {
+public struct MDSDocumentRevisionInfo {
 
 	// MARK: Properties
 	let	documentID :String
@@ -323,7 +323,7 @@ struct MDSDocumentRevisionInfo {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSDocumentFullInfo
-struct MDSDocumentFullInfo {
+public struct MDSDocumentFullInfo {
 
 	// MARK: Properties
 	let	documentID :String
