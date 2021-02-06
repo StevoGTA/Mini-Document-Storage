@@ -16,6 +16,12 @@ public enum MDSBatchResult {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSValueType
+public enum MDSValueType {
+	case integer
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSDocumentStorage protocol
 public protocol MDSDocumentStorage : class {
 
@@ -44,6 +50,21 @@ public protocol MDSDocumentStorage : class {
 	func iterate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void)
 
 	func batch(_ proc :() throws -> MDSBatchResult) rethrows
+
+	func registerAssociation(named name :String, fromDocumentType :String, toDocumentType :String)
+	func addAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from fromDocument :T, to toDocument :U)
+	func updateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from fromDocument :T, to toDocument :U)	// Undefined if multiple froms registered
+	func removeAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from fromDocument :T, to toDocument :U)
+	func iterateAssociations<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
+			proc :(_ document :U) -> Void)
+	func iterateAssociations<T : MDSDocument, U : MDSDocument>(for name :String, to document :U,
+			proc :(_ document :T) -> Void)
+
+	func retrieveAssociationValue<T : MDSDocument, U>(for name :String, to document :T,
+			summedFromCachedValueWithName cachedValueName :String) -> U
+
+	func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
+			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)])
 
 	func registerCollection<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
@@ -93,6 +114,65 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func registerAssociation(fromDocumentType :String, toDocumentType :String) {
+		// Register
+		registerAssociation(named: assocationName(fromDocumentType: fromDocumentType, toDocumentType: toDocumentType),
+				fromDocumentType :fromDocumentType, toDocumentType :toDocumentType)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func addAssociation<T : MDSDocument, U : MDSDocument>(from fromDocument :T, to toDocument :U) {
+		// Add assocation
+		addAssociation(for: assocationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
+				from: fromDocument, to: toDocument)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func updateAssociation<T : MDSDocument, U : MDSDocument>(from fromDocument :T, to toDocument :U) {
+		// Update association
+		updateAssociation(for: assocationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
+				from: fromDocument, to: toDocument)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func removeAssociation<T : MDSDocument, U : MDSDocument>(from fromDocument :T, to toDocument :U) {
+		// Remove association
+		removeAssociation(for: assocationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
+				from: fromDocument, to: toDocument)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func iterateAssociations<T : MDSDocument, U : MDSDocument>(from document :T, proc :(_ document :U) -> Void) {
+		// Iterate assocation
+		iterateAssociations(for: assocationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
+				from: document, proc: proc)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func iterateAssociations<T : MDSDocument, U : MDSDocument>(to document :U, proc :(_ document :T) -> Void) {
+		// Iterate assocation
+		iterateAssociations(for: assocationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
+				to: document, proc: proc)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func retrieveAssociationValue<T : MDSDocument, U>(fromDocumentType :String, to document :T,
+			summedFromCachedValueWithName name :String) -> U {
+		// Return value
+		return retrieveAssociationValue(
+				for: assocationName(fromDocumentType: fromDocumentType, toDocumentType: T.documentType),
+				to: document, summedFromCachedValueWithName: name)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func registerCache<T : MDSDocument>(version :Int = 1, relevantProperties :[String] = [],
+			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)]) {
+		// Register cache
+		registerCache(named: T.documentType, version: version, relevantProperties: relevantProperties,
+				valuesInfos: valuesInfos)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func registerCollection<T : MDSDocument>(named name :String, version :Int = 1, relevantProperties :[String],
 			isUpToDate :Bool = false, isIncludedSelector :String = "", isIncludedSelectorInfo :[String : Any] = [:],
 			isIncludedProc :@escaping (_ document :T) -> Bool) {
@@ -130,5 +210,12 @@ extension MDSDocumentStorage {
 		iterateIndex(name: name, keys: keys) { (key :String, document :T) in documentMap[key] = document }
 
 		return documentMap
+	}
+
+	// MARK: Private methods
+	//------------------------------------------------------------------------------------------------------------------
+	private func assocationName(fromDocumentType :String, toDocumentType :String) -> String {
+		// Return
+		return "\(fromDocumentType)To\(toDocumentType.capitalizingFirstLetter)"
 	}
 }

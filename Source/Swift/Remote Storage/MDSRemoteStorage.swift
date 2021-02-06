@@ -433,11 +433,244 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func registerAssociation(named name :String, fromDocumentType :String, toDocumentType :String) {
+		// Register assocation
+		let	error =
+					DispatchQueue.performBlocking() { completionProc in
+						// Call network client
+						self.httpEndpointClient.queue(
+								MDSHTTPServices.httpEndpointRequestForRegisterAssociation(
+										documentStorageID: self.documentStorageID, name: name,
+										fromDocumentType: fromDocumentType, toDocumentType: toDocumentType,
+										authorization: self.authorization)) { completionProc($1) }
+					}
+		guard error == nil else {
+			// Store error
+			self.recentErrors.append(error!)
+
+			return
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func addAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from fromDocument :T,
+			to toDocument :U) {
+		// Update assocation
+		let	error =
+					DispatchQueue.performBlocking() { completionProc in
+						// Call network client
+						self.httpEndpointClient.queue(
+								MDSHTTPServices.httpEndpointRequestForUpdateAssocation(
+										documentStorageID: self.documentStorageID, name: name, action: .add,
+										fromID: fromDocument.id, toID: toDocument.id,
+										authorization: self.authorization)) { completionProc($1) }
+					}
+		guard error == nil else {
+			// Store error
+			self.recentErrors.append(error!)
+
+			return
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func updateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from fromDocument :T,
+			to toDocument :U) {
+		// Update assocation
+		let	error =
+					DispatchQueue.performBlocking() { completionProc in
+						// Call network client
+						self.httpEndpointClient.queue(
+								MDSHTTPServices.httpEndpointRequestForUpdateAssocation(
+										documentStorageID: self.documentStorageID, name: name, action: .update,
+										fromID: fromDocument.id, toID: toDocument.id,
+										authorization: self.authorization)) { completionProc($1) }
+					}
+		guard error == nil else {
+			// Store error
+			self.recentErrors.append(error!)
+
+			return
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func removeAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from fromDocument :T,
+			to toDocument :U) {
+		// Update assocation
+		let	error =
+					DispatchQueue.performBlocking() { completionProc in
+						// Call network client
+						self.httpEndpointClient.queue(
+								MDSHTTPServices.httpEndpointRequestForUpdateAssocation(
+										documentStorageID: self.documentStorageID, name: name, action: .remove,
+										fromID: fromDocument.id, toID: toDocument.id,
+										authorization: self.authorization)) { completionProc($1) }
+					}
+		guard error == nil else {
+			// Store error
+			self.recentErrors.append(error!)
+
+			return
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func iterateAssociations<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
+			proc :(_ document :U) -> Void) {
+		// May need to try this more than once
+		var	startIndex = 0
+		while true {
+			// Retrieve info
+			let	(documentRevisionInfos, isComplete, error)  =
+						DispatchQueue.performBlocking() { completionProc in
+							// Queue
+							self.httpEndpointClient.queue(
+									MDSHTTPServices.httpEndpointRequestForGetAssociationDocumentInfos(
+											documentStorageID: self.documentStorageID, name: name, fromID: document.id,
+											startIndex: startIndex, authorization: self.authorization))
+									{ (documentRevisionInfos :[MDSDocumentRevisionInfo]?, isComplete :Bool?,
+											error :Error?) in
+										// Call completion proc
+										completionProc((documentRevisionInfos, isComplete, error))
+									}
+						}
+
+			// Handle results
+			if documentRevisionInfos != nil {
+				// Success
+				iterateDocumentIDs(documentType: U.documentType, activeDocumentRevisionInfos: documentRevisionInfos!)
+					{ proc(U(id: $0, documentStorage: self)) }
+
+				// Update
+				startIndex += documentRevisionInfos!.count
+
+				// Check if is complete
+				if isComplete! {
+					// Complete
+					return
+				}
+			} else {
+				// Error
+				self.recentErrors.append(error!)
+
+				return
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func iterateAssociations<T : MDSDocument, U : MDSDocument>(for name :String, to document :U,
+			proc :(_ document :T) -> Void) {
+		// May need to try this more than once
+		var	startIndex = 0
+		while true {
+			// Retrieve info
+			let	(documentRevisionInfos, isComplete, error)  =
+						DispatchQueue.performBlocking() { completionProc in
+							// Queue
+							self.httpEndpointClient.queue(
+									MDSHTTPServices.httpEndpointRequestForGetAssociationDocumentInfos(
+											documentStorageID: self.documentStorageID, name: name, toID: document.id,
+											startIndex: startIndex, authorization: self.authorization))
+									{ (documentRevisionInfos :[MDSDocumentRevisionInfo]?, isComplete :Bool?,
+											error :Error?) in
+										// Call completion proc
+										completionProc((documentRevisionInfos, isComplete, error))
+									}
+						}
+
+			// Handle results
+			if documentRevisionInfos != nil {
+				// Success
+				iterateDocumentIDs(documentType: T.documentType, activeDocumentRevisionInfos: documentRevisionInfos!)
+					{ proc(T(id: $0, documentStorage: self)) }
+
+				// Update
+				startIndex += documentRevisionInfos!.count
+
+				// Check if is complete
+				if isComplete! {
+					// Complete
+					return
+				}
+			} else {
+				// Error
+				self.recentErrors.append(error!)
+
+				return
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func retrieveAssociationValue<T : MDSDocument, U>(for name :String, to document :T,
+			summedFromCachedValueWithName cachedValueName :String) -> U {
+		// May need to try this more than once
+		while true {
+			// Query collection document count
+			let	(isUpToDate, count, error) =
+						DispatchQueue.performBlocking() { completionProc in
+							// Call network client
+							self.httpEndpointClient.queue(
+									MDSHTTPServices.httpEndpointRequestForGetAssocationValue(
+											documentStorageID: self.documentStorageID, name: name, toID: document.id,
+											action: .sum, cacheName: T.documentType, cacheNameValue: cachedValueName,
+											authorization: self.authorization))
+											{ (isUpToDate :Bool?, count :Int?, error :Error?) in
+												// Call completion proc
+												completionProc((isUpToDate, count, error))
+											}
+						}
+
+			// Handle results
+			if !(isUpToDate ?? true) {
+				// Not up to date
+				continue
+			} else if count != nil {
+				// Success
+				return count as! U
+			} else {
+				// Error
+				self.recentErrors.append(error!)
+
+				return 0 as! U
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
+			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)]) {
+		// Register cache
+		let	error =
+					DispatchQueue.performBlocking() { completionProc in
+						// Call network client
+						self.httpEndpointClient.queue(
+								MDSHTTPServices.httpEndpointRequestForRegisterCache(
+										documentStorageID: self.documentStorageID, documentType: T.documentType,
+										name: name, version: version, relevantProperties: relevantProperties,
+										valueInfos: valuesInfos.map({
+											MDSHTTPServices.RegisterCacheEndpointValueInfo($0.name, $0.valueType,
+													$0.selector)
+										}),
+										authorization: self.authorization))
+										{ completionProc($1) }
+					}
+		guard error == nil else {
+			// Store error
+			self.recentErrors.append(error!)
+
+			return
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func registerCollection<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
 			isIncludedProc :@escaping (_ document :T) -> Bool) {
 		// Register collection
-		let	(_, error) =
+		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Call network client
 						self.httpEndpointClient.queue(
@@ -446,7 +679,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 										name: name, version: version, relevantProperties: relevantProperties,
 										isUpToDate: isUpToDate, isIncludedSelector: isIncludedSelector,
 										isIncludedSelectorInfo: isIncludedSelectorInfo,
-										authorization: self.authorization)) { completionProc(($1, $2)) }
+										authorization: self.authorization)) { completionProc($1) }
 					}
 		guard error == nil else {
 			// Store error
@@ -547,7 +780,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any],
 			keysProc :@escaping (_ document :T) -> [String]) {
 		// Register index
-		let	(_, error) =
+		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Call network client
 						self.httpEndpointClient.queue(
@@ -556,7 +789,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 										name: name, version: version, relevantProperties: relevantProperties,
 										isUpToDate: isUpToDate, keysSelector: keysSelector,
 										keysSelectorInfo: keysSelectorInfo, authorization: self.authorization))
-										{ completionProc(($1, $2)) }
+										{ completionProc($1) }
 					}
 		guard error == nil else {
 			// Store error

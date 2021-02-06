@@ -212,6 +212,71 @@ extension HTTPEndpointClient {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func queue(
+			_ getAssociationDocumentInfosHTTPEndpointRequest
+					:MDSHTTPServices.GetAssociationDocumentInfosHTTPEndpointRequest,
+			identifier :String = "", priority :Priority = .normal,
+			completionProc
+					:@escaping (_ documentRevisionInfos :[MDSDocumentRevisionInfo]?, _ isComplete :Bool?,
+							_ error :Error?) -> Void) {
+		// Setup
+		getAssociationDocumentInfosHTTPEndpointRequest.completionProc = { response, info, error in
+			// Handle results
+			if info != nil {
+				// Check headers
+				if let contentRange = response!.contentRange, let size = contentRange.size {
+					// Success
+					DispatchQueue.global().async() {
+						// Convert
+						let	documentRevisionInfos =
+									info!.map({ MDSDocumentRevisionInfo(documentID: $0.key, revision: $0.value) })
+
+						// Switch queues to minimize memory usage
+						DispatchQueue.global().async() {
+							// Call completion proc
+							completionProc(documentRevisionInfos, documentRevisionInfos.count == size, nil)
+						}
+					}
+				} else {
+					// Bad server
+					completionProc(nil, nil, HTTPEndpointClientMDSExtensionsError.didNotReceiveSizeInHeader)
+				}
+			} else {
+				// Error
+				completionProc(nil, nil,
+						error ?? HTTPEndpointStatusError.for(HTTPEndpointStatus(rawValue: response!.statusCode)!))
+			}
+		}
+
+		// Queue
+		queue(getAssociationDocumentInfosHTTPEndpointRequest, identifier: identifier, priority: priority)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func queue(_ getAssociationValueHTTPEndpointRequest :MDSHTTPServices.GetAssociationValueHTTPEndpointRequest,
+			identifier :String = "", priority :Priority = .normal,
+			completionProc :@escaping (_ isUpToDate :Bool?, _ count :Int?, _ error :Error?) -> Void) {
+		// Setup
+		getAssociationValueHTTPEndpointRequest.completionProc = {
+			// Handle results
+			if $0?.statusCode == 200 {
+				// Success
+				completionProc(true, $1!, nil)
+			} else if $0?.statusCode == 409 {
+				// Not up to date
+				completionProc(false, nil, nil)
+			} else {
+				// Error
+				completionProc(nil, nil,
+						$2 ?? HTTPEndpointStatusError.for(HTTPEndpointStatus(rawValue: $0!.statusCode)!))
+			}
+		}
+
+		// Queue
+		queue(getAssociationValueHTTPEndpointRequest, identifier: identifier, priority: priority)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func queue(
 			_ getCollectionDocumentCountHTTPEndpointRequest
 					:MDSHTTPServices.GetCollectionDocumentCountHTTPEndpointRequest,
 			identifier :String = "", priority :Priority = .normal,
