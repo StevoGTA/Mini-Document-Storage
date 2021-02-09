@@ -453,66 +453,16 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func addAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from fromDocument :T,
-			to toDocument :U) {
+	public func updateAssociation<T : MDSDocument, U : MDSDocument>(for name :String,
+			updates :[(action :MDSAssocationAction, fromDocument :T, toDocument :U)]) {
 		// Update assocation
-		let	error =
+		let	errors =
 					DispatchQueue.performBlocking() { completionProc in
 						// Call network client
-						self.httpEndpointClient.queue(
-								MDSHTTPServices.httpEndpointRequestForUpdateAssocation(
-										documentStorageID: self.documentStorageID, name: name, action: .add,
-										fromID: fromDocument.id, toID: toDocument.id,
-										authorization: self.authorization)) { completionProc($1) }
+						self.httpEndpointClient.queue(documentStorageID: documentStorageID, name: name,
+								updates: updates, authorization: self.authorization) { completionProc($0) }
 					}
-		guard error == nil else {
-			// Store error
-			self.recentErrors.append(error!)
-
-			return
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func updateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from fromDocument :T,
-			to toDocument :U) {
-		// Update assocation
-		let	error =
-					DispatchQueue.performBlocking() { completionProc in
-						// Call network client
-						self.httpEndpointClient.queue(
-								MDSHTTPServices.httpEndpointRequestForUpdateAssocation(
-										documentStorageID: self.documentStorageID, name: name, action: .update,
-										fromID: fromDocument.id, toID: toDocument.id,
-										authorization: self.authorization)) { completionProc($1) }
-					}
-		guard error == nil else {
-			// Store error
-			self.recentErrors.append(error!)
-
-			return
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func removeAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from fromDocument :T,
-			to toDocument :U) {
-		// Update assocation
-		let	error =
-					DispatchQueue.performBlocking() { completionProc in
-						// Call network client
-						self.httpEndpointClient.queue(
-								MDSHTTPServices.httpEndpointRequestForUpdateAssocation(
-										documentStorageID: self.documentStorageID, name: name, action: .remove,
-										fromID: fromDocument.id, toID: toDocument.id,
-										authorization: self.authorization)) { completionProc($1) }
-					}
-		guard error == nil else {
-			// Store error
-			self.recentErrors.append(error!)
-
-			return
-		}
+		self.recentErrors.append(errors)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

@@ -22,6 +22,14 @@ public enum MDSValueType {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSAssocationAction
+public enum MDSAssocationAction : String {
+	case add = "add"
+	case update = "update"
+	case remove = "remove"
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSDocumentStorage protocol
 public protocol MDSDocumentStorage : class {
 
@@ -52,9 +60,8 @@ public protocol MDSDocumentStorage : class {
 	func batch(_ proc :() throws -> MDSBatchResult) rethrows
 
 	func registerAssociation(named name :String, fromDocumentType :String, toDocumentType :String)
-	func addAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from fromDocument :T, to toDocument :U)
-	func updateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from fromDocument :T, to toDocument :U)	// Undefined if multiple froms registered
-	func removeAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from fromDocument :T, to toDocument :U)
+	func updateAssociation<T : MDSDocument, U : MDSDocument>(for name :String,
+			updates :[(action :MDSAssocationAction, fromDocument :T, toDocument :U)])
 	func iterateAssociations<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
 			proc :(_ document :U) -> Void)
 	func iterateAssociations<T : MDSDocument, U : MDSDocument>(for name :String, to document :U,
@@ -121,24 +128,11 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func addAssociation<T : MDSDocument, U : MDSDocument>(from fromDocument :T, to toDocument :U) {
+	func updateAssociation<T : MDSDocument, U : MDSDocument>(
+			updates :[(action :MDSAssocationAction, fromDocument :T, toDocument :U)]) {
 		// Add assocation
-		addAssociation(for: assocationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
-				from: fromDocument, to: toDocument)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func updateAssociation<T : MDSDocument, U : MDSDocument>(from fromDocument :T, to toDocument :U) {
-		// Update association
 		updateAssociation(for: assocationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
-				from: fromDocument, to: toDocument)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func removeAssociation<T : MDSDocument, U : MDSDocument>(from fromDocument :T, to toDocument :U) {
-		// Remove association
-		removeAssociation(for: assocationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
-				from: fromDocument, to: toDocument)
+				updates: updates)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

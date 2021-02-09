@@ -211,6 +211,38 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func queue<T : MDSDocument, U : MDSDocument>(documentStorageID :String, name :String,
+			updates :[(action :MDSAssocationAction, fromDocument :T, toDocument :U)], authorization :String? = nil,
+			completionProc :@escaping(_ errors :[Error]) -> Void) {
+		// Setup
+		let	updatesChunks = updates.chunk(by: 100)
+		let	pendingCount = LockingNumeric<Int>(updatesChunks.count)
+		let	errors = LockingArray<Error>()
+
+		// Iterate and queue
+		updatesChunks.forEach() {
+			// Queue this chunk
+			queue(
+					MDSHTTPServices.httpEndpointRequestForUpdateAssocation(documentStorageID: documentStorageID,
+							name: name, updates: $0.map({ ($0.action, $0.fromDocument.id, $0.toDocument.id) }),
+							authorization: authorization))
+					{ response, error in
+						// Handle results
+						if error != nil {
+							// Error
+							errors.append(error!)
+						}
+
+						// One more complete
+						if pendingCount.subtract(1).value == 0 {
+							// All done
+							completionProc(errors.values)
+						}
+					}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func queue(
 			_ getAssociationDocumentInfosHTTPEndpointRequest
 					:MDSHTTPServices.GetAssociationDocumentInfosHTTPEndpointRequest,

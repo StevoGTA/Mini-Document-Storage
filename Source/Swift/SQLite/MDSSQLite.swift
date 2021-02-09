@@ -473,22 +473,8 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func addAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from fromDocument :T,
-			to toDocument :U) {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func updateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from fromDocument :T,
-			to toDocument :U) {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func removeAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from fromDocument :T,
-			to toDocument :U) {
+	public func updateAssociation<T : MDSDocument, U : MDSDocument>(for name :String,
+			updates :[(action :MDSAssocationAction, fromDocument :T, toDocument :U)]) {
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
