@@ -212,7 +212,7 @@ extension HTTPEndpointClient {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func queue<T : MDSDocument, U : MDSDocument>(documentStorageID :String, name :String,
-			updates :[(action :MDSAssocationAction, fromDocument :T, toDocument :U)], authorization :String? = nil,
+			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)], authorization :String? = nil,
 			completionProc :@escaping(_ errors :[Error]) -> Void) {
 		// Setup
 		let	updatesChunks = updates.chunk(by: 100)

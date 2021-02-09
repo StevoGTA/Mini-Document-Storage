@@ -408,20 +408,20 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func updateAssociation<T : MDSDocument, U : MDSDocument>(for name :String,
-			updates :[(action :MDSAssocationAction, fromDocument :T, toDocument :U)]) {
+			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)]) {
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func iterateAssociations<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
+	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
 			proc :(_ document :U) -> Void) {
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func iterateAssociations<T : MDSDocument, U : MDSDocument>(for name :String, to document :U,
+	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, to document :U,
 			proc :(_ document :T) -> Void) {
 		// Unimplemented
 		fatalError("Unimplemented")

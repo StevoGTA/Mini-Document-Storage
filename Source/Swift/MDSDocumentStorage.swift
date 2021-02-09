@@ -22,8 +22,8 @@ public enum MDSValueType {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSAssocationAction
-public enum MDSAssocationAction : String {
+// MARK: - MDSAssociationAction
+public enum MDSAssociationAction : String {
 	case add = "add"
 	case update = "update"
 	case remove = "remove"
@@ -61,10 +61,10 @@ public protocol MDSDocumentStorage : class {
 
 	func registerAssociation(named name :String, fromDocumentType :String, toDocumentType :String)
 	func updateAssociation<T : MDSDocument, U : MDSDocument>(for name :String,
-			updates :[(action :MDSAssocationAction, fromDocument :T, toDocument :U)])
-	func iterateAssociations<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
+			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)])
+	func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
 			proc :(_ document :U) -> Void)
-	func iterateAssociations<T : MDSDocument, U : MDSDocument>(for name :String, to document :U,
+	func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, to document :U,
 			proc :(_ document :T) -> Void)
 
 	func retrieveAssociationValue<T : MDSDocument, U>(for name :String, to document :T,
@@ -129,23 +129,23 @@ extension MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func updateAssociation<T : MDSDocument, U : MDSDocument>(
-			updates :[(action :MDSAssocationAction, fromDocument :T, toDocument :U)]) {
+			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)]) {
 		// Add assocation
 		updateAssociation(for: assocationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
 				updates: updates)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func iterateAssociations<T : MDSDocument, U : MDSDocument>(from document :T, proc :(_ document :U) -> Void) {
+	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(from document :T, proc :(_ document :U) -> Void) {
 		// Iterate assocation
-		iterateAssociations(for: assocationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
+		iterateAssociation(for: assocationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
 				from: document, proc: proc)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func iterateAssociations<T : MDSDocument, U : MDSDocument>(to document :U, proc :(_ document :T) -> Void) {
+	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(to document :U, proc :(_ document :T) -> Void) {
 		// Iterate assocation
-		iterateAssociations(for: assocationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
+		iterateAssociation(for: assocationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
 				to: document, proc: proc)
 	}
 

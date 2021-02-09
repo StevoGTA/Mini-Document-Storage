@@ -454,7 +454,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func updateAssociation<T : MDSDocument, U : MDSDocument>(for name :String,
-			updates :[(action :MDSAssocationAction, fromDocument :T, toDocument :U)]) {
+			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)]) {
 		// Update assocation
 		let	errors =
 					DispatchQueue.performBlocking() { completionProc in
@@ -466,7 +466,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func iterateAssociations<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
+	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
 			proc :(_ document :U) -> Void) {
 		// May need to try this more than once
 		var	startIndex = 0
@@ -510,7 +510,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func iterateAssociations<T : MDSDocument, U : MDSDocument>(for name :String, to document :U,
+	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, to document :U,
 			proc :(_ document :T) -> Void) {
 		// May need to try this more than once
 		var	startIndex = 0
