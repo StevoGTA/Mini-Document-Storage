@@ -12,9 +12,6 @@ import Foundation
 // MARK: - MDSBatchDocumentInfo
 public class MDSBatchDocumentInfo<T> {
 
-	// MARK: Types
-	public typealias PropertyMap = [/* Property */ String : /* Value */ Any]
-
 	// MARK: Procs
 	public typealias ValueProc = (_ property :String) -> Any?
 
@@ -22,7 +19,7 @@ public class MDSBatchDocumentInfo<T> {
 	public					let	reference :T?
 	public					let	creationDate :Date
 
-	public	private(set)	var	updatedPropertyMap :PropertyMap?
+	public	private(set)	var	updatedPropertyMap :[String : Any]?
 	public	private(set)	var	removedProperties :Set<String>?
 	public	private(set)	var	modificationDate :Date
 	public	private(set)	var	removed = false

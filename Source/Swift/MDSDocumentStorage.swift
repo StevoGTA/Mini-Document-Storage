@@ -122,30 +122,30 @@ extension MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerAssociation(fromDocumentType :String, toDocumentType :String) {
-		// Register
-		registerAssociation(named: assocationName(fromDocumentType: fromDocumentType, toDocumentType: toDocumentType),
+		// Register association
+		registerAssociation(named: associationName(fromDocumentType: fromDocumentType, toDocumentType: toDocumentType),
 				fromDocumentType :fromDocumentType, toDocumentType :toDocumentType)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func updateAssociation<T : MDSDocument, U : MDSDocument>(
 			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)]) {
-		// Add assocation
-		updateAssociation(for: assocationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
+		// Update association
+		updateAssociation(for: associationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
 				updates: updates)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(from document :T, proc :(_ document :U) -> Void) {
-		// Iterate assocation
-		iterateAssociation(for: assocationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
+		// Iterate association
+		iterateAssociation(for: associationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
 				from: document, proc: proc)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(to document :U, proc :(_ document :T) -> Void) {
-		// Iterate assocation
-		iterateAssociation(for: assocationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
+		// Iterate association
+		iterateAssociation(for: associationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
 				to: document, proc: proc)
 	}
 
@@ -154,7 +154,7 @@ extension MDSDocumentStorage {
 			summedFromCachedValueWithName name :String) -> U {
 		// Return value
 		return retrieveAssociationValue(
-				for: assocationName(fromDocumentType: fromDocumentType, toDocumentType: T.documentType),
+				for: associationName(fromDocumentType: fromDocumentType, toDocumentType: T.documentType),
 				to: document, summedFromCachedValueWithName: name)
 	}
 
@@ -208,7 +208,7 @@ extension MDSDocumentStorage {
 
 	// MARK: Private methods
 	//------------------------------------------------------------------------------------------------------------------
-	private func assocationName(fromDocumentType :String, toDocumentType :String) -> String {
+	private func associationName(fromDocumentType :String, toDocumentType :String) -> String {
 		// Return
 		return "\(fromDocumentType)To\(toDocumentType.capitalizingFirstLetter)"
 	}
