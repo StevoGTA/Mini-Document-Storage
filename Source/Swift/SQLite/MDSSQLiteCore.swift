@@ -484,7 +484,7 @@ class MDSSQLiteCore {
 					self.sqliteDatabase.table(name: "Index-\(name)", options: [.withoutRowID],
 							tableColumns: [
 											SQLiteTableColumn("key", .text, [.primaryKey]),
-											SQLiteTableColumn("id", .integer, [])
+											SQLiteTableColumn("id", .integer)
 										  ])
 		self.indexTablesMap.set(table, for: name)
 
