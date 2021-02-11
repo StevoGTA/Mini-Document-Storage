@@ -388,15 +388,6 @@ struct MDSDocumentUpdateInfo {
 		self.removed = removed
 		self.active = active
 	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	init(documentID :String, updated :[String : Any]?, removed :Set<String>?, active :Bool) {
-		// Store
-		self.documentID = documentID
-		self.updated = updated ?? [:]
-		self.removed = Array(removed ?? Set<String>())
-		self.active = active
-	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------

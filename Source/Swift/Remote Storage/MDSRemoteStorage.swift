@@ -408,8 +408,8 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						// Update documnet
 						let	documentUpdateInfo =
 									MDSDocumentUpdateInfo(documentID: documentID,
-											updated: batchDocumentInfo.updatedPropertyMap,
-											removed: batchDocumentInfo.removedProperties,
+											updated: batchDocumentInfo.updatedPropertyMap ?? [:],
+											removed: Array(batchDocumentInfo.removedProperties ?? Set<String>()),
 											active: !batchDocumentInfo.removed)
 						documentUpdateInfos.append(DocumentUpdateInfo(documentUpdateInfo, documentBacking))
 					} else {
