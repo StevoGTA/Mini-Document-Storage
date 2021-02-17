@@ -658,9 +658,12 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 					})
 
 			// Process results
-			while !allDone {
-				// Wait for signal
-				semaphore.wait()
+			while !allDone || !documentRevisionInfoMap.isEmpty {
+				// Check if waiting for more info
+				if documentRevisionInfoMap.isEmpty {
+					// Wait for signal
+					semaphore.wait()
+				}
 
 				// Run lean
 				autoreleasepool() {
@@ -815,7 +818,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 				})
 
 		// Process results
-		while (!allDone || !documentCreateReturnInfos.isEmpty) {
+		while !allDone || !documentCreateReturnInfos.isEmpty {
 			// Check if waiting for more info
 			if documentCreateReturnInfos.isEmpty {
 				// Wait for signal
@@ -877,9 +880,12 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 				})
 
 		// Process results
-		while !allDone {
-			// Wait for signal
-			semaphore.wait()
+		while !allDone || !documentFullInfos.isEmpty {
+			// Check if waiting for more info
+			if documentFullInfos.isEmpty {
+				// Wait for signal
+				semaphore.wait()
+			}
 
 			// Run lean
 			autoreleasepool() {
@@ -925,7 +931,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 				})
 
 		// Process results
-		while (!allDone || !documentUpdateReturnInfos.isEmpty) {
+		while !allDone || !documentUpdateReturnInfos.isEmpty {
 			// Check if waiting for more info
 			if documentUpdateReturnInfos.isEmpty {
 				// Wait for signal
