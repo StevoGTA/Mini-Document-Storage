@@ -146,7 +146,7 @@ extension HTTPEndpointClient {
 			} else {
 				// Error
 				completionProc(nil,
-						error ?? HTTPEndpointStatusError.for(HTTPEndpointStatus(rawValue: response!.statusCode)!))
+						error ?? HTTPEndpointStatusError(status: HTTPEndpointStatus(rawValue: response!.statusCode)!))
 			}
 		}
 
@@ -234,7 +234,7 @@ extension HTTPEndpointClient {
 			} else {
 				// Error
 				completionProc(nil, nil,
-						$1 ?? HTTPEndpointStatusError.for(HTTPEndpointStatus(rawValue: $0!.statusCode)!))
+						$1 ?? HTTPEndpointStatusError(status: HTTPEndpointStatus(rawValue: $0!.statusCode)!))
 			}
 		}
 
@@ -278,7 +278,7 @@ extension HTTPEndpointClient {
 			} else {
 				// Error
 				completionProc(nil, nil, nil,
-						error ?? HTTPEndpointStatusError.for(HTTPEndpointStatus(rawValue: response!.statusCode)!))
+						error ?? HTTPEndpointStatusError(status: HTTPEndpointStatus(rawValue: response!.statusCode)!))
 			}
 		}
 
@@ -320,7 +320,7 @@ extension HTTPEndpointClient {
 			} else {
 				// Error
 				partialResultsProc(nil, nil,
-						error ?? HTTPEndpointStatusError.for(HTTPEndpointStatus(rawValue: response!.statusCode)!))
+						error ?? HTTPEndpointStatusError(status: HTTPEndpointStatus(rawValue: response!.statusCode)!))
 			}
 		}
 		getIndexDocumentInfosHTTPEndpointRequest.multiResponseCompletionProc = completionProc
