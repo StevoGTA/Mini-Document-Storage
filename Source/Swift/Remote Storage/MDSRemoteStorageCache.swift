@@ -52,6 +52,18 @@ public class MDSRemoteStorageCache {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
+	public func data(for key :String) -> Data? {
+		// Retrieve value
+		if let string = string(for: key) {
+			// Have string
+			return Data(base64Encoded: string)
+		} else {
+			// Don't have string
+			return nil
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func int(for key :String) -> Int? {
 		// Retrieve value
 		var	value :Int?
@@ -101,10 +113,23 @@ public class MDSRemoteStorageCache {
 	public func set(_ value :Any?, for key :String) {
 		// Storing or removing
 		if value != nil {
+			// Have value
+			let	valueUse :String
+			if let data = value as? Data {
+				// Data
+				valueUse = data.base64EncodedString()
+			} else if let string = value as? String {
+				// String
+				valueUse = string
+			} else {
+				// Other
+				valueUse = "\(value!)"
+			}
+
 			// Store value
 			self.infoTable.insertOrReplaceRow([
 												(self.infoTable.keyTableColumn, key),
-												(self.infoTable.valueTableColumn, value!),
+												(self.infoTable.valueTableColumn, valueUse),
 											  ])
 		} else {
 			// Removing

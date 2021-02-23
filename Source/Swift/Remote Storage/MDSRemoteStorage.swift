@@ -687,6 +687,25 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		fatalError("Unimplemented")
 	}
 
+	// MARK: Instance methods
+	//------------------------------------------------------------------------------------------------------------------
+	public func cachedData(for key :String) -> Data? { self.remoteStorageCache.data(for: key) }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func cachedInt(for key :String) -> Int? { self.remoteStorageCache.int(for: key) }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func cachedString(for key :String) -> String? { self.remoteStorageCache.string(for: key) }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func cachedTimeIntervals(for keys :[String]) -> [String : TimeInterval] {
+		// Return info from cache
+		return self.remoteStorageCache.timeIntervals(for: keys)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func cache(_ value :Any?, for key :String) { self.remoteStorageCache.set(value, for: key) }
+
 	// MARK: Private methods
 	//------------------------------------------------------------------------------------------------------------------
 	private func documentBacking(for document :MDSDocument) -> DocumentBacking {
