@@ -74,7 +74,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	private	var	indexesByNameMap = LockingDictionary</* Name */ String, MDSIndex>()
 	private	var	indexesByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSIndex>()
 
-	private	var	documentChangedProcsMap = LockingDictionary</* Document Type */ String, [MDSDocument.ChangedProc]>()
+	private	var	documentChangedProcsMap = LockingArrayDictionary</* Document Type */ String, MDSDocument.ChangedProc>()
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -147,7 +147,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			updateIndexes(for: T.documentType, updateInfos: updateInfos)
 
 			// Call document changed procs
-			self.documentChangedProcsMap.value(for: T.documentType)?.forEach() { $0(document, .created) }
+			self.documentChangedProcsMap.values(for: T.documentType)?.forEach() { $0(document, .created) }
 
 			return document
 		}
@@ -157,7 +157,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	public func document<T : MDSDocument>(for documentID :String) -> T? {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
-				batchInfo.batchDocumentInfo(for: documentID) != nil {
+				batchInfo.documentInfo(for: documentID) != nil {
 			// Have document in batch
 			return T(id: documentID, documentStorage: self)
 		} else if self.documentBacking(documentType: T.documentType, documentID: documentID) != nil {
@@ -173,7 +173,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	public func creationDate(for document :MDSDocument) -> Date{
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
-				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
+				let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
 			// In batch
 			return batchDocumentInfo.creationDate
 		} else if self.documentsBeingCreatedPropertyMapMap.value(for: document.id) != nil {
@@ -189,7 +189,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	public func modificationDate(for document :MDSDocument) -> Date {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
-				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
+				let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
 			// In batch
 			return batchDocumentInfo.modificationDate
 		} else if self.documentsBeingCreatedPropertyMapMap.value(for: document.id) != nil {
@@ -206,7 +206,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	public func value(for property :String, in document :MDSDocument) -> Any? {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
-				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
+				let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
 			// In batch
 			return batchDocumentInfo.value(for: property)
 		} else if let propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: document.id) {
@@ -243,7 +243,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
 			// In batch
-			if let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
+			if let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
 				// Have document in batch
 				batchDocumentInfo.set(valueUse, for: property)
 			} else {
@@ -272,7 +272,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			updateIndexes(for: documentType, updateInfos: updateInfos)
 
 			// Call document changed procs
-			self.documentChangedProcsMap.value(for: T.documentType)?.forEach() { $0(document, .updated) }
+			self.documentChangedProcsMap.values(for: T.documentType)?.forEach() { $0(document, .updated) }
 		}
 	}
 
@@ -284,7 +284,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
 			// In batch
-			if let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
+			if let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
 				// Have document in batch
 				batchDocumentInfo.remove()
 			} else {
@@ -308,7 +308,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			self.documentBackingCache.remove([document.id])
 
 			// Call document changed procs
-			self.documentChangedProcsMap.value(for: documentType)?.forEach() { $0(document, .removed) }
+			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .removed) }
 		}
 	}
 
@@ -396,15 +396,15 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 
 									// Update collections and indexes
 									let	changedProperties =
-												Array((batchDocumentInfo.updatedPropertyMap ?? [:]).keys) +
-														Array(batchDocumentInfo.removedProperties ?? Set<String>())
+												Set<String>((batchDocumentInfo.updatedPropertyMap ?? [:]).keys)
+														.union(batchDocumentInfo.removedProperties ?? Set<String>())
 									updateBatchQueue.add(
 											MDSUpdateInfo<Int64>(document: document,
 													revision: documentBacking.revision, value: documentBacking.id,
 													changedProperties: changedProperties))
 
 									// Call document changed procs
-									self.documentChangedProcsMap.value(for: documentType)?.forEach()
+									self.documentChangedProcsMap.values(for: documentType)?.forEach()
 										{ $0(document, .updated) }
 								}
 							} else {
@@ -431,7 +431,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 													changedProperties: nil))
 
 									// Call document changed procs
-									self.documentChangedProcsMap.value(for: documentType)?.forEach()
+									self.documentChangedProcsMap.values(for: documentType)?.forEach()
 										{ $0(document, .created) }
 								}
 							}
@@ -449,7 +449,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 								let	document = creationProc(documentID, self)
 
 								// Call document changed procs
-								self.documentChangedProcsMap.value(for: documentType)?.forEach()
+								self.documentChangedProcsMap.values(for: documentType)?.forEach()
 									{ $0(document, .removed) }
 							}
 						}
@@ -552,7 +552,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerDocumentChangedProc(documentType :String, proc :@escaping MDSDocument.ChangedProc) {
 		//  Add
-		self.documentChangedProcsMap.update(for: documentType) { ($0 ?? []) + [proc] }
+		self.documentChangedProcsMap.appendArrayValue(proc, for: documentType)
 	}
 
 	// MARK: MDSDocumentStorageServerHandler methods
@@ -657,7 +657,8 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 						let	document = creationProc($0.documentID, self)
 
 						// Update collections and indexes
-						let	changedProperties = Array(documentUpdateInfo.updated.keys) + documentUpdateInfo.removed
+						let	changedProperties =
+									Set<String>(documentUpdateInfo.updated.keys).union(documentUpdateInfo.removed)
 						updateBatchQueue.add(
 								MDSUpdateInfo<Int64>(document: document,
 										revision: $0.documentBacking.revision, value: $0.documentBacking.id,
@@ -927,7 +928,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 		iterateDocumentBackingInfos(documentType: collection.documentType, sinceRevision: collection.lastRevision,
 				includeInactive: false) {
 					// Query batch info
-					let batchDocumentInfo = batchInfo?.batchDocumentInfo(for: $0.documentID)
+					let batchDocumentInfo = batchInfo?.documentInfo(for: $0.documentID)
 
 					// Ensure we want to process this document
 					if (batchDocumentInfo == nil) || !batchDocumentInfo!.removed {
@@ -1010,7 +1011,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 		iterateDocumentBackingInfos(documentType: index.documentType, sinceRevision: index.lastRevision,
 				includeInactive: false) {
 					// Query batch info
-					let batchDocumentInfo = batchInfo?.batchDocumentInfo(for: $0.documentID)
+					let batchDocumentInfo = batchInfo?.documentInfo(for: $0.documentID)
 
 					// Ensure we want to process this document
 					if (batchDocumentInfo == nil) || !batchDocumentInfo!.removed {

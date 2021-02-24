@@ -75,7 +75,7 @@ extension MDSDocumentUpdateInfo {
 				[
 					"documentID": self.documentID,
 					"updated": self.updated,
-					"removed": self.removed,
+					"removed": Array(self.removed),
 					"active": self.active,
 				]
 			}
@@ -86,7 +86,7 @@ extension MDSDocumentUpdateInfo {
 		// Store
 		self.documentID = httpServicesInfo["documentID"] as! String
 		self.updated = httpServicesInfo["updated"] as! [String : Any]
-		self.removed = httpServicesInfo["removed"] as! [String]
+		self.removed = Set<String>(httpServicesInfo["removed"] as! [String])
 		self.active = httpServicesInfo["active"] as! Bool
 	}
 }

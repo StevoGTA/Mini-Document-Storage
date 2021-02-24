@@ -9,32 +9,31 @@
 import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: Reference
-fileprivate class Reference<T> {
+// MARK: MDSDocumentBackingCache
+class MDSDocumentBackingCache<T> {
 
-	// MARK: Properties
-	let	documentBackingInfo :MDSDocumentBackingInfo<T>
+	// MARK: Reference
+	class Reference<T> {
 
-	var	lastReferencedDate :Date
+		// MARK: Properties
+		let	documentBackingInfo :MDSDocumentBackingInfo<T>
 
-	// MARK: Lifecycle methods
-	//------------------------------------------------------------------------------------------------------------------
-	init(documentInfo :MDSDocumentBackingInfo<T>) {
-		// Store
-		self.documentBackingInfo = documentInfo
+		var	lastReferencedDate :Date
 
-		// Setup
-		self.lastReferencedDate = Date()
+		// MARK: Lifecycle methods
+		//------------------------------------------------------------------------------------------------------------------
+		init(documentBackingInfo :MDSDocumentBackingInfo<T>) {
+			// Store
+			self.documentBackingInfo = documentBackingInfo
+
+			// Setup
+			self.lastReferencedDate = Date()
+		}
+
+		// MARK: Instance methods
+		//------------------------------------------------------------------------------------------------------------------
+		func noteWasReferenced() { self.lastReferencedDate = Date() }
 	}
-
-	// MARK: Instance methods
-	//------------------------------------------------------------------------------------------------------------------
-	func noteWasReferenced() { self.lastReferencedDate = Date() }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSDocumentBackingCache
-public class MDSDocumentBackingCache<T> {
 
 	// MARK: Properties
 	private	let	limit :Int
@@ -45,7 +44,7 @@ public class MDSDocumentBackingCache<T> {
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	public init(limit :Int = 1_000_000) {
+	init(limit :Int = 1_000_000) {
 		// Store
 		self.limit = limit
 	}
@@ -58,11 +57,11 @@ public class MDSDocumentBackingCache<T> {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	public func add(_ documentBackingInfos :[MDSDocumentBackingInfo<T>]) {
+	func add(_ documentBackingInfos :[MDSDocumentBackingInfo<T>]) {
 		// Update
 		self.lock.write() {
-			// Do all document infos
-			documentBackingInfos.forEach() { self.referenceMap[$0.documentID] = Reference(documentInfo: $0) }
+			// Do all document backing infos
+			documentBackingInfos.forEach() { self.referenceMap[$0.documentID] = Reference(documentBackingInfo: $0) }
 
 			// Reset pruning timer if needed
 			resetPruningTimerIfNeeded()
@@ -70,7 +69,7 @@ public class MDSDocumentBackingCache<T> {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentBacking(for documentID :String) -> T? {
+	func documentBacking(for documentID :String) -> T? {
 		// Return cached document, if available
 		return self.lock.read() {
 			// Retrieve
@@ -87,8 +86,7 @@ public class MDSDocumentBackingCache<T> {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func queryDocumentIDs(_ documentIDs :[String]) ->
-			(foundDocumentIDs :[String], notFoundDocumentIDs :[String]) {
+	func queryDocumentIDs(_ documentIDs :[String]) -> (foundDocumentIDs :[String], notFoundDocumentIDs :[String]) {
 		// Setup
 		var	foundDocumentIDs = [String]()
 		var	notFoundDocumentIDs = [String]()
@@ -110,7 +108,7 @@ public class MDSDocumentBackingCache<T> {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func queryDocumentBackingInfos(_ documentIDs :[String]) ->
+	func queryDocumentBackingInfos(_ documentIDs :[String]) ->
 			(foundDocumentBackingInfos :[MDSDocumentBackingInfo<T>], notFoundDocumentIDs :[String]) {
 		// Setup
 		var	foundDocumentInfos = [MDSDocumentBackingInfo<T>]()
@@ -133,7 +131,7 @@ public class MDSDocumentBackingCache<T> {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func remove(_ documentIDs :[String]) {
+	func remove(_ documentIDs :[String]) {
 		// Remove from map
 		self.lock.write() {
 			// Remove from storage
@@ -168,6 +166,8 @@ public class MDSDocumentBackingCache<T> {
 						var	earliestReferencedDate = Date.distantFuture
 						strongSelf.referenceMap.values.forEach() {
 							// Compare date
+// This is broken.  It's possible to miss a reference that needs to be removed simply because the order of dates
+//	seen is random.
 							if $0.lastReferencedDate < earliestReferencedDate {
 								// Update references to remove
 								referencesToRemove.append($0)

@@ -40,7 +40,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		func update(revision :Int, updatedPropertyMap :[String : Any]? = nil, removedProperties :Set<String>? = nil) {
 			// Update
 			self.revision = revision
-
+			self.modificationDate = Date()
 			self.propertyMap.merge(updatedPropertyMap ?? [:], uniquingKeysWith: { $1 })
 			removedProperties?.forEach() { self.propertyMap[$0] = nil }
 		}
@@ -68,7 +68,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	private	let	indexesByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSIndex>()
 	private	let	indexValuesMap = LockingDictionary</* Name */ String, [/* Key */ String : /* Document ID */ String]>()
 
-	private	var	documentChangedProcsMap = LockingDictionary</* Document Type */ String, [MDSDocument.ChangedProc]>()
+	private	var	documentChangedProcsMap = LockingArrayDictionary</* Document Type */ String, MDSDocument.ChangedProc>()
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -128,7 +128,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			updateIndexes(for: T.documentType, updateInfos: updateInfos)
 
 			// Call document changed procs
-			self.documentChangedProcsMap.value(for: T.documentType)?.forEach() { $0(document, .created) }
+			self.documentChangedProcsMap.values(for: T.documentType)?.forEach() { $0(document, .created) }
 
 			return document
 		}
@@ -141,7 +141,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	public func creationDate(for document :MDSDocument) -> Date {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
-				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
+				let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
 			// In batch
 			return batchDocumentInfo.creationDate
 		} else if self.documentsBeingCreatedPropertyMapMap.value(for: document.id) != nil {
@@ -157,7 +157,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	public func modificationDate(for document :MDSDocument) -> Date {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
-				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
+				let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
 			// In batch
 			return batchDocumentInfo.modificationDate
 		} else if self.documentsBeingCreatedPropertyMapMap.value(for: document.id) != nil {
@@ -173,7 +173,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	public func value(for property :String, in document :MDSDocument) -> Any? {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
-				let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
+				let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
 			// In batch
 			return batchDocumentInfo.value(for: property)
 		} else if let propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: document.id) {
@@ -199,7 +199,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
 			// In batch
-			if let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
+			if let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
 				// Have document in batch
 				batchDocumentInfo.set(value, for: property)
 			} else {
@@ -235,7 +235,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			updateIndexes(for: documentType, updateInfos: updateInfos)
 
 			// Call document changed procs
-			self.documentChangedProcsMap.value(for: T.documentType)?.forEach() { $0(document, .updated) }
+			self.documentChangedProcsMap.values(for: T.documentType)?.forEach() { $0(document, .updated) }
 		}
 	}
 
@@ -247,7 +247,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
 			// In batch
-			if let batchDocumentInfo = batchInfo.batchDocumentInfo(for: document.id) {
+			if let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
 				// Have document in batch
 				batchDocumentInfo.remove()
 			} else {
@@ -270,7 +270,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			}
 
 			// Call document changed procs
-			self.documentChangedProcsMap.value(for: documentType)?.forEach() { $0(document, .removed) }
+			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .removed) }
 		}
 	}
 
@@ -330,17 +330,17 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 									// Create document
 									let	document = creationProc(documentID, self)
 
-										// Update collections and indexes
+									// Update collections and indexes
 									let	changedProperties =
-												Array((batchDocumentInfo.updatedPropertyMap ?? [:]).keys) +
-														Array(batchDocumentInfo.removedProperties ?? Set<String>())
+												Set<String>((batchDocumentInfo.updatedPropertyMap ?? [:]).keys)
+														.union(batchDocumentInfo.removedProperties ?? Set<String>())
 									updateInfos.append(
 											MDSUpdateInfo<String>(document: document,
 													revision: documentBacking.revision, value: documentID,
 													changedProperties: changedProperties))
 
 									// Call document changed procs
-									self.documentChangedProcsMap.value(for: documentType)?.forEach()
+									self.documentChangedProcsMap.values(for: documentType)?.forEach()
 										{ $0(document, .updated) }
 								}
 							} else {
@@ -366,7 +366,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 													changedProperties: nil))
 
 									// Call document changed procs
-									self.documentChangedProcsMap.value(for: documentType)?.forEach()
+									self.documentChangedProcsMap.values(for: documentType)?.forEach()
 										{ $0(document, .created) }
 								}
 							}
@@ -383,7 +383,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 								let	document = creationProc(documentID, self)
 
 								// Call document changed procs
-								self.documentChangedProcsMap.value(for: documentType)?.forEach()
+								self.documentChangedProcsMap.values(for: documentType)?.forEach()
 									{ $0(document, .removed) }
 							}
 						}
@@ -475,7 +475,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerDocumentChangedProc(documentType :String, proc :@escaping MDSDocument.ChangedProc) {
 		//  Add
-		self.documentChangedProcsMap.update(for: documentType) { ($0 ?? []) + [proc] }
+		self.documentChangedProcsMap.appendArrayValue(proc, for: documentType)
 	}
 
 	// MARK: MDSDocumentStorageServerHandler methods

@@ -222,23 +222,13 @@ extension MDSDocument {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func document<T : MDSDocument>(with documentID :String) -> T? {
-		// Retrieve document
-		return self.documentStorage.document(for: documentID)
-	}
 	public func document<T : MDSDocument>(for key :String) -> T? {
 		// Retrieve document ID
 		guard let documentID = string(for: key) else { return nil }
 
 		return self.documentStorage.document(for: documentID)
 	}
-	public func set<T : MDSDocument>(_ document :T?, for key :String) {
-		// Check if different
-		guard document?.id != string(for: key) else { return }
-
-		// Set value
-		self.documentStorage.set(document?.id, for: key, in: self)
-	}
+	public func set<T : MDSDocument>(_ document :T?, for property :String) { set(document?.id, for: property) }
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documents<T : MDSDocument>(for key :String) -> [T]? {
@@ -361,27 +351,18 @@ struct MDSDocumentUpdateInfo {
 
 	// MARK: Properties
 	let	documentID :String
-	let	updated :[String : Any]
-	let	removed :[String]
 	let	active :Bool
+	let	updated :[String : Any]
+	let	removed :Set<String>
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	init(documentID :String, updated :[String : Any] = [:], removed :[String] = [], active :Bool = true) {
+	init(documentID :String, active :Bool = true, updated :[String : Any] = [:], removed :Set<String> = Set<String>()) {
 		// Store
 		self.documentID = documentID
+		self.active = active
 		self.updated = updated
 		self.removed = removed
-		self.active = active
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	init(documentID :String, updated :[String : Any]?, removed :Set<String>?, active :Bool) {
-		// Store
-		self.documentID = documentID
-		self.updated = updated ?? [:]
-		self.removed = Array(removed ?? Set<String>())
-		self.active = active
 	}
 }
 
@@ -393,7 +374,7 @@ struct MDSUpdateInfo<T> {
 	let	document :MDSDocument
 	let	revision :Int
 	let	value :T
-	let	changedProperties :[String]?
+	let	changedProperties :Set<String>?
 }
 
 //----------------------------------------------------------------------------------------------------------------------
