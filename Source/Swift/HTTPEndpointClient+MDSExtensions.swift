@@ -104,7 +104,7 @@ extension HTTPEndpointClient {
 						}
 
 						// One more complete
-						if pendingCount.subtract(1).value == 0 {
+						if pendingCount.subtract(1) == 0 {
 							// All done
 							completionProc(errors.values)
 						}
@@ -202,7 +202,7 @@ extension HTTPEndpointClient {
 						}
 
 						// One more complete
-						if pendingCount.subtract(1).value == 0 {
+						if pendingCount.subtract(1) == 0 {
 							// All done
 							completionProc(errors.values)
 						}
