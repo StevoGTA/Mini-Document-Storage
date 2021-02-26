@@ -593,8 +593,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func updateCollections(for documentType :String, updateInfos :[MDSUpdateInfo<String>],
-			processNotIncluded :Bool = true) {
+	private func updateCollections(for documentType :String, updateInfos :[MDSUpdateInfo<String>]) {
 		// Iterate all collections for this document type
 		self.collectionsByDocumentTypeMap.values(for: documentType)?.forEach() {
 			// Query update info
