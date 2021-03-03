@@ -91,9 +91,9 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		let	documentID = UUID().base64EncodedString
 
 		// Check for batch
+		let	date = Date()
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
 			// In batch
-			let	date = Date()
 			_ = batchInfo.addDocument(documentType: T.documentType, documentID: documentID, creationDate: date,
 					modificationDate: date)
 
@@ -110,7 +110,6 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			self.documentsBeingCreatedPropertyMapMap.remove(documentID)
 
 			// Add document
-			let	date = Date()
 			let	documentBacking =
 						DocumentBacking(revision: nextRevision(for: T.documentType), creationDate: date,
 								modificationDate: date, propertyMap: propertyMap)
@@ -204,8 +203,9 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 				batchDocumentInfo.set(value, for: property)
 			} else {
 				// Don't have document in batch
+				let	date = Date()
 				batchInfo.addDocument(documentType: documentType, documentID: document.id, reference: [:],
-						creationDate: Date(), modificationDate: Date(), valueProc: { property in
+						creationDate: date, modificationDate: date, valueProc: { property in
 									// Play nice with others
 									self.documentMapsLock.read()
 										{ self.documentBackingByIDMap[document.id]?.propertyMap[property] }
@@ -252,8 +252,9 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 				batchDocumentInfo.remove()
 			} else {
 				// Don't have document in batch
+				let	date = Date()
 				batchInfo.addDocument(documentType: documentType, documentID: document.id, reference: [:],
-						creationDate: Date(), modificationDate: Date()).remove()
+						creationDate: date, modificationDate: date).remove()
 			}
 		} else {
 			// Not in batch
@@ -311,6 +312,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			batchInfo.forEach() { documentType, batchDocumentInfosMap in
 				// Setup
 				var	updateInfos = [MDSUpdateInfo<String>]()
+				var	removedDocumentIDs = Set<String>()
 
 				// Update documents
 				batchDocumentInfosMap.forEach() { documentID, batchDocumentInfo in
@@ -373,6 +375,8 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 						}
 					} else {
 						// Remove document
+						removedDocumentIDs.insert(documentID)
+
 						self.documentMapsLock.write() {
 							// Update maps
 							self.documentBackingByIDMap[documentID]?.active = false
@@ -391,7 +395,16 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 				}
 
 				// Update collections and indexes
+				self.collectionValuesMap.keys.forEach() {
+					// Remove document from this collection
+					self.collectionValuesMap.update(for: $0) { $0?.subtracting(removedDocumentIDs) }
+				}
 				updateCollections(for: documentType, updateInfos: updateInfos)
+				
+				self.indexValuesMap.keys.forEach() {
+					// Remove document from this index
+					self.indexValuesMap.update(for: $0) { $0?.filter({ !removedDocumentIDs.contains($0.value) }) }
+				}
 				updateIndexes(for: documentType, updateInfos: updateInfos)
 			}
 		}
@@ -462,7 +475,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		self.documentMapsLock.read() {
 			// Iterate keys
 			keys.forEach() {
-				// Retrieve document
+				// Retrieve documentID and verify we have a document backing for it
 				guard let documentID = indexValues[$0] else { return }
 				guard self.documentBackingByIDMap[documentID] != nil else { return }
 

@@ -905,14 +905,23 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	private func updateCollections(for documentType :String, updateInfos :[MDSUpdateInfo<Int64>],
 			processNotIncluded :Bool = true) {
+		// Setup
+		let	minRevision = updateInfos.min(by: { $0.revision < $1.revision })?.revision
+
 		// Iterate all collections for this document type
 		self.collectionsByDocumentTypeMap.values(for: documentType)?.forEach() {
-			// Update
-			let	(includedIDs, notIncludedIDs, lastRevision) = $0.update(updateInfos)
+			// Check revision state
+			if $0.lastRevision + 1 == minRevision {
+				// Update
+				let	(includedIDs, notIncludedIDs, lastRevision) = $0.update(updateInfos)
 
-			// Update
-			self.sqliteCore.updateCollection(name: $0.name, includedIDs: includedIDs,
-					notIncludedIDs: processNotIncluded ? notIncludedIDs : [], lastRevision: lastRevision)
+				// Update
+				self.sqliteCore.updateCollection(name: $0.name, includedIDs: includedIDs,
+						notIncludedIDs: processNotIncluded ? notIncludedIDs : [], lastRevision: lastRevision)
+			} else {
+				// Bring up to date
+				bringUpToDate($0)
+			}
 		}
 	}
 
@@ -920,6 +929,16 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	private func bringCollectionUpToDate(name :String) -> MDSCollection {
 		// Setup
 		let	collection = self.collectionsByNameMap.value(for: name)!
+
+		// Bring up to date
+		bringUpToDate(collection)
+
+		return collection
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func bringUpToDate(_ collection :MDSCollection) {
+		// Setup
 		let	creationProc = self.documentCreationProcMap.value(for: collection.documentType)!
 		let	batchInfo = self.batchInfoMap.value(for: Thread.current)
 
@@ -943,10 +962,8 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 		let	(includedIDs, notIncludedIDs, lastRevision) = collection.bringUpToDate(bringUpToDateInfos)
 
 		// Update
-		self.sqliteCore.updateCollection(name: name, includedIDs: includedIDs, notIncludedIDs: notIncludedIDs,
-				lastRevision: lastRevision)
-
-		return collection
+		self.sqliteCore.updateCollection(name: collection.name, includedIDs: includedIDs,
+				notIncludedIDs: notIncludedIDs, lastRevision: lastRevision)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -989,13 +1006,23 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func updateIndexes(for documentType :String, updateInfos :[MDSUpdateInfo<Int64>]) {
+		// Setup
+		let	minRevision = updateInfos.min(by: { $0.revision < $1.revision })?.revision
+
 		// Iterate all indexes for this document type
 		self.indexesByDocumentTypeMap.values(for: documentType)?.forEach() {
-			// Update
-			let	(keysInfos, lastRevision) = $0.update(updateInfos)
+			// Check revision state
+			if $0.lastRevision + 1 == minRevision {
+				// Update
+				let	(keysInfos, lastRevision) = $0.update(updateInfos)
 
-			// Update
-			self.sqliteCore.updateIndex(name: $0.name, keysInfos: keysInfos, removedIDs: [], lastRevision: lastRevision)
+				// Update
+				self.sqliteCore.updateIndex(name: $0.name, keysInfos: keysInfos, removedIDs: [],
+						lastRevision: lastRevision)
+			} else {
+				// Bring up to date
+				bringUpToDate($0)
+			}
 		}
 	}
 
@@ -1003,6 +1030,16 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	private func bringIndexUpToDate(name :String) -> MDSIndex {
 		// Setup
 		let	index = self.indexesByNameMap.value(for: name)!
+
+		// Bring up to date
+		bringUpToDate(index)
+
+		return index
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func bringUpToDate(_ index :MDSIndex) {
+		// Setp
 		let	creationProc = self.documentCreationProcMap.value(for: index.documentType)!
 		let	batchInfo = self.batchInfoMap.value(for: Thread.current)
 
@@ -1026,9 +1063,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 		let	(keysInfos, lastRevision) = index.bringUpToDate(bringUpToDateInfos)
 
 		// Update
-		self.sqliteCore.updateIndex(name: name, keysInfos: keysInfos, removedIDs: [], lastRevision: lastRevision)
-
-		return index
+		self.sqliteCore.updateIndex(name: index.name, keysInfos: keysInfos, removedIDs: [], lastRevision: lastRevision)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
