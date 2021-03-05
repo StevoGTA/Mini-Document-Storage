@@ -153,7 +153,7 @@ class MDSSQLiteCore {
 			let	documentType = $0.text(for: self.documentsMasterTable.typeTableColumn)!
 			let	lastRevision = Int($0.integer(for: self.documentsMasterTable.lastRevisionTableColumn)!)
 
-			// Add to key value store
+			// Add to map
 			self.documentLastRevisionMap.set(lastRevision, for: documentType)
 		}
 	}
@@ -187,9 +187,9 @@ class MDSSQLiteCore {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func set(_ value :Any?, for key :String) {
-		// Storing or removing
+		// Check if storing or removing
 		if value != nil {
-			// Store value
+			// Storing
 			self.infoTable.insertOrReplaceRow([
 												(self.infoTable.keyTableColumn, key),
 												(self.infoTable.valueTableColumn, value!),
@@ -213,10 +213,10 @@ class MDSSQLiteCore {
 			return documentTables
 		} else {
 			// Setup tables
-			let	tableTitleRoot = documentType.prefix(1).uppercased() + documentType.dropFirst()
+			let	nameRoot = documentType.prefix(1).uppercased() + documentType.dropFirst()
 			let	contentIDTableColumn = SQLiteTableColumn("id", .integer, [.primaryKey])
 			let	infoTable =
-						self.sqliteDatabase.table(name: "\(tableTitleRoot)s",
+						self.sqliteDatabase.table(name: "\(nameRoot)s",
 								tableColumns: [
 												SQLiteTableColumn("id", .integer, [.primaryKey, .autoincrement]),
 												SQLiteTableColumn("documentID", .text, [.notNull, .unique]),
@@ -224,7 +224,7 @@ class MDSSQLiteCore {
 												SQLiteTableColumn("active", .integer, [.notNull]),
 											  ])
 			let	contentTable =
-						self.sqliteDatabase.table(name: "\(tableTitleRoot)Contents",
+						self.sqliteDatabase.table(name: "\(nameRoot)Contents",
 								tableColumns: [
 												contentIDTableColumn,
 												SQLiteTableColumn("creationDate", .text, [.notNull]),
@@ -484,7 +484,7 @@ class MDSSQLiteCore {
 					self.sqliteDatabase.table(name: "Index-\(name)", options: [.withoutRowID],
 							tableColumns: [
 											SQLiteTableColumn("key", .text, [.primaryKey]),
-											SQLiteTableColumn("id", .integer)
+											SQLiteTableColumn("id", .integer, [.notNull])
 										  ])
 		self.indexTablesMap.set(table, for: name)
 
