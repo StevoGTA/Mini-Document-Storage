@@ -257,17 +257,11 @@ extension HTTPEndpointClient {
 				// Check headers
 				if let contentRange = response!.contentRange, let size = contentRange.size {
 					// Success
-					DispatchQueue.global().async() {
-						// Convert
-						let	documentRevisionInfos =
-									info!.map({ MDSDocumentRevisionInfo(documentID: $0.key, revision: $0.value) })
+					let	documentRevisionInfos =
+								info!.map({ MDSDocumentRevisionInfo(documentID: $0.key, revision: $0.value) })
 
-						// Switch queues to minimize memory usage
-						DispatchQueue.global().async() {
-							// Call completion proc
-							completionProc(true, documentRevisionInfos, documentRevisionInfos.count == size, nil)
-						}
-					}
+					// Call completion proc
+					completionProc(true, documentRevisionInfos, documentRevisionInfos.count == size, nil)
 				} else {
 					// Bad server
 					completionProc(nil, nil, nil, HTTPEndpointClientMDSExtensionsError.didNotReceiveSizeInHeader)
@@ -301,19 +295,12 @@ extension HTTPEndpointClient {
 			// Handle results
 			if info != nil {
 				// Success
-				DispatchQueue.global().async() {
-					// Convert
-					let	documentRevisionInfoMap =
-								info!.mapValues(
-										{ MDSDocumentRevisionInfo(documentID: $0.first!.key,
-												revision: $0.first!.value) })
+				let	documentRevisionInfoMap =
+							info!.mapValues(
+									{ MDSDocumentRevisionInfo(documentID: $0.first!.key, revision: $0.first!.value) })
 
-					// Switch queues to minimize memory usage
-					DispatchQueue.global().async() {
-						// Call completion proc
-						partialResultsProc(true, documentRevisionInfoMap, nil)
-					}
-				}
+				// Call completion proc
+				partialResultsProc(true, documentRevisionInfoMap, nil)
 			} else if response?.statusCode == 409 {
 				// Not up to date
 				partialResultsProc(false, nil, nil)
