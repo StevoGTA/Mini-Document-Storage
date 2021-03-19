@@ -53,12 +53,13 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 
 	private	let	batchInfoMap = LockingDictionary<Thread, MDSBatchInfo<[String : Any]>>()
 
-	private	let	documentsBeingCreatedPropertyMapMap = LockingDictionary<String, [String : Any]>()
-	private	let	documentCreationProcMap = LockingDictionary<String, MDSDocument.CreationProc>()
-	private	let	documentMapsLock = ReadPreferringReadWriteLock()
 	private	var	documentBackingByIDMap = [/* Document ID */ String : DocumentBacking]()
+	private	var	documentChangedProcsMap = LockingArrayDictionary</* Document Type */ String, MDSDocument.ChangedProc>()
+	private	let	documentCreationProcMap = LockingDictionary<String, MDSDocument.CreationProc>()
 	private	var	documentIDsByTypeMap = [/* Document Type */ String : /* Document IDs */ Set<String>]()
 	private	var	documentLastRevisionMap = LockingDictionary</* Document type */ String, Int>()
+	private	let	documentMapsLock = ReadPreferringReadWriteLock()
+	private	let	documentsBeingCreatedPropertyMapMap = LockingDictionary<String, [String : Any]>()
 
 	private	let	collectionsByNameMap = LockingDictionary</* Name */ String, MDSCollection>()
 	private	let	collectionsByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSCollection>()
@@ -67,8 +68,6 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	private	let	indexesByNameMap = LockingDictionary</* Name */ String, MDSIndex>()
 	private	let	indexesByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSIndex>()
 	private	let	indexValuesMap = LockingDictionary</* Name */ String, [/* Key */ String : /* Document ID */ String]>()
-
-	private	var	documentChangedProcsMap = LockingArrayDictionary</* Document Type */ String, MDSDocument.ChangedProc>()
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -261,14 +260,8 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			self.documentMapsLock.write() { self.documentBackingByIDMap[document.id]?.active = false }
 
 			// Remove from collections and indexes
-			self.collectionValuesMap.keys.forEach() {
-				// Remove document from this collection
-				self.collectionValuesMap.update(for: $0) { $0?.removing(document.id) }
-			}
-			self.indexValuesMap.keys.forEach() {
-				// Remove document from this index
-				self.indexValuesMap.update(for: $0) { $0?.filter({ $0.value != document.id }) }
-			}
+			removeFromCollections(documentIDs: Set<String>([document.id]))
+			removeFromIndexes(documentIDs: Set<String>([document.id]))
 
 			// Call document changed procs
 			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .removed) }
@@ -395,16 +388,10 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 				}
 
 				// Update collections and indexes
-				self.collectionValuesMap.keys.forEach() {
-					// Remove document from this collection
-					self.collectionValuesMap.update(for: $0) { $0?.subtracting(removedDocumentIDs) }
-				}
+				removeFromCollections(documentIDs: removedDocumentIDs)
 				updateCollections(for: documentType, updateInfos: updateInfos)
-				
-				self.indexValuesMap.keys.forEach() {
-					// Remove document from this index
-					self.indexValuesMap.update(for: $0) { $0?.filter({ !removedDocumentIDs.contains($0.value) }) }
-				}
+
+				removeFromIndexes(documentIDs: removedDocumentIDs)
 				updateIndexes(for: documentType, updateInfos: updateInfos)
 			}
 		}
@@ -619,6 +606,15 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	private func removeFromCollections(documentIDs :Set<String>) {
+		// Iterate all collections for this document type
+		self.collectionValuesMap.keys.forEach() {
+			// Remove document from this collection
+			self.collectionValuesMap.update(for: $0) { $0?.subtracting(documentIDs) }
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	private func updateIndexes(for documentType :String, updateInfos :[MDSUpdateInfo<String>]) {
 		// Iterate all indexes for this document type
 		self.indexesByDocumentTypeMap.values(for: documentType)?.forEach() {
@@ -637,6 +633,15 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 
 				return updatedValues
 			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func removeFromIndexes(documentIDs :Set<String>) {
+		// Iterate all indexes for this document type
+		self.indexValuesMap.keys.forEach() {
+			// Remove document from this index
+			self.indexValuesMap.update(for: $0) { $0?.filter({ !documentIDs.contains($0.value) }) }
 		}
 	}
 }
