@@ -603,6 +603,17 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func iterate(documentType :String, innerJoin :SQLiteInnerJoin? = nil, where sqliteWhere :SQLiteWhere? = nil,
+			proc :(_ info :Info, _ resultsRow :SQLiteResultsRow) -> Void) {
+		// Setup
+		let	documentTables = self.documentTables(for: documentType)
+
+		// Retrieve and iterate
+		try! documentTables.infoTable.select(innerJoin: innerJoin, where: sqliteWhere)
+				{ proc(DocumentTypeInfoTable.info(for: $0), $0) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func update(documentType :String, id :Int64, propertyMap :[String : Any]) ->
 			(revision :Int, modificationDate :Date) {
 		// Setup
@@ -767,18 +778,7 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func iterate(documentType :String, innerJoin :SQLiteInnerJoin? = nil, where sqliteWhere :SQLiteWhere? = nil,
-			proc :(_ info :Info, _ resultsRow :SQLiteResultsRow) -> Void) {
-		// Setup
-		let	documentTables = self.documentTables(for: documentType)
-
-		// Retrieve and iterate
-		try! documentTables.infoTable.select(innerJoin: innerJoin, where: sqliteWhere)
-				{ proc(DocumentTypeInfoTable.info(for: $0), $0) }
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func innerJoinForFullDocumentInfo(for documentType :String) -> SQLiteInnerJoin {
+	func innerJoin(for documentType :String) -> SQLiteInnerJoin {
 		// Setup
 		let	documentTables = self.documentTables(for: documentType)
 
@@ -787,7 +787,7 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func innerJoinForFullDocumentInfo(for documentType :String, collectionName :String) -> SQLiteInnerJoin {
+	func innerJoin(for documentType :String, collectionName :String) -> SQLiteInnerJoin {
 		// Setup
 		let	documentTables = self.documentTables(for: documentType)
 		let	collectionContentsTable = self.collectionTablesMap.value(for: collectionName)!
@@ -799,7 +799,7 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func innerJoinForFullDocumentInfo(for documentType :String, indexName :String) -> SQLiteInnerJoin {
+	func innerJoin(for documentType :String, indexName :String) -> SQLiteInnerJoin {
 		// Setup
 		let	documentTables = self.documentTables(for: documentType)
 		let	indexContentsTable = self.indexTablesMap.value(for: indexName)!

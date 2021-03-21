@@ -314,8 +314,9 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 		autoreleasepool() {
 			// Iterate document backing infos
 			iterateDocumentBackingInfos(documentType: T.documentType,
-					innerJoin: self.databaseManager.innerJoinForFullDocumentInfo(for: T.documentType),
-					where: self.databaseManager.where(forDocumentActive: 1)) { documentIDs.append($1.documentID) }
+					innerJoin: self.databaseManager.innerJoin(for: T.documentType),
+					where: self.databaseManager.where(forDocumentActive: 1))
+					{ documentIDs.append($0.documentID); _ = $1 }
 		}
 
 		// Iterate document IDs
@@ -735,8 +736,9 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	private func iterateDocumentBackingInfos(documentType :String, innerJoin :SQLiteInnerJoin? = nil,
 			where sqliteWhere :SQLiteWhere? = nil,
-			proc :(_ resultsRow :SQLiteResultsRow,
-					_ documentBackingInfo :MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
+			proc
+					:(_ documentBackingInfo :MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>,
+							_ resultsRow :SQLiteResultsRow) -> Void) {
 		// Iterate
 		self.databaseManager.iterate(documentType: documentType, innerJoin: innerJoin, where: sqliteWhere) {
 			// Try to retrieve document backing
@@ -756,7 +758,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			self.documentBackingCache.add([documentBackingInfo])
 
 			// Call proc
-			proc($1, documentBackingInfo)
+			proc(documentBackingInfo, $1)
 		}
 	}
 
@@ -765,8 +767,8 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			proc :(_ documentBackingInfo :MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
 		// Iterate
 		iterateDocumentBackingInfos(documentType: documentType,
-				innerJoin: self.databaseManager.innerJoinForFullDocumentInfo(for: documentType),
-				where: self.databaseManager.where(forDocumentIDs: documentIDs)) { proc($1) }
+				innerJoin: self.databaseManager.innerJoin(for: documentType),
+				where: self.databaseManager.where(forDocumentIDs: documentIDs)) { proc($0); _ = $1 }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -775,11 +777,11 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			proc :(_ documentBackingInfo :MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
 		// Iterate
 		iterateDocumentBackingInfos(documentType: documentType,
-				innerJoin: self.databaseManager.innerJoinForFullDocumentInfo(for: documentType),
+				innerJoin: self.databaseManager.innerJoin(for: documentType),
 				where:
 						self.databaseManager.where(forDocumentRevision: revision, comparison: ">",
 								includeInactive: includeInactive))
-				{ proc($1) }
+				{ proc($0); _ = $1 }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -791,8 +793,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 
 		// Iterate
 		iterateDocumentBackingInfos(documentType: documentType,
-				innerJoin: self.databaseManager.innerJoinForFullDocumentInfo(for: documentType, collectionName: name))
-				{ proc($1) }
+				innerJoin: self.databaseManager.innerJoin(for: documentType, collectionName: name)) { proc($0); _ = $1 }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -879,9 +880,9 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 
 		// Iterate
 		iterateDocumentBackingInfos(documentType: documentType,
-				innerJoin: self.databaseManager.innerJoinForFullDocumentInfo(for: documentType, indexName: name),
+				innerJoin: self.databaseManager.innerJoin(for: documentType, indexName: name),
 				where: self.databaseManager.where(forIndexKeys: keys))
-				{ proc(MDSSQLiteDatabaseManager.indexContentsKey(for: $0), $1) }
+				{ proc(MDSSQLiteDatabaseManager.indexContentsKey(for: $1), $0) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
