@@ -706,6 +706,55 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 				{ proc($0, $1.documentRevisionInfo) }
 	}
 
+	// MARK: Instance methods
+	//------------------------------------------------------------------------------------------------------------------
+	@discardableResult
+	func documentBackingMap(for documentInfos :[MDSSQLiteDocumentInfo]) -> [String : MDSSQLiteDocumentBacking] {
+		// Setup
+		var	documentBackingMap = [String : MDSSQLiteDocumentBacking]()
+
+		// Perform as batch and iterate all
+		self.databaseManager.batch() {
+			// Create document backings
+			var	documentTypeMap = [/* Document type */ String : [MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>]]()
+			documentInfos.forEach() {
+				// Create document backing
+				let	documentBacking =
+							MDSSQLiteDocumentBacking(documentType: $0.documentType, documentID: $0.documentID,
+									creationDate: $0.creationDate, modificationDate: $0.modificationDate,
+									propertyMap: $0.propertyMap, with: self.databaseManager)
+
+				// Add to maps
+				documentBackingMap[$0.documentID] = documentBacking
+				documentTypeMap.appendArrayValueElement(key: $0.documentType,
+						value:
+								MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>(documentID: $0.documentID,
+										documentBacking: documentBacking))
+			}
+
+			// Iterate document types
+			documentTypeMap.forEach() {
+				// Add to cache
+				self.documentBackingCache.add($0.value)
+
+				// Check if have creation proc
+				if let creationProc = self.documentCreationProcMap.value(for: $0.key) {
+					// Update collections and indexes
+					let	updateInfos :[MDSUpdateInfo<Int64>] =
+								$0.value.map() {
+									MDSUpdateInfo<Int64>(document: creationProc($0.documentID, self),
+											revision: $0.documentBacking.revision, value: $0.documentBacking.id,
+											changedProperties: nil)
+								}
+					updateCollections(for: $0.key, updateInfos: updateInfos, processNotIncluded: false)
+					updateIndexes(for: $0.key, updateInfos: updateInfos)
+				}
+			}
+		}
+
+		return documentBackingMap
+	}
+
 	// MARK: Private methods
 	//------------------------------------------------------------------------------------------------------------------
 	private func documentBacking(documentType :String, documentID :String) -> MDSSQLiteDocumentBacking? {
