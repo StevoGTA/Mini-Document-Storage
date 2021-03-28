@@ -309,7 +309,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 
 				// Update documents
 				batchDocumentInfosMap.forEach() { documentID, batchDocumentInfo in
-					// Is removed?
+					// Check removed
 					if !batchDocumentInfo.removed {
 						// Add/update document
 						self.documentMapsLock.write() {

@@ -356,20 +356,16 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 				batchInfo.forEach() { documentType, batchDocumentInfosMap in
 					// Setup
 					let	updateBatchQueue =
-								BatchQueue<MDSUpdateInfo<Int64>>(maximumBatchSize: 999) {
+								BatchQueue<MDSUpdateInfo<Int64>>() {
 									// Update collections and indexes
 									self.updateCollections(for: documentType, updateInfos: $0)
 									self.updateIndexes(for: documentType, updateInfos: $0)
 								}
-					let	removedBatchQueue =
-								BatchQueue<Int64>(maximumBatchSize: 999) {
-									// Update collections and indexes
-									self.removeFromCollections(for: documentType, documentBackingIDs: $0)
-									self.removeFromIndexes(for: documentType, documentBackingIDs: $0)
-								}
+					var	removedDocumentBackingIDs = [Int64]()
+
 					// Update documents
 					batchDocumentInfosMap.forEach() { documentID, batchDocumentInfo in
-						// Is removed?
+						// Check removed
 						if !batchDocumentInfo.removed {
 							// Add/update document
 							if let documentBacking = batchDocumentInfo.reference {
@@ -431,7 +427,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 							self.documentBackingCache.remove([documentID])
 
 							// Remove from collections and indexes
-							removedBatchQueue.add(documentBacking.id)
+							removedDocumentBackingIDs.append(documentBacking.id)
 
 							// Check if we have creation proc
 							if let creationProc = self.documentCreationProcMap.value(for: documentType) {
@@ -445,9 +441,10 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 						}
 					}
 
-					// Finalize batch queues
+					// Finalize updates
 					updateBatchQueue.finalize()
-					removedBatchQueue.finalize()
+					self.removeFromCollections(for: documentType, documentBackingIDs: removedDocumentBackingIDs)
+					self.removeFromIndexes(for: documentType, documentBackingIDs: removedDocumentBackingIDs)
 				}
 			}
 		}
@@ -838,27 +835,30 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			with proc :(_ documentBackingInfo :MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
 		// Bring up to date
 		let	collection = autoreleasepool() { bringCollectionUpToDate(name: name) }
-		let	documentType = collection.documentType
 
 		// Iterate
-		iterateDocumentBackingInfos(documentType: documentType,
-				innerJoin: self.databaseManager.innerJoin(for: documentType, collectionName: name)) { proc($0); _ = $1 }
+		iterateDocumentBackingInfos(documentType: collection.documentType,
+				innerJoin: self.databaseManager.innerJoin(for: collection.documentType, collectionName: name))
+				{ proc($0); _ = $1 }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func updateCollections(for documentType :String, updateInfos :[MDSUpdateInfo<Int64>],
 			processNotIncluded :Bool = true) {
+		// Get collections
+		guard let collections = self.collectionsByDocumentTypeMap.values(for: documentType) else { return }
+
 		// Setup
 		let	minRevision = updateInfos.min(by: { $0.revision < $1.revision })?.revision
 
-		// Iterate all collections for this document type
-		self.collectionsByDocumentTypeMap.values(for: documentType)?.forEach() {
+		// Iterate collections
+		collections.forEach() {
 			// Check revision state
 			if $0.lastRevision + 1 == minRevision {
-				// Update
+				// Update collection
 				let	(includedIDs, notIncludedIDs, lastRevision) = $0.update(updateInfos)
 
-				// Update
+				// Update database
 				self.databaseManager.updateCollection(name: $0.name, includedIDs: includedIDs,
 						notIncludedIDs: processNotIncluded ? notIncludedIDs : [], lastRevision: lastRevision)
 			} else {
@@ -904,7 +904,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 		// Bring up to date
 		let	(includedIDs, notIncludedIDs, lastRevision) = collection.bringUpToDate(bringUpToDateInfos)
 
-		// Update
+		// Update database
 		self.databaseManager.updateCollection(name: collection.name, includedIDs: includedIDs,
 				notIncludedIDs: notIncludedIDs, lastRevision: lastRevision)
 	}
@@ -925,28 +925,30 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 					:(_ key :String, _ documentBackingInfo :MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
 		// Bring up to date
 		let	index = autoreleasepool() { bringIndexUpToDate(name: name) }
-		let	documentType = index.documentType
 
 		// Iterate
-		iterateDocumentBackingInfos(documentType: documentType,
-				innerJoin: self.databaseManager.innerJoin(for: documentType, indexName: name),
+		iterateDocumentBackingInfos(documentType: index.documentType,
+				innerJoin: self.databaseManager.innerJoin(for: index.documentType, indexName: name),
 				where: self.databaseManager.where(forIndexKeys: keys))
 				{ proc(MDSSQLiteDatabaseManager.indexContentsKey(for: $1), $0) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func updateIndexes(for documentType :String, updateInfos :[MDSUpdateInfo<Int64>]) {
+		// Get indexes
+		guard let indexes = self.indexesByDocumentTypeMap.values(for: documentType) else { return }
+
 		// Setup
 		let	minRevision = updateInfos.min(by: { $0.revision < $1.revision })?.revision
 
-		// Iterate all indexes for this document type
-		self.indexesByDocumentTypeMap.values(for: documentType)?.forEach() {
+		// Iterate indexes
+		indexes.forEach() {
 			// Check revision state
 			if $0.lastRevision + 1 == minRevision {
-				// Update
+				// Update index
 				let	(keysInfos, lastRevision) = $0.update(updateInfos)
 
-				// Update
+				// Update database
 				self.databaseManager.updateIndex(name: $0.name, keysInfos: keysInfos, removedIDs: [],
 						lastRevision: lastRevision)
 			} else {
@@ -992,7 +994,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 		// Bring up to date
 		let	(keysInfos, lastRevision) = index.bringUpToDate(bringUpToDateInfos)
 
-		// Update
+		// Update database
 		self.databaseManager.updateIndex(name: index.name, keysInfos: keysInfos, removedIDs: [],
 				lastRevision: lastRevision)
 	}

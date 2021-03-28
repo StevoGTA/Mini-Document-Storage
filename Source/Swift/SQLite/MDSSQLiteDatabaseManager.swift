@@ -536,27 +536,6 @@ class MDSSQLiteDatabaseManager {
 	func note(documentType :String) { _ = documentTables(for: documentType) }
 
 	//------------------------------------------------------------------------------------------------------------------
-	func nextRevision(for documentType :String) -> Int {
-		// Compose next revision
-		let	nextRevision = (self.documentLastRevisionMap.value(for: documentType) ?? 0) + 1
-
-		// Check if in batch
-		if var batchInfo = self.batchInfoMap.value(for: Thread.current) {
-			// Update batch info
-			batchInfo.documentLastRevisionTypesNeedingWrite.insert(documentType)
-			self.batchInfoMap.set(batchInfo, for: Thread.current)
-		} else {
-			// Update
-			DocumentsTable.set(nextRevision: nextRevision, for: documentType, in: self.documentsMasterTable)
-		}
-
-		// Store
-		self.documentLastRevisionMap.set(nextRevision, for: documentType)
-
-		return nextRevision
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
 	func batch(_ proc :() -> Void) {
 		// Setup
 		self.batchInfoMap.set(BatchInfo(), for: Thread.current)
@@ -826,8 +805,9 @@ class MDSSQLiteDatabaseManager {
 	func `where`(forDocumentRevision revision :Int, comparison :String = ">", includeInactive :Bool) -> SQLiteWhere {
 		// Return SQLiteWhere
 		return includeInactive ?
-			SQLiteWhere(tableColumn: DocumentTypeInfoTable.revisionTableColumn, comparison: ">", value: revision) :
-			SQLiteWhere(tableColumn: DocumentTypeInfoTable.revisionTableColumn, comparison: ">", value: revision)
+			SQLiteWhere(tableColumn: DocumentTypeInfoTable.revisionTableColumn, comparison: comparison,
+							value: revision) :
+			SQLiteWhere(tableColumn: DocumentTypeInfoTable.revisionTableColumn, comparison: comparison, value: revision)
 					.and(tableColumn: DocumentTypeInfoTable.activeTableColumn, value: 1)
 	}
 
@@ -862,5 +842,26 @@ class MDSSQLiteDatabaseManager {
 
 			return (infoTable, contentTable)
 		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func nextRevision(for documentType :String) -> Int {
+		// Compose next revision
+		let	nextRevision = (self.documentLastRevisionMap.value(for: documentType) ?? 0) + 1
+
+		// Check if in batch
+		if var batchInfo = self.batchInfoMap.value(for: Thread.current) {
+			// Update batch info
+			batchInfo.documentLastRevisionTypesNeedingWrite.insert(documentType)
+			self.batchInfoMap.set(batchInfo, for: Thread.current)
+		} else {
+			// Update
+			DocumentsTable.set(nextRevision: nextRevision, for: documentType, in: self.documentsMasterTable)
+		}
+
+		// Store
+		self.documentLastRevisionMap.set(nextRevision, for: documentType)
+
+		return nextRevision
 	}
 }
