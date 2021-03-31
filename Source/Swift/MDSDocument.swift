@@ -63,19 +63,14 @@ extension MDSDocument {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func data(for key :String) -> Data? {
-		// Retrieve Base64-encoded string
-		guard let string = self.documentStorage.value(for: key, in: self) as? String else { return nil }
-
-		return Data(base64Encoded: string)
-	}
+	public func data(for key :String) -> Data? { self.documentStorage.data(for: key, in: self) }
 	@discardableResult public func set(_ value :Data?, for key :String) -> Data? {
 		// Check if different
 		let	previousValue = data(for: key)
 		guard value != previousValue else { return value }
 
 		// Set value
-		self.documentStorage.set(value?.base64EncodedString(), for: key, in: self)
+		self.documentStorage.set(value, for: key, in: self)
 
 		return previousValue
 	}

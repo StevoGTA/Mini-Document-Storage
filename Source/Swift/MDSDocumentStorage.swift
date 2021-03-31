@@ -35,6 +35,7 @@ public protocol MDSDocumentStorage : class {
 	func modificationDate(for document :MDSDocument) -> Date
 
 	func value(for property :String, in document :MDSDocument) -> Any?
+	func data(for property :String, in document :MDSDocument) -> Data?
 	func date(for property :String, in document :MDSDocument) -> Date?
 	func set<T : MDSDocument>(_ value :Any?, for property :String, in document :T)
 

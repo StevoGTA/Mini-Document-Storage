@@ -226,6 +226,14 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func data(for property :String, in document :MDSDocument) -> Data? {
+		// Retrieve Base64-encoded string
+		guard let string = value(for: property, in: document) as? String else { return nil }
+
+		return Data(base64Encoded: string)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func date(for property :String, in document :MDSDocument) -> Date? {
 		// Return date
 		return Date(fromRFC3339Extended: value(for: property, in: document) as? String)
@@ -235,7 +243,10 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	public func set<T : MDSDocument>(_ value :Any?, for property :String, in document :T) {
 		// Transform
 		let	valueUse :Any?
-		if let date = value as? Date {
+		if let data = value as? Data {
+			// Data
+			valueUse = data.base64EncodedString()
+		} else if let date = value as? Date {
 			// Date
 			valueUse = date.rfc3339Extended
 		} else {

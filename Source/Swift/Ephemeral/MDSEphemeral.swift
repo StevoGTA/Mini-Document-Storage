@@ -184,6 +184,12 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func data(for property :String, in document :MDSDocument) -> Data? {
+		// Return data
+		return value(for: property, in: document) as? Data
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func date(for property :String, in document :MDSDocument) -> Date? {
 		// Return date
 		return value(for: property, in: document) as? Date
