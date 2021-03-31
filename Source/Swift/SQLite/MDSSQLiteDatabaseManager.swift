@@ -46,6 +46,7 @@ class MDSSQLiteDatabaseManager {
 	private	typealias IndexUpdateInfo =
 						(keysInfos :[(keys :[String], value :Int64)], removedIDs :[Int64], lastRevision :Int)
 
+	// MARK: BatchInfo
 	private struct BatchInfo {
 
 		// MARK: Properties
