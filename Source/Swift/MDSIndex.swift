@@ -57,11 +57,10 @@ class MDSIndexSpecialized<T : MDSDocument> : MDSIndex {
 		var	keysInfos = [(keys :[String], value :U)]()
 		updateInfos.forEach() {
 			// Check if there is something to do
-			guard ($0.changedProperties == nil) || !self.relevantProperties.intersection($0.changedProperties!).isEmpty
-					else { return }
-
-			// Update keys info
-			keysInfos.append((self.keysProc($0.document as! T), $0.value))
+			if ($0.changedProperties == nil) || !self.relevantProperties.intersection($0.changedProperties!).isEmpty {
+				// Update keys info
+				keysInfos.append((self.keysProc($0.document as! T), $0.value))
+			}
 
 			// Update last revision
 			self.lastRevision = max(self.lastRevision, $0.revision)

@@ -58,16 +58,15 @@ class MDSCollectionSpecialized<T : MDSDocument> : MDSCollection {
 		var	notIncludedValues = [U]()
 		updateInfos.forEach() {
 			// Check if there is something to do
-			guard ($0.changedProperties == nil) || !self.relevantProperties.intersection($0.changedProperties!).isEmpty
-					else { return }
-
-			// Query
-			if self.isIncludedProc($0.document as! T) {
-				// Included
-				includedValues.append($0.value)
-			} else {
-				// Not included
-				notIncludedValues.append($0.value)
+			if ($0.changedProperties == nil) || !self.relevantProperties.intersection($0.changedProperties!).isEmpty {
+				// Query
+				if self.isIncludedProc($0.document as! T) {
+					// Included
+					includedValues.append($0.value)
+				} else {
+					// Not included
+					notIncludedValues.append($0.value)
+				}
 			}
 
 			// Update last revision

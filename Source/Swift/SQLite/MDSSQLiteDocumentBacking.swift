@@ -39,10 +39,10 @@ class MDSSQLiteDocumentBacking {
 
 	//------------------------------------------------------------------------------------------------------------------
 	init(documentType :String, documentID :String, creationDate :Date? = nil, modificationDate :Date? = nil,
-			propertyMap :[String : Any], with sqliteCore :MDSSQLiteCore) {
+			propertyMap :[String : Any], with databaseManager :MDSSQLiteDatabaseManager) {
 		// Store
 		let	(id, revision, creationDate, modificationDate) =
-					sqliteCore.new(documentType: documentType, documentID: documentID, creationDate: creationDate,
+					databaseManager.new(documentType: documentType, documentID: documentID, creationDate: creationDate,
 							modificationDate: modificationDate, propertyMap: propertyMap)
 
 		// Store
@@ -60,16 +60,18 @@ class MDSSQLiteDocumentBacking {
 	func value(for property :String) -> Any? { self.propertiesLock.read() { self.propertyMapInternal[property] } }
 
 	//------------------------------------------------------------------------------------------------------------------
-	func set(_ value :Any?, for property :String, documentType :String, with sqliteCore :MDSSQLiteCore,
+	func set(_ value :Any?, for property :String, documentType :String, with databaseManager :MDSSQLiteDatabaseManager,
 			commitChange :Bool = true) {
 		// Update
 		update(documentType: documentType, updatedPropertyMap: (value != nil) ? [property : value!] : nil,
-				removedProperties: (value != nil) ? nil : Set([property]), with: sqliteCore, commitChange: commitChange)
+				removedProperties: (value != nil) ? nil : Set([property]), with: databaseManager,
+				commitChange: commitChange)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func update(documentType :String, updatedPropertyMap :[String : Any]? = nil,
-			removedProperties :Set<String>? = nil, with sqliteCore :MDSSQLiteCore, commitChange :Bool = true) {
+			removedProperties :Set<String>? = nil, with databaseManager :MDSSQLiteDatabaseManager,
+			commitChange :Bool = true) {
 		// Update
 		self.propertiesLock.write() {
 			// Store
@@ -80,7 +82,7 @@ class MDSSQLiteDocumentBacking {
 			if commitChange {
 				// Get info
 				let	(revision, modificationDate) =
-							sqliteCore.update(documentType: documentType, id: self.id,
+							databaseManager.update(documentType: documentType, id: self.id,
 									propertyMap: self.propertyMapInternal)
 
 				// Store
