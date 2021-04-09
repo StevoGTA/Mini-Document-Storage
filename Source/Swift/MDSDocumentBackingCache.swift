@@ -13,7 +13,7 @@ import Foundation
 class MDSDocumentBackingCache<T> {
 
 	// MARK: Reference
-	class Reference<T> {
+	private class Reference<T> {
 
 		// MARK: Properties
 		let	documentBackingInfo :MDSDocumentBackingInfo<T>
@@ -21,7 +21,7 @@ class MDSDocumentBackingCache<T> {
 		var	lastReferencedDate :Date
 
 		// MARK: Lifecycle methods
-		//------------------------------------------------------------------------------------------------------------------
+		//--------------------------------------------------------------------------------------------------------------
 		init(documentBackingInfo :MDSDocumentBackingInfo<T>) {
 			// Store
 			self.documentBackingInfo = documentBackingInfo
@@ -31,15 +31,15 @@ class MDSDocumentBackingCache<T> {
 		}
 
 		// MARK: Instance methods
-		//------------------------------------------------------------------------------------------------------------------
+		//--------------------------------------------------------------------------------------------------------------
 		func noteWasReferenced() { self.lastReferencedDate = Date() }
 	}
 
 	// MARK: Properties
 	private	let	limit :Int
+	private	let	lock = ReadPreferringReadWriteLock()
 
-	private	var	lock = ReadPreferringReadWriteLock()
-	private	var	referenceMap = [/* document id */ String : Reference<T>]()
+	private	var	referenceMap = [/* Document ID */ String : Reference<T>]()
 	private	var	timer :Timer?
 
 	// MARK: Lifecycle methods
@@ -168,16 +168,17 @@ class MDSDocumentBackingCache<T> {
 							// Compare date
 // This is broken.  It's possible to miss a reference that needs to be removed simply because the order of dates
 //	seen is random.
-							if $0.lastReferencedDate < earliestReferencedDate {
-								// Update references to remove
-								referencesToRemove.append($0)
-								referencesToRemove.sort() { $0.lastReferencedDate < $1.lastReferencedDate }
-								if referencesToRemove.count > countToRemove {
-									// Pop the last
-									let	reference = referencesToRemove.popLast()!
-									earliestReferencedDate = reference.lastReferencedDate
-								}
-							}
+//							if $0.lastReferencedDate < earliestReferencedDate {
+//								// Update references to remove
+//								referencesToRemove.append($0)
+//								referencesToRemove.sort() { $0.lastReferencedDate < $1.lastReferencedDate }
+//								if referencesToRemove.count > countToRemove {
+//									// Pop the last
+//									let	reference = referencesToRemove.popLast()!
+//									earliestReferencedDate = reference.lastReferencedDate
+//								}
+//							}
+_ = $0
 						}
 
 						// Remove

@@ -29,20 +29,18 @@ class MDSBatchInfo<T> {
 		private(set)	var	removed = false
 
 		private			let	valueProc :ValueProc
-
-		private			var	lock = ReadPreferringReadWriteLock()
+		private			let	lock = ReadPreferringReadWriteLock()
 
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
 		init(documentType :String, reference :T?, creationDate :Date, modificationDate :Date,
 				valueProc :@escaping ValueProc) {
 			// Store
+			self.documentType = documentType
 			self.reference = reference
 			self.creationDate = creationDate
 
 			self.modificationDate = modificationDate
-
-			self.documentType = documentType
 
 			self.valueProc = valueProc
 		}
@@ -50,20 +48,20 @@ class MDSBatchInfo<T> {
 		// MARK: Instance methods
 		//--------------------------------------------------------------------------------------------------------------
 		func value(for property :String) -> Any? {
-			// Check for removed
+			// Check for document removed
 			if self.removed {
-				// Removed
+				// Document removed
 				return nil
 			} else if let (value, _) = self.lock.read({ () -> (value :Any?, removed :Bool)? in
 						// Check the deal
 						if self.removedProperties?.contains(property) ?? false {
-							// Removed
+							// Property removed
 							return (nil, true)
 						} else if let value = self.updatedPropertyMap?[property] {
-							// Have value
+							// Property updated
 							return (value, false)
 						} else {
-							// Neither have value nor removed
+							// Property neither removed nor updated
 							return nil
 						}
 					}) {
@@ -96,7 +94,7 @@ class MDSBatchInfo<T> {
 					self.updatedPropertyMap?[property] = nil
 
 					if self.removedProperties != nil {
-						// Have removed propertys
+						// Have removed properties
 						self.removedProperties!.insert(property)
 					} else {
 						// First removed property
@@ -114,8 +112,8 @@ class MDSBatchInfo<T> {
 	}
 
 	// MARK: Properties
-	private	var	documentInfoMap = [/* storable document id */ String : DocumentInfo<T>]()
-	private	var	documentInfoMapLock = ReadPreferringReadWriteLock()
+	private	var	documentInfoMap = [/* Document ID */ String : DocumentInfo<T>]()
+	private	let	documentInfoMapLock = ReadPreferringReadWriteLock()
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -134,25 +132,27 @@ class MDSBatchInfo<T> {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func documentInfo(for documentID :String) -> DocumentInfo<T>? {
-		// Return document
+		// Return document info
 		return self.documentInfoMapLock.read() { self.documentInfoMap[documentID] }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func forEach(
-			_ proc :(_ documentType :String, _ documentInfosMap :[/* id */ String : DocumentInfo<T>]) throws -> Void)
+			_ proc
+					:(_ documentType :String, _ documentInfoMap :[/* Document ID */ String : DocumentInfo<T>]) throws ->
+							Void)
 			rethrows {
 		// Collate
-		var	map = [/* document type */ String : [/* id */ String : DocumentInfo<T>]]()
+		var	map = [/* Documewnt Type */ String : [/* Document ID */ String : DocumentInfo<T>]]()
 		self.documentInfoMapLock.read() {
 			// Collect info
 			self.documentInfoMap.forEach() {
 				// Retrieve already collated batch document infos
-				if var documentInfosMap = map[$0.value.documentType] {
+				if var documentInfoMap = map[$0.value.documentType] {
 					// Next document of this type
 					map[$0.value.documentType] = nil
-					documentInfosMap[$0.key] = $0.value
-					map[$0.value.documentType] = documentInfosMap
+					documentInfoMap[$0.key] = $0.value
+					map[$0.value.documentType] = documentInfoMap
 				} else {
 					// First document of this type
 					map[$0.value.documentType] = [$0.key : $0.value]

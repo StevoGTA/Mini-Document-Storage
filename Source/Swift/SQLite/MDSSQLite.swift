@@ -29,32 +29,31 @@ extension MDSSQLiteError : LocalizedError {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSSQLiteDocumentInfo
-struct MDSSQLiteDocumentInfo {
-
-	// MARK: Properties
-	let	documentType :String
-	let	documentID :String
-	let	creationDate :Date?
-	let	modificationDate :Date?
-	let	propertyMap :[String : Any]
-
-	// Lifecycle methods
-	//------------------------------------------------------------------------------------------------------------------
-	init(documentType :String, documentID :String, creationDate :Date? = nil, modificationDate :Date? = nil,
-			propertyMap :[String : Any]) {
-		// Store
-		self.documentType = documentType
-		self.documentID = documentID
-		self.creationDate = creationDate
-		self.modificationDate = modificationDate
-		self.propertyMap = propertyMap
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSSQLite
 public class MDSSQLite : MDSDocumentStorageServerHandler {
+
+	// MARK: DocumentInfo
+	struct DocumentInfo {
+
+		// MARK: Properties
+		let	documentType :String
+		let	documentID :String
+		let	creationDate :Date?
+		let	modificationDate :Date?
+		let	propertyMap :[String : Any]
+
+		// Lifecycle methods
+		//------------------------------------------------------------------------------------------------------------------
+		init(documentType :String, documentID :String, creationDate :Date? = nil, modificationDate :Date? = nil,
+				propertyMap :[String : Any]) {
+			// Store
+			self.documentType = documentType
+			self.documentID = documentID
+			self.creationDate = creationDate
+			self.modificationDate = modificationDate
+			self.propertyMap = propertyMap
+		}
+	}
 
 	// MARK: Properties
 	public	var	id :String = UUID().uuidString
@@ -80,10 +79,10 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	public init(in folder :Folder, with name :String = "database") throws {
 		// Setup database
-		let sqliteDatabase = try SQLiteDatabase(in: folder, with: name)
+		let database = try SQLiteDatabase(in: folder, with: name)
 
 		// Setup core
-		self.databaseManager = MDSSQLiteDatabaseManager(sqliteDatabase: sqliteDatabase)
+		self.databaseManager = MDSSQLiteDatabaseManager(database: database)
 	}
 
 	// MARK: MDSDocumentStorage methods
@@ -326,7 +325,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			// Iterate document backing infos
 			iterateDocumentBackingInfos(documentType: T.documentType,
 					innerJoin: self.databaseManager.innerJoin(for: T.documentType),
-					where: self.databaseManager.where(forDocumentActive: 1))
+					where: self.databaseManager.where(forDocumentActive: true))
 					{ documentIDs.append($0.documentID); _ = $1 }
 		}
 
@@ -717,7 +716,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
 	@discardableResult
-	func documentBackingMap(for documentInfos :[MDSSQLiteDocumentInfo]) -> [String : MDSSQLiteDocumentBacking] {
+	func documentBackingMap(for documentInfos :[DocumentInfo]) -> [String : MDSSQLiteDocumentBacking] {
 		// Setup
 		var	documentBackingMap = [String : MDSSQLiteDocumentBacking]()
 
