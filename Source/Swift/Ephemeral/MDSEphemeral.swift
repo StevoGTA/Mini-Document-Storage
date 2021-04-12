@@ -13,7 +13,7 @@ import Foundation
 public class MDSEphemeral : MDSDocumentStorageServerHandler {
 
 	// MARK: Types
-	class DocumentBacking {
+	private class DocumentBacking {
 
 		// MARK: Properties
 		let	creationDate :Date
@@ -21,7 +21,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		var	revision :Int
 		var	modificationDate :Date
 		var	propertyMap :[String : Any]
-		var	active :Bool
+		var	active = true
 
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
@@ -32,7 +32,6 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			self.revision = revision
 			self.modificationDate = modificationDate
 			self.propertyMap = propertyMap
-			self.active = true
 		}
 
 		// MARK: Instance methods
@@ -215,7 +214,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 									self.documentMapsLock.read()
 										{ self.documentBackingByIDMap[document.id]?.propertyMap[property] }
 								})
-						.set(value, for: property)
+					.set(value, for: property)
 			}
 		} else if var propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: document.id) {
 			// Being created
@@ -223,14 +222,16 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			self.documentsBeingCreatedPropertyMapMap.set(propertyMap, for: document.id)
 		} else {
 			// Update document
-			var	documentBacking :DocumentBacking!
-			self.documentMapsLock.write() {
-				// Setup
-				documentBacking = self.documentBackingByIDMap[document.id]!
+			let	documentBacking :DocumentBacking =
+						self.documentMapsLock.write() {
+							// Setup
+							let	documentBacking = self.documentBackingByIDMap[document.id]!
 
-				// Update
-				documentBacking.propertyMap[property] = value
-			}
+							// Update
+							documentBacking.propertyMap[property] = value
+
+							return documentBacking
+						}
 
 			// Update collections and indexes
 			let	updateInfos :[MDSUpdateInfo<String>] =
@@ -259,7 +260,8 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 				// Don't have document in batch
 				let	date = Date()
 				batchInfo.addDocument(documentType: documentType, documentID: document.id, reference: [:],
-						creationDate: date, modificationDate: date).remove()
+						creationDate: date, modificationDate: date)
+					.remove()
 			}
 		} else {
 			// Not in batch
@@ -279,12 +281,12 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		// Collect document IDs
 		let	documentIDs =
 					self.documentMapsLock.read() {
-						// Return ids filtered by active
+						// Return IDs filtered by active
 						(self.documentIDsByTypeMap[T.documentType] ?? Set<String>())
 								.filter({ self.documentBackingByIDMap[$0]!.active })
 					}
 
-		// Call proc on each storable document
+		// Call proc on each document
 		documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) }
 	}
 
@@ -304,6 +306,9 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 
 		// Call proc
 		let	result = try proc()
+
+		// Remove
+		self.batchInfoMap.set(nil, for: Thread.current)
 
 		// Check result
 		if result == .commit {
@@ -352,8 +357,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 													modificationDate: batchDocumentInfo.modificationDate,
 													propertyMap: batchDocumentInfo.updatedPropertyMap ?? [:])
 								self.documentBackingByIDMap[documentID] = documentBacking
-								self.documentIDsByTypeMap.appendSetValueElement(key: batchDocumentInfo.documentType,
-										value: documentID)
+								self.documentIDsByTypeMap.appendSetValueElement(key: documentType, value: documentID)
 
 								// Check if we have creation proc
 								if let creationProc = self.documentCreationProcMap.value(for: documentType) {
@@ -401,9 +405,6 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 				updateIndexes(for: documentType, updateInfos: updateInfos)
 			}
 		}
-
-		// Remove
-		self.batchInfoMap.set(nil, for: Thread.current)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -429,7 +430,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	public func queryCollectionDocumentCount(name :String) -> Int {
 		// Return count
-		return (self.collectionValuesMap.value(for: name) ?? Set<String>()).count
+		return self.collectionValuesMap.value(for: name)?.count ?? 0
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -464,14 +465,10 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		// Setup
 		guard let indexValues = self.indexValuesMap.value(for: name) else { return }
 
-		// Play nice
-		self.documentMapsLock.read() {
-			// Iterate keys
-			keys.forEach() {
-				// Retrieve documentID and verify we have a document backing for it
-				guard let documentID = indexValues[$0] else { return }
-				guard self.documentBackingByIDMap[documentID] != nil else { return }
-
+		// Iterate keys
+		keys.forEach() {
+			// Retrieve documentID
+			if let documentID = indexValues[$0] {
 				// Call proc
 				proc($0, T(id: documentID, documentStorage: self))
 			}
@@ -606,18 +603,20 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			let	(includedIDs, notIncludedIDs, _) = $0.update(updateInfos)
 
 			// Update storage
-			self.collectionValuesMap.update(for: $0.name)
-				{ ($0 ?? Set<String>()).subtracting(notIncludedIDs).union(includedIDs) }
+			self.collectionValuesMap.update(for: $0.name) {
+				// Compose updated values
+				let	updatedValues = ($0 ?? Set<String>()).subtracting(notIncludedIDs).union(includedIDs)
+
+				return !updatedValues.isEmpty ? updatedValues : nil
+			}
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func removeFromCollections(documentIDs :Set<String>) {
 		// Iterate all collections for this document type
-		self.collectionValuesMap.keys.forEach() {
-			// Remove document from this collection
-			self.collectionValuesMap.update(for: $0) { $0?.subtracting(documentIDs) }
-		}
+		self.collectionValuesMap.keys.forEach()
+			{ self.collectionValuesMap.update(for: $0, with: { $0?.subtracting(documentIDs) }) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -632,12 +631,12 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			let	documentIDs = Set<String>(keysInfos.map({ $0.value }))
 			self.indexValuesMap.update(for: $0.name) {
 				// Filter out document IDs included in update
-				var	updatedValues = ($0 ?? [:]).filter({ !documentIDs.contains($0.value) })
+				var	updatedValueInfo = ($0 ?? [:]).filter({ !documentIDs.contains($0.value) })
 
 				// Add/Update keys => document IDs
-				keysInfos.forEach() { keys, value in keys.forEach() { updatedValues[$0] = value } }
+				keysInfos.forEach() { keys, value in keys.forEach() { updatedValueInfo[$0] = value } }
 
-				return updatedValues
+				return !updatedValueInfo.isEmpty ? updatedValueInfo : nil
 			}
 		}
 	}
