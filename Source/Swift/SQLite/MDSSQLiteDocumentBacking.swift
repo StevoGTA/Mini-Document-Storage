@@ -21,7 +21,7 @@ class MDSSQLiteDocumentBacking {
 			var	active :Bool
 
 	private	var	propertyMapInternal :[String : Any]
-	private	var	propertiesLock = ReadPreferringReadWriteLock()
+	private	let	propertiesLock = ReadPreferringReadWriteLock()
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -40,7 +40,7 @@ class MDSSQLiteDocumentBacking {
 	//------------------------------------------------------------------------------------------------------------------
 	init(documentType :String, documentID :String, creationDate :Date? = nil, modificationDate :Date? = nil,
 			propertyMap :[String : Any], with databaseManager :MDSSQLiteDatabaseManager) {
-		// Store
+		// Setup
 		let	(id, revision, creationDate, modificationDate) =
 					databaseManager.new(documentType: documentType, documentID: documentID, creationDate: creationDate,
 							modificationDate: modificationDate, propertyMap: propertyMap)
