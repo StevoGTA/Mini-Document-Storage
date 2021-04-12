@@ -13,8 +13,7 @@
 #include "TMDSDocumentBackingCache.h"
 
 //----------------------------------------------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: - Types
+// MARK: Types
 
 typedef	TMDSBatchInfo<CMDSSQLiteDocumentBacking>						CMDSSQLiteBatchInfo;
 typedef	CMDSSQLiteBatchInfo::DocumentInfo<CMDSSQLiteDocumentBacking>	CMDSSQLiteBatchDocumentInfo;
@@ -987,28 +986,26 @@ void CMDSSQLite::set(const CString& property, const OI<CDictionary::Value>& valu
 						&documentBacking.getReference())
 				.set(property, valueUse);
 		}
+	} else {
+		// Check if being created
+		const	OR<CDictionary>	propertyMap = mInternals->mDocumentsBeingCreatedPropertyMapMap[documentID];
+		if (propertyMap.hasReference())
+			// Being created
+			propertyMap->set(property, value);
+		else {
+			// Update document
+			OR<CMDSSQLiteDocumentBacking>	documentBacking = mInternals->getDocumentBacking(documentType, documentID);
+			documentBacking->set(property, valueUse, documentType, mInternals->mDatabaseManager);
 
-		return;
-	}
+			// Update collections and indexes
+			CMDSSQLiteUpdateInfo	updateInfo(document, documentBacking->getRevision(), documentBacking->getID(),
+											TSet<CString>(property));
+			mInternals->updateCollections(documentType, TSArray<CMDSSQLiteUpdateInfo>(updateInfo));
+			mInternals->updateIndexes(documentType, TSArray<CMDSSQLiteUpdateInfo>(updateInfo));
 
-	// Check if being created
-	const	OR<CDictionary>	propertyMap = mInternals->mDocumentsBeingCreatedPropertyMapMap[documentID];
-	if (propertyMap.hasReference())
-		// Being created
-		propertyMap->set(property, value);
-	else {
-		// Update document
-		OR<CMDSSQLiteDocumentBacking>	documentBacking = mInternals->getDocumentBacking(documentType, documentID);
-		documentBacking->set(property, valueUse, documentType, mInternals->mDatabaseManager);
-
-		// Update collections and indexes
-		CMDSSQLiteUpdateInfo	updateInfo(document, documentBacking->getRevision(), documentBacking->getID(),
-										TSet<CString>(property));
-		mInternals->updateCollections(documentType, TSArray<CMDSSQLiteUpdateInfo>(updateInfo));
-		mInternals->updateIndexes(documentType, TSArray<CMDSSQLiteUpdateInfo>(updateInfo));
-
-		// Call document changed procs
-		mInternals->notifyDocumentChanged(documentType, document, CMDSDocument::kUpdated);
+			// Call document changed procs
+			mInternals->notifyDocumentChanged(documentType, document, CMDSDocument::kUpdated);
+		}
 	}
 }
 

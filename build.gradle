@@ -1,0 +1,28 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+
+android {
+    compileSdkVersion 30
+    buildToolsVersion '30.0.2'
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    defaultConfig {
+        versionCode = 1
+        versionName = '1.0'
+        targetSdkVersion 30
+        minSdkVersion 22
+    }
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+	ndkVersion '21.3.6528147'
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'commons-codec:commons-codec:1.13'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation project(path: ':AndroidToolbox')
+}
