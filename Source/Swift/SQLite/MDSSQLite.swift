@@ -81,7 +81,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 		// Setup database
 		let database = try SQLiteDatabase(in: folder, with: name)
 
-		// Setup core
+		// Setup database manager
 		self.databaseManager = MDSSQLiteDatabaseManager(database: database)
 	}
 
@@ -107,9 +107,9 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
 			// In batch
-			let	now = Date()
-			_ = batchInfo.addDocument(documentType: T.documentType, documentID: documentID, creationDate: now,
-					modificationDate: now)
+			let	date = Date()
+			_ = batchInfo.addDocument(documentType: T.documentType, documentID: documentID, creationDate: date,
+					modificationDate: date)
 
 			return creationProc(documentID, self)
 		} else {
@@ -253,9 +253,9 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			} else {
 				// Don't have document in batch
 				let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
-				let	now = Date()
 				batchInfo.addDocument(documentType: documentType, documentID: documentID, reference: documentBacking,
-								creationDate: now, modificationDate: now,
+								creationDate: documentBacking.creationDate,
+								modificationDate: documentBacking.modificationDate,
 								valueProc: { documentBacking.value(for: $0) })
 						.set(valueUse, for: property)
 			}
@@ -296,7 +296,8 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 				// Don't have document in batch
 				let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
 				batchInfo.addDocument(documentType: documentType, documentID: documentID, reference: documentBacking,
-						creationDate: Date(), modificationDate: Date()).remove()
+						creationDate: Date(), modificationDate: Date())
+					.remove()
 			}
 		} else {
 			// Not in batch
@@ -357,6 +358,9 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			// Call proc
 			result = try proc()
 		}
+
+		// Remove
+		self.batchInfoMap.set(nil, for: Thread.current)
 
 		// Check result
 		if result == .commit {
@@ -458,9 +462,6 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 				}
 			}
 		}
-
-		// Remove
-		self.batchInfoMap.set(nil, for: Thread.current)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -501,9 +502,11 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func iterateCollection<T : MDSDocument>(name :String, proc :(_ document : T) -> Void) {
-		// Iterate
+		// Collect document IDs
 		var	documentIDs = [String]()
 		autoreleasepool() { iterateCollection(name: name, with: { documentIDs.append($0.documentID) }) }
+
+		// Iterate document IDs
 		autoreleasepool() { documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) } }
 	}
 
@@ -538,9 +541,11 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	public func iterateIndex<T : MDSDocument>(name :String, keys :[String],
 			proc :(_ key :String, _ document :T) -> Void) {
-		// Iterate
+		// Compose map
 		var	documentIDMap = [/* Key */ String : /* String */ String]()
 		autoreleasepool() { iterateIndex(name: name, keys: keys, with: { documentIDMap[$0] = $1.documentID }) }
+
+		// Iterate map
 		autoreleasepool() { documentIDMap.forEach() { proc($0.key, T(id: $0.value, documentStorage: self)) } }
 	}
 
@@ -765,12 +770,12 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	// MARK: Private methods
 	//------------------------------------------------------------------------------------------------------------------
 	private func documentBacking(documentType :String, documentID :String) -> MDSSQLiteDocumentBacking? {
-		// Try to retrieve stored document
+		// Try to retrieve from cache
 		if let documentBacking = self.documentBackingCache.documentBacking(for: documentID) {
 			// Have document
 			return documentBacking
 		} else {
-			// Try to retrieve document backing
+			// Try to retrieve from database
 			var	documentBackingInfo :MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>?
 			iterateDocumentBackingInfos(documentType: documentType, documentIDs: [documentID])
 					{ documentBackingInfo = $0 }
@@ -1013,7 +1018,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	private func removeFromIndexes(for documentType :String, documentBackingIDs :[Int64]) {
 		// Iterate all indexes for this document type
 		self.indexesByDocumentTypeMap.values(for: documentType)?.forEach() {
-			// Update collection
+			// Update index
 			self.databaseManager.updateIndex(name: $0.name, keysInfos: [], removedIDs: documentBackingIDs,
 					lastRevision: $0.lastRevision)
 		}
