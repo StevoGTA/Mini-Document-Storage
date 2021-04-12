@@ -50,8 +50,6 @@ template <typename T> class TMDSIndex {
 									{ return mName; }
 		const	CString&		getDocumentType() const
 									{ return mDocumentType; }
-//		const	TSet<CString>&	getRelevantProperties() const
-//									{ return mRelevantProperties; }
 				UInt32			getLastRevision() const
 									{ return mLastRevision; }
 

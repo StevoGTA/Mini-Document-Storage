@@ -53,19 +53,19 @@ template <typename T> class TMDSBatchInfo {
 													// Setup
 													OI<CDictionary::Value>	value;
 
-													// Check for removed
+													// Check for document removed
 													if (mRemoved)
-														// Removed
+														// Document removed
 														return value;
 
 													// Check for value
 													bool	returnValue = false;
 													mLock.lockForReading();
 													if (mRemovedProperties.contains(property))
-														// Removed
+														// Property removed
 														returnValue = true;
 													else if (mUpdatedPropertyMap.contains(property)) {
-														// Have updated value
+														// Property updated
 														value =
 																OI<CDictionary::Value>(
 																		mUpdatedPropertyMap.getValue(property));
@@ -150,7 +150,7 @@ template <typename T> class TMDSBatchInfo {
 											modificationUniversalTime, nil, nil); }
 		OR<DocumentInfo<T> >	getDocumentInfo(const CString& documentID) const
 									{
-										// Retrieve
+										// Get document info
 										mDocumentInfoMapLock.lockForReading();
 										OR<DocumentInfo<T> >	documentInfo = mDocumentInfoMap[documentID];
 										mDocumentInfoMapLock.unlockForReading();

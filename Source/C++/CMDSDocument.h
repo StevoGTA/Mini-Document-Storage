@@ -220,8 +220,6 @@ class CMDSDocument : public CHashable {
 						OV<SInt64>						getSInt64(const CString& property) const;
 						OV<SInt64>						set(const CString& property, const OV<SInt64>& value) const;
 
-// TODO: Set methods
-
 						OI<CString>						getString(const CString& property) const;
 						OI<CString>						set(const CString& property, const OR<CString>& value) const;
 

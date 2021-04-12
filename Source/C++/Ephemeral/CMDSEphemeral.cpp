@@ -820,7 +820,7 @@ void CMDSEphemeral::iterate(const CMDSDocument::Info& documentInfo, CMDSDocument
 
 	// Iterate document IDs
 	for (TIteratorS<CString> iterator = filteredDocumentIDs.getIterator(); iterator.hasValue(); iterator.advance()) {
-		// Create doc
+		// Create document
 		CMDSDocument*	document = documentInfo.create(*iterator, *((CMDSDocumentStorage*) this));
 
 		// Call proc
@@ -838,7 +838,7 @@ void CMDSEphemeral::iterate(const CMDSDocument::Info& documentInfo, const TArray
 {
 	// Iterate document IDs
 	for (TIteratorD<CString> iterator = documentIDs.getIterator(); iterator.hasValue(); iterator.advance()) {
-		// Create doc
+		// Create document
 		CMDSDocument*	document = documentInfo.create(*iterator, *((CMDSDocumentStorage*) this));
 
 		// Call proc
@@ -862,13 +862,13 @@ void CMDSEphemeral::batch(BatchProc batchProc, void* userData)
 	// Call proc
 	BatchResult	batchResult = batchProc(userData);
 
+	// Remove
+	mInternals->mBatchInfoMap.remove(CThread::getCurrentRefAsString());
+
 	// Check result
 	if (batchResult == kCommit)
 		// Iterate all document changes
 		batchInfo.iterate((CMDSEphemeralBatchDocumentInfo::MapProc) CMDSEphemeralInternals::batchMap, mInternals);
-
-	// Remove
-	mInternals->mBatchInfoMap.remove(CThread::getCurrentRefAsString());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1002,24 +1002,21 @@ void CMDSEphemeral::iterateIndex(const CString& name, const TArray<CString>& key
 	const	OR<TDictionary<CString> >	values = mInternals->mIndexValuesMap[name];
 	if (!values.hasReference()) return;
 
-	// Play nice
-	mInternals->mDocumentMapsLock.lockForReading();
+	// Iterate keys
 	for (TIteratorD<CString> iterator = keys.getIterator(); iterator.hasValue(); iterator.advance()) {
-		// Retrieve documentID and verify we have a document backing for it
+		// Retrieve documentID
 		const	OR<CString>	documentID = (*values)[*iterator];
-		if (!documentID.hasReference()) continue;
-		if (!mInternals->mDocumentBackingByIDMap.contains(*documentID)) continue;
+		if (documentID.hasReference()) {
+			// Create doc
+			CMDSDocument*	document = documentInfo.create(*iterator, *((CMDSDocumentStorage*) this));
 
-		// Create doc
-		CMDSDocument*	document = documentInfo.create(*iterator, *((CMDSDocumentStorage*) this));
+			// Call proc
+			keyProc(*iterator, *document, userData);
 
-		// Call proc
-		keyProc(*iterator, *document, userData);
-
-		// Cleanup
-		Delete(document);
+			// Cleanup
+			Delete(document);
+		}
 	}
-	mInternals->mDocumentMapsLock.unlockForReading();
 }
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -45,8 +45,6 @@ template <typename T, typename U> class TMDSCollection {
 									{ return mName; }
 		const	CString&		getDocumentType() const
 									{ return mDocumentType; }
-//		const	TSet<CString>&	getRelevantProperties() const
-//									{ return mRelevantProperties; }
 				UInt32			getLastRevision() const
 									{ return mLastRevision; }
 
