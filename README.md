@@ -1,5 +1,4 @@
 # Mini Document Storage
-Mini Document Storage Design
 
 ## Motivation
 
