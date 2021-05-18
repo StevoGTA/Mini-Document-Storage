@@ -267,7 +267,7 @@ extension MDSDocument {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSDocumentInstance
-public class MDSDocumentInstance : Hashable, MDSDocument {
+open class MDSDocumentInstance : Hashable, MDSDocument {
 
 	// MARK: Properties
 	class	public	var documentType: String { "" }
