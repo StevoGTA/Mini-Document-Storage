@@ -460,7 +460,8 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			}
 		}
 
-		// Remove
+		// Remove - must wait to do this until the batch has been fully processed in case processing Collections and
+		//	Indexes ends up referencing other documents that have not yet been committed.
 		self.batchInfoMap.set(nil, for: Thread.current)
 	}
 
