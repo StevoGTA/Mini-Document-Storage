@@ -184,7 +184,7 @@ class CMDSSQLiteInternals {
 																const CMDSDocument& document,
 																CMDSDocument::ChangeKind changeKind);
 
-		static	const	OI<CDictionary::Value>			getDocumentBackingPropertyValue(const CString& documentID,
+		static	const	OI<SValue>						getDocumentBackingPropertyValue(const CString& documentID,
 																const CString& property,
 																CMDSSQLiteDocumentBacking* documentBacking);
 		static			void							processExistingDocumentInfo(
@@ -542,7 +542,7 @@ void CMDSSQLiteInternals::notifyDocumentChanged(const CString& documentType, con
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-const OI<CDictionary::Value> CMDSSQLiteInternals::getDocumentBackingPropertyValue(const CString& documentID,
+const OI<SValue> CMDSSQLiteInternals::getDocumentBackingPropertyValue(const CString& documentID,
 		const CString& property, CMDSSQLiteDocumentBacking* documentBacking)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -641,7 +641,7 @@ OI<SError> CMDSSQLiteInternals::batchMap(const CString& documentType,
 		// Setup
 		const	CString&						documentID = iterator->mKey;
 		const	CMDSSQLiteBatchDocumentInfo&	batchDocumentInfo =
-														*((CMDSSQLiteBatchDocumentInfo*) iterator->mValue.getItemRef());
+														*((CMDSSQLiteBatchDocumentInfo*) iterator->mValue.getOpaque());
 		const	OI<CMDSSQLiteDocumentBacking>	existingDocumentBacking = batchDocumentInfo.getReference();
 
 
@@ -776,7 +776,7 @@ void CMDSSQLite::set(const TDictionary<CString>& info)
 	// Iterate all items
 	for (TIteratorS<CDictionary::Item> iterator = info.getIterator(); iterator.hasValue(); iterator.advance())
 		// Set value
-		mInternals->mDatabaseManager.set(iterator->mKey, OI<CDictionary::Value>(iterator->mValue));
+		mInternals->mDatabaseManager.set(iterator->mKey, OI<SValue>(iterator->mValue));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -786,7 +786,7 @@ void CMDSSQLite::remove(const TArray<CString>& keys)
 	// Iterate all keys
 	for (TIteratorD<CString> iterator = keys.getIterator(); iterator.hasValue(); iterator.advance())
 		// Remove value
-		mInternals->mDatabaseManager.set(*iterator, OI<CDictionary::Value>());
+		mInternals->mDatabaseManager.set(*iterator, OI<SValue>());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -901,7 +901,7 @@ UniversalTime CMDSSQLite::getModificationUniversalTime(const CMDSDocument& docum
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<CDictionary::Value> CMDSSQLite::getValue(const CString& property, const CMDSDocument& document) const
+OI<SValue> CMDSSQLite::getValue(const CString& property, const CMDSDocument& document) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check for batch
@@ -918,8 +918,7 @@ OI<CDictionary::Value> CMDSSQLite::getValue(const CString& property, const CMDSD
 	const	OR<CDictionary>	propertyMap = mInternals->mDocumentsBeingCreatedPropertyMapMap[document.getID()];
 	if (propertyMap.hasReference())
 		// Being created
-		return propertyMap->contains(property) ?
-				OI<CDictionary::Value>(propertyMap->getValue(property)) : OI<CDictionary::Value>();
+		return propertyMap->contains(property) ? OI<SValue>(propertyMap->getValue(property)) : OI<SValue>();
 	else
 		// "Idle"
 		return mInternals->getDocumentBacking(document.getDocumentType(), document.getID())->getValue(property);
@@ -930,7 +929,7 @@ OI<CData> CMDSSQLite::getData(const CString& property, const CMDSDocument& docum
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OI<CDictionary::Value>	value = getValue(property, document);
+	OI<SValue>	value = getValue(property, document);
 
 	return value.hasInstance() ? OI<CData>(new CData(value->getString())) : OI<CData>();
 }
@@ -940,14 +939,14 @@ OV<UniversalTime> CMDSSQLite::getUniversalTime(const CString& property, const CM
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OI<CDictionary::Value>	value = getValue(property, document);
+	OI<SValue>	value = getValue(property, document);
 
 	return value.hasInstance() ?
 			OV<UniversalTime>(SUniversalTime::getFromRFC3339Extended(value->getString())) : OV<UniversalTime>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::set(const CString& property, const OI<CDictionary::Value>& value, const CMDSDocument& document,
+void CMDSSQLite::set(const CString& property, const OI<SValue>& value, const CMDSDocument& document,
 		SetValueInfo setValueInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -956,13 +955,13 @@ void CMDSSQLite::set(const CString& property, const OI<CDictionary::Value>& valu
 	const	CString&	documentID = document.getID();
 
 	// Transform
-	OI<CDictionary::Value>	valueUse;
-	if (value.hasInstance() && (value->getType() == CDictionary::Value::kData))
+	OI<SValue>	valueUse;
+	if (value.hasInstance() && (value->getType() == SValue::kData))
 		// Data
-		valueUse = OI<CDictionary::Value>(value->getData().getBase64String());
+		valueUse = OI<SValue>(value->getData().getBase64String());
 	else if (value.hasInstance() && (setValueInfo == kUniversalTime))
 		// UniversalTime
-		valueUse = OI<CDictionary::Value>(SUniversalTime::getRFC339Extended(value->getFloat64()));
+		valueUse = OI<SValue>(SUniversalTime::getRFC339Extended(value->getFloat64()));
 	else
 		// Everything else
 		valueUse = value;
@@ -1166,13 +1165,13 @@ void CMDSSQLite::iterateAssociationTo(const CString& name, const CMDSDocument& t
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-CDictionary::Value CMDSSQLite::retrieveAssociationValue(const CString& name, const CString& fromDocumentType,
+SValue CMDSSQLite::retrieveAssociationValue(const CString& name, const CString& fromDocumentType,
 		const CMDSDocument& toDocument, const CString& summedCachedValueName)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	AssertFailUnimplemented();
 
-	return CDictionary::Value(false);
+	return SValue(false);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

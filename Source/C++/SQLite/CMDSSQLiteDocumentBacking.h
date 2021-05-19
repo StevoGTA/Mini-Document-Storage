@@ -16,28 +16,26 @@ class CMDSSQLiteDocumentBackingInternals;
 class CMDSSQLiteDocumentBacking {
 	// Methods
 	public:
-								// Lifecycle methods
-								CMDSSQLiteDocumentBacking(SInt64 id, UInt32 revision,
-										UniversalTime creationUniversalTime, UniversalTime modificationUniversalTime,
-										const CDictionary& propertyMap, bool active);
-								CMDSSQLiteDocumentBacking(const CString& documentType, const CString& documentID,
-										UniversalTime creationUniversalTime, UniversalTime modificationUniversalTime,
-										const CDictionary& propertyMap, CMDSSQLiteDatabaseManager& databaseManager);
-								~CMDSSQLiteDocumentBacking();
+						// Lifecycle methods
+						CMDSSQLiteDocumentBacking(SInt64 id, UInt32 revision, UniversalTime creationUniversalTime,
+								UniversalTime modificationUniversalTime, const CDictionary& propertyMap, bool active);
+						CMDSSQLiteDocumentBacking(const CString& documentType, const CString& documentID,
+								UniversalTime creationUniversalTime, UniversalTime modificationUniversalTime,
+								const CDictionary& propertyMap, CMDSSQLiteDatabaseManager& databaseManager);
+						~CMDSSQLiteDocumentBacking();
 
-								// Instance methods
-		SInt64					getID() const;
-		UInt32					getRevision() const;
-		UniversalTime			getCreationUniversalTime() const;
-		UniversalTime			getModificationUniversalTime() const;
+						// Instance methods
+		SInt64			getID() const;
+		UInt32			getRevision() const;
+		UniversalTime	getCreationUniversalTime() const;
+		UniversalTime	getModificationUniversalTime() const;
 
-		OI<CDictionary::Value>	getValue(const CString& property) const;
-		void					set(const CString& property, const OI<CDictionary::Value>& value,
-										const CString& documentType, CMDSSQLiteDatabaseManager& databaseManager,
-										bool commitChange = true);
-		void					update(const CString& documentType, const CDictionary& updatedPropertyMap,
-										const TSet<CString>& removedProperties,
-										CMDSSQLiteDatabaseManager& databaseManager, bool commitChange = true);
+		OI<SValue>		getValue(const CString& property) const;
+		void			set(const CString& property, const OI<SValue>& value, const CString& documentType,
+								CMDSSQLiteDatabaseManager& databaseManager, bool commitChange = true);
+		void			update(const CString& documentType, const CDictionary& updatedPropertyMap,
+								const TSet<CString>& removedProperties, CMDSSQLiteDatabaseManager& databaseManager,
+								bool commitChange = true);
 
 	// Properties
 	private:

@@ -78,7 +78,7 @@ void CMDSDocumentStorage::iterateAssociationTo(const CMDSDocument::Info& fromDoc
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-CDictionary::Value CMDSDocumentStorage::retrieveAssociationValue(const CMDSDocument::Info& fromDocumentInfo,
+SValue CMDSDocumentStorage::retrieveAssociationValue(const CMDSDocument::Info& fromDocumentInfo,
 		const CMDSDocument& toDocument, const CString& summedCachedValueName)
 //----------------------------------------------------------------------------------------------------------------------
 {

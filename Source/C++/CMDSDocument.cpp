@@ -75,8 +75,8 @@ OI<TArray<CString> > CMDSDocument::getArrayOfStrings(const CString& property) co
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OI<CDictionary::Value>	value = mInternals->mDocumentStorage.getValue(property, *this);
-	AssertFailIf(value.hasInstance() && (value->getType() != CDictionary::Value::kArrayOfStrings));
+	OI<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	AssertFailIf(value.hasInstance() && (value->getType() != SValue::kArrayOfStrings));
 
 	return value.hasInstance() ? OI<TArray<CString> >(value->getArrayOfStrings()) : OI<TArray<CString> >();
 }
@@ -86,8 +86,7 @@ void CMDSDocument::set(const CString& property, const OR<TArray<CString> >& valu
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Set value
-	mInternals->mDocumentStorage.set(property, value.hasReference() ?
-			OI<CDictionary::Value>(*value) : OI<CDictionary::Value>(), *this);
+	mInternals->mDocumentStorage.set(property, value.hasReference() ? OI<SValue>(*value) : OI<SValue>(), *this);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -95,8 +94,8 @@ OV<bool> CMDSDocument::getBool(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OI<CDictionary::Value>	value = mInternals->mDocumentStorage.getValue(property, *this);
-	AssertFailIf(value.hasInstance() && (value->getType() != CDictionary::Value::kBool));
+	OI<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	AssertFailIf(value.hasInstance() && (value->getType() != SValue::kBool));
 
 	return value.hasInstance() ? OV<bool>(value->getBool()) : OV<bool>();
 }
@@ -109,8 +108,7 @@ OV<bool> CMDSDocument::set(const CString& property, const OV<bool>& value) const
 	OV<bool>	previousValue = getBool(property);
 	if (value != previousValue)
 		// Set value
-		mInternals->mDocumentStorage.set(property,
-				value.hasValue() ? OI<CDictionary::Value>(*value) : OI<CDictionary::Value>(), *this);
+		mInternals->mDocumentStorage.set(property, value.hasValue() ? OI<SValue>(*value) : OI<SValue>(), *this);
 
 	return previousValue;
 }
@@ -131,8 +129,7 @@ OI<CData> CMDSDocument::set(const CString& property, const OR<CData>& value) con
 	if ((value.hasReference() != previousValue.hasInstance()) ||
 			(value.hasReference() && (*value != *previousValue)))
 		// Set value
-		mInternals->mDocumentStorage.set(property,
-				value.hasReference() ? OI<CDictionary::Value>(*value) : OI<CDictionary::Value>(), *this);
+		mInternals->mDocumentStorage.set(property, value.hasReference() ? OI<SValue>(*value) : OI<SValue>(), *this);
 
 	return previousValue;
 }
@@ -142,8 +139,8 @@ OI<CDictionary> CMDSDocument::getDictionary(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OI<CDictionary::Value>	value = mInternals->mDocumentStorage.getValue(property, *this);
-	AssertFailIf(value.hasInstance() && (value->getType() != CDictionary::Value::kDictionary));
+	OI<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	AssertFailIf(value.hasInstance() && (value->getType() != SValue::kDictionary));
 
 	return value.hasInstance() ? OI<CDictionary>(value->getDictionary()) : OI<CDictionary>();
 }
@@ -153,8 +150,7 @@ void CMDSDocument::set(const CString& property, const OR<CDictionary>& value) co
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Set value
-	mInternals->mDocumentStorage.set(property,
-			value.hasReference() ? OI<CDictionary::Value>(*value) : OI<CDictionary::Value>(), *this);
+	mInternals->mDocumentStorage.set(property, value.hasReference() ? OI<SValue>(*value) : OI<SValue>(), *this);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -162,8 +158,8 @@ OV<Float64> CMDSDocument::getFloat64(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OI<CDictionary::Value>	value = mInternals->mDocumentStorage.getValue(property, *this);
-	AssertFailIf(value.hasInstance() && (value->getType() != CDictionary::Value::kFloat64));
+	OI<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	AssertFailIf(value.hasInstance() && (value->getType() != SValue::kFloat64));
 
 	return value.hasInstance() ? OV<Float64>(value->getFloat64()) : OV<Float64>();
 }
@@ -176,8 +172,7 @@ OV<Float64> CMDSDocument::set(const CString& property, const OV<Float64>& value)
 	OV<Float64>	previousValue = getFloat64(property);
 	if (value != previousValue)
 		// Set value
-		mInternals->mDocumentStorage.set(property,
-				value.hasValue() ? OI<CDictionary::Value>(*value) : OI<CDictionary::Value>(), *this);
+		mInternals->mDocumentStorage.set(property, value.hasValue() ? OI<SValue>(*value) : OI<SValue>(), *this);
 
 	return previousValue;
 }
@@ -187,8 +182,8 @@ OV<SInt32> CMDSDocument::getSInt32(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OI<CDictionary::Value>	value = mInternals->mDocumentStorage.getValue(property, *this);
-	AssertFailIf(value.hasInstance() && (value->getType() != CDictionary::Value::kSInt32));
+	OI<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	AssertFailIf(value.hasInstance() && (value->getType() != SValue::kSInt32));
 
 	return value.hasInstance() ? OV<SInt32>(value->getSInt32()) : OV<SInt32>();
 }
@@ -201,8 +196,7 @@ OV<SInt32> CMDSDocument::set(const CString& property, const OV<SInt32>& value) c
 	OV<SInt32>	previousValue = getSInt32(property);
 	if (value != previousValue)
 		// Set value
-		mInternals->mDocumentStorage.set(property,
-				value.hasValue() ? OI<CDictionary::Value>(*value) : OI<CDictionary::Value>(), *this);
+		mInternals->mDocumentStorage.set(property, value.hasValue() ? OI<SValue>(*value) : OI<SValue>(), *this);
 
 	return previousValue;
 }
@@ -212,8 +206,8 @@ OV<SInt64> CMDSDocument::getSInt64(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OI<CDictionary::Value>	value = mInternals->mDocumentStorage.getValue(property, *this);
-	AssertFailIf(value.hasInstance() && (value->getType() != CDictionary::Value::kSInt64));
+	OI<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	AssertFailIf(value.hasInstance() && (value->getType() != SValue::kSInt64));
 
 	return value.hasInstance() ? OV<SInt64>(value->getSInt64()) : OV<SInt64>();
 }
@@ -226,8 +220,7 @@ OV<SInt64> CMDSDocument::set(const CString& property, const OV<SInt64>& value) c
 	OV<SInt64>	previousValue = getSInt64(property);
 	if (value != previousValue)
 		// Set value
-		mInternals->mDocumentStorage.set(property,
-				value.hasValue() ? OI<CDictionary::Value>(*value) : OI<CDictionary::Value>(), *this);
+		mInternals->mDocumentStorage.set(property, value.hasValue() ? OI<SValue>(*value) : OI<SValue>(), *this);
 
 	return previousValue;
 }
@@ -237,8 +230,8 @@ OI<CString> CMDSDocument::getString(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OI<CDictionary::Value>	value = mInternals->mDocumentStorage.getValue(property, *this);
-	AssertFailIf(value.hasInstance() && (value->getType() != CDictionary::Value::kString));
+	OI<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	AssertFailIf(value.hasInstance() && (value->getType() != SValue::kString));
 
 	return value.hasInstance() ? OI<CString>(value->getString()) : OI<CString>();
 }
@@ -252,8 +245,7 @@ OI<CString> CMDSDocument::set(const CString& property, const OR<CString>& value)
 	if ((value.hasReference() != previousValue.hasInstance()) ||
 			(value.hasReference() && (*value != *previousValue)))
 		// Set value
-		mInternals->mDocumentStorage.set(property,
-				value.hasReference() ? OI<CDictionary::Value>(*value) : OI<CDictionary::Value>(), *this);
+		mInternals->mDocumentStorage.set(property, value.hasReference() ? OI<SValue>(*value) : OI<SValue>(), *this);
 
 	return previousValue;
 }
@@ -263,8 +255,8 @@ OV<UInt32> CMDSDocument::getUInt32(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OI<CDictionary::Value>	value = mInternals->mDocumentStorage.getValue(property, *this);
-	AssertFailIf(value.hasInstance() && (value->getType() != CDictionary::Value::kUInt32));
+	OI<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	AssertFailIf(value.hasInstance() && (value->getType() != SValue::kUInt32));
 
 	return value.hasInstance() ? OV<UInt32>(value->getUInt32()) : OV<UInt32>();
 }
@@ -277,8 +269,7 @@ OV<UInt32> CMDSDocument::set(const CString& property, const OV<UInt32>& value) c
 	OV<UInt32>	previousValue = getUInt32(property);
 	if (value != previousValue)
 		// Set value
-		mInternals->mDocumentStorage.set(property,
-				value.hasValue() ? OI<CDictionary::Value>(*value) : OI<CDictionary::Value>(), *this);
+		mInternals->mDocumentStorage.set(property, value.hasValue() ? OI<SValue>(*value) : OI<SValue>(), *this);
 
 	return previousValue;
 }
@@ -298,8 +289,7 @@ OV<UniversalTime> CMDSDocument::setUniversalTime(const CString& property, const 
 	OV<UniversalTime>	previousValue = getUniversalTime(property);
 	if (value != previousValue)
 		// Set value
-		mInternals->mDocumentStorage.set(property,
-				value.hasValue() ? OI<CDictionary::Value>(*value) : OI<CDictionary::Value>(), *this);
+		mInternals->mDocumentStorage.set(property, value.hasValue() ? OI<SValue>(*value) : OI<SValue>(), *this);
 
 	return previousValue;
 }
@@ -394,7 +384,7 @@ void CMDSDocument::set(const CString& property, const OI<TDictionary<CMDSDocumen
 		for (TIteratorS<CDictionary::Item> iterator = documentMap->getIterator(); iterator.hasValue();
 				iterator.advance())
 			// Add document ID to map
-			documentIDMap.set(iterator->mKey, ((CMDSDocument*) iterator->mValue.getItemRef())->getID());
+			documentIDMap.set(iterator->mKey, ((CMDSDocument*) iterator->mValue.getOpaque())->getID());
 		set(property, OR<CDictionary>(documentIDMap));
 	} else
 		// Don't have value
@@ -406,7 +396,7 @@ void CMDSDocument::remove(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Set value
-	mInternals->mDocumentStorage.set(property, OI<CDictionary::Value>(), *this);
+	mInternals->mDocumentStorage.set(property, OI<SValue>(), *this);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

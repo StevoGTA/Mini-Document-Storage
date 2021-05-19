@@ -32,10 +32,10 @@ class CMDSEphemeral : public CMDSDocumentStorage {
 				UniversalTime			getCreationUniversalTime(const CMDSDocument& document) const;
 				UniversalTime			getModificationUniversalTime(const CMDSDocument& document) const;
 
-				OI<CDictionary::Value>	getValue(const CString& property, const CMDSDocument& document) const;
+				OI<SValue>				getValue(const CString& property, const CMDSDocument& document) const;
 				OI<CData>				getData(const CString& property, const CMDSDocument& document) const;
 				OV<UniversalTime>		getUniversalTime(const CString& property, const CMDSDocument& document) const;
-				void					set(const CString& property, const OI<CDictionary::Value>& value,
+				void					set(const CString& property, const OI<SValue>& value,
 												const CMDSDocument& document,
 												SetValueInfo setValueInfo = kNothingSpecial);
 
@@ -59,7 +59,7 @@ class CMDSEphemeral : public CMDSDocumentStorage {
 				void					iterateAssociationTo(const CString& name, const CMDSDocument& toDocument,
 												CMDSDocument::Proc proc, void* userData) const;
 
-				CDictionary::Value		retrieveAssociationValue(const CString& name, const CString& fromDocumentType,
+				SValue					retrieveAssociationValue(const CString& name, const CString& fromDocumentType,
 												const CMDSDocument& toDocument, const CString& summedCachedValueName);
 
 				void					registerCache(const CString& name, const CMDSDocument::Info& documentInfo,

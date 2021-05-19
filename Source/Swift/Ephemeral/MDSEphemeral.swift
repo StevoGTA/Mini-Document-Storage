@@ -307,9 +307,6 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		// Call proc
 		let	result = try proc()
 
-		// Remove
-		self.batchInfoMap.set(nil, for: Thread.current)
-
 		// Check result
 		if result == .commit {
 			// Iterate all document changes
@@ -405,6 +402,9 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 				updateIndexes(for: documentType, updateInfos: updateInfos)
 			}
 		}
+
+		// Remove
+		self.batchInfoMap.set(nil, for: Thread.current)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

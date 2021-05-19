@@ -109,7 +109,7 @@ class CInfoTable {
 
 										return string;
 									}
-		static	void			set(const CString& key, const OI<CDictionary::Value>& value, CSQLiteTable& table)
+		static	void			set(const CString& key, const OI<SValue>& value, CSQLiteTable& table)
 									{
 										// Check if storing or removing
 										if (value.hasInstance()) {
@@ -727,7 +727,7 @@ class CMDSSQLiteDatabaseManagerInternals {
 												// Update version
 												mDatabaseVersion = OV<UInt32>(1);
 												CInfoTable::set(CString(OSSTR("version")),
-														OI<CDictionary::Value>(*mDatabaseVersion), mInfoTable);
+														OI<SValue>(*mDatabaseVersion), mInfoTable);
 											}
 
 											// Finalize setup
@@ -854,7 +854,7 @@ OI<CString> CMDSSQLiteDatabaseManager::getString(const CString& key) const
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteDatabaseManager::set(const CString& key, const OI<CDictionary::Value>& value)
+void CMDSSQLiteDatabaseManager::set(const CString& key, const OI<SValue>& value)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	CInfoTable::set(key, value, mInternals->mInfoTable);
@@ -891,7 +891,7 @@ void CMDSSQLiteDatabaseManager::batch(BatchProc batchProc, void* userData)
 			iterator.advance()) {
 		// Setup
 		const	SCollectionUpdateInfo&	collectionUpdateInfo =
-												*((SCollectionUpdateInfo*) iterator->mValue.getItemRef());
+												*((SCollectionUpdateInfo*) iterator->mValue.getOpaque());
 
 		// Update collection
 		updateCollection(iterator->mKey, collectionUpdateInfo.mIncludedValues, collectionUpdateInfo.mNotIncludedValues,
@@ -900,7 +900,7 @@ void CMDSSQLiteDatabaseManager::batch(BatchProc batchProc, void* userData)
 	for (TIteratorS<CDictionary::Item> iterator = batchInfo.mIndexInfo.getIterator(); iterator.hasValue();
 			iterator.advance()) {
 		// Setup
-		const	SIndexUpdateInfo&	indexUpdateInfo = *((SIndexUpdateInfo*) iterator->mValue.getItemRef());
+		const	SIndexUpdateInfo&	indexUpdateInfo = *((SIndexUpdateInfo*) iterator->mValue.getOpaque());
 
 		// Update index
 		updateIndex(iterator->mKey, indexUpdateInfo.mKeysInfos, indexUpdateInfo.mRemovedIDs,
