@@ -267,13 +267,17 @@ extension MDSDocument {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSDocumentInstance
-public class MDSDocumentInstance : Hashable, MDSDocument {
+open class MDSDocumentInstance : Hashable, MDSDocument {
 
 	// MARK: Properties
 	class	public	var documentType: String { "" }
 
 			public	let	id :String
 			public	let	documentStorage: MDSDocumentStorage
+
+	// MARK: Equatable implementation
+	//------------------------------------------------------------------------------------------------------------------
+	static public func ==(lhs :MDSDocumentInstance, rhs :MDSDocumentInstance) -> Bool { lhs.id == rhs.id }
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -283,11 +287,9 @@ public class MDSDocumentInstance : Hashable, MDSDocument {
 		self.documentStorage = documentStorage
 	}
 
-	// MARK: Equatable implementation
-	static	public	func == (lhs: MDSDocumentInstance, rhs: MDSDocumentInstance) -> Bool { lhs.id == rhs.id }
-
 	// MARK: Hashable implementation
-	public func hash(into hasher: inout Hasher) { hasher.combine(self.id) }
+	//------------------------------------------------------------------------------------------------------------------
+	public func hash(into hasher :inout Hasher) { hasher.combine(self.id) }
 }
 
 //----------------------------------------------------------------------------------------------------------------------

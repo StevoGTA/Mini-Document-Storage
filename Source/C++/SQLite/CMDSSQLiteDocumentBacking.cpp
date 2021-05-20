@@ -100,23 +100,22 @@ UniversalTime CMDSSQLiteDocumentBacking::getModificationUniversalTime() const
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<CDictionary::Value> CMDSSQLiteDocumentBacking::getValue(const CString& property) const
+OI<SValue> CMDSSQLiteDocumentBacking::getValue(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Retrieve value
 	mInternals->mPropertiesLock.lockForReading();
-	OI<CDictionary::Value>	value =
-									mInternals->mPropertyMap.contains(property) ?
-											OI<CDictionary::Value>(mInternals->mPropertyMap.getValue(property)) :
-											OI<CDictionary::Value>();
+	OI<SValue>	value =
+						mInternals->mPropertyMap.contains(property) ?
+								OI<SValue>(mInternals->mPropertyMap.getValue(property)) : OI<SValue>();
 	mInternals->mPropertiesLock.unlockForReading();
 
 	return value;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteDocumentBacking::set(const CString& property, const OI<CDictionary::Value>& value,
-		const CString& documentType, CMDSSQLiteDatabaseManager& databaseManager, bool commitChange)
+void CMDSSQLiteDocumentBacking::set(const CString& property, const OI<SValue>& value, const CString& documentType,
+		CMDSSQLiteDatabaseManager& databaseManager, bool commitChange)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Update

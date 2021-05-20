@@ -86,13 +86,13 @@ class CMDSDocumentStorage {
 		virtual			UniversalTime				getModificationUniversalTime(const CMDSDocument& document) const
 															= 0;
 
-		virtual			OI<CDictionary::Value>		getValue(const CString& property, const CMDSDocument& document)
+		virtual			OI<SValue>					getValue(const CString& property, const CMDSDocument& document)
 															const = 0;
 		virtual			OI<CData>					getData(const CString& property, const CMDSDocument& document) const
 															= 0;
 		virtual			OV<UniversalTime>			getUniversalTime(const CString& property,
 															const CMDSDocument& document) const = 0;
-		virtual			void						set(const CString& property, const OI<CDictionary::Value>& value,
+		virtual			void						set(const CString& property, const OI<SValue>& value,
 															const CMDSDocument& document,
  															SetValueInfo setValueInfo = kNothingSpecial) = 0;
 
@@ -132,11 +132,11 @@ class CMDSDocumentStorage {
 															const CMDSDocument& toDocument, CMDSDocument::Proc proc,
 															void* userData) const;
 
-		virtual			CDictionary::Value			retrieveAssociationValue(const CString& name,
+		virtual			SValue						retrieveAssociationValue(const CString& name,
 															const CString& fromDocumentType,
 															const CMDSDocument& toDocument,
 															const CString& summedCachedValueName) = 0;
-						CDictionary::Value			retrieveAssociationValue(const CMDSDocument::Info& fromDocumentInfo,
+						SValue						retrieveAssociationValue(const CMDSDocument::Info& fromDocumentInfo,
 															const CMDSDocument& toDocument,
 															const CString& summedCachedValueName);
 

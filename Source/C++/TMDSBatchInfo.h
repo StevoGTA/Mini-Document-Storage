@@ -13,8 +13,8 @@
 template <typename T> class TMDSBatchInfo {
 	// Procs
 	public:
-		typedef	const	OI<CDictionary::Value>	(*DocumentPropertyValueProc)(const CString& documentID,
-														const CString& property, void* internals);
+		typedef	const	OI<SValue>	(*DocumentPropertyValueProc)(const CString& documentID, const CString& property,
+											void* internals);
 
 	// DocumentInfo
 	public:
@@ -23,85 +23,81 @@ template <typename T> class TMDSBatchInfo {
 			typedef	OI<SError>	(*MapProc)(const CString& documentType,
 										const TDictionary<DocumentInfo<U> >& documentInfosMap, void* userData);
 
-											// Lifecycle methods
-											DocumentInfo(const CString& documentType, const CString& documentID,
-													const OI<U>& reference, UniversalTime creationUniversalTime,
-													UniversalTime modificationUniversalTime,
-													DocumentPropertyValueProc valueProc, void* valueProcUserData) :
-												mDocumentType(documentType), mDocumentID(documentID),
-														mReference(reference),
-														mCreationUniversalTime(creationUniversalTime),
-														mModificationUniversalTime(modificationUniversalTime),
-														mRemoved(false),
-														mValueProc(valueProc), mValueProcUserData(valueProcUserData)
-												{}
+									// Lifecycle methods
+									DocumentInfo(const CString& documentType, const CString& documentID,
+											const OI<U>& reference, UniversalTime creationUniversalTime,
+											UniversalTime modificationUniversalTime,
+											DocumentPropertyValueProc valueProc, void* valueProcUserData) :
+										mDocumentType(documentType), mDocumentID(documentID), mReference(reference),
+												mCreationUniversalTime(creationUniversalTime),
+												mModificationUniversalTime(modificationUniversalTime), mRemoved(false),
+												mValueProc(valueProc), mValueProcUserData(valueProcUserData)
+										{}
 
-											// Instance methods
-			const	CString&				getDocumentType() const
-												{ return mDocumentType; }
-			const	CString&				getDocumentID() const
-												{ return mDocumentID; }
-			const	OI<U>					getReference() const
-												{ return mReference; }
+									// Instance methods
+			const	CString&		getDocumentType() const
+										{ return mDocumentType; }
+			const	CString&		getDocumentID() const
+										{ return mDocumentID; }
+			const	OI<U>			getReference() const
+										{ return mReference; }
 
-					UniversalTime			getCreationUniversalTime() const
-												{ return mCreationUniversalTime; }
-					UniversalTime			getModificationUniversalTime() const
-												{ return mModificationUniversalTime; }
-					OI<CDictionary::Value>	getValue(const CString& property)
-												{
-													// Setup
-													OI<CDictionary::Value>	value;
+					UniversalTime	getCreationUniversalTime() const
+										{ return mCreationUniversalTime; }
+					UniversalTime	getModificationUniversalTime() const
+										{ return mModificationUniversalTime; }
+					OI<SValue>		getValue(const CString& property)
+										{
+											// Setup
+											OI<SValue>	value;
 
-													// Check for document removed
-													if (mRemoved)
-														// Document removed
-														return value;
+											// Check for document removed
+											if (mRemoved)
+												// Document removed
+												return value;
 
-													// Check for value
-													bool	returnValue = false;
-													mLock.lockForReading();
-													if (mRemovedProperties.contains(property))
-														// Property removed
-														returnValue = true;
-													else if (mUpdatedPropertyMap.contains(property)) {
-														// Property updated
-														value =
-																OI<CDictionary::Value>(
-																		mUpdatedPropertyMap.getValue(property));
-														returnValue = true;
-													}
-													mLock.lockForWriting();
-													if (returnValue) return value;
+											// Check for value
+											bool	returnValue = false;
+											mLock.lockForReading();
+											if (mRemovedProperties.contains(property))
+												// Property removed
+												returnValue = true;
+											else if (mUpdatedPropertyMap.contains(property)) {
+												// Property updated
+												value = OI<SValue>(mUpdatedPropertyMap.getValue(property));
+												returnValue = true;
+											}
+											mLock.lockForWriting();
+											if (returnValue) return value;
 
-													// Call proc
-													return mValueProc(mDocumentID, property, mValueProcUserData);
-												}
-					void					set(const CString& property, const OI<CDictionary::Value>& value)
-												{
-													// Write
-													mLock.lockForWriting();
-													if (value.hasInstance()) {
-														// Have value
-														mUpdatedPropertyMap.set(property, *value);
-														mRemovedProperties -= property;
-													} else {
-														// Remove value
-														mUpdatedPropertyMap.remove(property);
-														mRemovedProperties += property;
-													}
-													mModificationUniversalTime = SUniversalTime::getCurrent();
-													mLock.unlockForWriting();
-												}
-			const	CDictionary&			getUpdatedPropertyMap() const
-												{ return mUpdatedPropertyMap; }
-			const	TSet<CString>&			getRemovedProperties() const
-												{ return mRemovedProperties; }
+											// Call proc
+											return mValueProc(mDocumentID, property, mValueProcUserData);
+										}
+					void			set(const CString& property, const OI<SValue>& value)
+										{
+											// Write
+											mLock.lockForWriting();
+											if (value.hasInstance()) {
+												// Have value
+												mUpdatedPropertyMap.set(property, *value);
+												mRemovedProperties -= property;
+											} else {
+												// Remove value
+												mUpdatedPropertyMap.remove(property);
+												mRemovedProperties += property;
+											}
+											mModificationUniversalTime = SUniversalTime::getCurrent();
+											mLock.unlockForWriting();
+										}
+			const	CDictionary&	getUpdatedPropertyMap() const
+										{ return mUpdatedPropertyMap; }
+			const	TSet<CString>&	getRemovedProperties() const
+										{ return mRemovedProperties; }
 
-					bool					isRemoved() const
-												{ return mRemoved; }
-					void					remove()
-												{ mRemoved = true; }
+					bool			isRemoved() const
+										{ return mRemoved; }
+					void			remove()
+										{ mRemoved = true; }
 
 			// Properties
 			private:
@@ -166,7 +162,7 @@ template <typename T> class TMDSBatchInfo {
 												iterator.hasValue(); iterator.advance()) {
 											// Setup
 											DocumentInfo<T>&	documentInfo =
-																	*((DocumentInfo<T>*) iterator->mValue.getItemRef());
+																	*((DocumentInfo<T>*) iterator->mValue.getOpaque());
 
 											// Add to collated map
 											OR<TNDictionary<DocumentInfo<T> > >	documentInfosMap =
@@ -191,7 +187,7 @@ template <typename T> class TMDSBatchInfo {
 											TDictionary<DocumentInfo<T> >&	documentInfosMap =
 																					*((TDictionary<DocumentInfo<T> >*)
 																							iterator->mValue
-																									.getItemRef());
+																									.getOpaque());
 
 											// Call proc
 											OI<SError>	error = mapProc(iterator->mKey, documentInfosMap, userData);
