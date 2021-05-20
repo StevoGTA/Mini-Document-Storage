@@ -331,9 +331,6 @@ class MDSSQLite : MDSDocumentStorage {
 		// Call proc
 		val	result = proc()
 
-		// Remove
-		this.batchInfoMap.remove(Thread.currentThread())
-
 		// Check result
 		if (result == MDSBatchResult.COMMIT) {
 			// Batch changes
@@ -437,6 +434,9 @@ class MDSSQLite : MDSDocumentStorage {
 				}
 			}
 		}
+
+		// Remove
+		this.batchInfoMap.remove(Thread.currentThread())
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

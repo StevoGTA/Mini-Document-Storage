@@ -323,9 +323,6 @@ class MDSEphemeral : MDSDocumentStorage {
 		// Call proc
 		val	result = proc()
 
-		// Remove
-		this.batchInfoMap.remove(Thread.currentThread())
-
 		// Check result
 		if (result == MDSBatchResult.COMMIT) {
 			// Iterate all document changes
@@ -426,6 +423,9 @@ class MDSEphemeral : MDSDocumentStorage {
 				updateIndexes(documentType, updateInfos)
 			}
 		}
+
+		// Remove
+		this.batchInfoMap.remove(Thread.currentThread())
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
