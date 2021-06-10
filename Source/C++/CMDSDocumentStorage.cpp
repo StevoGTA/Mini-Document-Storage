@@ -89,7 +89,7 @@ SValue CMDSDocumentStorage::retrieveAssociationValue(const CMDSDocument::Info& f
 
 //----------------------------------------------------------------------------------------------------------------------
 TArray<CMDSDocument> CMDSDocumentStorage::getCollectionDocuments(const CString& name,
-		const CMDSDocument::Info& documentInfo)
+		const CMDSDocument::Info& documentInfo) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Collect documents
@@ -101,7 +101,7 @@ TArray<CMDSDocument> CMDSDocumentStorage::getCollectionDocuments(const CString& 
 
 //----------------------------------------------------------------------------------------------------------------------
 TDictionary<CMDSDocument> CMDSDocumentStorage::getIndexDocumentMap(const CString& name, const TArray<CString> keys,
-		const CMDSDocument::Info& documentInfo)
+		const CMDSDocument::Info& documentInfo) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Collect documents
