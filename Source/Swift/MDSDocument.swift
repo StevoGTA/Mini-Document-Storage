@@ -270,7 +270,7 @@ extension MDSDocument {
 open class MDSDocumentInstance : Hashable, MDSDocument {
 
 	// MARK: Properties
-	class	public	var documentType: String { "" }
+	class	open	var documentType: String { "" }
 
 			public	let	id :String
 			public	let	documentStorage: MDSDocumentStorage

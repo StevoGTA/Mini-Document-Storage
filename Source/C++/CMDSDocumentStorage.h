@@ -170,7 +170,7 @@ class CMDSDocumentStorage {
 															const CMDSDocument::Info& documentInfo,
 															CMDSDocument::Proc proc, void* userData) const = 0;
 						TArray<CMDSDocument>		getCollectionDocuments(const CString& name,
-															const CMDSDocument::Info& documentInfo);
+															const CMDSDocument::Info& documentInfo) const;
 
 		virtual			void						registerIndex(const CString& name,
 															const CMDSDocument::Info& documentInfo, UInt32 version,
@@ -189,7 +189,7 @@ class CMDSDocumentStorage {
 															const CMDSDocument::Info& documentInfo,
 															CMDSDocument::KeyProc keyProc, void* userData) const = 0;
 						TDictionary<CMDSDocument>	getIndexDocumentMap(const CString& name, const TArray<CString> keys,
-															const CMDSDocument::Info& documentInfo);
+															const CMDSDocument::Info& documentInfo) const;
 
 		virtual			void						registerDocumentChangedProc(const CString& documentType,
 															CMDSDocument::ChangedProc changedProc, void* userData) = 0;
