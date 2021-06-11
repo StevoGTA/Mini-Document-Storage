@@ -352,7 +352,7 @@ class CDocumentTypeContentTable {
 											CDictionary		propertyMap =
 																	*CJSON::dictionaryFrom(
 																					*resultsRow.getData(mJSONTableColumn))
-																			.mDictionary;
+																			.getValue();
 
 											return DocumentBackingInfo(
 													existingDocumentInfo.mDocumentRevisionInfo.mDocumentID,
@@ -366,7 +366,7 @@ class CDocumentTypeContentTable {
 											CSQLiteTable& table)
 										{
 											// Setup
-											CData	data = *CJSON::dataFrom(propertyMap).mData;
+											CData	data = *CJSON::dataFrom(propertyMap).getValue();
 
 											// Insert
 											TableColumnAndValue	contentTableColumnAndValues[] =
@@ -388,7 +388,7 @@ class CDocumentTypeContentTable {
 											const CDictionary& propertyMap, CSQLiteTable& table)
 										{
 											// Setup
-											CData	data = *CJSON::dataFrom(propertyMap).mData;
+											CData	data = *CJSON::dataFrom(propertyMap).getValue();
 
 											// Update
 											TableColumnAndValue	contentTableColumnAndValues[] =
@@ -405,7 +405,7 @@ class CDocumentTypeContentTable {
 		static	void				remove(SInt64 id, CSQLiteTable& table)
 										{
 											// Setup
-											CData	data = *CJSON::dataFrom(CDictionary()).mData;
+											CData	data = *CJSON::dataFrom(CDictionary()).getValue();
 
 											// Update
 											TableColumnAndValue	contentTableColumnAndValues[] =

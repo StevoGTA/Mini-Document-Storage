@@ -7,7 +7,7 @@
 #include "CDictionary.h"
 #include "CHashing.h"
 #include "TimeAndDate.h"
-#include "TInstance.h"
+#include "TWrappers.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: CMDSDocument
