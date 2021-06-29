@@ -198,51 +198,61 @@ class CMDSDocument : public CHashable {
 						UniversalTime					getModificationUniversalTime() const;
 
 						OI<TArray<CString> >			getArrayOfStrings(const CString& property) const;
-						void							set(const CString& property, const OR<TArray<CString> >& value)
+						void							set(const CString& property, const TArray<CString>& value)
 																const;
 
 						OV<bool>						getBool(const CString& property) const;
-						OV<bool>						set(const CString& property, const OV<bool>& value) const;
+						OV<bool>						set(const CString& property, bool value) const;
 
 						OI<CData>						getData(const CString& property) const;
-						OI<CData>						set(const CString& property, const OR<CData>& value) const;
+						OI<CData>						set(const CString& property, const CData& value) const;
 
 						OI<CDictionary>					getDictionary(const CString& property) const;
-						void							set(const CString& property, const OR<CDictionary>& value)
-																const;
+						OI<CDictionary>					set(const CString& property, const CDictionary& value) const;
+
+						OV<Float32>						getFloat32(const CString& property) const;
+						OV<Float32>						set(const CString& property, Float32 value) const;
 
 						OV<Float64>						getFloat64(const CString& property) const;
-						OV<Float64>						set(const CString& property, const OV<Float64>& value) const;
+						OV<Float64>						set(const CString& property, Float64 value) const;
 
 						OV<SInt32>						getSInt32(const CString& property) const;
-						OV<SInt32>						set(const CString& property, const OV<SInt32>& value) const;
+						OV<SInt32>						set(const CString& property, SInt32 value) const;
 
 						OV<SInt64>						getSInt64(const CString& property) const;
-						OV<SInt64>						set(const CString& property, const OV<SInt64>& value) const;
+						OV<SInt64>						set(const CString& property, SInt64 value) const;
 
 						OI<CString>						getString(const CString& property) const;
-						OI<CString>						set(const CString& property, const OR<CString>& value) const;
+						OI<CString>						set(const CString& property, const CString& value) const;
+
+						OV<UInt8>						getUInt8(const CString& property) const;
+						OV<UInt8>						set(const CString& property, UInt8 value) const;
+						OV<UInt8>						set(const CString& property, const OV<UInt8>& value) const;
+
+						OV<UInt16>						getUInt16(const CString& property) const;
+						OV<UInt16>						set(const CString& property, UInt16 value) const;
 
 						OV<UInt32>						getUInt32(const CString& property) const;
-						OV<UInt32>						set(const CString& property, const OV<UInt32>& value) const;
+						OV<UInt32>						set(const CString& property, UInt32 value) const;
 
 						OV<UniversalTime>				getUniversalTime(const CString& property) const;
-						OV<UniversalTime>				setUniversalTime(const CString& property,
-																const OV<UniversalTime>& value) const;
+						OV<UniversalTime>				setUniversalTime(const CString& property, UniversalTime value)
+																const;
 
-						OI<CMDSDocument>				getDocument(const CString& property,
-																const CMDSDocument::Info& info) const;
-						void							set(const CString& property, OR<CMDSDocument>& document) const;
+//						OI<CMDSDocument>				getDocument(const CString& property,
+//																const CMDSDocument::Info& info) const;
+//						void							set(const CString& property, const CMDSDocument& document)
+//																const;
 
-						OI<TArray<CMDSDocument> >		getDocuments(const CString& property,
-																const CMDSDocument::Info& info) const;
-						void							set(const CString& property,
-																const OR<TArray<CMDSDocument> >& documents) const;
+//						OI<TArray<CMDSDocument> >		getDocuments(const CString& property,
+//																const CMDSDocument::Info& info) const;
+//						void							set(const CString& property,
+//																const TArray<CMDSDocument>& documents) const;
 
-						OI<TDictionary<CMDSDocument> >	getDocumentMap(const CString& property,
-																const CMDSDocument::Info& info) const;
-						void							set(const CString& property,
-																const OI<TDictionary<CMDSDocument> > documentMap) const;
+//						OI<TDictionary<CMDSDocument> >	getDocumentMap(const CString& property,
+//																const CMDSDocument::Info& info) const;
+//						void							set(const CString& property,
+//																const TDictionary<CMDSDocument> documentMap) const;
 
 						void							remove(const CString& property) const;
 
