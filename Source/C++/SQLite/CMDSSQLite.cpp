@@ -1133,54 +1133,54 @@ void CMDSSQLite::batch(BatchProc batchProc, void* userData)
 	mInternals->mBatchInfoMap.remove(CThread::getCurrentRefAsString());
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::registerAssociation(const CString& name, const CMDSDocument::Info& fromDocumentInfo,
-		const CMDSDocument::Info& toDocumenInfo)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	AssertFailUnimplemented();
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::updateAssociation(const CString& name, const TArray<AssociationUpdate>& updates)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	AssertFailUnimplemented();
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::iterateAssociationFrom(const CString& name, const CMDSDocument& fromDocument, CMDSDocument::Proc proc,
-		void* userData) const
-//----------------------------------------------------------------------------------------------------------------------
-{
-	AssertFailUnimplemented();
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::iterateAssociationTo(const CString& name, const CMDSDocument& toDocument, CMDSDocument::Proc proc,
-		void* userData) const
-//----------------------------------------------------------------------------------------------------------------------
-{
-	AssertFailUnimplemented();
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-SValue CMDSSQLite::retrieveAssociationValue(const CString& name, const CString& fromDocumentType,
-		const CMDSDocument& toDocument, const CString& summedCachedValueName)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	AssertFailUnimplemented();
-
-	return SValue(false);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::registerCache(const CString& name, const CMDSDocument::Info& documentInfo, UInt32 version,
-		const TArray<CString>& relevantProperties, const TArray<CacheValueInfo>& cacheValueInfos)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	AssertFailUnimplemented();
-}
+////----------------------------------------------------------------------------------------------------------------------
+//void CMDSSQLite::registerAssociation(const CString& name, const CMDSDocument::Info& fromDocumentInfo,
+//		const CMDSDocument::Info& toDocumenInfo)
+////----------------------------------------------------------------------------------------------------------------------
+//{
+//	AssertFailUnimplemented();
+//}
+//
+////----------------------------------------------------------------------------------------------------------------------
+//void CMDSSQLite::updateAssociation(const CString& name, const TArray<AssociationUpdate>& updates)
+////----------------------------------------------------------------------------------------------------------------------
+//{
+//	AssertFailUnimplemented();
+//}
+//
+////----------------------------------------------------------------------------------------------------------------------
+//void CMDSSQLite::iterateAssociationFrom(const CString& name, const CMDSDocument& fromDocument, CMDSDocument::Proc proc,
+//		void* userData) const
+////----------------------------------------------------------------------------------------------------------------------
+//{
+//	AssertFailUnimplemented();
+//}
+//
+////----------------------------------------------------------------------------------------------------------------------
+//void CMDSSQLite::iterateAssociationTo(const CString& name, const CMDSDocument& toDocument, CMDSDocument::Proc proc,
+//		void* userData) const
+////----------------------------------------------------------------------------------------------------------------------
+//{
+//	AssertFailUnimplemented();
+//}
+//
+////----------------------------------------------------------------------------------------------------------------------
+//SValue CMDSSQLite::retrieveAssociationValue(const CString& name, const CString& fromDocumentType,
+//		const CMDSDocument& toDocument, const CString& summedCachedValueName)
+////----------------------------------------------------------------------------------------------------------------------
+//{
+//	AssertFailUnimplemented();
+//
+//	return SValue(false);
+//}
+//
+////----------------------------------------------------------------------------------------------------------------------
+//void CMDSSQLite::registerCache(const CString& name, const CMDSDocument::Info& documentInfo, UInt32 version,
+//		const TArray<CString>& relevantProperties, const TArray<CacheValueInfo>& cacheValueInfos)
+////----------------------------------------------------------------------------------------------------------------------
+//{
+//	AssertFailUnimplemented();
+//}
 
 //----------------------------------------------------------------------------------------------------------------------
 void CMDSSQLite::registerCollection(const CString& name, const CMDSDocument::Info& documentInfo, UInt32 version,

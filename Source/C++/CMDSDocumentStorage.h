@@ -31,7 +31,6 @@ class CMDSDocumentStorage {
 			// Action
 			enum Action {
 				kAdd,
-				kUpdate,
 				kRemove,
 			};
 
@@ -111,45 +110,45 @@ class CMDSDocumentStorage {
 
 		virtual			void						registerAssociation(const CString& name,
 															const CMDSDocument::Info& fromDocumentInfo,
-															const CMDSDocument::Info& toDocumenInfo) = 0;
+															const CMDSDocument::Info& toDocumentInfo) = 0;
 						void						registerAssociation(const CMDSDocument::Info& fromDocumentInfo,
-															const CMDSDocument::Info& toDocumenInfo);
+															const CMDSDocument::Info& toDocumentInfo);
 		virtual			void						updateAssociation(const CString& name,
 															const TArray<AssociationUpdate>& updates) = 0;
 						void						updateAssociation(const CMDSDocument::Info& fromDocumentInfo,
-															const CMDSDocument::Info& toDocumenInfo,
+															const CMDSDocument::Info& toDocumentInfo,
 															const TArray<AssociationUpdate>& updates);
-		virtual			void						iterateAssociationFrom(const CString& name,
-															const CMDSDocument& fromDocument, CMDSDocument::Proc proc,
-															void* userData) const = 0;
-						void						iterateAssociationFrom(const CMDSDocument& fromDocument,
-															const CMDSDocument::Info& toDocumenInfo,
-															CMDSDocument::Proc proc, void* userData) const;
-		virtual			void						iterateAssociationTo(const CString& name,
-															const CMDSDocument& toDocument, CMDSDocument::Proc proc,
-															void* userData) const = 0;
-						void						iterateAssociationTo(const CMDSDocument::Info& fromDocumentInfo,
-															const CMDSDocument& toDocument, CMDSDocument::Proc proc,
-															void* userData) const;
+//		virtual			void						iterateAssociationFrom(const CString& name,
+//															const CMDSDocument& fromDocument, CMDSDocument::Proc proc,
+//															void* userData) const = 0;
+//						void						iterateAssociationFrom(const CMDSDocument& fromDocument,
+//															const CMDSDocument::Info& toDocumentInfo,
+//															CMDSDocument::Proc proc, void* userData) const;
+//		virtual			void						iterateAssociationTo(const CString& name,
+//															const CMDSDocument& toDocument, CMDSDocument::Proc proc,
+//															void* userData) const = 0;
+//						void						iterateAssociationTo(const CMDSDocument::Info& fromDocumentInfo,
+//															const CMDSDocument& toDocument, CMDSDocument::Proc proc,
+//															void* userData) const;
 
-		virtual			SValue						retrieveAssociationValue(const CString& name,
-															const CString& fromDocumentType,
-															const CMDSDocument& toDocument,
-															const CString& summedCachedValueName) = 0;
-						SValue						retrieveAssociationValue(const CMDSDocument::Info& fromDocumentInfo,
-															const CMDSDocument& toDocument,
-															const CString& summedCachedValueName);
+//		virtual			SValue						retrieveAssociationValue(const CString& name,
+//															const CString& fromDocumentType,
+//															const CMDSDocument& toDocument,
+//															const CString& summedCachedValueName) = 0;
+//						SValue						retrieveAssociationValue(const CMDSDocument::Info& fromDocumentInfo,
+//															const CMDSDocument& toDocument,
+//															const CString& summedCachedValueName);
 
-		virtual			void						registerCache(const CString& name,
-															const CMDSDocument::Info& documentInfo, UInt32 version,
-															const TArray<CString>& relevantProperties,
-															const TArray<CacheValueInfo>& cacheValueInfos) = 0;
-						void						registerCache(const CString& name,
-															const CMDSDocument::Info& documentInfo,
-															const TArray<CString>& relevantProperties,
-															const TArray<CacheValueInfo>& cacheValueInfos)
-														{ registerCache(name, documentInfo, 1, relevantProperties,
-																	cacheValueInfos); }
+//		virtual			void						registerCache(const CString& name,
+//															const CMDSDocument::Info& documentInfo, UInt32 version,
+//															const TArray<CString>& relevantProperties,
+//															const TArray<CacheValueInfo>& cacheValueInfos) = 0;
+//						void						registerCache(const CString& name,
+//															const CMDSDocument::Info& documentInfo,
+//															const TArray<CString>& relevantProperties,
+//															const TArray<CacheValueInfo>& cacheValueInfos)
+//														{ registerCache(name, documentInfo, 1, relevantProperties,
+//																	cacheValueInfos); }
 
 		virtual			void						registerCollection(const CString& name,
 															const CMDSDocument::Info& documentInfo, UInt32 version,

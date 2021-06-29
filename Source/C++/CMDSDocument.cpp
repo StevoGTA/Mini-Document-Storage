@@ -469,6 +469,36 @@ OV<UniversalTime> CMDSDocument::setUniversalTime(const CString& property, Univer
 //}
 
 //----------------------------------------------------------------------------------------------------------------------
+void CMDSDocument::registerAssociation(const Info& otherInfo)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Register association
+	mInternals->mDocumentStorage.registerAssociation(getInfo(), otherInfo);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocument::associate(const CMDSDocument& document)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Update association
+	mInternals->mDocumentStorage.updateAssociation(getInfo(), document.getInfo(),
+			TSArray<CMDSDocumentStorage::AssociationUpdate>(
+					CMDSDocumentStorage::AssociationUpdate(CMDSDocumentStorage::AssociationUpdate::Action::kAdd, *this,
+							document)));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocument::unassociate(const CMDSDocument& document)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Update association
+	mInternals->mDocumentStorage.updateAssociation(getInfo(), document.getInfo(),
+			TSArray<CMDSDocumentStorage::AssociationUpdate>(
+					CMDSDocumentStorage::AssociationUpdate(CMDSDocumentStorage::AssociationUpdate::Action::kRemove,
+							*this, document)));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void CMDSDocument::remove(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {

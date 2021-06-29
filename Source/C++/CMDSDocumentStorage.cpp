@@ -43,49 +43,49 @@ TArray<CMDSDocument> CMDSDocumentStorage::getDocuments(const CMDSDocument::Info&
 
 //----------------------------------------------------------------------------------------------------------------------
 void CMDSDocumentStorage::registerAssociation(const CMDSDocument::Info& fromDocumentInfo,
-		const CMDSDocument::Info& toDocumenInfo)
+		const CMDSDocument::Info& toDocumentInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	registerAssociation(sComposeAssociationName(fromDocumentInfo.getDocumentType(), toDocumenInfo.getDocumentType()),
-			fromDocumentInfo, toDocumenInfo);
+	registerAssociation(sComposeAssociationName(fromDocumentInfo.getDocumentType(), toDocumentInfo.getDocumentType()),
+			fromDocumentInfo, toDocumentInfo);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void CMDSDocumentStorage::updateAssociation(const CMDSDocument::Info& fromDocumentInfo,
-		const CMDSDocument::Info& toDocumenInfo, const TArray<AssociationUpdate>& updates)
+		const CMDSDocument::Info& toDocumentInfo, const TArray<AssociationUpdate>& updates)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	updateAssociation(sComposeAssociationName(fromDocumentInfo.getDocumentType(), toDocumenInfo.getDocumentType()),
+	updateAssociation(sComposeAssociationName(fromDocumentInfo.getDocumentType(), toDocumentInfo.getDocumentType()),
 			updates);
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSDocumentStorage::iterateAssociationFrom(const CMDSDocument& fromDocument,
-		const CMDSDocument::Info& toDocumenInfo, CMDSDocument::Proc proc, void* userData) const
-//----------------------------------------------------------------------------------------------------------------------
-{
-	iterateAssociationFrom(sComposeAssociationName(fromDocument.getDocumentType(), toDocumenInfo.getDocumentType()),
-			fromDocument, proc, userData);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSDocumentStorage::iterateAssociationTo(const CMDSDocument::Info& fromDocumentInfo,
-		const CMDSDocument& toDocument, CMDSDocument::Proc proc, void* userData) const
-//----------------------------------------------------------------------------------------------------------------------
-{
-	iterateAssociationTo(sComposeAssociationName(fromDocumentInfo.getDocumentType(), toDocument.getDocumentType()),
-			toDocument, proc, userData);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-SValue CMDSDocumentStorage::retrieveAssociationValue(const CMDSDocument::Info& fromDocumentInfo,
-		const CMDSDocument& toDocument, const CString& summedCachedValueName)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	return retrieveAssociationValue(
-			sComposeAssociationName(fromDocumentInfo.getDocumentType(), toDocument.getDocumentType()),
-			fromDocumentInfo.getDocumentType(), toDocument, summedCachedValueName);
-}
+////----------------------------------------------------------------------------------------------------------------------
+//void CMDSDocumentStorage::iterateAssociationFrom(const CMDSDocument& fromDocument,
+//		const CMDSDocument::Info& toDocumentInfo, CMDSDocument::Proc proc, void* userData) const
+////----------------------------------------------------------------------------------------------------------------------
+//{
+//	iterateAssociationFrom(sComposeAssociationName(fromDocument.getDocumentType(), toDocumentInfo.getDocumentType()),
+//			fromDocument, proc, userData);
+//}
+//
+////----------------------------------------------------------------------------------------------------------------------
+//void CMDSDocumentStorage::iterateAssociationTo(const CMDSDocument::Info& fromDocumentInfo,
+//		const CMDSDocument& toDocument, CMDSDocument::Proc proc, void* userData) const
+////----------------------------------------------------------------------------------------------------------------------
+//{
+//	iterateAssociationTo(sComposeAssociationName(fromDocumentInfo.getDocumentType(), toDocument.getDocumentType()),
+//			toDocument, proc, userData);
+//}
+//
+////----------------------------------------------------------------------------------------------------------------------
+//SValue CMDSDocumentStorage::retrieveAssociationValue(const CMDSDocument::Info& fromDocumentInfo,
+//		const CMDSDocument& toDocument, const CString& summedCachedValueName)
+////----------------------------------------------------------------------------------------------------------------------
+//{
+//	return retrieveAssociationValue(
+//			sComposeAssociationName(fromDocumentInfo.getDocumentType(), toDocument.getDocumentType()),
+//			fromDocumentInfo.getDocumentType(), toDocument, summedCachedValueName);
+//}
 
 //----------------------------------------------------------------------------------------------------------------------
 TArray<CMDSDocument> CMDSDocumentStorage::getCollectionDocuments(const CString& name,

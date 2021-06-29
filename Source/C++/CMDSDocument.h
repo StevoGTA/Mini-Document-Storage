@@ -154,8 +154,8 @@ class CMDSDocument : public CHashable {
 
 			// Properties
 			private:
-				const	CString&	mDocumentType;
-						CreateProc	mCreateProc;
+				CString		mDocumentType;
+				CreateProc	mCreateProc;
 		};
 
 		class InfoForNew {
@@ -189,9 +189,10 @@ class CMDSDocument : public CHashable {
 
 														// Instance methods
 		virtual			CMDSDocument*					copy() const = 0;
-		
-		virtual	const	CString&						getDocumentType() const = 0;
-		
+		virtual			Info							getInfo() const = 0;
+
+				const	CString&						getDocumentType() const
+															{ return getInfo().getDocumentType(); }
 				const	CString&						getID() const;
 
 						UniversalTime					getCreationUniversalTime() const;
@@ -253,6 +254,10 @@ class CMDSDocument : public CHashable {
 //																const CMDSDocument::Info& info) const;
 //						void							set(const CString& property,
 //																const TDictionary<CMDSDocument> documentMap) const;
+
+						void							registerAssociation(const Info& otherInfo);
+						void							associate(const CMDSDocument& document);
+						void							unassociate(const CMDSDocument& document);
 
 						void							remove(const CString& property) const;
 
