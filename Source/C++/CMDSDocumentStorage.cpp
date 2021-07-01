@@ -133,5 +133,6 @@ void sAddDocumentToDictionary(const CString& key, const CMDSDocument& document, 
 CString sComposeAssociationName(const CString& fromDocumentType, const CString& toDocumentType)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return fromDocumentType + CString(OSSTR("To")) + toDocumentType;
+	return fromDocumentType + CString(OSSTR("To")) +
+			toDocumentType.getSubString(0, 1).uppercased() + toDocumentType.getSubString(1);;
 }

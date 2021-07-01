@@ -11,8 +11,6 @@
 #include "TMDSCollection.h"
 #include "TMDSIndex.h"
 
-#include "SError.h"	// For unimplemented methods
-
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: CMDSEphemeralDocumentBacking
 
@@ -236,6 +234,7 @@ void CMDSEphemeralInternals::updateIndexes(const CString& documentType,
 void CMDSEphemeralInternals::updateIndexes(const TSet<CString>& removedDocumentIDs)
 //----------------------------------------------------------------------------------------------------------------------
 {
+	// Iterate index names
 	TSet<CString>	indexNames = mIndexValuesMap.getKeys();
 	for (TIteratorS<CString> iterator = indexNames.getIterator(); iterator.hasValue(); iterator.advance())
 		// Remove document from this index
@@ -575,12 +574,12 @@ I<CMDSDocument> CMDSEphemeral::newDocument(const CMDSDocument::InfoForNew& infoF
 		CMDSDocument*	document = infoForNew.create(documentID, *this);
 
 		// Remove property map
-		const	OR<CDictionary>	propertyMap = mInternals->mDocumentsBeingCreatedPropertyMapMap.get(documentID);
+		CDictionary	propertyMap = *mInternals->mDocumentsBeingCreatedPropertyMapMap.get(documentID);
 		mInternals->mDocumentsBeingCreatedPropertyMapMap.remove(documentID);
 
 		// Add document
 		CMDSEphemeralDocumentBacking	documentBacking(mInternals->getNextRevision(infoForNew.getDocumentType()),
-												universalTime, universalTime, *propertyMap);
+												universalTime, universalTime, propertyMap);
 
 		// Update maps
 		mInternals->mDocumentMapsLock.lockForWriting();
@@ -589,8 +588,10 @@ I<CMDSDocument> CMDSEphemeral::newDocument(const CMDSDocument::InfoForNew& infoF
 
 		OR<TSet<CString> >	set = mInternals->mDocumentIDsByTypeMap.get(infoForNew.getDocumentType());
 		if (set.hasReference())
+			// Already have a document for this type
 			set->add(documentID);
 		else
+			// First document for this type
 			mInternals->mDocumentIDsByTypeMap.set(infoForNew.getDocumentType(), TSet<CString>(documentID));
 
 		mInternals->mDocumentMapsLock.unlockForWriting();
