@@ -836,7 +836,7 @@ void CMDSEphemeral::iterate(const CMDSDocument::Info& documentInfo, CMDSDocument
 										documentIDs.hasReference() ? *documentIDs : TSet<CString>(),
 												(TSet<CString>::IsIncludedProc)
 														CMDSEphemeralInternals::isDocumentActive,
-										&mInternals->mDocumentIDsByTypeMap);
+										&mInternals->mDocumentBackingByIDMap);
 	mInternals->mDocumentMapsLock.unlockForReading();
 
 	// Iterate document IDs
