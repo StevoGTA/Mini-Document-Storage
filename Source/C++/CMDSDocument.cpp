@@ -416,17 +416,17 @@ OV<UniversalTime> CMDSDocument::setUniversalTime(const CString& property, Univer
 //			OI<TArray<CMDSDocument> >();
 //}
 
-////----------------------------------------------------------------------------------------------------------------------
-//void CMDSDocument::set(const CString& property, const TArray<CMDSDocument>& documents) const
-////----------------------------------------------------------------------------------------------------------------------
-//{
-//	// Collect document IDs
-//	TNArray<CString>	documentIDs;
-//	for (TIteratorD<CMDSDocument> iterator = documents.getIterator(); iterator.hasValue(); iterator.advance())
-//		// Add document ID
-//		documentIDs += iterator->getID();
-//	set(property, documentIDs);
-//}
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocument::set(const CString& property, const TArray<CMDSDocument>& documents) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Collect document IDs
+	TNArray<CString>	documentIDs;
+	for (TIteratorD<CMDSDocument> iterator = documents.getIterator(); iterator.hasValue(); iterator.advance())
+		// Add document ID
+		documentIDs += iterator->getID();
+	set(property, documentIDs);
+}
 
 ////----------------------------------------------------------------------------------------------------------------------
 //OI<TDictionary<CMDSDocument> > CMDSDocument::getDocumentMap(const CString& property, const CMDSDocument::Info& info)

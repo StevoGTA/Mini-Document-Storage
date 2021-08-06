@@ -247,8 +247,8 @@ class CMDSDocument : public CHashable {
 
 //						OI<TArray<CMDSDocument> >		getDocuments(const CString& property,
 //																const CMDSDocument::Info& info) const;
-//						void							set(const CString& property,
-//																const TArray<CMDSDocument>& documents) const;
+						void							set(const CString& property,
+																const TArray<CMDSDocument>& documents) const;
 
 //						OI<TDictionary<CMDSDocument> >	getDocumentMap(const CString& property,
 //																const CMDSDocument::Info& info) const;
