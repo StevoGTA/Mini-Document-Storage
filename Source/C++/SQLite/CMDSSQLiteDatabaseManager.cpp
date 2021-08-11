@@ -341,18 +341,19 @@ class CDocumentTypeContentTable {
 											const CSQLiteResultsRow& resultsRow)
 										{
 											// Process results
-											UniversalTime	creationUniversalTime =
-																	*SUniversalTime::getFromRFC3339Extended(
-																			*resultsRow.getString(
-																					mCreationDateTableColumn));
-											UniversalTime	modificationUniversalTime =
-																	*SUniversalTime::getFromRFC3339Extended(
-																			*resultsRow.getString(
-																					mModificationDateTableColumn));
-											CDictionary		propertyMap =
-																	*CJSON::dictionaryFrom(
-																					*resultsRow.getData(mJSONTableColumn))
-																			.getValue();
+													UniversalTime	creationUniversalTime =
+																			*SUniversalTime::getFromRFC3339Extended(
+																					*resultsRow.getString(
+																							mCreationDateTableColumn));
+													UniversalTime	modificationUniversalTime =
+																			*SUniversalTime::getFromRFC3339Extended(
+																					*resultsRow.getString(
+																							mModificationDateTableColumn));
+											const	CDictionary&	propertyMap =
+																			CJSON::dictionaryFrom(
+																							*resultsRow.getData(
+																									mJSONTableColumn))
+																					.getValue();
 
 											return DocumentBackingInfo(
 													existingDocumentInfo.mDocumentRevisionInfo.mDocumentID,
@@ -366,7 +367,7 @@ class CDocumentTypeContentTable {
 											CSQLiteTable& table)
 										{
 											// Setup
-											CData	data = *CJSON::dataFrom(propertyMap).getValue();
+											const	CData&	data = CJSON::dataFrom(propertyMap).getValue();
 
 											// Insert
 											TableColumnAndValue	contentTableColumnAndValues[] =
@@ -388,7 +389,7 @@ class CDocumentTypeContentTable {
 											const CDictionary& propertyMap, CSQLiteTable& table)
 										{
 											// Setup
-											CData	data = *CJSON::dataFrom(propertyMap).getValue();
+											const	CData&	data = CJSON::dataFrom(propertyMap).getValue();
 
 											// Update
 											TableColumnAndValue	contentTableColumnAndValues[] =
@@ -405,7 +406,7 @@ class CDocumentTypeContentTable {
 		static	void				remove(SInt64 id, CSQLiteTable& table)
 										{
 											// Setup
-											CData	data = *CJSON::dataFrom(CDictionary()).getValue();
+											const	CData&	data = CJSON::dataFrom(CDictionary()).getValue();
 
 											// Update
 											TableColumnAndValue	contentTableColumnAndValues[] =

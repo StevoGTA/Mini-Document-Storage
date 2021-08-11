@@ -11,8 +11,6 @@
 #include "TMDSCollection.h"
 #include "TMDSIndex.h"
 
-#include "SError.h"	// For unimplemented methods
-
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: CMDSEphemeralDocumentBacking
 
@@ -63,9 +61,9 @@ typedef	TMDSUpdateInfo<CString>									CMDSEphemeralUpdateInfo;
 class CMDSEphemeralInternals {
 	public:
 		// Types
-		struct SUpdateIndexValuesInfo {
+		struct UpdateIndexValuesInfo {
 			// Lifecycle methods
-			SUpdateIndexValuesInfo(const CMDSEphemeralIndexUpdateInfo& updateInfo, const TSet<CString>& documentIDs) :
+			UpdateIndexValuesInfo(const CMDSEphemeralIndexUpdateInfo& updateInfo, const TSet<CString>& documentIDs) :
 				mUpdateInfo(updateInfo), mDocumentIDs(documentIDs)
 				{}
 
@@ -73,6 +71,20 @@ class CMDSEphemeralInternals {
 			const	CMDSEphemeralIndexUpdateInfo&	mUpdateInfo;
 			const	TSet<CString>&					mDocumentIDs;
 		};
+
+struct AssociationPair {
+	// Lifecycle methods
+	AssociationPair(const CString& fromDocumentID, const CString& toDocumentID) :
+		mFromDocumentID(fromDocumentID), mToDocumentID(toDocumentID)
+		{}
+	AssociationPair(const AssociationPair& other) :
+		mFromDocumentID(other.mFromDocumentID), mToDocumentID(other.mToDocumentID)
+		{}
+
+	// Properties
+	CString	mFromDocumentID;
+	CString	mToDocumentID;
+};
 
 											// Methods
 											CMDSEphemeralInternals(const CMDSEphemeral& mdsEphemeral) :
@@ -97,7 +109,7 @@ class CMDSEphemeralInternals {
 		static	OI<TSet<CString> >			removeCollectionValues(const OR<TSet<CString> >& currentValues,
 													const TSet<CString>* documentIDs);
 		static	OI<TDictionary<CString> >	updateIndexValues(const OR<TDictionary<CString> >& currentValue,
-													const SUpdateIndexValuesInfo* updateIndexValuesInfo);
+													const UpdateIndexValuesInfo* updateIndexValuesInfo);
 		static	OI<TDictionary<CString> >	removeIndexValues(const OR<TDictionary<CString> >& currentValue,
 													const TSet<CString>* documentIDs);
 		static	CString						getValueFromKeysInfo(CMDSEphemeralIndex::KeysInfo<CString>* keysInfo);
@@ -126,6 +138,15 @@ class CMDSEphemeralInternals {
 				TNLockingDictionary<SNumberWrapper<UInt32> >			mDocumentLastRevisionMap;
 				CReadPreferringLock										mDocumentMapsLock;
 				TNLockingDictionary<CDictionary>						mDocumentsBeingCreatedPropertyMapMap;
+
+/*
+	Name:
+->		Pairs of (from, to)
+			-or-
+		From
+			array of to
+*/
+TNLockingArrayDictionary<AssociationPair>	mAssocationMap;
 
 				TNLockingDictionary<CMDSEphemeralCollection>			mCollectionsByNameMap;
 				TNLockingArrayDictionary<CMDSEphemeralCollection>		mCollectionsByDocumentTypeMap;
@@ -203,7 +224,7 @@ void CMDSEphemeralInternals::updateIndexes(const CString& documentType,
 
 		// Update storage
 		TSet<CString>	documentIDs(updateInfo.mKeysInfos, (CString (*)(CArray::ItemRef)) getValueFromKeysInfo);
-		SUpdateIndexValuesInfo	updateIndexValueInfos(updateInfo, documentIDs);
+		UpdateIndexValuesInfo	updateIndexValueInfos(updateInfo, documentIDs);
 		mIndexValuesMap.update(documentType, (TNLockingDictionary<TDictionary<CString> >::UpdateProc) updateIndexValues,
 				&updateIndexValueInfos);
 	}
@@ -213,6 +234,7 @@ void CMDSEphemeralInternals::updateIndexes(const CString& documentType,
 void CMDSEphemeralInternals::updateIndexes(const TSet<CString>& removedDocumentIDs)
 //----------------------------------------------------------------------------------------------------------------------
 {
+	// Iterate index names
 	TSet<CString>	indexNames = mIndexValuesMap.getKeys();
 	for (TIteratorS<CString> iterator = indexNames.getIterator(); iterator.hasValue(); iterator.advance())
 		// Remove document from this index
@@ -272,7 +294,7 @@ OI<TSet<CString> > CMDSEphemeralInternals::removeCollectionValues(const OR<TSet<
 
 //----------------------------------------------------------------------------------------------------------------------
 OI<TDictionary<CString> > CMDSEphemeralInternals::updateIndexValues(const OR<TDictionary<CString> >& currentValue,
-		const SUpdateIndexValuesInfo* updateIndexValuesInfo)
+		const UpdateIndexValuesInfo* updateIndexValuesInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Filter out document IDs not included in update
@@ -552,12 +574,12 @@ I<CMDSDocument> CMDSEphemeral::newDocument(const CMDSDocument::InfoForNew& infoF
 		CMDSDocument*	document = infoForNew.create(documentID, *this);
 
 		// Remove property map
-		const	OR<CDictionary>	propertyMap = mInternals->mDocumentsBeingCreatedPropertyMapMap.get(documentID);
+		CDictionary	propertyMap = *mInternals->mDocumentsBeingCreatedPropertyMapMap.get(documentID);
 		mInternals->mDocumentsBeingCreatedPropertyMapMap.remove(documentID);
 
 		// Add document
 		CMDSEphemeralDocumentBacking	documentBacking(mInternals->getNextRevision(infoForNew.getDocumentType()),
-												universalTime, universalTime, *propertyMap);
+												universalTime, universalTime, propertyMap);
 
 		// Update maps
 		mInternals->mDocumentMapsLock.lockForWriting();
@@ -566,8 +588,10 @@ I<CMDSDocument> CMDSEphemeral::newDocument(const CMDSDocument::InfoForNew& infoF
 
 		OR<TSet<CString> >	set = mInternals->mDocumentIDsByTypeMap.get(infoForNew.getDocumentType());
 		if (set.hasReference())
+			// Already have a document for this type
 			set->add(documentID);
 		else
+			// First document for this type
 			mInternals->mDocumentIDsByTypeMap.set(infoForNew.getDocumentType(), TSet<CString>(documentID));
 
 		mInternals->mDocumentMapsLock.unlockForWriting();
@@ -812,7 +836,7 @@ void CMDSEphemeral::iterate(const CMDSDocument::Info& documentInfo, CMDSDocument
 										documentIDs.hasReference() ? *documentIDs : TSet<CString>(),
 												(TSet<CString>::IsIncludedProc)
 														CMDSEphemeralInternals::isDocumentActive,
-										&mInternals->mDocumentIDsByTypeMap);
+										&mInternals->mDocumentBackingByIDMap);
 	mInternals->mDocumentMapsLock.unlockForReading();
 
 	// Iterate document IDs
@@ -873,49 +897,62 @@ void CMDSEphemeral::registerAssociation(const CString& name, const CMDSDocument:
 		const CMDSDocument::Info& toDocumenInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	AssertFailUnimplemented();
+	// Ensure this association has not already been registered
+//	if (mInternals->mAssocationMap.contains(name)) return;
+
+	// Create assocation
+// ???
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void CMDSEphemeral::updateAssociation(const CString& name, const TArray<AssociationUpdate>& updates)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	AssertFailUnimplemented();
+	for (TIteratorD<AssociationUpdate> iterator = updates.getIterator(); iterator.hasValue(); iterator.advance()) {
+		//
+		if (iterator->mAction == AssociationUpdate::kAdd)
+			// Add
+			mInternals->mAssocationMap.add(name,
+					CMDSEphemeralInternals::AssociationPair(iterator->mFromDocument.getID(),
+							iterator->mToDocument.getID()));
+//		else
+//			// Remove
+	}
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSEphemeral::iterateAssociationFrom(const CString& name, const CMDSDocument& fromDocument,
-		CMDSDocument::Proc proc, void* userData) const
-//----------------------------------------------------------------------------------------------------------------------
-{
-	AssertFailUnimplemented();
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSEphemeral::iterateAssociationTo(const CString& name, const CMDSDocument& toDocument, CMDSDocument::Proc proc,
-		void* userData) const
-//----------------------------------------------------------------------------------------------------------------------
-{
-	AssertFailUnimplemented();
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-SValue CMDSEphemeral::retrieveAssociationValue(const CString& name, const CString& fromDocumentType,
-		const CMDSDocument& toDocument, const CString& summedCachedValueName)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	AssertFailUnimplemented();
-
-	return SValue(false);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSEphemeral::registerCache(const CString& name, const CMDSDocument::Info& documentInfo, UInt32 version,
-		const TArray<CString>& relevantProperties, const TArray<CacheValueInfo>& cacheValueInfos)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	AssertFailUnimplemented();
-}
+////----------------------------------------------------------------------------------------------------------------------
+//void CMDSEphemeral::iterateAssociationFrom(const CString& name, const CMDSDocument& fromDocument,
+//		CMDSDocument::Proc proc, void* userData) const
+////----------------------------------------------------------------------------------------------------------------------
+//{
+//	AssertFailUnimplemented();
+//}
+//
+////----------------------------------------------------------------------------------------------------------------------
+//void CMDSEphemeral::iterateAssociationTo(const CString& name, const CMDSDocument& toDocument, CMDSDocument::Proc proc,
+//		void* userData) const
+////----------------------------------------------------------------------------------------------------------------------
+//{
+//	AssertFailUnimplemented();
+//}
+//
+////----------------------------------------------------------------------------------------------------------------------
+//SValue CMDSEphemeral::retrieveAssociationValue(const CString& name, const CString& fromDocumentType,
+//		const CMDSDocument& toDocument, const CString& summedCachedValueName)
+////----------------------------------------------------------------------------------------------------------------------
+//{
+//	AssertFailUnimplemented();
+//
+//	return SValue(false);
+//}
+//
+////----------------------------------------------------------------------------------------------------------------------
+//void CMDSEphemeral::registerCache(const CString& name, const CMDSDocument::Info& documentInfo, UInt32 version,
+//		const TArray<CString>& relevantProperties, const TArray<CacheValueInfo>& cacheValueInfos)
+////----------------------------------------------------------------------------------------------------------------------
+//{
+//	AssertFailUnimplemented();
+//}
 
 //----------------------------------------------------------------------------------------------------------------------
 void CMDSEphemeral::registerCollection(const CString& name, const CMDSDocument::Info& documentInfo, UInt32 version,

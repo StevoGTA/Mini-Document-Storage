@@ -51,20 +51,20 @@ class CMDSEphemeral : public CMDSDocumentStorage {
 
 				void					registerAssociation(const CString& name,
 												const CMDSDocument::Info& fromDocumentInfo,
-												const CMDSDocument::Info& toDocumenInfo);
+												const CMDSDocument::Info& toDocumentInfo);
 				void					updateAssociation(const CString& name,
 												const TArray<AssociationUpdate>& updates);
-				void					iterateAssociationFrom(const CString& name, const CMDSDocument& fromDocument,
-												CMDSDocument::Proc proc, void* userData) const;
-				void					iterateAssociationTo(const CString& name, const CMDSDocument& toDocument,
-												CMDSDocument::Proc proc, void* userData) const;
+//				void					iterateAssociationFrom(const CString& name, const CMDSDocument& fromDocument,
+//												CMDSDocument::Proc proc, void* userData) const;
+//				void					iterateAssociationTo(const CString& name, const CMDSDocument& toDocument,
+//												CMDSDocument::Proc proc, void* userData) const;
 
-				SValue					retrieveAssociationValue(const CString& name, const CString& fromDocumentType,
-												const CMDSDocument& toDocument, const CString& summedCachedValueName);
+//				SValue					retrieveAssociationValue(const CString& name, const CString& fromDocumentType,
+//												const CMDSDocument& toDocument, const CString& summedCachedValueName);
 
-				void					registerCache(const CString& name, const CMDSDocument::Info& documentInfo,
-												UInt32 version, const TArray<CString>& relevantProperties,
-												const TArray<CacheValueInfo>& cacheValueInfos);
+//				void					registerCache(const CString& name, const CMDSDocument::Info& documentInfo,
+//												UInt32 version, const TArray<CString>& relevantProperties,
+//												const TArray<CacheValueInfo>& cacheValueInfos);
 
 				void					registerCollection(const CString& name, const CMDSDocument::Info& documentInfo,
 												UInt32 version, const TArray<CString>& relevantProperties,
