@@ -421,7 +421,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 
 		// Add to maps
 		self.collectionsByNameMap.set(collection, for: name)
-		self.collectionsByDocumentTypeMap.appendArrayValue(collection, for: T.documentType)
+		self.collectionsByDocumentTypeMap.append(collection, for: T.documentType)
 
 		// Update creation proc map
 		self.documentCreationProcMap.set({ T(id: $0, documentStorage: $1) }, for: T.documentType)
@@ -453,7 +453,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 
 		// Add to maps
 		self.indexesByNameMap.set(index, for: name)
-		self.indexesByDocumentTypeMap.appendArrayValue(index, for: T.documentType)
+		self.indexesByDocumentTypeMap.append(index, for: T.documentType)
 
 		// Update creation proc map
 		self.documentCreationProcMap.set({ T(id: $0, documentStorage: $1) }, for: T.documentType)
@@ -478,7 +478,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerDocumentChangedProc(documentType :String, proc :@escaping MDSDocument.ChangedProc) {
 		//  Add
-		self.documentChangedProcsMap.appendArrayValue(proc, for: documentType)
+		self.documentChangedProcsMap.append(proc, for: documentType)
 	}
 
 	// MARK: MDSDocumentStorageServerHandler methods
