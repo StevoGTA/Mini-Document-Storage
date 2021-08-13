@@ -14,9 +14,10 @@ enum HTTPEndpointClientMDSExtensionsError : Error {
 	case didNotReceiveSizeInHeader
 }
 
-extension HTTPEndpointClientMDSExtensionsError : LocalizedError {
+extension HTTPEndpointClientMDSExtensionsError : CustomStringConvertible, LocalizedError {
 
 	// MARK: Properties
+	public 	var	description :String { self.localizedDescription }
 	public	var	errorDescription :String? {
 						// What are we
 						switch self {

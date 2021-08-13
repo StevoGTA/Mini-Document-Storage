@@ -19,7 +19,10 @@ public enum MDSSQLiteError : Error {
 	case documentNotFound(documentType :String, documentID :String)
 }
 
-extension MDSSQLiteError : LocalizedError {
+extension MDSSQLiteError : CustomStringConvertible, LocalizedError {
+
+	// MARK: Properties
+	public 	var	description :String { self.localizedDescription }
 	public	var	errorDescription :String? {
 						switch self {
 							case .documentNotFound(let documentType, let documentID):
