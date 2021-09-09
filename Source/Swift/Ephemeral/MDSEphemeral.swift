@@ -114,7 +114,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			self.documentMapsLock.write() {
 				// Update maps
 				self.documentBackingByIDMap[documentID] = documentBacking
-				self.documentIDsByTypeMap.appendSetValueElement(key: T.documentType, value: documentID)
+				self.documentIDsByTypeMap.insertSetValueElement(key: T.documentType, value: documentID)
 			}
 
 			// Update collections and indexes
@@ -354,7 +354,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 													modificationDate: batchDocumentInfo.modificationDate,
 													propertyMap: batchDocumentInfo.updatedPropertyMap ?? [:])
 								self.documentBackingByIDMap[documentID] = documentBacking
-								self.documentIDsByTypeMap.appendSetValueElement(key: documentType, value: documentID)
+								self.documentIDsByTypeMap.insertSetValueElement(key: documentType, value: documentID)
 
 								// Check if we have creation proc
 								if let creationProc = self.documentCreationProcMap.value(for: documentType) {
