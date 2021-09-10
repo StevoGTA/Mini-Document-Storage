@@ -98,10 +98,10 @@ class CMDSDocumentStorage {
 		virtual			void						remove(const CMDSDocument& document) = 0;
 
 		virtual			void						iterate(const CMDSDocument::Info& documentInfo,
-															CMDSDocument::Proc proc, void* userData) const = 0;
+															CMDSDocument::Proc proc, void* userData) = 0;
 		virtual			void						iterate(const CMDSDocument::Info& documentInfo,
 															const TArray<CString>& documentIDs,
-															CMDSDocument::Proc proc, void* userData) const = 0;
+															CMDSDocument::Proc proc, void* userData) = 0;
 						TArray<CMDSDocument>		getDocuments(const CMDSDocument::Info& documentInfo) const;
 						TArray<CMDSDocument>		getDocuments(const CMDSDocument::Info& documentInfo,
 															const TArray<CString>& documentIDs);
@@ -124,12 +124,15 @@ class CMDSDocumentStorage {
 //						void						iterateAssociationFrom(const CMDSDocument& fromDocument,
 //															const CMDSDocument::Info& toDocumentInfo,
 //															CMDSDocument::Proc proc, void* userData) const;
-//		virtual			void						iterateAssociationTo(const CString& name,
-//															const CMDSDocument& toDocument, CMDSDocument::Proc proc,
-//															void* userData) const = 0;
-//						void						iterateAssociationTo(const CMDSDocument::Info& fromDocumentInfo,
-//															const CMDSDocument& toDocument, CMDSDocument::Proc proc,
-//															void* userData) const;
+		virtual			void						iterateAssociationTo(const CString& name,
+															const CMDSDocument::Info& fromDocumentInfo,
+															const CMDSDocument& toDocument, CMDSDocument::Proc proc,
+															void* userData) = 0;
+						void						iterateAssociationTo(const CMDSDocument::Info& fromDocumentInfo,
+															const CMDSDocument& toDocument, CMDSDocument::Proc proc,
+															void* userData);
+						TArray<CMDSDocument>		getDocumentsAssociatedTo(const CMDSDocument::Info& fromDocumentInfo,
+															const CMDSDocument& toDocument);
 
 //		virtual			SValue						retrieveAssociationValue(const CString& name,
 //															const CString& fromDocumentType,

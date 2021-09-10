@@ -24,7 +24,7 @@ TArray<CMDSDocument> CMDSDocumentStorage::getDocuments(const CMDSDocument::Info&
 {
 	// Collect documents
 	TCArray<CMDSDocument>	documents;
-	iterate(info, (CMDSDocument::Proc) sAddDocumentToArray, &documents);
+	((CMDSDocumentStorage*) this)->iterate(info, (CMDSDocument::Proc) sAddDocumentToArray, &documents);
 
 	return documents;
 }
@@ -68,15 +68,28 @@ void CMDSDocumentStorage::updateAssociation(const CMDSDocument::Info& fromDocume
 //			fromDocument, proc, userData);
 //}
 //
-////----------------------------------------------------------------------------------------------------------------------
-//void CMDSDocumentStorage::iterateAssociationTo(const CMDSDocument::Info& fromDocumentInfo,
-//		const CMDSDocument& toDocument, CMDSDocument::Proc proc, void* userData) const
-////----------------------------------------------------------------------------------------------------------------------
-//{
-//	iterateAssociationTo(sComposeAssociationName(fromDocumentInfo.getDocumentType(), toDocument.getDocumentType()),
-//			toDocument, proc, userData);
-//}
-//
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocumentStorage::iterateAssociationTo(const CMDSDocument::Info& fromDocumentInfo,
+		const CMDSDocument& toDocument, CMDSDocument::Proc proc, void* userData)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	iterateAssociationTo(sComposeAssociationName(fromDocumentInfo.getDocumentType(), toDocument.getDocumentType()),
+			fromDocumentInfo, toDocument, proc, userData);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TArray<CMDSDocument> CMDSDocumentStorage::getDocumentsAssociatedTo(const CMDSDocument::Info& fromDocumentInfo,
+		const CMDSDocument& toDocument)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Iterate association
+	TCArray<CMDSDocument>	documents;
+	iterateAssociationTo(sComposeAssociationName(fromDocumentInfo.getDocumentType(), toDocument.getDocumentType()),
+			fromDocumentInfo, toDocument, (CMDSDocument::Proc) sAddDocumentToArray, &documents);
+
+	return documents;
+}
+
 ////----------------------------------------------------------------------------------------------------------------------
 //SValue CMDSDocumentStorage::retrieveAssociationValue(const CMDSDocument::Info& fromDocumentInfo,
 //		const CMDSDocument& toDocument, const CString& summedCachedValueName)

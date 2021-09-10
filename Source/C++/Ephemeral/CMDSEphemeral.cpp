@@ -826,7 +826,7 @@ void CMDSEphemeral::remove(const CMDSDocument& document)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSEphemeral::iterate(const CMDSDocument::Info& documentInfo, CMDSDocument::Proc proc, void* userData) const
+void CMDSEphemeral::iterate(const CMDSDocument::Info& documentInfo, CMDSDocument::Proc proc, void* userData)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Collect document IDs
@@ -854,13 +854,13 @@ void CMDSEphemeral::iterate(const CMDSDocument::Info& documentInfo, CMDSDocument
 
 //----------------------------------------------------------------------------------------------------------------------
 void CMDSEphemeral::iterate(const CMDSDocument::Info& documentInfo, const TArray<CString>& documentIDs,
-		CMDSDocument::Proc proc, void* userData) const
+		CMDSDocument::Proc proc, void* userData)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Iterate document IDs
 	for (TIteratorD<CString> iterator = documentIDs.getIterator(); iterator.hasValue(); iterator.advance()) {
 		// Create document
-		CMDSDocument*	document = documentInfo.create(*iterator, *((CMDSDocumentStorage*) this));
+		CMDSDocument*	document = documentInfo.create(*iterator, *this);
 
 		// Call proc
 		proc(*document, userData);
@@ -908,8 +908,9 @@ void CMDSEphemeral::registerAssociation(const CString& name, const CMDSDocument:
 void CMDSEphemeral::updateAssociation(const CString& name, const TArray<AssociationUpdate>& updates)
 //----------------------------------------------------------------------------------------------------------------------
 {
+	// Iterate updates
 	for (TIteratorD<AssociationUpdate> iterator = updates.getIterator(); iterator.hasValue(); iterator.advance()) {
-		//
+		// Check action
 		if (iterator->mAction == AssociationUpdate::kAdd)
 			// Add
 			mInternals->mAssocationMap.add(name,
@@ -928,14 +929,32 @@ void CMDSEphemeral::updateAssociation(const CString& name, const TArray<Associat
 //	AssertFailUnimplemented();
 //}
 //
-////----------------------------------------------------------------------------------------------------------------------
-//void CMDSEphemeral::iterateAssociationTo(const CString& name, const CMDSDocument& toDocument, CMDSDocument::Proc proc,
-//		void* userData) const
-////----------------------------------------------------------------------------------------------------------------------
-//{
-//	AssertFailUnimplemented();
-//}
-//
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSEphemeral::iterateAssociationTo(const CString& name, const CMDSDocument::Info& fromDocumentInfo,
+		const CMDSDocument& toDocument, CMDSDocument::Proc proc, void* userData)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Retrieve association pairs
+	OR<TArray<CMDSEphemeralInternals::AssociationPair> >	associationPairs = mInternals->mAssocationMap.get(name);
+	if (associationPairs.hasReference()) {
+		// Iterate results
+		for (TIteratorD<CMDSEphemeralInternals::AssociationPair> iterator = associationPairs->getIterator();
+				iterator.hasValue(); iterator.advance()) {
+			// Check document ID
+			if (iterator->mToDocumentID == toDocument.getID()) {
+				// Create
+				CMDSDocument*	document = fromDocumentInfo.create(iterator->mFromDocumentID, *this);
+
+				// Call proc
+				proc(*document, userData);
+
+				// Cleanup
+				Delete(document);
+			}
+		}
+	}
+}
+
 ////----------------------------------------------------------------------------------------------------------------------
 //SValue CMDSEphemeral::retrieveAssociationValue(const CString& name, const CString& fromDocumentType,
 //		const CMDSDocument& toDocument, const CString& summedCachedValueName)

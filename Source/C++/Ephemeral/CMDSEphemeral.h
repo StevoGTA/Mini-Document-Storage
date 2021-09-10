@@ -42,10 +42,10 @@ class CMDSEphemeral : public CMDSDocumentStorage {
 				void					remove(const CMDSDocument& document);
 
 				void					iterate(const CMDSDocument::Info& documentInfo, CMDSDocument::Proc proc,
-												void* userData) const;
+												void* userData);
 				void					iterate(const CMDSDocument::Info& documentInfo,
 												const TArray<CString>& documentIDs, CMDSDocument::Proc proc,
-												void* userData) const;
+												void* userData);
 
 				void					batch(BatchProc batchProc, void* userData);
 
@@ -56,8 +56,10 @@ class CMDSEphemeral : public CMDSDocumentStorage {
 												const TArray<AssociationUpdate>& updates);
 //				void					iterateAssociationFrom(const CString& name, const CMDSDocument& fromDocument,
 //												CMDSDocument::Proc proc, void* userData) const;
-//				void					iterateAssociationTo(const CString& name, const CMDSDocument& toDocument,
-//												CMDSDocument::Proc proc, void* userData) const;
+				void					iterateAssociationTo(const CString& name,
+												const CMDSDocument::Info& fromDocumentInfo,
+												const CMDSDocument& toDocument, CMDSDocument::Proc proc,
+												void* userData);
 
 //				SValue					retrieveAssociationValue(const CString& name, const CString& fromDocumentType,
 //												const CMDSDocument& toDocument, const CString& summedCachedValueName);

@@ -57,6 +57,13 @@ const CString& CMDSDocument::getID() const
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+CMDSDocumentStorage& CMDSDocument::getDocumentStorage() const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return mInternals->mDocumentStorage;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 UniversalTime CMDSDocument::getCreationUniversalTime() const
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -404,17 +411,17 @@ OV<UniversalTime> CMDSDocument::setUniversalTime(const CString& property, Univer
 //	set(property, document.getID());
 //}
 
-////----------------------------------------------------------------------------------------------------------------------
-//OI<TArray<CMDSDocument> > CMDSDocument::getDocuments(const CString& property, const CMDSDocument::Info& info) const
-////----------------------------------------------------------------------------------------------------------------------
-//{
-//	// Get value
-//	OI<TArray<CString> >	documentIDs = getArrayOfStrings(property);
-//
-//	return documentIDs.hasInstance() ?
-//			OI<TArray<CMDSDocument> >(mInternals->mDocumentStorage.getDocuments(info, *documentIDs)) :
-//			OI<TArray<CMDSDocument> >();
-//}
+//----------------------------------------------------------------------------------------------------------------------
+OI<TArray<CMDSDocument> > CMDSDocument::getDocuments(const CString& property, const CMDSDocument::Info& info) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Get value
+	OI<TArray<CString> >	documentIDs = getArrayOfStrings(property);
+
+	return documentIDs.hasInstance() ?
+			OI<TArray<CMDSDocument> >(mInternals->mDocumentStorage.getDocuments(info, *documentIDs)) :
+			OI<TArray<CMDSDocument> >();
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 void CMDSDocument::set(const CString& property, const TArray<CMDSDocument>& documents) const
@@ -469,11 +476,11 @@ void CMDSDocument::set(const CString& property, const TArray<CMDSDocument>& docu
 //}
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSDocument::registerAssociation(const Info& otherInfo)
+void CMDSDocument::registerAssociation(const Info& associatedDocumentInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Register association
-	mInternals->mDocumentStorage.registerAssociation(getInfo(), otherInfo);
+	mInternals->mDocumentStorage.registerAssociation(getInfo(), associatedDocumentInfo);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

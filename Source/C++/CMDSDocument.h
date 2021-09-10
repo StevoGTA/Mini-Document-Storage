@@ -189,11 +189,12 @@ class CMDSDocument : public CHashable {
 
 														// Instance methods
 		virtual			CMDSDocument*					copy() const = 0;
-		virtual			Info							getInfo() const = 0;
+		virtual	const	Info&							getInfo() const = 0;
 
 				const	CString&						getDocumentType() const
 															{ return getInfo().getDocumentType(); }
 				const	CString&						getID() const;
+						CMDSDocumentStorage&			getDocumentStorage() const;
 
 						UniversalTime					getCreationUniversalTime() const;
 						UniversalTime					getModificationUniversalTime() const;
@@ -245,8 +246,8 @@ class CMDSDocument : public CHashable {
 //						void							set(const CString& property, const CMDSDocument& document)
 //																const;
 
-//						OI<TArray<CMDSDocument> >		getDocuments(const CString& property,
-//																const CMDSDocument::Info& info) const;
+						OI<TArray<CMDSDocument> >		getDocuments(const CString& property,
+																const CMDSDocument::Info& info) const;
 						void							set(const CString& property,
 																const TArray<CMDSDocument>& documents) const;
 
@@ -255,7 +256,7 @@ class CMDSDocument : public CHashable {
 //						void							set(const CString& property,
 //																const TDictionary<CMDSDocument> documentMap) const;
 
-						void							registerAssociation(const Info& otherInfo);
+						void							registerAssociation(const Info& associatedDocumentInfo);
 						void							associate(const CMDSDocument& document);
 						void							unassociate(const CMDSDocument& document);
 
