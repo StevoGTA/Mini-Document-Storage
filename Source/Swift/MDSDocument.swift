@@ -18,7 +18,7 @@ public enum MDSDocumentChangeKind {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSDocument
-public class MDSDocument : Hashable {
+open class MDSDocument : Hashable {
 
 	// MARK: Types
 	public	typealias ChangedProc = (_ document :MDSDocument, _ kind :MDSDocumentChangeKind) -> Void
