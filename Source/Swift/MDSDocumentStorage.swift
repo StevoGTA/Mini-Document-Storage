@@ -109,7 +109,7 @@ extension MDSDocumentStorage {
 		var	documents = [T]()
 
 		// Iterate
-		iterateCollection(name: name) { documents.append($0) }
+		iterateCollection(name: name) { documents.append($0 as! T) }
 
 		return documents
 	}

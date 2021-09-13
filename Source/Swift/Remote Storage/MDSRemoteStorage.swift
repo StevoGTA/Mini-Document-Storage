@@ -172,7 +172,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	public func document<T : MDSDocument>(for documentID :String) -> T? {
 		// Retrieve document
 		var	document :T?
-		iterate(documentIDs: [documentID]) { document = $0 }
+		iterate(documentIDs: [documentID]) { document = ($0 as! T) }
 
 		return document
 	}
