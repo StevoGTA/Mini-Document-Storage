@@ -432,13 +432,12 @@ class MDSHTTPServices {
 								}
 	static func httpEndpointRequestForRegisterCollection(documentStorageID :String, documentType :String, name :String,
 			version :Int, relevantProperties :[String] = [], isUpToDate :Bool = false, isIncludedSelector :String,
-			isIncludedSelectorInfo :[String : Any] = [:], authorization :String? = nil) ->
-			JSONHTTPEndpointRequest<[String : Any]> {
+			isIncludedSelectorInfo :[String : Any] = [:], authorization :String? = nil) -> SuccessHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return JSONHTTPEndpointRequest<[String : Any]>(method: .put, path: "/v1/collection/\(documentStorageIDUse)",
+		return SuccessHTTPEndpointRequest(method: .put, path: "/v1/collection/\(documentStorageIDUse)",
 				headers: headers,
 				jsonBody: [
 							"documentType": documentType,
@@ -583,14 +582,12 @@ class MDSHTTPServices {
 								}
 	static func httpEndpointRequestForRegisterIndex(documentStorageID :String, documentType :String, name :String,
 			version :Int, relevantProperties :[String] = [], isUpToDate :Bool = false, keysSelector :String,
-			keysSelectorInfo :[String : Any] = [:], authorization :String? = nil) ->
-			JSONHTTPEndpointRequest<[String : Any]> {
+			keysSelectorInfo :[String : Any] = [:], authorization :String? = nil) -> SuccessHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return JSONHTTPEndpointRequest<[String : Any]>(method: .put, path: "/v1/index/\(documentStorageIDUse)",
-				headers: headers,
+		return SuccessHTTPEndpointRequest(method: .put, path: "/v1/index/\(documentStorageIDUse)", headers: headers,
 				jsonBody: [
 							"name": name,
 							"documentType": documentType,

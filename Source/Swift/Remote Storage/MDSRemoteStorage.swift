@@ -457,7 +457,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 										name: name, version: version, relevantProperties: relevantProperties,
 										isUpToDate: isUpToDate, isIncludedSelector: isIncludedSelector,
 										isIncludedSelectorInfo: isIncludedSelectorInfo,
-										authorization: self.authorization)) { completionProc(($1, $2)) }
+										authorization: self.authorization)) { completionProc(($0, $1)) }
 					}
 		guard error == nil else {
 			// Store error
@@ -567,7 +567,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 										name: name, version: version, relevantProperties: relevantProperties,
 										isUpToDate: isUpToDate, keysSelector: keysSelector,
 										keysSelectorInfo: keysSelectorInfo, authorization: self.authorization))
-										{ completionProc(($1, $2)) }
+										{ completionProc(($0, $1)) }
 					}
 		guard error == nil else {
 			// Store error
