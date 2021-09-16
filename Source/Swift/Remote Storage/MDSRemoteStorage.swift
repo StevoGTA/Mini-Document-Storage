@@ -172,7 +172,8 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	public func document<T : MDSDocument>(for documentID :String) -> T? {
 		// Retrieve document
 		var	document :T?
-		iterate(documentIDs: [documentID]) { document = ($0 as! T) }
+		iterate(documentIDs: [documentID], documentType: T.documentType,
+				creationProc: { T(id: $0, documentStorage: $1) }) { document = $0 }
 
 		return document
 	}
@@ -365,28 +366,9 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func iterate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void) {
-		// Check for batch
-		var	documentIDsToRetrieve = [String]()
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
-			// In batch
-			documentIDs.forEach() {
-				// Check if have in batch
-				if batchInfo.documentInfo(for: $0) != nil {
-					// Have in batch
-					proc(T(id: $0, documentStorage: self))
-				} else {
-					// Not in batch
-					documentIDsToRetrieve.append($0)
-				}
-			}
-		} else {
-			// Not in batch
-			documentIDsToRetrieve = documentIDs
-		}
-
-		// Retrieve documents and call proc
-		retrieveDocuments(for: documentIDsToRetrieve, documentType: T.documentType)
-				{ proc(T(id: $0.documentID, documentStorage: self)) }
+		// Iterate
+		iterate(documentIDs: documentIDs, documentType: T.documentType,
+				creationProc: { T(id: $0, documentStorage: $1) }, proc: proc)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -732,6 +714,33 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 			return documentBackings.first!
 		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func iterate<T : MDSDocument>(documentIDs :[String], documentType :String,
+			creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T, proc :(_ document : T) -> Void) {
+		// Check for batch
+		var	documentIDsToRetrieve = [String]()
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+			// In batch
+			documentIDs.forEach() {
+				// Check if have in batch
+				if batchInfo.documentInfo(for: $0) != nil {
+					// Have in batch
+					proc(T(id: $0, documentStorage: self))
+				} else {
+					// Not in batch
+					documentIDsToRetrieve.append($0)
+				}
+			}
+		} else {
+			// Not in batch
+			documentIDsToRetrieve = documentIDs
+		}
+
+		// Retrieve documents and call proc
+		retrieveDocuments(for: documentIDsToRetrieve, documentType: documentType)
+				{ proc(creationProc($0.documentID, self)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

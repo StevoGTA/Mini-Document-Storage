@@ -28,7 +28,7 @@ open class MDSDocument : Hashable {
 			typealias CreationProc = (_ id :String, _ documentStorage :MDSDocumentStorage) -> MDSDocument
 
 	// MARK: Properties
-	class	open	var documentType: String { "" }
+	class	open	var documentType: String { fatalError("Trying to get documentType of root MDSDocument") }
 
 			public	let	id :String
 			public	let	documentStorage: MDSDocumentStorage
