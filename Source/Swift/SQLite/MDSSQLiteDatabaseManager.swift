@@ -38,7 +38,7 @@ import Foundation
 class MDSSQLiteDatabaseManager {
 
 	// MARK: Types
-			typealias Info = (id :Int64, documentRevisionInfo :MDSDocumentRevisionInfo, active :Bool)
+			typealias Info = (id :Int64, documentRevisionInfo :MDSDocument.RevisionInfo, active :Bool)
 
 	private	typealias DocumentTables = (infoTable :SQLiteTable, contentTable :SQLiteTable)
 
@@ -184,7 +184,7 @@ class MDSSQLiteDatabaseManager {
 			let	revision = Int(resultsRow.integer(for: self.revisionTableColumn)!)
 			let	active :Bool = resultsRow.integer(for: self.activeTableColumn)! == 1
 
-			return (id, MDSDocumentRevisionInfo(documentID: documentID, revision: revision), active)
+			return (id, MDSDocument.RevisionInfo(documentID: documentID, revision: revision), active)
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
@@ -237,7 +237,7 @@ class MDSSQLiteDatabaseManager {
 
 		//--------------------------------------------------------------------------------------------------------------
 		static func documentBackingInfo(for info :Info, with resultsRow :SQLiteResultsRow) ->
-				MDSDocumentBackingInfo<MDSSQLiteDocumentBacking> {
+				MDSDocument.BackingInfo<MDSSQLiteDocumentBacking> {
 			// Process results
 			let	creationDate = Date(fromRFC3339Extended: resultsRow.text(for: self.creationDateTableColumn)!)!
 			let	modificationDate = Date(fromRFC3339Extended: resultsRow.text(for: self.modificationDateTableColumn)!)!
@@ -245,7 +245,7 @@ class MDSSQLiteDatabaseManager {
 						try! JSONSerialization.jsonObject(
 								with: resultsRow.blob(for: self.jsonTableColumn)!) as! [String : Any]
 
-			return MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>(documentID: info.documentRevisionInfo.documentID,
+			return MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>(documentID: info.documentRevisionInfo.documentID,
 					documentBacking:
 							MDSSQLiteDocumentBacking(id: info.id, revision: info.documentRevisionInfo.revision,
 									creationDate: creationDate, modificationDate: modificationDate,
@@ -490,7 +490,7 @@ class MDSSQLiteDatabaseManager {
 	// MARK: Class methods
 	//------------------------------------------------------------------------------------------------------------------
 	static func documentBackingInfo(for info :Info, resultsRow :SQLiteResultsRow) ->
-			MDSDocumentBackingInfo<MDSSQLiteDocumentBacking> {
+			MDSDocument.BackingInfo<MDSSQLiteDocumentBacking> {
 		// Return document backing info
 		return DocumentTypeContentTable.documentBackingInfo(for: info, with: resultsRow)
 	}
@@ -660,7 +660,7 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func queryCollectionDocumentCount(name :String) -> Int { self.collectionTablesMap.value(for: name)!.count() }
+	func documentCountForCollection(named name :String) -> Int { self.collectionTablesMap.value(for: name)!.count() }
 
 	//------------------------------------------------------------------------------------------------------------------
 	func iterateCollection(name :String, documentType :String, proc :(_ info :Info) -> Void) {

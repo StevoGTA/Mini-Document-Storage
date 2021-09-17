@@ -9,19 +9,88 @@
 import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: MDSDocumentChangeKind
-public enum MDSDocumentChangeKind {
-	case created
-	case updated
-	case removed
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSDocument
+// MARK: MDSDocument
 open class MDSDocument : Hashable {
 
-	// MARK: Types
-	public	typealias ChangedProc = (_ document :MDSDocument, _ kind :MDSDocumentChangeKind) -> Void
+	// MARK: ChangeKind
+	public enum ChangeKind {
+		case created
+		case updated
+		case removed
+	}
+
+	// MARK: BackingInfo
+	struct BackingInfo<T> {
+
+		// MARK: Properties
+		let	documentID :String
+		let	documentBacking :T
+	}
+
+	// MARK: RevisionInfo
+	public struct RevisionInfo {
+
+		// MARK: Properties
+		let	documentID :String
+		let	revision :Int
+	}
+
+	// MARK: FullInfo
+	public struct FullInfo {
+
+		// MARK: Properties
+		let	documentID :String
+		let	revision :Int
+		let	active :Bool
+		let	creationDate :Date
+		let	modificationDate :Date
+		let	propertyMap :[String : Any]
+	}
+
+	// MARK: CreateInfo
+	struct CreateInfo {
+
+		// MARK: Properties
+		let	documentID :String
+		let	creationDate :Date?
+		let	modificationDate :Date?
+		let	propertyMap :[String : Any]
+
+		// MARK: Lifecycle methods
+		//--------------------------------------------------------------------------------------------------------------
+		init(documentID :String, creationDate :Date? = nil, modificationDate :Date? = nil,
+				propertyMap :[String : Any]) {
+			// Store
+			self.documentID = documentID
+			self.creationDate = creationDate
+			self.modificationDate = modificationDate
+			self.propertyMap = propertyMap
+		}
+	}
+
+	// MARK: UpdateInfo
+	struct UpdateInfo {
+
+		// MARK: Properties
+		let	documentID :String
+		let	active :Bool
+		let	updated :[String : Any]
+		let	removed :Set<String>
+
+		// MARK: Lifecycle methods
+		//--------------------------------------------------------------------------------------------------------------
+		init(documentID :String, active :Bool = true, updated :[String : Any] = [:],
+				removed :Set<String> = Set<String>()) {
+			// Store
+			self.documentID = documentID
+			self.active = active
+			self.updated = updated
+			self.removed = removed
+		}
+	}
+
+	// MARK: Procs
+	public	typealias ChangedProc = (_ document :MDSDocument, _ changeKind :ChangeKind) -> Void
 
 			typealias PropertyMap = [/* Property */ String : /* Value */ Any]
 
@@ -60,53 +129,59 @@ open class MDSDocument : Hashable {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func bool(for property :String) -> Bool? { self.documentStorage.value(for: property, in: self) as? Bool }
-	@discardableResult public func set(_ value :Bool?, for property :String) -> Bool? {
+	@discardableResult
+	public func set(_ value :Bool?, for property :String) -> Bool? {
 		// Check if different
 		let	previousValue = bool(for: property)
-		guard value != previousValue else { return value }
-
-		// Set value
-		self.documentStorage.set(value, for: property, in: self)
+		if value != previousValue {
+			// Set value
+			self.documentStorage.set(value, for: property, in: self)
+		}
 
 		return previousValue
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func data(for property :String) -> Data? { self.documentStorage.data(for: property, in: self) }
-	@discardableResult public func set(_ value :Data?, for property :String) -> Data? {
+	@discardableResult
+	public func set(_ value :Data?, for property :String) -> Data? {
 		// Check if different
 		let	previousValue = data(for: property)
-		guard value != previousValue else { return value }
-
-		// Set value
-		self.documentStorage.set(value, for: property, in: self)
+		if value != previousValue {
+			// Set value
+			self.documentStorage.set(value?.base64EncodedString(), for: property, in: self)
+		}
 
 		return previousValue
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func date(for property :String) -> Date? { self.documentStorage.date(for: property, in: self) }
-	@discardableResult public func set(_ value :Date?, for property :String) -> Date? {
+	@discardableResult
+	public func set(_ value :Date?, for property :String) -> Date? {
 		// Check if different
 		let	previousValue = date(for: property)
-		guard value != previousValue else { return value }
-
-		// Set value
-		self.documentStorage.set(value, for: property, in: self)
+		if value != previousValue {
+			// Set value
+			self.documentStorage.set(value, for: property, in: self)
+		}
 
 		return previousValue
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func double(for property :String) -> Double?
-		{ self.documentStorage.value(for: property, in: self) as? Double }
-	@discardableResult public func set(_ value :Double?, for property :String) -> Double? {
+	public func double(for property :String) -> Double? {
+		// Return value
+		return self.documentStorage.value(for: property, in: self) as? Double
+	}
+	@discardableResult
+	public func set(_ value :Double?, for property :String) -> Double? {
 		// Check if different
 		let	previousValue = double(for: property)
-		guard value != previousValue else { return value }
-
-		// Set value
-		self.documentStorage.set(value, for: property, in: self)
+		if value != previousValue {
+			// Set value
+			self.documentStorage.set(value, for: property, in: self)
+		}
 
 		return previousValue
 	}
@@ -125,24 +200,25 @@ open class MDSDocument : Hashable {
 
 		return NSError(domain: domain, code: code, userInfo: userInfo)
 	}
-	@discardableResult public func set(_ value :NSError?, for property :String) -> NSError? {
+	@discardableResult
+	public func set(_ value :NSError?, for property :String) -> NSError? {
 		// Check if different
 		let	previousValue = nsError(for: property)
-		guard value != previousValue else { return value }
+		if value != previousValue {
+			// Set value
+			if value != nil {
+				// Have value
+				var	info :[String : Any] = [
+											"NSDomain": value!.domain,
+											"NSCode": value!.code,
+										   ]
+				info[NSLocalizedDescriptionKey] = value!.userInfo[NSLocalizedDescriptionKey]
 
-		// Set value
-		if value != nil {
-			// Have value
-			var	info :[String : Any] = [
-										"NSDomain": value!.domain,
-										"NSCode": value!.code,
-									   ]
-			info[NSLocalizedDescriptionKey] = value!.userInfo[NSLocalizedDescriptionKey]
-
-			self.documentStorage.set(info, for: property, in: self)
-		} else {
-			// No value
-			self.documentStorage.set(nil, for: property, in: self)
+				self.documentStorage.set(info, for: property, in: self)
+			} else {
+				// No value
+				self.documentStorage.set(nil, for: property, in: self)
+			}
 		}
 
 		return previousValue
@@ -150,26 +226,28 @@ open class MDSDocument : Hashable {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func int(for property :String) -> Int? { self.documentStorage.value(for: property, in: self) as? Int }
-	@discardableResult public func set(_ value :Int?, for property :String) -> Int? {
+	@discardableResult
+	public func set(_ value :Int?, for property :String) -> Int? {
 		// Check if different
 		let	previousValue = int(for: property)
-		guard value != previousValue else { return value }
-
-		// Set value
-		self.documentStorage.set(value, for: property, in: self)
+		if value != previousValue {
+			// Set value
+			self.documentStorage.set(value, for: property, in: self)
+		}
 
 		return previousValue
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func int64(for property :String) -> Int64? { self.documentStorage.value(for: property, in: self) as? Int64 }
-	@discardableResult public func set(_ value :Int64?, for property :String) -> Int64? {
+	@discardableResult
+	public func set(_ value :Int64?, for property :String) -> Int64? {
 		// Check if different
 		let	previousValue = int64(for: property)
-		guard value != previousValue else { return value }
-
-		// Set value
-		self.documentStorage.set(value, for: property, in: self)
+		if value != previousValue {
+			// Set value
+			self.documentStorage.set(value, for: property, in: self)
+		}
 
 		return previousValue
 	}
@@ -186,7 +264,7 @@ open class MDSDocument : Hashable {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func set(for property :String) -> Set<AnyHashable>? {
-		// Query value as array
+		// Get value as array
 		if let array = self.documentStorage.value(for: property, in: self) as? [AnyHashable] {
 			// Have value
 			return Set<AnyHashable>(array)
@@ -201,29 +279,33 @@ open class MDSDocument : Hashable {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func string(for property :String) -> String?
-			{ self.documentStorage.value(for: property, in: self) as? String }
-	@discardableResult public func set(_ value :String?, for property :String) -> String? {
+	public func string(for property :String) -> String? {
+		// Return value
+		return self.documentStorage.value(for: property, in: self) as? String
+	}
+	@discardableResult
+	public func set(_ value :String?, for property :String) -> String? {
 		// Check if different
 		let	previousValue = string(for: property)
-		guard value != previousValue else { return value }
-
-		// Set value
-		self.documentStorage.set(value, for: property, in: self)
+		if value != previousValue {
+			// Set value
+			self.documentStorage.set(value, for: property, in: self)
+		}
 
 		return previousValue
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func uint(for property :String) -> UInt? { self.documentStorage.value(for: property, in: self) as? UInt }
-	@discardableResult public func set(_ value :UInt?, for property :String) -> UInt? {
+	@discardableResult
+	public func set(_ value :UInt?, for property :String) -> UInt? {
 		// Check if different
 		let	previousValue = uint(for: property)
-		guard value != previousValue else { return value }
-
-		// Set value
-		self.documentStorage.set(value, for: property, in: self)
-
+		if value != previousValue {
+			// Set value
+			self.documentStorage.set(value, for: property, in: self)
+		}
+		
 		return previousValue
 	}
 
@@ -234,7 +316,13 @@ open class MDSDocument : Hashable {
 
 		return self.documentStorage.document(for: documentID)
 	}
-	public func set<T : MDSDocument>(_ document :T?, for property :String) { set(document?.id, for: property) }
+	public func set<T : MDSDocument>(_ document :T?, for property :String) {
+		// Check if different
+		guard document?.id != string(for: property) else { return }
+
+		// Set value
+		self.documentStorage.set(document?.id, for: property, in: self)
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documents<T : MDSDocument>(for property :String) -> [T]? {
@@ -253,10 +341,11 @@ open class MDSDocument : Hashable {
 		// Retrieve document IDs map
 		guard let storedMap = map(for: property) as? [String : String] else { return nil }
 
+		// Retrieve documents
 		let	documents :[T] = self.documentStorage.documents(for: Array(storedMap.values))
 		guard documents.count == storedMap.count else { return nil }
 
-		// Prepare map from document ID to document
+		// Prepare map from documentID to document
 		var	documentMap = [String : T]()
 		documents.forEach() { documentMap[$0.id] = $0 }
 
@@ -272,79 +361,6 @@ open class MDSDocument : Hashable {
 	
 	//------------------------------------------------------------------------------------------------------------------
 	public func remove() { self.documentStorage.remove(self) }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSDocumentBackingInfo
-public struct MDSDocumentBackingInfo<T> {
-
-	// MARK: Properties
-	let	documentID :String
-	let	documentBacking :T
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSDocumentRevisionInfo
-public struct MDSDocumentRevisionInfo {
-
-	// MARK: Properties
-	let	documentID :String
-	let	revision :Int
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSDocumentFullInfo
-public struct MDSDocumentFullInfo {
-
-	// MARK: Properties
-	let	documentID :String
-	let	revision :Int
-	let	active :Bool
-	let	creationDate :Date
-	let	modificationDate :Date
-	let	propertyMap :[String : Any]
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSDocumentCreateInfo
-struct MDSDocumentCreateInfo {
-
-	// MARK: Properties
-	let	documentID :String
-	let	creationDate :Date?
-	let	modificationDate :Date?
-	let	propertyMap :[String : Any]
-
-	// MARK: Lifecycle methods
-	//------------------------------------------------------------------------------------------------------------------
-	init(documentID :String, creationDate :Date? = nil, modificationDate :Date? = nil, propertyMap :[String : Any]) {
-		// Store
-		self.documentID = documentID
-		self.creationDate = creationDate
-		self.modificationDate = modificationDate
-		self.propertyMap = propertyMap
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSDocumentUpdateInfo
-struct MDSDocumentUpdateInfo {
-
-	// MARK: Properties
-	let	documentID :String
-	let	active :Bool
-	let	updated :[String : Any]
-	let	removed :Set<String>
-
-	// MARK: Lifecycle methods
-	//------------------------------------------------------------------------------------------------------------------
-	init(documentID :String, active :Bool = true, updated :[String : Any] = [:], removed :Set<String> = Set<String>()) {
-		// Store
-		self.documentID = documentID
-		self.active = active
-		self.updated = updated
-		self.removed = removed
-	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------

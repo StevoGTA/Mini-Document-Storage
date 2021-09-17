@@ -16,13 +16,13 @@ class MDSDocumentBackingCache<T> {
 	private class Reference<T> {
 
 		// MARK: Properties
-		let	documentBackingInfo :MDSDocumentBackingInfo<T>
+		let	documentBackingInfo :MDSDocument.BackingInfo<T>
 
 		var	lastReferencedDate :Date
 
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
-		init(documentBackingInfo :MDSDocumentBackingInfo<T>) {
+		init(documentBackingInfo :MDSDocument.BackingInfo<T>) {
 			// Store
 			self.documentBackingInfo = documentBackingInfo
 
@@ -57,7 +57,7 @@ class MDSDocumentBackingCache<T> {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	func add(_ documentBackingInfos :[MDSDocumentBackingInfo<T>]) {
+	func add(_ documentBackingInfos :[MDSDocument.BackingInfo<T>]) {
 		// Update
 		self.lock.write() {
 			// Do all document backing infos
@@ -109,9 +109,9 @@ class MDSDocumentBackingCache<T> {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func queryDocumentBackingInfos(_ documentIDs :[String]) ->
-			(foundDocumentBackingInfos :[MDSDocumentBackingInfo<T>], notFoundDocumentIDs :[String]) {
+			(foundDocumentBackingInfos :[MDSDocument.BackingInfo<T>], notFoundDocumentIDs :[String]) {
 		// Setup
-		var	foundDocumentInfos = [MDSDocumentBackingInfo<T>]()
+		var	foundDocumentInfos = [MDSDocument.BackingInfo<T>]()
 		var	notFoundDocumentIDs = [String]()
 
 		// Iterate document IDs

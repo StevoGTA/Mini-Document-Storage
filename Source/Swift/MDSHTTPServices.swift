@@ -9,8 +9,8 @@
 import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSDocumentFullInfo extension
-extension MDSDocumentFullInfo {
+// MARK: - MDSDocument.FullInfo extension
+extension MDSDocument.FullInfo {
 
 	// MARK: Properties
 	var	httpServicesInfo :[String : Any] {
@@ -38,8 +38,8 @@ extension MDSDocumentFullInfo {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSDocumentCreateInfo
-extension MDSDocumentCreateInfo {
+// MARK: - MDSDocument.CreateInfo
+extension MDSDocument.CreateInfo {
 
 	// MARK: Properties
 	var	httpServicesInfo :[String : Any] {
@@ -67,8 +67,8 @@ extension MDSDocumentCreateInfo {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: MDSDocumentUpdateInfo extension
-extension MDSDocumentUpdateInfo {
+// MARK: MDSDocument.UpdateInfo extension
+extension MDSDocument.UpdateInfo {
 
 	// MARK: Properties
 	var	httpServicesInfo :[String : Any] {
@@ -98,7 +98,7 @@ class MDSHTTPServices {
 	// MARK: Get Info
 	//	=> documentStorageID (path)
 	//	=> key (query) (can specify multiple)
-	//	=> authorization (optional)
+	//	=> authorization (header) (optional)
 	//
 	//	<= [
 	//		"key" :String
@@ -136,7 +136,7 @@ class MDSHTTPServices {
 	//			"key" :String
 	//			...
 	//		]
-	//	=> authorization (optional)
+	//	=> authorization (header) (optional)
 	typealias SetInfoEndpointInfo = (documentStorageID :String, info :[String : String], authorization :String?)
 	static	let	setInfoEndpoint =
 						JSONHTTPEndpoint<[String : String], SetInfoEndpointInfo>(method: .post,
@@ -158,13 +158,80 @@ class MDSHTTPServices {
 				jsonBody: info)
 	}
 
+	// MARK: Create Documents
+	//	=> documentStorageID (path)
+	//	=> type (path)
+	//	=> json (body)
+	//		[
+	//			{
+	//				"documentID" :String (optional)
+	//				"creationDate" :String (optional)
+	//				"modificationDate" :String (optional)
+	//				"json" :{
+	//							"key" :Any,
+	//							...
+	//						}
+	//			},
+	//			...
+	//		]
+	//	=> authorization (header) (optional)
+	//
+	//	<= json
+	//		[
+	//			{
+	//				"documentID" :String,
+	//				"revision" :Int,
+	//				"creationDate" :String,
+	//				"modificationDate" :String,
+	//			},
+	//			...
+	//		]
+	typealias CreateDocumentsEndpointInfo =
+				(documentStorageID :String, type :String, documentCreateInfos :[MDSDocument.CreateInfo],
+						authorization :String?)
+	static	let	createDocumentsEndpoint =
+						JSONHTTPEndpoint<Any, CreateDocumentsEndpointInfo>(method: .post,
+								path: "/v1/document/:documentStorageID/:type")
+								{ (urlComponents, headers, info) -> CreateDocumentsEndpointInfo in
+									// Retrieve and validate
+									let	pathComponents = urlComponents.path.pathComponents
+									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
+									let	type = pathComponents[3]
+
+									guard let infos = info as? [[String : Any]] else {
+										// Unable to retrieve infos properly
+										throw HTTPEndpointError.badRequest(
+												with: "body data is not in the correct format")
+									}
+									guard infos.first(where: { $0["json"] == nil }) != nil else {
+										// json not found in all infos
+										throw HTTPEndpointError.badRequest(
+												with: "json not specified for all document infos")
+									}
+									let	documentCreateInfos =
+												infos.map() { MDSDocument.CreateInfo(httpServicesInfo: $0) }
+
+									return (documentStorageID, type, documentCreateInfos, headers["Authorization"])
+								}
+	static func httpEndpointRequestForCreateDocuments(documentStorageID :String, type :String,
+			documentCreateInfos :[MDSDocument.CreateInfo], authorization :String? = nil) ->
+			JSONHTTPEndpointRequest<[[String : Any]]> {
+		// Setup
+		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
+		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
+
+		return JSONHTTPEndpointRequest<[[String : Any]]>(method: .post,
+				path: "/v1/document/\(documentStorageIDUse)/\(type)", headers: headers,
+				jsonBody: documentCreateInfos.map({ $0.httpServicesInfo }))
+	}
+
 	// MARK: Get Documents
 	//	=> documentStorageID (path)
 	//	=> type (path)
 	//	=> sinceRevision (query)
 	//		-or-
 	//	=> id (query) (can specify multiple)
-	//	=> authorization (optional)
+	//	=> authorization (header) (optional)
 	//
 	//	<= json
 	//		[
@@ -187,7 +254,7 @@ class MDSHTTPServices {
 				(documentStorageID :String, type :String, documentIDs :[String]?, sinceRevision :Int?,
 						authorization :String?)
 	static	let	getDocumentsEndpoint =
-						BasicHTTPEndpoint(method: .get, path: "/v1/documents/:documentStorageID/:type")
+						BasicHTTPEndpoint(method: .get, path: "/v1/document/:documentStorageID/:type")
 								{ (urlComponents, headers) -> GetDocumentsEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
@@ -213,8 +280,8 @@ class MDSHTTPServices {
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
 		return GetDocumentsSinceRevisionHTTPEndpointRequest(method: .get,
-				path: "/v1/documents/\(documentStorageIDUse)/\(type)",
-				queryComponents: ["sinceRevision": sinceRevision], headers: headers)
+				path: "/v1/document/\(documentStorageIDUse)/\(type)", queryComponents: ["sinceRevision": sinceRevision],
+				headers: headers)
 	}
 	static func httpEndpointRequestForGetDocuments(documentStorageID :String, type :String, documentIDs :[String],
 			authorization :String? = nil) -> GetDocumentsForDocumentIDsHTTPEndpointRequest {
@@ -223,75 +290,8 @@ class MDSHTTPServices {
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
 		return GetDocumentsForDocumentIDsHTTPEndpointRequest(method: .get,
-				path: "/v1/documents/\(documentStorageIDUse)/\(type)", multiValueQueryComponent: ("id", documentIDs),
+				path: "/v1/document/\(documentStorageIDUse)/\(type)", multiValueQueryComponent: ("id", documentIDs),
 				headers: headers)
-	}
-
-	// MARK: Create Documents
-	//	=> documentStorageID (path)
-	//	=> type (path)
-	//	=> json (body)
-	//		[
-	//			{
-	//				"documentID" :String (optional)
-	//				"creationDate" :String (optional)
-	//				"modificationDate" :String (optional)
-	//				"json" :[
-	//							"key" :Any,
-	//							...
-	//						]
-	//			},
-	//			...
-	//		]
-	//	=> authorization (optional)
-	//
-	//	<= json
-	//		[
-	//			{
-	//				"documentID" :String,
-	//				"revision" :Int,
-	//				"creationDate" :String,
-	//				"modificationDate" :String,
-	//			},
-	//			...
-	//		]
-	typealias CreateDocumentsEndpointInfo =
-				(documentStorageID :String, type :String, documentCreateInfos :[MDSDocumentCreateInfo],
-						authorization :String?)
-	static	let	createDocumentsEndpoint =
-						JSONHTTPEndpoint<Any, CreateDocumentsEndpointInfo>(method: .post,
-								path: "/v1/documents/:documentStorageID/:type")
-								{ (urlComponents, headers, info) -> CreateDocumentsEndpointInfo in
-									// Retrieve and validate
-									let	pathComponents = urlComponents.path.pathComponents
-									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
-									let	type = pathComponents[3]
-
-									guard let infos = info as? [[String : Any]] else {
-										// Unable to retrieve infos properly
-										throw HTTPEndpointError.badRequest(
-												with: "body data is not in the correct format")
-									}
-									guard infos.first(where: { $0["json"] == nil }) != nil else {
-										// json not found in all infos
-										throw HTTPEndpointError.badRequest(
-												with: "json not specified for all document infos")
-									}
-									let	documentCreateInfos =
-												infos.map() { MDSDocumentCreateInfo(httpServicesInfo: $0) }
-
-									return (documentStorageID, type, documentCreateInfos, headers["Authorization"])
-								}
-	static func httpEndpointRequestForCreateDocuments(documentStorageID :String, type :String,
-			documentCreateInfos :[MDSDocumentCreateInfo], authorization :String? = nil) ->
-			JSONHTTPEndpointRequest<[[String : Any]]> {
-		// Setup
-		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
-		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
-
-		return JSONHTTPEndpointRequest<[[String : Any]]>(method: .post,
-				path: "/v1/documents/\(documentStorageIDUse)/\(type)", headers: headers,
-				jsonBody: documentCreateInfos.map({ $0.httpServicesInfo }))
 	}
 
 	// MARK: Update Documents
@@ -313,13 +313,13 @@ class MDSHTTPServices {
 	//			},
 	//			...
 	//		]
-	//	=> authorization (optional)
+	//	=> authorization (header) (optional)
 	typealias UpdateDocumentsEndpointInfo =
-				(documentStorageID :String, type :String, documentUpdateInfos :[MDSDocumentUpdateInfo],
+				(documentStorageID :String, type :String, documentUpdateInfos :[MDSDocument.UpdateInfo],
 						authorization :String?)
 	static	let	updateDocumentsEndpoint =
 						JSONHTTPEndpoint<Any, UpdateDocumentsEndpointInfo>(method: .patch,
-								path: "/v1/documents/:documentStorageID/:type")
+								path: "/v1/document/:documentStorageID/:type")
 								{ (urlComponents, headers, info) -> UpdateDocumentsEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
@@ -352,20 +352,346 @@ class MDSHTTPServices {
 												with: "active not specified for all document infos")
 									}
 									let	documentUpdateInfos =
-												infos.map() { MDSDocumentUpdateInfo(httpServicesInfo: $0) }
+												infos.map() { MDSDocument.UpdateInfo(httpServicesInfo: $0) }
 
 									return (documentStorageID, type, documentUpdateInfos, headers["Authorization"])
 								}
 	static func httpEndpointRequestForUpdateDocuments(documentStorageID :String, type :String,
-			documentUpdateInfos :[MDSDocumentUpdateInfo], authorization :String? = nil) ->
+			documentUpdateInfos :[MDSDocument.UpdateInfo], authorization :String? = nil) ->
 			JSONHTTPEndpointRequest<[[String : Any]]> {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
 		return JSONHTTPEndpointRequest<[[String : Any]]>(method: .patch,
-				path: "/v1/documents/\(documentStorageIDUse)/\(type)", headers: headers,
+				path: "/v1/document/\(documentStorageIDUse)/\(type)", headers: headers,
 				jsonBody: documentUpdateInfos.map({ $0.httpServicesInfo }))
+	}
+
+	// MARK: Register Association
+	//	=> documentStorageID (path)
+	//	=> json (body)
+	//		{
+	//			"name" :String
+	//			"fromDocumentType" :String,
+	//			"toDocumentType" :String,
+	//		}
+	//	=> authorization (header) (optional)
+	typealias RegisterAssociationEndpointInfo = (documentStorageID :String, name :String, authorization :String?)
+	static	let	registerAssociationEndpoint =
+						JSONHTTPEndpoint<[String : Any], RegisterAssociationEndpointInfo>(method: .put,
+								path: "/v1/association/:documentStorageID")
+								{ (urlComponents, headers, info) -> RegisterAssociationEndpointInfo in
+									// Retrieve and validate
+									let	pathComponents = urlComponents.path.pathComponents
+									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
+
+									guard let name = info["name"] as? String else {
+										// Missing name
+										throw HTTPEndpointError.badRequest(with: "missing name")
+									}
+
+									return (documentStorageID, name, headers["Authorization"])
+								}
+	static func httpEndpointRequestForRegisterAssociation(documentStorageID :String, name :String,
+			fromDocumentType :String, toDocumentType :String, authorization :String? = nil) ->
+			SuccessHTTPEndpointRequest {
+		// Setup
+		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
+		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
+
+		return SuccessHTTPEndpointRequest(method: .put, path: "/v1/association/\(documentStorageIDUse)",
+				headers: headers,
+				jsonBody: [
+							"name": name,
+							"fromDocumentType": fromDocumentType,
+							"toDocumentType": toDocumentType,
+						  ])
+	}
+
+	// MARK: Update Association
+	//	=> documentStorageID (path)
+	//	=> name (path)
+	//	=> json (body)
+	//		[
+	//			{
+	//				"action" :"add", "update", or "remove"
+	//				"fromID" :String
+	//				"toID :String
+	//			}
+	//		]
+	//	=> authorization (header) (optional)
+	typealias UpdateAssociationEndpointInfo =
+				(documentStorageID :String, name :String,
+						updates :[(action :MDSAssociationAction, fromID :String, toID :String)], authorization :String?)
+	static	let	updateAssocationEndpoint =
+						JSONHTTPEndpoint<[[String : Any]], UpdateAssociationEndpointInfo>(method: .patch,
+								path: "/v1/association/:documentStorageID/:name")
+								{ (urlComponents, headers, infos) -> UpdateAssociationEndpointInfo in
+									// Retrieve and validate
+									let	pathComponents = urlComponents.path.pathComponents
+									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
+									let	name = pathComponents[3]
+
+									let	updates :[(action :MDSAssociationAction, fromID :String, toID :String)] =
+												infos.compactMap() {
+													// Get info
+													guard let action =
+															MDSAssociationAction(
+																	rawValue: ($0["action"] as? String) ?? ""),
+															let fromID = $0["fromID"] as? String,
+															let toID = $0["toID"] as? String else { return nil }
+
+													return (action, fromID, toID)
+												}
+									guard updates.count == infos.count else {
+										// Missing/invalid action
+										throw HTTPEndpointError.badRequest(with: "invalid info")
+									}
+
+									return (documentStorageID, name, updates, headers["Authorization"])
+								}
+	static func httpEndpointRequestForUpdateAssocation(documentStorageID :String, name :String,
+			updates :[(action :MDSAssociationAction, fromID :String, toID :String)], authorization :String? = nil) ->
+			SuccessHTTPEndpointRequest {
+		// Setup
+		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
+		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
+
+		return SuccessHTTPEndpointRequest(method: .put,
+				path: "/v1/association/\(documentStorageIDUse)/\(name)", headers: headers,
+				jsonBody:
+						updates.map() {
+							[
+								"action": $0.action.rawValue,
+								"fromID": $0.fromID,
+								"toID": $0.toID,
+							]
+						})
+	}
+
+	// MARK: Get Association Document Infos
+	//	=> documentStorageID (path)
+	//	=> name (path)
+	//	=> fromID (query) (optional) -or- toID (query) (optional)
+	//	=> startIndex (query)
+	//	=> authorization (header) (optional)
+	//
+	//	<= json
+	//		{
+	//			String (documentID) : Int (revision),
+	//			...
+	//		}
+	typealias GetAssociationDocumentInfosHTTPEndpointRequest = JSONHTTPEndpointRequest<[String : Int]>
+	typealias GetAssociationDocumentInfosEndpointInfo =
+				(documentStorageID :String, name :String, fromID :String?, toID :String?, authorization :String?)
+	static	let	getAssociationDocumentInfosEndpoint =
+						BasicHTTPEndpoint(method: .get, path: "/v1/assocation/:documentStorageID/:name")
+								{ (urlComponents, headers) -> GetAssociationDocumentInfosEndpointInfo in
+									// Retrieve and validate
+									let	pathComponents = urlComponents.path.pathComponents
+									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
+									let	name = pathComponents[3]
+
+									let	queryItemsMap = urlComponents.queryItemsMap
+									let	fromID = queryItemsMap["fromID"] as? String
+									let	toID = queryItemsMap["toID"] as? String
+									guard (fromID != nil) || (toID != nil) else {
+										// Missing fromID and toID
+										throw HTTPEndpointError.badRequest(with: "missing fromID or toID")
+									}
+
+									return (documentStorageID, name, fromID, toID, headers["Authorization"])
+								}
+	static func httpEndpointRequestForGetAssociationDocumentInfos(documentStorageID :String, name :String,
+			fromID :String, startIndex :Int, authorization :String? = nil) ->
+			GetAssociationDocumentInfosHTTPEndpointRequest {
+		// Setup
+		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
+		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
+
+		// Return endpoint request
+		return GetAssociationDocumentInfosHTTPEndpointRequest(method: .get,
+				path: "/v1/association/\(documentStorageIDUse)/\(name)",
+				queryComponents: [
+									"fromID": fromID,
+									"startIndex": startIndex
+								 ],
+				headers: headers)
+	}
+	static func httpEndpointRequestForGetAssociationDocumentInfos(documentStorageID :String, name :String,
+			toID :String, startIndex :Int, authorization :String? = nil) ->
+			GetAssociationDocumentInfosHTTPEndpointRequest {
+		// Setup
+		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
+		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
+
+		// Return endpoint request
+		return GetAssociationDocumentInfosHTTPEndpointRequest(method: .get,
+				path: "/v1/association/\(documentStorageIDUse)/\(name)",
+				queryComponents: [
+									"toID": toID,
+									"startIndex": startIndex
+								 ],
+				headers: headers)
+	}
+
+	// MARK: Get Association Value
+	//	=> documentStorageID (path)
+	//	=> name (path)
+	//	=> toID (query)
+	//	=> action (query)
+	//	=> cacheName (query)
+	//	=> cacheValueName (query)
+	//	=> authorization (header) (optional)
+	//
+	//	<= count
+	enum GetAssociationValueAction : String {
+		case sum = "sum"
+	}
+	typealias GetAssociationValueHTTPEndpointRequest = IntegerHTTPEndpointRequest
+	typealias GetAssociationValueEndpointInfo =
+				(documentStorageID :String, name :String, toID :String, action :GetAssociationValueAction,
+						cacheName :String, cacheNameValue :String, authorization :String?)
+	static	let	getAssocationValueEndpoint =
+						BasicHTTPEndpoint(method: .get, path: "/v1/association/:documentStorageID/:name/value")
+								{ (urlComponents, headers) -> GetAssociationValueEndpointInfo in
+									// Retrieve and validate
+									let	pathComponents = urlComponents.path.pathComponents
+									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
+									let	name = pathComponents[3]
+
+									let	queryItemsMap = urlComponents.queryItemsMap
+									guard let toID = queryItemsMap["toID"] as? String else {
+										// Missing toID
+										throw HTTPEndpointError.badRequest(with: "missing toID")
+									}
+									guard let action =
+											GetAssociationValueAction(
+													rawValue: (queryItemsMap["action"] as? String) ?? "") else {
+										// Missing/invalid action
+										throw HTTPEndpointError.badRequest(with: "missing or invalid action")
+									}
+									guard let cacheName = queryItemsMap["cacheName"] as? String else {
+										// Missing cacheName
+										throw HTTPEndpointError.badRequest(with: "missing cacheName")
+									}
+									guard let cacheValueName = queryItemsMap["cacheValueName"] as? String else {
+										// Missing cacheValueName
+										throw HTTPEndpointError.badRequest(with: "missing cacheValueName")
+									}
+
+									return (documentStorageID, name, toID, action, cacheName, cacheValueName,
+											headers["Authorization"])
+								}
+	static func httpEndpointRequestForGetAssocationValue(documentStorageID :String, name :String, toID :String,
+			action :GetAssociationValueAction, cacheName :String, cacheNameValue :String, authorization :String? = nil)
+			-> GetAssociationValueHTTPEndpointRequest {
+		// Setup
+		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
+		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
+
+		return GetAssociationValueHTTPEndpointRequest(method: .get,
+				path: "/v1/association/\(documentStorageIDUse)/\(name)/value",
+				queryComponents: [
+									"toID": toID,
+									"action": action.rawValue,
+									"cacheName": cacheName,
+									"cacheValueName": cacheNameValue,
+								 ],
+				headers: headers)
+	}
+
+	// MARK: Register Cache
+	//	=> documentStorageID (path)
+	//	=> json (body)
+	//		{
+	//			"documentType" :String,
+	//			"name" :String,
+	//			"version" :Int,
+	//			"relevantProperties" :[String]
+	//			"valuesInfos" :[
+	//							{
+	//								"name" :String,
+	//								"valueType" :"integer",
+	//								"selector" :String,
+	//							},
+	//							...
+	//				 		   ]
+	//	=> authorization (header) (optional)
+	typealias RegisterCacheEndpointValueInfo = (name :String, valueType :MDSValueType, selector :String)
+	typealias RegisterCacheEndpointInfo =
+				(documentStorageID :String, documentType :String, name :String, version :Int,
+						relevantProperties :[String], valuesInfos :[RegisterCacheEndpointValueInfo],
+						authorization :String?)
+	static	let	registerCacheEndpoint =
+						JSONHTTPEndpoint<[String : Any], RegisterCacheEndpointInfo>(method: .put,
+								path: "/v1/cache/:documentStorageID")
+								{ (urlComponents, headers, info) -> RegisterCacheEndpointInfo in
+									// Retrieve and validate
+									let	pathComponents = urlComponents.path.pathComponents
+									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
+
+									guard let documentType = info["documentType"] as? String else {
+										// Missing documentType
+										throw HTTPEndpointError.badRequest(with: "missing documentType")
+									}
+									guard let name = info["name"] as? String else {
+										// Missing name
+										throw HTTPEndpointError.badRequest(with: "missing name")
+									}
+									guard let version = info["version"] as? Int else {
+										// Missing version
+										throw HTTPEndpointError.badRequest(with: "missing version")
+									}
+									guard let relevantProperties = info["relevantProperties"] as? [String] else {
+										// Missing relevantProperties
+										throw HTTPEndpointError.badRequest(with: "missing relevantProperties")
+									}
+									guard let valuesInfosInfo = info["valuesInfos"] as? [[String : Any]] else {
+										// Missing or invalid values infos
+										throw HTTPEndpointError.badRequest(with: "missing or invalid valuesInfos")
+									}
+									let	valuesInfos =
+												valuesInfosInfo.compactMap({ info -> RegisterCacheEndpointValueInfo? in
+													// Setup
+													guard let name = info["name"] as? String,
+															let valueType = info["valueType"] as? String,
+															valueType == "integer",
+															let selector = info["selector"] as? String else
+														{ return nil }
+
+													return RegisterCacheEndpointValueInfo(name, .integer, selector)
+												})
+									guard valuesInfos.count == valuesInfosInfo.count else {
+										// Invalid values infos
+										throw HTTPEndpointError.badRequest(with: "invalid valuesInfos")
+									}
+
+									return (documentStorageID, documentType, name, version, relevantProperties,
+											valuesInfos, headers["Authorization"])
+								}
+	static func httpEndpointRequestForRegisterCache(documentStorageID :String, documentType :String, name :String,
+			version :Int, relevantProperties :[String] = [], valueInfos :[RegisterCacheEndpointValueInfo],
+			authorization :String? = nil) -> SuccessHTTPEndpointRequest {
+		// Setup
+		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
+		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
+		let	valuesInfosTransformed =
+					valueInfos.map({ [
+										"name": $0.name,
+										"valueType": "integer",
+										"selector": $0.selector,
+									  ] })
+
+		return SuccessHTTPEndpointRequest(method: .put, path: "/v1/cache/\(documentStorageIDUse)", headers: headers,
+				jsonBody: [
+							"documentType": documentType,
+							"name": name,
+							"version": version,
+							"relevantProperties": relevantProperties,
+							"valuesInfos": valuesInfosTransformed,
+						  ])
 	}
 
 	// MARK: Register Collection
@@ -383,7 +709,7 @@ class MDSHTTPServices {
 	//											...
 	//									  },
 	//		}
-	//	=> authorization (optional)
+	//	=> authorization (header) (optional)
 	typealias RegisterCollectionEndpointInfo =
 				(documentStorageID :String, documentType :String, name :String, version :Int,
 						relevantProperties :[String], isUpToDate :Bool, isIncludedSelector :String,
@@ -453,7 +779,7 @@ class MDSHTTPServices {
 	// MARK: Get Collection Document Count
 	//	=> documentStorageID (path)
 	//	=> name (path)
-	//	=> authorization (optional)
+	//	=> authorization (header) (optional)
 	//
 	//	<= HTTP Status 409 if collection is out of date => call endpoint again
 	//	<= count in header
@@ -484,7 +810,7 @@ class MDSHTTPServices {
 	//	=> documentStorageID (path)
 	//	=> name (path)
 	//	=> startIndex (query)
-	//	=> authorization (optional)
+	//	=> authorization (header) (optional)
 	//
 	//	<= HTTP Status 409 if collection is out of date => call endpoint again
 	//	<= json
@@ -501,8 +827,6 @@ class MDSHTTPServices {
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
 									let	name = pathComponents[3].replacingOccurrences(of: "_", with: "/")
-
-									let	queryItemsMap = urlComponents.queryItemsMap
 
 									return (documentStorageID, name, headers["Authorization"])
 								}
@@ -534,7 +858,7 @@ class MDSHTTPServices {
 	//									...
 	//							    },
 	//		}
-	//	=> authorization (optional)
+	//	=> authorization (header) (optional)
 	typealias RegisterIndexEndpointInfo =
 				(documentStorageID :String, documentType :String, name :String, version :Int,
 						relevantProperties :[String], isUpToDate :Bool, keysSelector :String,
@@ -603,7 +927,7 @@ class MDSHTTPServices {
 	//	=> documentStorageID (path)
 	//	=> name (path)
 	//	=> key (query) (can specify multiple)
-	//	=> authorization (optional)
+	//	=> authorization (header) (optional)
 	//
 	//	<= HTTP Status 409 if collection is out of date => call endpoint again
 	//	<= json

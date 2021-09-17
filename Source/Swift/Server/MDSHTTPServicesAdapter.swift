@@ -224,7 +224,7 @@ class MDSHTTPServicesAdapter {
 			}
 
 			// Query count
-			let	count = documentStorageServerHandler.queryCollectionDocumentCount(name: info.name)
+			let	count = documentStorageServerHandler.documentCountForCollection(named: info.name)
 
 			return (.ok,
 					[HTTPURLResponse.contentRangeHeader(for: "items", start: 0, length: Int64(count),

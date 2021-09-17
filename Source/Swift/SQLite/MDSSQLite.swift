@@ -131,7 +131,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 						MDSSQLiteDocumentBacking(documentType: T.documentType, documentID: documentID,
 								propertyMap: propertyMap, with: self.databaseManager)
 			self.documentBackingCache.add(
-					[MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>(documentID: documentID,
+					[MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>(documentID: documentID,
 							documentBacking: documentBacking)])
 
 			// Update collections and indexes
@@ -416,7 +416,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 													propertyMap: batchDocumentInfo.updatedPropertyMap ?? [:],
 													with: self.databaseManager)
 								self.documentBackingCache.add(
-										[MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>(documentID: documentID,
+										[MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>(documentID: documentID,
 												documentBacking: documentBacking)])
 
 								// Check if we have creation proc
@@ -469,6 +469,47 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func registerAssociation(named name :String, fromDocumentType :String, toDocumentType :String) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func updateAssociation<T : MDSDocument, U : MDSDocument>(for name :String,
+			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)]) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+//	//------------------------------------------------------------------------------------------------------------------
+//	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
+//			proc :(_ document :U) -> Void) {
+//		// Unimplemented
+//		fatalError("Unimplemented")
+//	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, to document :U,
+			proc :(_ document :T) -> Void) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+//	//------------------------------------------------------------------------------------------------------------------
+//	public func retrieveAssociationValue<T : MDSDocument, U>(for name :String, to document :T,
+//			summedFromCachedValueWithName cachedValueName :String) -> U {
+//		// Unimplemented
+//		fatalError("Unimplemented")
+//	}
+
+//	//------------------------------------------------------------------------------------------------------------------
+//	public func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
+//			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)]) {
+//		// Unimplemented
+//		fatalError("Unimplemented")
+//	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func registerCollection<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
 			isIncludedProc :@escaping (_ document :T) -> Bool) {
@@ -497,11 +538,11 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func queryCollectionDocumentCount(name :String) -> Int {
+	public func documentCountForCollection(named name :String) -> Int {
 		// Run lean
 		autoreleasepool() { _ = bringCollectionUpToDate(name: name) }
 
-		return self.databaseManager.queryCollectionDocumentCount(name: name)
+		return self.databaseManager.documentCountForCollection(named: name)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -561,7 +602,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 
 	// MARK: MDSDocumentStorageServerHandler methods
 	//------------------------------------------------------------------------------------------------------------------
-	func newDocuments(documentType :String, documentCreateInfos :[MDSDocumentCreateInfo]) {
+	func newDocuments(documentType :String, documentCreateInfos :[MDSDocument.CreateInfo]) {
 		// Batch
 		self.databaseManager.batch() {
 			// Setup
@@ -580,7 +621,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 									creationDate: $0.creationDate, modificationDate: $0.modificationDate,
 									propertyMap: $0.propertyMap, with: self.databaseManager)
 				self.documentBackingCache.add(
-						[MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>(documentID: $0.documentID,
+						[MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>(documentID: $0.documentID,
 								documentBacking: documentBacking)])
 
 				// Check if we have creation proc
@@ -602,11 +643,11 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func iterate(documentType :String, documentIDs :[String],
-			proc :(_ documentFullInfo :MDSDocumentFullInfo) -> Void) {
+			proc :(_ documentFullInfo :MDSDocument.FullInfo) -> Void) {
 		// Iterate
 		iterateDocumentBackingInfos(documentType: documentType, documentIDs: documentIDs) {
 			// Call proc
-			proc(MDSDocumentFullInfo(documentID: $0.documentID, revision: $0.documentBacking.revision,
+			proc(MDSDocument.FullInfo(documentID: $0.documentID, revision: $0.documentBacking.revision,
 					active: $0.documentBacking.active, creationDate: $0.documentBacking.creationDate,
 					modificationDate: $0.documentBacking.modificationDate, propertyMap: $0.documentBacking.propertyMap))
 		}
@@ -614,18 +655,18 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func iterate(documentType :String, sinceRevision revision :Int,
-			proc :(_ documentFullInfo :MDSDocumentFullInfo) -> Void) {
+			proc :(_ documentFullInfo :MDSDocument.FullInfo) -> Void) {
 		// Iterate
 		iterateDocumentBackingInfos(documentType: documentType, sinceRevision: revision, includeInactive: true) {
 			// Call proc
-			proc(MDSDocumentFullInfo(documentID: $0.documentID, revision: $0.documentBacking.revision,
+			proc(MDSDocument.FullInfo(documentID: $0.documentID, revision: $0.documentBacking.revision,
 					active: $0.documentBacking.active, creationDate: $0.documentBacking.creationDate,
 					modificationDate: $0.documentBacking.modificationDate, propertyMap: $0.documentBacking.propertyMap))
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func updateDocuments(documentType :String, documentUpdateInfos :[MDSDocumentUpdateInfo]) {
+	func updateDocuments(documentType :String, documentUpdateInfos :[MDSDocument.UpdateInfo]) {
 		// Batch changes
 		self.databaseManager.batch() {
 			// Setup
@@ -693,7 +734,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func iterateCollection(name :String, proc :(_ documentRevisionInfo :MDSDocumentRevisionInfo) -> Void) {
+	func iterateCollection(name :String, proc :(_ documentRevisionInfo :MDSDocument.RevisionInfo) -> Void) {
 		// Bring up to date
 		let	collection = autoreleasepool() { bringCollectionUpToDate(name: name) }
 		let	documentType = collection.documentType
@@ -712,7 +753,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func iterateIndex(name :String, keys :[String],
-			proc :(_ key :String, _ documentRevisionInfo :MDSDocumentRevisionInfo) -> Void) {
+			proc :(_ key :String, _ documentRevisionInfo :MDSDocument.RevisionInfo) -> Void) {
 		// Bring up to date
 		let	index = autoreleasepool() { bringIndexUpToDate(name: name) }
 		let	documentType = index.documentType
@@ -732,7 +773,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 		// Perform as batch and iterate all
 		self.databaseManager.batch() {
 			// Create document backings
-			var	documentTypeMap = [/* Document type */ String : [MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>]]()
+			var	documentTypeMap = [/* Document type */ String : [MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>]]()
 			documentInfos.forEach() {
 				// Create document backing
 				let	documentBacking =
@@ -744,7 +785,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 				documentBackingMap[$0.documentID] = documentBacking
 				documentTypeMap.appendArrayValueElement(key: $0.documentType,
 						value:
-								MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>(documentID: $0.documentID,
+								MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>(documentID: $0.documentID,
 										documentBacking: documentBacking))
 			}
 
@@ -780,7 +821,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			return documentBacking
 		} else {
 			// Try to retrieve from database
-			var	documentBackingInfo :MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>?
+			var	documentBackingInfo :MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>?
 			iterateDocumentBackingInfos(documentType: documentType, documentIDs: [documentID])
 					{ documentBackingInfo = $0 }
 
@@ -802,17 +843,17 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	private func iterateDocumentBackingInfos(documentType :String, innerJoin :SQLiteInnerJoin? = nil,
 			where sqliteWhere :SQLiteWhere? = nil,
 			proc
-					:(_ documentBackingInfo :MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>,
+					:(_ documentBackingInfo :MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>,
 							_ resultsRow :SQLiteResultsRow) -> Void) {
 		// Iterate
 		self.databaseManager.iterate(documentType: documentType, innerJoin: innerJoin, where: sqliteWhere) {
 			// Try to retrieve document backing
-			let	documentBackingInfo :MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>
+			let	documentBackingInfo :MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>
 			if let documentBacking =
 					self.documentBackingCache.documentBacking(for: $0.documentRevisionInfo.documentID) {
 				// Have document backing
 				documentBackingInfo =
-						MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>(documentID: $0.documentRevisionInfo.documentID,
+						MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>(documentID: $0.documentRevisionInfo.documentID,
 								documentBacking: documentBacking)
 			} else {
 				// Read
@@ -829,7 +870,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func iterateDocumentBackingInfos(documentType :String, documentIDs :[String],
-			proc :(_ documentBackingInfo :MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
+			proc :(_ documentBackingInfo :MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
 		// Iterate
 		iterateDocumentBackingInfos(documentType: documentType,
 				innerJoin: self.databaseManager.innerJoin(for: documentType),
@@ -839,7 +880,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	private func iterateDocumentBackingInfos(documentType :String, sinceRevision revision :Int,
 			includeInactive :Bool,
-			proc :(_ documentBackingInfo :MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
+			proc :(_ documentBackingInfo :MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
 		// Iterate
 		iterateDocumentBackingInfos(documentType: documentType,
 				innerJoin: self.databaseManager.innerJoin(for: documentType),
@@ -851,7 +892,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func iterateCollection(name :String,
-			with proc :(_ documentBackingInfo :MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
+			with proc :(_ documentBackingInfo :MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
 		// Bring up to date
 		let	collection = autoreleasepool() { bringCollectionUpToDate(name: name) }
 
@@ -941,7 +982,8 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	private func iterateIndex(name :String, keys :[String],
 			with proc
-					:(_ key :String, _ documentBackingInfo :MDSDocumentBackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
+					:(_ key :String,
+							_ documentBackingInfo :MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
 		// Bring up to date
 		let	index = autoreleasepool() { bringIndexUpToDate(name: name) }
 
