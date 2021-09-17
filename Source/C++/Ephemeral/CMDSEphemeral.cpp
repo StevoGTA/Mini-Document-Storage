@@ -995,7 +995,7 @@ void CMDSEphemeral::registerCollection(const CString& name, const CMDSDocument::
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-UInt32 CMDSEphemeral::queryCollectionDocumentCount(const CString& name) const
+UInt32 CMDSEphemeral::getCollectionDocumentCount(const CString& name) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get values

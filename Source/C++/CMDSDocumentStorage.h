@@ -167,7 +167,7 @@ class CMDSDocumentStorage {
 														{ registerCollection(name, documentInfo, 1, relevantProperties,
 																false, CString::mEmpty, CDictionary::mEmpty,
 																isIncludedProc, userData); }
-		virtual			UInt32						queryCollectionDocumentCount(const CString& name) const = 0;
+		virtual			UInt32						getCollectionDocumentCount(const CString& name) const = 0;
 		virtual			void						iterateCollection(const CString& name,
 															const CMDSDocument::Info& documentInfo,
 															CMDSDocument::Proc proc, void* userData) const = 0;

@@ -1214,7 +1214,7 @@ void CMDSSQLite::registerCollection(const CString& name, const CMDSDocument::Inf
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-UInt32 CMDSSQLite::queryCollectionDocumentCount(const CString& name) const
+UInt32 CMDSSQLite::getCollectionDocumentCount(const CString& name) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Bring up to date

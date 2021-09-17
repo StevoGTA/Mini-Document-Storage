@@ -77,7 +77,7 @@ class CMDSSQLite : public CMDSDocumentStorage {
 												bool isUpToDate, const CString& isIncludedSelector,
 												const CDictionary& isIncludedSelectorInfo,
 												CMDSDocument::IsIncludedProc isIncludedProc, void* userData);
-				UInt32					queryCollectionDocumentCount(const CString& name) const;
+				UInt32					getCollectionDocumentCount(const CString& name) const;
 				void					iterateCollection(const CString& name, const CMDSDocument::Info& documentInfo,
 												CMDSDocument::Proc proc, void* userData) const;
 
