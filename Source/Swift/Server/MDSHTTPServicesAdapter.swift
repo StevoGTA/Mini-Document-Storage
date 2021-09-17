@@ -251,7 +251,7 @@ class MDSHTTPServicesAdapter {
 			// Retrieve document revision info
 			var	documentInfos = [String : Int]()
 			documentStorageServerHandler.iterateCollection(name: info.name)
-					{ (documentRevisionInfo :MDSDocumentRevisionInfo) in
+					{ (documentRevisionInfo :MDSDocument.RevisionInfo) in
 						// Add info
 						documentInfos[documentRevisionInfo.documentID] = documentRevisionInfo.revision
 					}
@@ -314,7 +314,7 @@ class MDSHTTPServicesAdapter {
 			// Retrieve key => document revision infos
 			var	documentMap = [String : [String : Int]]()
 			documentStorageServerHandler.iterateIndex(name: info.name, keys: info.keys)
-					{ (key :String, documentRevisionInfo :MDSDocumentRevisionInfo) in
+					{ (key :String, documentRevisionInfo :MDSDocument.RevisionInfo) in
 						// Add info
 						documentMap[key] = [documentRevisionInfo.documentID: documentRevisionInfo.revision]
 					}
