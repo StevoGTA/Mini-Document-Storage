@@ -680,7 +680,7 @@ class MDSHTTPServices {
 		let	valuesInfosTransformed =
 					valueInfos.map({ [
 										"name": $0.name,
-										"valueType": "integer",
+										"valueType": $0.valueType.rawValue,
 										"selector": $0.selector,
 									  ] })
 

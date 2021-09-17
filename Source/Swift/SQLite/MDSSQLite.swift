@@ -502,12 +502,12 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 //		fatalError("Unimplemented")
 //	}
 
-//	//------------------------------------------------------------------------------------------------------------------
-//	public func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
-//			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)]) {
-//		// Unimplemented
-//		fatalError("Unimplemented")
-//	}
+	//------------------------------------------------------------------------------------------------------------------
+	public func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
+			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)]) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerCollection<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],

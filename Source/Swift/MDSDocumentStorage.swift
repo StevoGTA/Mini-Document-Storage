@@ -17,8 +17,8 @@ public enum MDSBatchResult {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSValueType
-public enum MDSValueType {
-	case integer
+public enum MDSValueType : String {
+	case integer = "integer"
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -70,8 +70,8 @@ public protocol MDSDocumentStorage : class {
 //	func retrieveAssociationValue<T : MDSDocument, U>(for name :String, to document :T,
 //			summedFromCachedValueWithName cachedValueName :String) -> U
 
-//	func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
-//			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)])
+	func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
+			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)])
 
 	func registerCollection<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
@@ -168,14 +168,14 @@ extension MDSDocumentStorage {
 //				for: associationName(fromDocumentType: fromDocumentType, toDocumentType: T.documentType),
 //				to: document, summedFromCachedValueWithName: name)
 //	}
-//
-//	//------------------------------------------------------------------------------------------------------------------
-//	public func registerCache<T : MDSDocument>(version :Int = 1, relevantProperties :[String] = [],
-//			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)]) {
-//		// Register cache
-//		registerCache(named: T.documentType, version: version, relevantProperties: relevantProperties,
-//				valuesInfos: valuesInfos)
-//	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func registerCache<T : MDSDocument>(version :Int = 1, relevantProperties :[String] = [],
+			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)]) {
+		// Register cache
+		registerCache(named: T.documentType, version: version, relevantProperties: relevantProperties,
+				valuesInfos: valuesInfos)
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerCollection<T : MDSDocument>(named name :String, version :Int = 1, relevantProperties :[String],

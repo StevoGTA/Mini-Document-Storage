@@ -66,11 +66,12 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	typealias DocumentCreationProc = (_ id :String, _ documentStorage :MDSDocumentStorage) -> MDSDocument
 
 	// MARK: Properties
+	public	let	documentStorageID :String
+
 	public	var	id :String = UUID().uuidString
 
 	private	let	httpEndpointClient :HTTPEndpointClient
 	private	let	authorization :String?
-	private	let	documentStorageID :String
 	private	let	remoteStorageCache :MDSRemoteStorageCache
 	private	let	batchInfoMap = LockingDictionary<Thread, MDSBatchInfo<DocumentBacking>>()
 	private	let	documentBackingCache = MDSDocumentBackingCache<DocumentBacking>()
@@ -83,9 +84,10 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	public init(httpEndpointClient :HTTPEndpointClient, authorization :String? = nil,
 			documentStorageID :String = "default", remoteStorageCache :MDSRemoteStorageCache) {
 		// Store
+		self.documentStorageID = documentStorageID
+
 		self.httpEndpointClient = httpEndpointClient
 		self.authorization = authorization
-		self.documentStorageID = documentStorageID
 		self.remoteStorageCache = remoteStorageCache
 	}
 
