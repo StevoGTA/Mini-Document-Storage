@@ -48,7 +48,7 @@ typedef	CSQLiteTable::TableColumnAndValue							TableColumnAndValue;
 
 typedef	CSQLiteTableColumn::Reference								Reference;
 
-typedef	TArray<SSQLiteValue>										SSQLiteValuesArray;
+typedef	TMArray<SSQLiteValue>										SSQLiteValuesArray;
 
 struct SIndexUpdateInfo {
 	// Lifecycle methods

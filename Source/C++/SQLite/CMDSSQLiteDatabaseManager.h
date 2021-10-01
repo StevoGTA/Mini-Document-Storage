@@ -17,7 +17,7 @@ typedef	TMDSCollection<SInt64, TNumericArray<SInt64> >	CMDSSQLiteCollection;
 
 typedef	TMDSIndex<SInt64>								CMDSSQLiteIndex;
 typedef	CMDSSQLiteIndex::KeysInfo<SInt64>				CMDSSQLiteIndexKeysInfo;
-typedef	TArray<CMDSSQLiteIndexKeysInfo>					CMDSSQLiteIndexKeysInfos;
+typedef	TMArray<CMDSSQLiteIndexKeysInfo>				CMDSSQLiteIndexKeysInfos;
 typedef	CMDSSQLiteIndex::UpdateInfo<SInt64>				CMDSSQLiteIndexUpdateInfo;
 
 //----------------------------------------------------------------------------------------------------------------------

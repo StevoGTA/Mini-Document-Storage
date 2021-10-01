@@ -376,7 +376,7 @@ OI<SError> CMDSEphemeralInternals::batchMap(const CString& documentType,
 {
 	// Setup
 	const	OR<CMDSDocument::Info>&				documentInfo = internals->mDocumentInfoMap[documentType];
-			TIArray<CMDSDocument>				documents;
+			TNArray<I<CMDSDocument> >			documents;
 			TNArray<CMDSEphemeralUpdateInfo>	updateInfos;
 			TSet<CString>						removedDocumentIDs;
 
@@ -408,7 +408,7 @@ OI<SError> CMDSEphemeralInternals::batchMap(const CString& documentType,
 					CMDSDocument*	document =
 											documentInfo->create(documentID,
 													*((CMDSEphemeral*) &internals->mMDSEphemeral));
-					documents += document;
+					documents += I<CMDSDocument>(document);
 
 					// Update collections and indexes
 					TSet<CString>	changedProperties =
@@ -441,7 +441,7 @@ OI<SError> CMDSEphemeralInternals::batchMap(const CString& documentType,
 					CMDSDocument*	document =
 											documentInfo->create(documentID,
 													*((CMDSDocumentStorage*) &internals->mMDSEphemeral));
-					documents += document;
+					documents += I<CMDSDocument>(document);
 
 					// Update collections and indexes
 					updateInfos += CMDSEphemeralUpdateInfo(*document, documentBacking.mRevision, documentID);
@@ -465,7 +465,7 @@ OI<SError> CMDSEphemeralInternals::batchMap(const CString& documentType,
 					CMDSDocument*	document =
 											documentInfo->create(documentID,
 													*((CMDSDocumentStorage*) &internals->mMDSEphemeral));
-					documents += document;
+					documents += I<CMDSDocument>(document);
 
 					// Call document changed procs
 					internals->notifyDocumentChanged(documentType, *document, CMDSDocument::kRemoved);

@@ -74,7 +74,7 @@ class CMDSSQLiteInternals {
 		const	CMDSDocument::Info&						mDocumentInfo;
 
 				TNArray<CMDSSQLiteBringUpToDateInfo>	mBringUpToDateInfos;
-				TIArray<CMDSDocument>					mDocuments;
+				TNArray<I<CMDSDocument> >				mDocuments;
 	};
 
 	// CollectionIndexUpdateInfo
@@ -195,7 +195,7 @@ class CMDSSQLiteInternals {
 		static			void							addDocumentID(
 																const CMDSSQLiteDocumentBackingInfo&
 																		documentBackingInfo,
-																TArray<CString>* documentIDs)
+																TMArray<CString>* documentIDs)
 															{ (*documentIDs) += documentBackingInfo.mDocumentID; }
 		static			void							addDocumentIDWithKey(const CString& key,
 																const CMDSSQLiteDocumentBackingInfo&
@@ -206,7 +206,7 @@ class CMDSSQLiteInternals {
 																const CMDSSQLiteDocumentBackingInfo&
 																		documentBackingInfo,
 																const CSQLiteResultsRow& resultsRow,
-																TArray<CString>* documentIDs)
+																TMArray<CString>* documentIDs)
 															{ (*documentIDs) += documentBackingInfo.mDocumentID; }
 		static			void							noteReference(
 																const CMDSSQLiteDocumentBackingInfo&
@@ -587,13 +587,13 @@ void CMDSSQLiteInternals::processExistingDocumentInfo(const ExistingDocumentInfo
 
 //----------------------------------------------------------------------------------------------------------------------
 void CMDSSQLiteInternals::collectionIndexBringUpToDate(const CMDSSQLiteDocumentBackingInfo& documentBackingInfo,
-		CollectionIndexBringUpToDateInfo* cllectionIndexBringUpToDateInfo)
+		CollectionIndexBringUpToDateInfo* collectionIndexBringUpToDateInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Query batch info
 	const	OR<CMDSSQLiteBatchDocumentInfo>	batchDocumentInfo =
-													cllectionIndexBringUpToDateInfo->mBatchInfo.hasReference() ?
-															cllectionIndexBringUpToDateInfo->mBatchInfo->
+													collectionIndexBringUpToDateInfo->mBatchInfo.hasReference() ?
+															collectionIndexBringUpToDateInfo->mBatchInfo->
 																	getDocumentInfo(documentBackingInfo.mDocumentID) :
 															OR<CMDSSQLiteBatchDocumentInfo>();
 
@@ -601,12 +601,12 @@ void CMDSSQLiteInternals::collectionIndexBringUpToDate(const CMDSSQLiteDocumentB
 	if (!batchDocumentInfo.hasReference() || !batchDocumentInfo->isRemoved()) {
 		// Create document
 		CMDSDocument*	document =
-								cllectionIndexBringUpToDateInfo->mDocumentInfo.create(documentBackingInfo.mDocumentID,
-								cllectionIndexBringUpToDateInfo->mMDSSQLite);
-		cllectionIndexBringUpToDateInfo->mDocuments += document;
+								collectionIndexBringUpToDateInfo->mDocumentInfo.create(documentBackingInfo.mDocumentID,
+								collectionIndexBringUpToDateInfo->mMDSSQLite);
+		collectionIndexBringUpToDateInfo->mDocuments += I<CMDSDocument>(document);
 
 		// Append info
-		cllectionIndexBringUpToDateInfo->mBringUpToDateInfos +=
+		collectionIndexBringUpToDateInfo->mBringUpToDateInfos +=
 				CMDSSQLiteBringUpToDateInfo(*document, documentBackingInfo.mDocumentBacking.getRevision(),
 						documentBackingInfo.mDocumentBacking.getID());
 	}
@@ -627,7 +627,7 @@ OI<SError> CMDSSQLiteInternals::batchMap(const CString& documentType,
 {
 	// Setup
 	const	OR<CMDSDocument::Info>&			documentInfo = internals->mDocumentInfoMap[documentType];
-			TIArray<CMDSDocument>			documents;
+			TNArray<I<CMDSDocument> >		documents;
 
 			CollectionIndexUpdateInfo		collectionIndexUpdateInfo(documentType, *internals);
 			CMDSSQLiteUpdateInfoBatchQueue	updateBatchQueue(
@@ -658,7 +658,7 @@ OI<SError> CMDSSQLiteInternals::batchMap(const CString& documentType,
 					// Create document
 					CMDSDocument*	document =
 											documentInfo->create(documentID, *((CMDSSQLite*) &internals->mMDSSQLite));
-					documents += document;
+					documents += I<CMDSDocument>(document);
 
 					// Update collections and indexes
 					TSet<CString>	changedProperties =
@@ -685,7 +685,7 @@ OI<SError> CMDSSQLiteInternals::batchMap(const CString& documentType,
 					// Create document
 					CMDSDocument*	document =
 											documentInfo->create(documentID, *((CMDSSQLite*) &internals->mMDSSQLite));
-					documents += document;
+					documents += I<CMDSDocument>(document);
 
 					// Update collections and indexes
 					updateBatchQueue.add(
@@ -709,7 +709,7 @@ OI<SError> CMDSSQLiteInternals::batchMap(const CString& documentType,
 				// Create document
 				CMDSDocument*	document =
 										documentInfo->create(documentID, *((CMDSSQLite*) &internals->mMDSSQLite));
-				documents += document;
+				documents += I<CMDSDocument>(document);
 
 				// Call document changed procs
 				internals->notifyDocumentChanged(documentType, *document, CMDSDocument::kRemoved);

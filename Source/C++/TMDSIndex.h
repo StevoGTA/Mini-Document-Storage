@@ -25,12 +25,12 @@ template <typename T> class TMDSIndex {
 	public:
 		template <typename U> struct UpdateInfo {
 			// Lifecycle methods
-			UpdateInfo(const TArray<KeysInfo<U> >& keysInfos, UInt32 lastRevision) :
+			UpdateInfo(const TMArray<KeysInfo<U> >& keysInfos, UInt32 lastRevision) :
 				mKeysInfos(keysInfos), mLastRevision(lastRevision)
 				{}
 
 			// Properties
-			TArray<KeysInfo<U> >	mKeysInfos;
+			TMArray<KeysInfo<U> >	mKeysInfos;
 			UInt32					mLastRevision;
 		};
 
