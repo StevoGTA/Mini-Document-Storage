@@ -62,8 +62,8 @@ public protocol MDSDocumentStorage : class {
 	func registerAssociation(named name :String, fromDocumentType :String, toDocumentType :String)
 	func updateAssociation<T : MDSDocument, U : MDSDocument>(for name :String,
 			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)])
-//	func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
-//			proc :(_ document :U) -> Void)
+	func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
+			proc :(_ document :U) -> Void)
 	func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, to document :U,
 			proc :(_ document :T) -> Void)
 
@@ -135,13 +135,13 @@ extension MDSDocumentStorage {
 				updates: updates)
 	}
 
-//	//------------------------------------------------------------------------------------------------------------------
-//	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(from document :T, proc :(_ document :U) -> Void) {
-//		// Iterate association
-//		iterateAssociation(for: associationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
-//				from: document, proc: proc)
-//	}
-//
+	//------------------------------------------------------------------------------------------------------------------
+	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(from document :T, proc :(_ document :U) -> Void) {
+		// Iterate association
+		iterateAssociation(for: associationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
+				from: document, proc: proc)
+	}
+
 	//------------------------------------------------------------------------------------------------------------------
 	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(to document :U, proc :(_ document :T) -> Void) {
 		// Iterate association
@@ -150,12 +150,28 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentsAssociated<T : MDSDocument, U : MDSDocument>(to document :U) -> [T] {
+	public func documentsAssociated<T : MDSDocument, U : MDSDocument>(for name :String? = nil, from document :T) ->
+			[U] {
+		// Setup
+		var	documents = [U]()
+
+		// Iterate
+		iterateAssociation(
+				for: name ?? associationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
+				from: document) { (document :U) in documents.append(document) }
+
+		return documents
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func documentsAssociated<T : MDSDocument, U : MDSDocument>(for name :String? = nil, to document :U) -> [T] {
 		// Setup
 		var	documents = [T]()
 
 		// Iterate
-		iterateAssociation(to: document) { documents.append($0 as! T) }
+		iterateAssociation(
+				for: name ?? associationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
+				to: document) { documents.append($0 as! T) }
 
 		return documents
 	}
