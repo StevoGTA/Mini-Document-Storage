@@ -30,7 +30,7 @@ public enum MDSAssociationAction : String {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSDocumentStorage protocol
-public protocol MDSDocumentStorage : class {
+public protocol MDSDocumentStorage : AnyObject {
 
 	// MARK: Properties
 	var	id :String { get }
