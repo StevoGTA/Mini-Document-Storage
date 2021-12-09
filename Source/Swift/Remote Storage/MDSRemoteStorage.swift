@@ -23,10 +23,12 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		var	modificationDate :Date
 		var	revision :Int
 		var	propertyMap :[String : Any]
+		var	attachmentInfo :[String : [String : Any]]
 
 		// MARK: Lifecycle methods
+		//--------------------------------------------------------------------------------------------------------------
 		init(type :String, revision :Int, active :Bool, creationDate :Date, modificationDate :Date,
-				propertyMap :[String : Any]) {
+				propertyMap :[String : Any], attachmentInfo :[String : [String : Any]]) {
 			// Store
 			self.type = type
 			self.active = active
@@ -35,8 +37,10 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			self.modificationDate = modificationDate
 			self.revision = revision
 			self.propertyMap = propertyMap
+			self.attachmentInfo = attachmentInfo
 		}
 
+		//--------------------------------------------------------------------------------------------------------------
 		init(type :String, documentFullInfo :MDSDocument.FullInfo) {
 			// Store
 			self.type = type
@@ -46,6 +50,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			self.modificationDate = documentFullInfo.modificationDate
 			self.revision = documentFullInfo.revision
 			self.propertyMap = documentFullInfo.propertyMap
+			self.attachmentInfo = documentFullInfo.attachmentInfo
 		}
 	}
 
@@ -1003,7 +1008,8 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 								documentBacking:
 										DocumentBacking(type: documentType, revision: $0.revision,
 												active: $0.active, creationDate: $0.creationDate,
-												modificationDate: $0.modificationDate, propertyMap: $0.propertyMap))
+												modificationDate: $0.modificationDate, propertyMap: $0.propertyMap,
+												attachmentInfo: $0.attachmentInfo))
 					}
 		self.documentBackingCache.add(documentBackingInfos)
 
@@ -1059,7 +1065,8 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 							documentCreateReturnInfosToProcess.map({
 									MDSDocument.FullInfo(documentID: $0.documentID, revision: $0.revision, active: true,
 											creationDate: $0.creationDate, modificationDate: $0.modificationDate,
-											propertyMap: documentCreateInfosMap[$0.documentID]!.propertyMap) })
+											propertyMap: documentCreateInfosMap[$0.documentID]!.propertyMap,
+											attachmentInfo: [:]) })
 				updateCaches(for: documentType, with: documentFullInfos)
 			}
 		}
@@ -1169,12 +1176,19 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 				// Update caches
 				let	documentFullInfos =
-							documentUpdateReturnInfosToProcess.map({
-									MDSDocument.FullInfo(documentID: $0.documentID, revision: $0.revision,
-											active: $0.active,
-											creationDate:
-													documentUpdateInfosMap[$0.documentID]!.documentBacking.creationDate,
-											modificationDate: $0.modificationDate, propertyMap: $0.propertyMap) })
+							documentUpdateReturnInfosToProcess.map({ documentUpdateReturnInfo -> MDSDocument.FullInfo in
+								// Setup
+								let	documentBacking =
+											documentUpdateInfosMap[documentUpdateReturnInfo.documentID]!.documentBacking
+
+								return MDSDocument.FullInfo(documentID: documentUpdateReturnInfo.documentID,
+										revision: documentUpdateReturnInfo.revision,
+										active: documentUpdateReturnInfo.active,
+										creationDate: documentBacking.creationDate,
+										modificationDate: documentUpdateReturnInfo.modificationDate,
+										propertyMap: documentUpdateReturnInfo.propertyMap,
+										attachmentInfo: documentBacking.attachmentInfo)
+							})
 				updateCaches(for: documentType, with: documentFullInfos)
 			}
 		}

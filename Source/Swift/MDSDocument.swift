@@ -45,6 +45,7 @@ open class MDSDocument : Hashable {
 		let	creationDate :Date
 		let	modificationDate :Date
 		let	propertyMap :[String : Any]
+		let	attachmentInfo :[String : [String : Any]]
 	}
 
 	// MARK: CreateInfo

@@ -16,25 +16,26 @@ class MDSSQLiteDocumentBacking {
 			let	creationDate :Date
 
 			var	revision :Int
+			var	active :Bool
 			var	modificationDate :Date
 			var	propertyMap :[String : Any] { self.propertiesLock.read({ self.propertyMapInternal }) }
-			var	active :Bool
+			var	attachmentInfo :[String : [String : Any]]
 
 	private	var	propertyMapInternal :[String : Any]
 	private	let	propertiesLock = ReadPreferringReadWriteLock()
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	init(id :Int64, revision :Int, creationDate :Date, modificationDate :Date, propertyMap :[String : Any],
-			active :Bool) {
+	init(id :Int64, revision :Int, active :Bool, creationDate :Date, modificationDate :Date,
+			propertyMap :[String : Any]) {
 		// Store
 		self.id = id
 		self.creationDate = creationDate
 
 		self.revision = revision
+		self.active = active
 		self.modificationDate = modificationDate
 		self.propertyMapInternal = propertyMap
-		self.active = active
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -50,9 +51,9 @@ class MDSSQLiteDocumentBacking {
 		self.creationDate = creationDate
 
 		self.revision = revision
+		self.active = true
 		self.modificationDate = modificationDate
 		self.propertyMapInternal = propertyMap
-		self.active = true
 	}
 
 	// MARK: Instance methods
@@ -90,5 +91,13 @@ class MDSSQLiteDocumentBacking {
 				self.modificationDate = modificationDate
 			}
 		}
+	}
+
+	//--------------------------------------------------------------------------------------------------------------
+	func documentFullInfo(with documentID :String) -> MDSDocument.FullInfo {
+		// Return full info
+		return MDSDocument.FullInfo(documentID: documentID, revision: self.revision, active: self.active,
+				creationDate: self.creationDate, modificationDate: self.modificationDate,
+				propertyMap: self.propertyMap, attachmentInfo: self.attachmentInfo)
 	}
 }

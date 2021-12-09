@@ -9,7 +9,7 @@
 import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSDocument.FullInfo extension
+// MARK: MDSDocument.FullInfo extension
 extension MDSDocument.FullInfo {
 
 	// MARK: Properties
@@ -34,6 +34,7 @@ extension MDSDocument.FullInfo {
 		self.creationDate = Date(fromRFC3339Extended: httpServicesInfo["creationDate"] as? String)!
 		self.modificationDate = Date(fromRFC3339Extended: httpServicesInfo["modificationDate"] as? String)!
 		self.propertyMap = httpServicesInfo["json"] as! [String : Any]
+		self.attachmentInfo = httpServicesInfo["attachments"] as! [String : [String : Any]]
 	}
 }
 
@@ -67,7 +68,7 @@ extension MDSDocument.CreateInfo {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: MDSDocument.UpdateInfo extension
+// MARK: - MDSDocument.UpdateInfo extension
 extension MDSDocument.UpdateInfo {
 
 	// MARK: Properties

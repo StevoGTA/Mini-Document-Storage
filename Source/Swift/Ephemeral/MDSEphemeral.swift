@@ -19,9 +19,10 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		let	creationDate :Date
 
 		var	revision :Int
+		var	active = true
 		var	modificationDate :Date
 		var	propertyMap :[String : Any]
-		var	active = true
+		var	attachmentInfo :[String : [String : Any]]
 
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
@@ -42,6 +43,14 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			self.modificationDate = Date()
 			self.propertyMap.merge(updatedPropertyMap ?? [:], uniquingKeysWith: { $1 })
 			removedProperties?.forEach() { self.propertyMap[$0] = nil }
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		func documentFullInfo(with documentID :String) -> MDSDocument.FullInfo {
+			// Return full info
+			return MDSDocument.FullInfo(documentID: documentID, revision: self.revision, active: self.active,
+					creationDate: self.creationDate, modificationDate: self.modificationDate,
+					propertyMap: self.propertyMap, attachmentInfo: self.attachmentInfo)
 		}
 	}
 
@@ -534,17 +543,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		// Play nice
 		self.documentMapsLock.read() {
 			// Iterate
-			documentIDs.forEach() {
-				// Setup
-				let	documentBacking = self.documentBackingByIDMap[$0]!
-
-				// Call proc
-				proc(
-						MDSDocument.FullInfo(documentID: $0, revision: documentBacking.revision,
-								active: documentBacking.active, creationDate: documentBacking.creationDate,
-								modificationDate: documentBacking.modificationDate,
-								propertyMap: documentBacking.propertyMap))
-			}
+			documentIDs.forEach() { proc(self.documentBackingByIDMap[$0]!.documentFullInfo(with: $0)) }
 		}
 	}
 
@@ -558,11 +557,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 				// Retrieve info
 				if let documentBacking = self.documentBackingByIDMap[$0], documentBacking.revision > revision {
 					// Call proc
-					proc(
-							MDSDocument.FullInfo(documentID: $0, revision: documentBacking.revision,
-									active: documentBacking.active, creationDate: documentBacking.creationDate,
-									modificationDate: documentBacking.modificationDate,
-									propertyMap: documentBacking.propertyMap))
+					proc(documentBacking.documentFullInfo(with: $0))
 				}
 			}
 		}

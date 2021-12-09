@@ -647,9 +647,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 		// Iterate
 		iterateDocumentBackingInfos(documentType: documentType, documentIDs: documentIDs) {
 			// Call proc
-			proc(MDSDocument.FullInfo(documentID: $0.documentID, revision: $0.documentBacking.revision,
-					active: $0.documentBacking.active, creationDate: $0.documentBacking.creationDate,
-					modificationDate: $0.documentBacking.modificationDate, propertyMap: $0.documentBacking.propertyMap))
+			proc($0.documentBacking.documentFullInfo(with: $0.documentID))
 		}
 	}
 
@@ -659,9 +657,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 		// Iterate
 		iterateDocumentBackingInfos(documentType: documentType, sinceRevision: revision, includeInactive: true) {
 			// Call proc
-			proc(MDSDocument.FullInfo(documentID: $0.documentID, revision: $0.documentBacking.revision,
-					active: $0.documentBacking.active, creationDate: $0.documentBacking.creationDate,
-					modificationDate: $0.documentBacking.modificationDate, propertyMap: $0.documentBacking.propertyMap))
+			proc($0.documentBacking.documentFullInfo(with: $0.documentID))
 		}
 	}
 
