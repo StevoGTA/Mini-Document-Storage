@@ -42,11 +42,18 @@ public class MDSRemoteStorageCache {
 		}
 		if version == nil {
 			// Initialize version
-			version = 1
 			_ = self.infoTable.insertRow([
 											(self.infoTable.keyTableColumn, "version"),
-											(self.infoTable.valueTableColumn, version!),
+											(self.infoTable.valueTableColumn, 2),
 										 ])
+		} else if version == 1 {
+			// Update all document tables
+			let	documentTables = self.sqliteDatabase.tables.filter({ $0.name.hasSuffix("s") })
+			let	attachmentInfoTableColumn = SQLiteTableColumn("attachmentInfo", .blob)
+			for var table in documentTables { table.add(attachmentInfoTableColumn) }
+
+			// Now at version 2
+			set(2, for: "version")
 		}
 	}
 
@@ -163,6 +170,7 @@ public class MDSRemoteStorageCache {
 		let	creationDateTableColumn = sqliteTable.creationDateTableColumn
 		let	modificationDateTableColumn = sqliteTable.modificationDateTableColumn
 		let	jsonTableColumn = sqliteTable.jsonTableColumn
+		let	attachmentInfoTableColumn = sqliteTable.attachmentInfoTableColumn
 
 		// Iterate records in database
 		var	documentFullInfos = [MDSDocument.FullInfo]()
@@ -179,10 +187,21 @@ public class MDSRemoteStorageCache {
 						try! JSONSerialization.jsonObject(with: $0.blob(for: jsonTableColumn)!, options: [])
 								as! [String : Any]
 
+			let	attachmentInfoMap :MDSDocument.AttachmentInfoMap
+			if let data = $0.blob(for: attachmentInfoTableColumn) {
+				// Have info
+				attachmentInfoMap =
+						try! JSONSerialization.jsonObject(with: data, options: []) as! MDSDocument.AttachmentInfoMap
+			} else {
+				// Don't have info
+				attachmentInfoMap = [:]
+			}
+
 			// Add to array
 			documentFullInfos.append(
 					MDSDocument.FullInfo(documentID: id, revision: revision, active: true, creationDate: creationDate,
-							modificationDate: modificationDate, propertyMap: propertyMap))
+							modificationDate: modificationDate, propertyMap: propertyMap,
+							attachmentInfoMap: attachmentInfoMap))
 		}
 
 		return documentFullInfos
@@ -199,6 +218,7 @@ public class MDSRemoteStorageCache {
 		let	creationDateTableColumn = sqliteTable.creationDateTableColumn
 		let	modificationDateTableColumn = sqliteTable.modificationDateTableColumn
 		let	jsonTableColumn = sqliteTable.jsonTableColumn
+		let	attachmentInfoTableColumn = sqliteTable.attachmentInfoTableColumn
 
 		let	referenceMap = Dictionary(uniqueKeysWithValues: revisionInfos.lazy.map({ ($0.documentID, $0.revision) }))
 
@@ -221,10 +241,22 @@ public class MDSRemoteStorageCache {
 									try! JSONSerialization.jsonObject(with: $0.blob(for: jsonTableColumn)!, options: [])
 											as! [String : Any]
 
+						let	attachmentInfoMap :MDSDocument.AttachmentInfoMap
+						if let data = $0.blob(for: attachmentInfoTableColumn) {
+							// Have info
+							attachmentInfoMap =
+									try! JSONSerialization.jsonObject(with: data, options: []) as!
+											MDSDocument.AttachmentInfoMap
+						} else {
+							// Don't have info
+							attachmentInfoMap = [:]
+						}
+
+						// Add to array
 						documentFullInfos.append(
 								MDSDocument.FullInfo(documentID: id, revision: revision, active: active == 1,
 										creationDate: creationDate, modificationDate: modificationDate,
-										propertyMap: propertyMap))
+										propertyMap: propertyMap, attachmentInfoMap: attachmentInfoMap))
 					} else {
 						// Revision does not match
 						documentRevisionInfosNotResolved.append(
@@ -250,18 +282,26 @@ public class MDSRemoteStorageCache {
 		self.sqliteDatabase.performAsTransaction() {
 			// Iterate all document infos
 			documentFullInfos.forEach() {
+				// Setup
+				var	info :[(tableColumn :SQLiteTableColumn, value :Any)] =
+							[
+								(tableColumn: sqliteTable.idTableColumn, value: $0.documentID),
+								(tableColumn: sqliteTable.revisionTableColumn, value: $0.revision),
+								(tableColumn: sqliteTable.activeTableColumn, value: $0.active ? 1 : 0),
+								(tableColumn: sqliteTable.creationDateTableColumn,
+										value: $0.creationDate.timeIntervalSince1970),
+								(tableColumn: sqliteTable.modificationDateTableColumn,
+										value: $0.modificationDate.timeIntervalSince1970),
+								(tableColumn: sqliteTable.jsonTableColumn, value: $0.propertyMap.data),
+								(tableColumn: sqliteTable.attachmentInfoTableColumn, value: $0.attachmentInfoMap.data),
+							]
+				if !$0.attachmentInfoMap.isEmpty {
+					// Add attachment info
+					info.append((tableColumn: sqliteTable.attachmentInfoTableColumn, value: $0.attachmentInfoMap.data))
+				}
+
 				// Insert or replace
-				sqliteTable.insertOrReplaceRow(
-						[
-							(tableColumn: sqliteTable.idTableColumn, value: $0.documentID),
-							(tableColumn: sqliteTable.revisionTableColumn, value: $0.revision),
-							(tableColumn: sqliteTable.activeTableColumn, value: $0.active ? 1 : 0),
-							(tableColumn: sqliteTable.creationDateTableColumn,
-									value: $0.creationDate.timeIntervalSince1970),
-							(tableColumn: sqliteTable.modificationDateTableColumn,
-									value: $0.modificationDate.timeIntervalSince1970),
-							(tableColumn: sqliteTable.jsonTableColumn, value: $0.propertyMap.data),
-						])
+				sqliteTable.insertOrReplaceRow(info)
 			}
 
 			return .commit
@@ -286,6 +326,7 @@ public class MDSRemoteStorageCache {
 											SQLiteTableColumn("creationDate", .real, [.notNull]),
 											SQLiteTableColumn("modificationDate", .real, [.notNull]),
 											SQLiteTableColumn("json", .blob, [.notNull]),
+											SQLiteTableColumn("attachmentInfo", .blob),
 										  ])
 			sqliteTable!.create()
 			self.sqliteTables.set(sqliteTable, for: documentType)

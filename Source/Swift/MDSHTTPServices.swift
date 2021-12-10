@@ -21,6 +21,7 @@ extension MDSDocument.FullInfo {
 					"creationDate": self.creationDate.rfc3339Extended,
 					"modificationDate": self.modificationDate.rfc3339Extended,
 					"json": self.propertyMap,
+					"attachments": self.attachmentInfoMap,
 				]
 			}
 
@@ -34,7 +35,12 @@ extension MDSDocument.FullInfo {
 		self.creationDate = Date(fromRFC3339Extended: httpServicesInfo["creationDate"] as? String)!
 		self.modificationDate = Date(fromRFC3339Extended: httpServicesInfo["modificationDate"] as? String)!
 		self.propertyMap = httpServicesInfo["json"] as! [String : Any]
-		self.attachmentInfo = httpServicesInfo["attachments"] as! [String : [String : Any]]
+		self.attachmentInfoMap =
+				(httpServicesInfo["attachments"] as! [String : [String : Any]])
+					.mapValues({
+							MDSDocument.AttachmentInfo(revision: $0["revision"] as! Int,
+									info: $0["info"] as! [String : Any])
+					})
 	}
 }
 

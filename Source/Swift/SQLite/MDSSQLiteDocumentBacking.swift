@@ -19,7 +19,7 @@ class MDSSQLiteDocumentBacking {
 			var	active :Bool
 			var	modificationDate :Date
 			var	propertyMap :[String : Any] { self.propertiesLock.read({ self.propertyMapInternal }) }
-			var	attachmentInfo :[String : [String : Any]]
+			var	attachmentInfoMap :MDSDocument.AttachmentInfoMap
 
 	private	var	propertyMapInternal :[String : Any]
 	private	let	propertiesLock = ReadPreferringReadWriteLock()
@@ -27,7 +27,7 @@ class MDSSQLiteDocumentBacking {
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
 	init(id :Int64, revision :Int, active :Bool, creationDate :Date, modificationDate :Date,
-			propertyMap :[String : Any]) {
+			propertyMap :[String : Any], attachmentInfoMap :MDSDocument.AttachmentInfoMap) {
 		// Store
 		self.id = id
 		self.creationDate = creationDate
@@ -36,6 +36,7 @@ class MDSSQLiteDocumentBacking {
 		self.active = active
 		self.modificationDate = modificationDate
 		self.propertyMapInternal = propertyMap
+		self.attachmentInfoMap = attachmentInfoMap
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -54,6 +55,7 @@ class MDSSQLiteDocumentBacking {
 		self.active = true
 		self.modificationDate = modificationDate
 		self.propertyMapInternal = propertyMap
+		self.attachmentInfoMap = [:]
 	}
 
 	// MARK: Instance methods
@@ -98,6 +100,6 @@ class MDSSQLiteDocumentBacking {
 		// Return full info
 		return MDSDocument.FullInfo(documentID: documentID, revision: self.revision, active: self.active,
 				creationDate: self.creationDate, modificationDate: self.modificationDate,
-				propertyMap: self.propertyMap, attachmentInfo: self.attachmentInfo)
+				propertyMap: self.propertyMap, attachmentInfoMap: self.attachmentInfoMap)
 	}
 }

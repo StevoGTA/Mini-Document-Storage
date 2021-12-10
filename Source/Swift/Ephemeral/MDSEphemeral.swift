@@ -22,7 +22,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		var	active = true
 		var	modificationDate :Date
 		var	propertyMap :[String : Any]
-		var	attachmentInfo :[String : [String : Any]]
+		var	attachmentMap :MDSDocument.AttachmentMap = [:]
 
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
@@ -50,7 +50,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			// Return full info
 			return MDSDocument.FullInfo(documentID: documentID, revision: self.revision, active: self.active,
 					creationDate: self.creationDate, modificationDate: self.modificationDate,
-					propertyMap: self.propertyMap, attachmentInfo: self.attachmentInfo)
+					propertyMap: self.propertyMap, attachmentInfoMap: self.attachmentMap.attachmentInfoMap)
 		}
 	}
 

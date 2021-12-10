@@ -27,6 +27,31 @@ open class MDSDocument : Hashable {
 		let	documentBacking :T
 	}
 
+	// MARK: AttachmentInfo
+	struct AttachmentInfo {
+
+		// MARK: Properties
+		let	revision :Int
+		let	info :[String : Any]
+	}
+
+	// MARK: AttachmentInfoMap
+	typealias AttachmentInfoMap = [String : AttachmentInfo]
+
+	// MARK: Attachment
+	struct Attachment {
+
+		// MARK: Properties
+		let	revision :Int
+		let	info :[String : Any]
+		let	content :Any
+
+		var	attachmentInfo :AttachmentInfo { AttachmentInfo(revision: self.revision, info: self.info) }
+	}
+
+	// MARK: AttachmentMap
+	typealias AttachmentMap = [String : Attachment]
+
 	// MARK: RevisionInfo
 	public struct RevisionInfo {
 
@@ -45,7 +70,7 @@ open class MDSDocument : Hashable {
 		let	creationDate :Date
 		let	modificationDate :Date
 		let	propertyMap :[String : Any]
-		let	attachmentInfo :[String : [String : Any]]
+		let	attachmentInfoMap :AttachmentInfoMap
 	}
 
 	// MARK: CreateInfo
@@ -362,6 +387,22 @@ open class MDSDocument : Hashable {
 	
 	//------------------------------------------------------------------------------------------------------------------
 	public func remove() { self.documentStorage.remove(self) }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSDocument.AttachmentInfoMap extension
+extension MDSDocument.AttachmentInfoMap {
+
+	// MARK: Properties
+	var	data :Data { try! JSONSerialization.data(withJSONObject: self, options: []) }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSDocument.AttachmentMap extension
+extension MDSDocument.AttachmentMap {
+
+	// MARK: Properties
+	var	attachmentInfoMap :MDSDocument.AttachmentInfoMap { self.mapValues({ $0.attachmentInfo }) }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
