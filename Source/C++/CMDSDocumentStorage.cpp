@@ -147,5 +147,5 @@ CString sComposeAssociationName(const CString& fromDocumentType, const CString& 
 //----------------------------------------------------------------------------------------------------------------------
 {
 	return fromDocumentType + CString(OSSTR("To")) +
-			toDocumentType.getSubString(0, 1).uppercased() + toDocumentType.getSubString(1);;
+			toDocumentType.getSubString(0, 1).uppercased() + toDocumentType.getSubString(1);
 }
