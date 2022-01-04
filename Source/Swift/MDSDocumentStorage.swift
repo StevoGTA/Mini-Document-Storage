@@ -43,6 +43,8 @@ public protocol MDSDocumentStorage : AnyObject {
 	func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T) -> T
 
 	func document<T : MDSDocument>(for documentID :String) -> T?
+	func iterate<T : MDSDocument>(proc :(_ document : T) -> Void)
+	func iterate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void)
 
 	func creationDate(for document :MDSDocument) -> Date
 	func modificationDate(for document :MDSDocument) -> Date
@@ -52,12 +54,11 @@ public protocol MDSDocumentStorage : AnyObject {
 	func date(for property :String, in document :MDSDocument) -> Date?
 	func set<T : MDSDocument>(_ value :Any?, for property :String, in document :T)
 
-	func remove(_ document :MDSDocument)
-
-	func iterate<T : MDSDocument>(proc :(_ document : T) -> Void)
-	func iterate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void)
+	func attachmentInfoMap(for document :MDSDocument) -> MDSDocument.AttachmentInfoMap
 
 	func batch(_ proc :() throws -> MDSBatchResult) rethrows
+
+	func remove(_ document :MDSDocument)
 
 	func registerAssociation(named name :String, fromDocumentType :String, toDocumentType :String)
 	func updateAssociation<T : MDSDocument, U : MDSDocument>(for name :String,
@@ -69,6 +70,11 @@ public protocol MDSDocumentStorage : AnyObject {
 
 //	func retrieveAssociationValue<T : MDSDocument, U>(for name :String, to document :T,
 //			summedFromCachedValueWithName cachedValueName :String) -> U
+
+	func attachmentContent<T : MDSDocument>(for document :T, attachmentID :String) -> Data?
+	func addAttachment<T : MDSDocument>(for document :T, info :[String : Any], content :Data)
+	func updateAttachment<T : MDSDocument>(for document :T, with id :String, info :[String : Any], content :Data)
+	func removeAttachment<T : MDSDocument>(for document :T, with id :String)
 
 	func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)])
@@ -184,6 +190,26 @@ extension MDSDocumentStorage {
 //				for: associationName(fromDocumentType: fromDocumentType, toDocumentType: T.documentType),
 //				to: document, summedFromCachedValueWithName: name)
 //	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func addAttachment<T : MDSDocument>(for document :T, info :[String : Any], content :String) {
+		// Add attachment
+		addAttachment(for: document, info: info, content: content.data(using: .utf8)!)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func addAttachment<T : MDSDocument>(for document :T, info :[String : Any], content :[String : Any]) {
+		// Add attachment
+		addAttachment(for: document, info: info,
+				content: try! JSONSerialization.data(withJSONObject: content, options: []))
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func addAttachment<T : MDSDocument>(for document :T, info :[String : Any], content :[[String : Any]]) {
+		// Add attachment
+		addAttachment(for: document, info: info,
+				content: try! JSONSerialization.data(withJSONObject: content, options: []))
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerCache<T : MDSDocument>(version :Int = 1, relevantProperties :[String] = [],

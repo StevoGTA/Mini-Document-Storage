@@ -375,6 +375,88 @@ class MDSHTTPServices {
 				jsonBody: documentUpdateInfos.map({ $0.httpServicesInfo }))
 	}
 
+	// MARK: Get Document Attachment
+	//	=> documentStorageID (path)
+	//	=> documentType (path)
+	//	=> documentID (path)
+	//	=> attachmentID (path)
+	//	=> authorization (header) (optional)
+	//
+	//	<= string
+	static func httpEndpointRequestForGetDocumentAttachment(documentStorageID :String, documentType :String,
+			documentID :String, attachmentID :String, authorization :String? = nil) -> StringHTTPEndpointRequest {
+		// Setup
+		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
+		let	documentIDUse = documentID.replacingOccurrences(of: "/", with: "_")
+		let	attachmentIDUse = attachmentID.replacingOccurrences(of: "/", with: "_")
+		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
+
+		return StringHTTPEndpointRequest(method: .get,
+				path: "/v1/document/\(documentStorageIDUse)/\(documentType)/\(documentIDUse)/attachment/\(attachmentIDUse)",
+				headers: headers)
+	}
+
+	// MARK: Add Document Attachment
+	//	=> documentStorageID (path)
+	//	=> documentType (path)
+	//	=> documentID (path)
+	//	=> info (body)
+	//	=> content (body)
+	//	=> authorization (header) (optional)
+	static func httpEndpointRequestForAddDocumentAttachment(documentStorageID :String, documentType :String,
+			documentID :String, info :[String : Any], content :String, authorization :String? = nil) ->
+			SuccessHTTPEndpointRequest {
+		// Setup
+		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
+		let	documentIDUse = documentID.replacingOccurrences(of: "/", with: "_")
+		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
+
+		return SuccessHTTPEndpointRequest(method: .post,
+				path: "/v1/document/\(documentStorageIDUse)/\(documentType)/\(documentIDUse)/attachment",
+				headers: headers, jsonBody: ["info": info, "content": content])
+	}
+
+	// MARK: Update Document Attachment
+	//	=> documentStorageID (path)
+	//	=> documentType (path)
+	//	=> documentID (path)
+	//	=> attachmentID (path)
+	//	=> info (body)
+	//	=> content (body)
+	//	=> authorization (header) (optional)
+	static func httpEndpointRequestForUpdateDocumentAttachment(documentStorageID :String, documentType :String,
+			documentID :String, attachmentID :String, info :[String : Any], content :String,
+			authorization :String? = nil) -> SuccessHTTPEndpointRequest {
+		// Setup
+		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
+		let	documentIDUse = documentID.replacingOccurrences(of: "/", with: "_")
+		let	attachmentIDUse = attachmentID.replacingOccurrences(of: "/", with: "_")
+		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
+
+		return SuccessHTTPEndpointRequest(method: .patch,
+				path: "/v1/document/\(documentStorageIDUse)/\(documentType)/\(documentIDUse)/attachment/\(attachmentIDUse)",
+				headers: headers, jsonBody: ["info": info, "content": content])
+	}
+
+	// MARK: Remove Document Attachment
+	//	=> documentStorageID (path)
+	//	=> documentType (path)
+	//	=> documentID (path)
+	//	=> attachmentID (path)
+	//	=> authorization (header) (optional)
+	static func httpEndpointRequestForRemoveDocumentAttachment(documentStorageID :String, documentType :String,
+			documentID :String, attachmentID :String, authorization :String? = nil) -> SuccessHTTPEndpointRequest {
+		// Setup
+		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
+		let	documentIDUse = documentID.replacingOccurrences(of: "/", with: "_")
+		let	attachmentIDUse = attachmentID.replacingOccurrences(of: "/", with: "_")
+		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
+
+		return SuccessHTTPEndpointRequest(method: .delete,
+				path: "/v1/document/\(documentStorageIDUse)/\(documentType)/\(documentIDUse)/attachment/\(attachmentIDUse)",
+				headers: headers)
+	}
+
 	// MARK: Register Association
 	//	=> documentStorageID (path)
 	//	=> json (body)

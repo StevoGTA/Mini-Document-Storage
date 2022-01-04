@@ -144,6 +144,26 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	public func document<T : MDSDocument>(for documentID :String) -> T? { T(id: documentID, documentStorage: self) }
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func iterate<T : MDSDocument>(proc :(_ document : T) -> Void) {
+		// Collect document IDs
+		let	documentIDs =
+					self.documentMapsLock.read() {
+						// Return IDs filtered by active
+						(self.documentIDsByTypeMap[T.documentType] ?? Set<String>())
+								.filter({ self.documentBackingByIDMap[$0]!.active })
+					}
+
+		// Call proc on each document
+		documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func iterate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void) {
+		// Iterate all
+		documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func creationDate(for document :MDSDocument) -> Date {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
@@ -252,57 +272,6 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			// Call document changed procs
 			self.documentChangedProcsMap.values(for: T.documentType)?.forEach() { $0(document, .updated) }
 		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func remove(_ document :MDSDocument) {
-		// Setup
-		let	documentType = type(of: document).documentType
-
-		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
-			// In batch
-			if let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
-				// Have document in batch
-				batchDocumentInfo.remove()
-			} else {
-				// Don't have document in batch
-				let	date = Date()
-				batchInfo.addDocument(documentType: documentType, documentID: document.id, reference: [:],
-						creationDate: date, modificationDate: date)
-					.remove()
-			}
-		} else {
-			// Not in batch
-			self.documentMapsLock.write() { self.documentBackingByIDMap[document.id]?.active = false }
-
-			// Remove from collections and indexes
-			removeFromCollections(documentIDs: Set<String>([document.id]))
-			removeFromIndexes(documentIDs: Set<String>([document.id]))
-
-			// Call document changed procs
-			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .removed) }
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func iterate<T : MDSDocument>(proc :(_ document : T) -> Void) {
-		// Collect document IDs
-		let	documentIDs =
-					self.documentMapsLock.read() {
-						// Return IDs filtered by active
-						(self.documentIDsByTypeMap[T.documentType] ?? Set<String>())
-								.filter({ self.documentBackingByIDMap[$0]!.active })
-					}
-
-		// Call proc on each document
-		documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) }
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func iterate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void) {
-		// Iterate all
-		documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -415,7 +384,38 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		// Remove
 		self.batchInfoMap.set(nil, for: Thread.current)
 	}
-	
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func remove(_ document :MDSDocument) {
+		// Setup
+		let	documentType = type(of: document).documentType
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+			// In batch
+			if let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
+				// Have document in batch
+				batchDocumentInfo.remove()
+			} else {
+				// Don't have document in batch
+				let	date = Date()
+				batchInfo.addDocument(documentType: documentType, documentID: document.id, reference: [:],
+						creationDate: date, modificationDate: date)
+					.remove()
+			}
+		} else {
+			// Not in batch
+			self.documentMapsLock.write() { self.documentBackingByIDMap[document.id]?.active = false }
+
+			// Remove from collections and indexes
+			removeFromCollections(documentIDs: Set<String>([document.id]))
+			removeFromIndexes(documentIDs: Set<String>([document.id]))
+
+			// Call document changed procs
+			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .removed) }
+		}
+	}
+
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerAssociation(named name :String, fromDocumentType :String, toDocumentType :String) {
 		// Unimplemented

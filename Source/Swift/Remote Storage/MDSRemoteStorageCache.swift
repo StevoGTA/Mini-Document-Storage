@@ -190,8 +190,7 @@ public class MDSRemoteStorageCache {
 			let	attachmentInfoMap :MDSDocument.AttachmentInfoMap
 			if let data = $0.blob(for: attachmentInfoTableColumn) {
 				// Have info
-				attachmentInfoMap =
-						try! JSONSerialization.jsonObject(with: data, options: []) as! MDSDocument.AttachmentInfoMap
+				attachmentInfoMap = MDSDocument.AttachmentInfoMap(data)
 			} else {
 				// Don't have info
 				attachmentInfoMap = [:]
@@ -293,7 +292,6 @@ public class MDSRemoteStorageCache {
 								(tableColumn: sqliteTable.modificationDateTableColumn,
 										value: $0.modificationDate.timeIntervalSince1970),
 								(tableColumn: sqliteTable.jsonTableColumn, value: $0.propertyMap.data),
-								(tableColumn: sqliteTable.attachmentInfoTableColumn, value: $0.attachmentInfoMap.data),
 							]
 				if !$0.attachmentInfoMap.isEmpty {
 					// Add attachment info

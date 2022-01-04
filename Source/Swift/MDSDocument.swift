@@ -28,29 +28,16 @@ open class MDSDocument : Hashable {
 	}
 
 	// MARK: AttachmentInfo
-	struct AttachmentInfo {
+	public struct AttachmentInfo {
 
 		// MARK: Properties
-		let	revision :Int
-		let	info :[String : Any]
+		public	let	revision :Int
+		public	let	info :[String : Any]
 	}
 
 	// MARK: AttachmentInfoMap
-	typealias AttachmentInfoMap = [String : AttachmentInfo]
+	public typealias AttachmentInfoMap = [String : AttachmentInfo]
 
-	// MARK: Attachment
-	struct Attachment {
-
-		// MARK: Properties
-		let	revision :Int
-		let	info :[String : Any]
-		let	content :Any
-
-		var	attachmentInfo :AttachmentInfo { AttachmentInfo(revision: self.revision, info: self.info) }
-	}
-
-	// MARK: AttachmentMap
-	typealias AttachmentMap = [String : Attachment]
 
 	// MARK: RevisionInfo
 	public struct RevisionInfo {
@@ -394,15 +381,20 @@ open class MDSDocument : Hashable {
 extension MDSDocument.AttachmentInfoMap {
 
 	// MARK: Properties
-	var	data :Data { try! JSONSerialization.data(withJSONObject: self, options: []) }
-}
+	var	data :Data
+				{ try! JSONSerialization.data(
+						withJSONObject: self.mapValues({ ["revision": $0.revision, "info": $0.info] }), options: []) }
 
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSDocument.AttachmentMap extension
-extension MDSDocument.AttachmentMap {
-
-	// MARK: Properties
-	var	attachmentInfoMap :MDSDocument.AttachmentInfoMap { self.mapValues({ $0.attachmentInfo }) }
+	// MARK: Lifecycle methods
+	//------------------------------------------------------------------------------------------------------------------
+	init(_ data :Data) {
+		// Setup
+		self =
+				(try! JSONSerialization.jsonObject(with: data, options: []) as! [String : [String : Any]])
+						.mapValues(
+								{ MDSDocument.AttachmentInfo(revision: $0["revision"] as! Int,
+										info: $0["info"] as! [String : Any]) })
+	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------

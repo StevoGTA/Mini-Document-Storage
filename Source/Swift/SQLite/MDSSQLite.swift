@@ -165,6 +165,32 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func iterate<T : MDSDocument>(proc :(_ document : T) -> Void) {
+		// Collect document IDs
+		var	documentIDs = [String]()
+		autoreleasepool() {
+			// Iterate document backing infos
+			iterateDocumentBackingInfos(documentType: T.documentType,
+					innerJoin: self.databaseManager.innerJoin(for: T.documentType),
+					where: self.databaseManager.where(forDocumentActive: true))
+					{ documentIDs.append($0.documentID); _ = $1 }
+		}
+
+		// Iterate document IDs
+		autoreleasepool() { documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) } }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func iterate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void) {
+		// Iterate document backing infos to ensure they are in the cache
+		autoreleasepool()
+			{ iterateDocumentBackingInfos(documentType: T.documentType, documentIDs: documentIDs) { _ = $0 } }
+
+		// Iterate document IDs
+		autoreleasepool() { documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) } }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func creationDate(for document :MDSDocument) -> Date{
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
@@ -281,70 +307,6 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			// Call document changed procs
 			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .updated) }
 		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func remove(_ document :MDSDocument) {
-		// Setup
-		let	documentType = type(of: document).documentType
-		let	documentID = document.id
-
-		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
-			// In batch
-			if let batchDocumentInfo = batchInfo.documentInfo(for: documentID) {
-				// Have document in batch
-				batchDocumentInfo.remove()
-			} else {
-				// Don't have document in batch
-				let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
-				batchInfo.addDocument(documentType: documentType, documentID: documentID, reference: documentBacking,
-						creationDate: Date(), modificationDate: Date())
-					.remove()
-			}
-		} else {
-			// Not in batch
-			let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
-
-			// Remove from collections and indexes
-			removeFromCollections(for: documentType, documentBackingIDs: [documentBacking.id])
-			removeFromIndexes(for: documentType, documentBackingIDs: [documentBacking.id])
-
-			// Remove
-			self.databaseManager.remove(documentType: documentType, id: documentBacking.id)
-
-			// Remove from cache
-			self.documentBackingCache.remove([documentID])
-
-			// Call document changed procs
-			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .removed) }
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func iterate<T : MDSDocument>(proc :(_ document : T) -> Void) {
-		// Collect document IDs
-		var	documentIDs = [String]()
-		autoreleasepool() {
-			// Iterate document backing infos
-			iterateDocumentBackingInfos(documentType: T.documentType,
-					innerJoin: self.databaseManager.innerJoin(for: T.documentType),
-					where: self.databaseManager.where(forDocumentActive: true))
-					{ documentIDs.append($0.documentID); _ = $1 }
-		}
-
-		// Iterate document IDs
-		autoreleasepool() { documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) } }
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func iterate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void) {
-		// Iterate document backing infos to ensure they are in the cache
-		autoreleasepool()
-			{ iterateDocumentBackingInfos(documentType: T.documentType, documentIDs: documentIDs) { _ = $0 } }
-
-		// Iterate document IDs
-		autoreleasepool() { documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) } }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -466,6 +428,44 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 		// Remove - must wait to do this until the batch has been fully processed in case processing Collections and
 		//	Indexes ends up referencing other documents that have not yet been committed.
 		self.batchInfoMap.set(nil, for: Thread.current)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func remove(_ document :MDSDocument) {
+		// Setup
+		let	documentType = type(of: document).documentType
+		let	documentID = document.id
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+			// In batch
+			if let batchDocumentInfo = batchInfo.documentInfo(for: documentID) {
+				// Have document in batch
+				batchDocumentInfo.remove()
+			} else {
+				// Don't have document in batch
+				let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
+				batchInfo.addDocument(documentType: documentType, documentID: documentID, reference: documentBacking,
+						creationDate: Date(), modificationDate: Date())
+					.remove()
+			}
+		} else {
+			// Not in batch
+			let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
+
+			// Remove from collections and indexes
+			removeFromCollections(for: documentType, documentBackingIDs: [documentBacking.id])
+			removeFromIndexes(for: documentType, documentBackingIDs: [documentBacking.id])
+
+			// Remove
+			self.databaseManager.remove(documentType: documentType, id: documentBacking.id)
+
+			// Remove from cache
+			self.documentBackingCache.remove([documentID])
+
+			// Call document changed procs
+			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .removed) }
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
