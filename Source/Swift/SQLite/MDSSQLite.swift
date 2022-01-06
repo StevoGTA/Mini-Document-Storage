@@ -310,6 +310,12 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func attachmentInfoMap(for document :MDSDocument) -> MDSDocument.AttachmentInfoMap {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func batch(_ proc :() throws -> MDSBatchResult) rethrows {
 		// Setup
 		let	batchInfo = MDSBatchInfo<MDSSQLiteDocumentBacking>()
@@ -501,6 +507,31 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 //		// Unimplemented
 //		fatalError("Unimplemented")
 //	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func attachmentContent<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) -> Data? {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func addAttachment<T : MDSDocument>(for document :T, type :String, info :[String : Any], content :Data) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func updateAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
+			updatedInfo :[String : Any], updatedContent :Data) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func removeAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],

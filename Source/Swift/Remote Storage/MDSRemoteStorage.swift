@@ -606,15 +606,19 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func attachmentContent<T : MDSDocument>(for document :T, attachmentID :String) -> Data? {
+	public func attachmentContent<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) ->
+			Data? {
+		// Setup
+		let	documentType = type(of: document).documentType
+
 		// Get attachment
 		let	(string, error) =
 					DispatchQueue.performBlocking() { completionProc in
 						// Call network client
 						self.httpEndpointClient.queue(
 								MDSHTTPServices.httpEndpointRequestForGetDocumentAttachment(
-										documentStorageID: self.documentStorageID, documentType: T.documentType,
-										documentID: document.id, attachmentID: attachmentID,
+										documentStorageID: self.documentStorageID, documentType: documentType,
+										documentID: document.id, attachmentID: attachmentInfo.id,
 										authorization: self.authorization))
 								{ completionProc(($1, $2)) }
 					}
@@ -629,14 +633,17 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func addAttachment<T : MDSDocument>(for document :T, info :[String : Any], content :Data) {
+	public func addAttachment<T : MDSDocument>(for document :T, type :String, info :[String : Any], content :Data) {
+		// Setup
+		let	documentType = Swift.type(of: document).documentType
+
 		// Add attachment
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Call network client
 						self.httpEndpointClient.queue(
 								MDSHTTPServices.httpEndpointRequestForAddDocumentAttachment(
-										documentStorageID: self.documentStorageID, documentType: T.documentType,
+										documentStorageID: self.documentStorageID, documentType: documentType,
 										documentID: document.id, info: info, content: content.base64EncodedString(),
 										authorization: self.authorization))
 								{ completionProc($1) }
@@ -650,17 +657,24 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func updateAttachment<T : MDSDocument>(for document :T, with id :String, info :[String : Any],
-			content :Data) {
+	public func updateAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
+			updatedInfo :[String : Any], updatedContent :Data) {
+		// Setup
+		let	documentType = type(of: document).documentType
+
+		var	info = updatedInfo
+		info["type"] = attachmentInfo.type
+
 		// Update attachment
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Call network client
 						self.httpEndpointClient.queue(
 								MDSHTTPServices.httpEndpointRequestForUpdateDocumentAttachment(
-										documentStorageID: self.documentStorageID, documentType: T.documentType,
+										documentStorageID: self.documentStorageID, documentType: documentType,
 										documentID: document.id, attachmentID: id, info: info,
-										content: content.base64EncodedString(), authorization: self.authorization))
+										content: updatedContent.base64EncodedString(),
+										authorization: self.authorization))
 								{ completionProc($1) }
 					}
 		guard error == nil else {
@@ -672,14 +686,17 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func removeAttachment<T : MDSDocument>(for document :T, with id :String) {
+	public func removeAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) {
+		// Setup
+		let	documentType = type(of: document).documentType
+
 		// Remove attachment
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Call network client
 						self.httpEndpointClient.queue(
 								MDSHTTPServices.httpEndpointRequestForRemoveDocumentAttachment(
-										documentStorageID: self.documentStorageID, documentType: T.documentType,
+										documentStorageID: self.documentStorageID, documentType: documentType,
 										documentID: document.id, attachmentID: id, authorization: self.authorization))
 								{ completionProc($1) }
 					}

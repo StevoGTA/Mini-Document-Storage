@@ -37,10 +37,9 @@ extension MDSDocument.FullInfo {
 		self.propertyMap = httpServicesInfo["json"] as! [String : Any]
 		self.attachmentInfoMap =
 				(httpServicesInfo["attachments"] as! [String : [String : Any]])
-					.mapValues({
-							MDSDocument.AttachmentInfo(revision: $0["revision"] as! Int,
-									info: $0["info"] as! [String : Any])
-					})
+					.mapPairs({ ($0.key,
+							MDSDocument.AttachmentInfo(id: $0.key, revision: $0.value["revision"] as! Int,
+									info: $0.value["info"] as! [String : Any])) })
 	}
 }
 

@@ -33,11 +33,24 @@ open class MDSDocument : Hashable {
 		// MARK: Properties
 		public	let	revision :Int
 		public	let	info :[String : Any]
+
+		public	var	type :String { info["type"] as! String }
+
+				let	id :String
+
+		// MARK: Lifecycle methods
+		//--------------------------------------------------------------------------------------------------------------
+		init(id :String, revision :Int, info :[String : Any]) {
+			// Store
+			self.revision = revision
+			self.info = info
+
+			self.id = id
+		}
 	}
 
 	// MARK: AttachmentInfoMap
 	public typealias AttachmentInfoMap = [String : AttachmentInfo]
-
 
 	// MARK: RevisionInfo
 	public struct RevisionInfo {
@@ -117,6 +130,8 @@ open class MDSDocument : Hashable {
 
 			public	var	creationDate :Date { self.documentStorage.creationDate(for: self) }
 			public	var	modificationDate :Date { self.documentStorage.modificationDate(for: self) }
+
+			private	var	attachmentInfoMap :AttachmentInfoMap { self.documentStorage.attachmentInfoMap(for: self) }
 
 	// MARK: Equatable implementation
 	//------------------------------------------------------------------------------------------------------------------
@@ -370,6 +385,69 @@ open class MDSDocument : Hashable {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func attachmentInfos(for type :String) -> [AttachmentInfo] {
+		// Return filtered attachment infos
+		return self.attachmentInfoMap.values.filter({ $0.type == type })
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func attachmentContent(for attachmentInfo :AttachmentInfo) -> Data? {
+		// Return attachment content
+		return self.documentStorage.attachmentContent(for: self, attachmentInfo: attachmentInfo)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func attachmentContentAsString(for attachmentInfo :AttachmentInfo) -> String? {
+		// Get attachment content
+		guard let data = self.documentStorage.attachmentContent(for: self, attachmentInfo: attachmentInfo) else
+				{ return nil }
+
+		return String(data: data, encoding: .utf8)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func attachmentContentAsJSON<T>(for attachmentInfo :AttachmentInfo) -> T? {
+		// Get attachment content
+		guard let data = self.documentStorage.attachmentContent(for: self, attachmentInfo: attachmentInfo) else
+				{ return nil }
+
+		return try! JSONSerialization.jsonObject(with: data, options: []) as? T
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func addAttachment(type :String, info :[String : Any] = [:], content :String) {
+		// Add attachment
+		self.documentStorage.addAttachment(for: self, type: type, info: info, content: content.data(using: .utf8)!)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func addAttachment(type :String, info :[String : Any] = [:], content :[String : Any]) {
+		// Add attachment
+		self.documentStorage.addAttachment(for: self, type: type, info: info,
+				content: try! JSONSerialization.data(withJSONObject: content, options: []))
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func addAttachment(type :String, info :[String : Any] = [:], content :[[String : Any]]) {
+		// Add attachment
+		self.documentStorage.addAttachment(for: self, type: type, info: info,
+				content: try! JSONSerialization.data(withJSONObject: content, options: []))
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func update(attachmentInfo :AttachmentInfo, updatedInfo :[String : Any], updatedContent :Data) {
+		// Update attachment
+		self.documentStorage.updateAttachment(for: self, attachmentInfo: attachmentInfo, updatedInfo: updatedInfo,
+				updatedContent: updatedContent)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func remove(attachmentInfo :AttachmentInfo) {
+		// Remove attachment
+		self.documentStorage.removeAttachment(for: self, attachmentInfo: attachmentInfo)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func remove(for property :String) { self.documentStorage.set(nil, for: property, in: self) }
 	
 	//------------------------------------------------------------------------------------------------------------------
@@ -391,9 +469,9 @@ extension MDSDocument.AttachmentInfoMap {
 		// Setup
 		self =
 				(try! JSONSerialization.jsonObject(with: data, options: []) as! [String : [String : Any]])
-						.mapValues(
-								{ MDSDocument.AttachmentInfo(revision: $0["revision"] as! Int,
-										info: $0["info"] as! [String : Any]) })
+						.mapPairs({ ($0.key,
+								MDSDocument.AttachmentInfo(id: $0.key, revision: $0.value["revision"] as! Int,
+										info: $0.value["info"] as! [String : Any])) })
 	}
 }
 

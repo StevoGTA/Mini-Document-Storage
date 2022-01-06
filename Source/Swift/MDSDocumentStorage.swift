@@ -71,10 +71,11 @@ public protocol MDSDocumentStorage : AnyObject {
 //	func retrieveAssociationValue<T : MDSDocument, U>(for name :String, to document :T,
 //			summedFromCachedValueWithName cachedValueName :String) -> U
 
-	func attachmentContent<T : MDSDocument>(for document :T, attachmentID :String) -> Data?
-	func addAttachment<T : MDSDocument>(for document :T, info :[String : Any], content :Data)
-	func updateAttachment<T : MDSDocument>(for document :T, with id :String, info :[String : Any], content :Data)
-	func removeAttachment<T : MDSDocument>(for document :T, with id :String)
+	func attachmentContent<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) -> Data?
+	func addAttachment<T : MDSDocument>(for document :T, type :String, info :[String : Any], content :Data)
+	func updateAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
+			updatedInfo :[String : Any], updatedContent :Data)
+	func removeAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo)
 
 	func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)])
@@ -190,26 +191,6 @@ extension MDSDocumentStorage {
 //				for: associationName(fromDocumentType: fromDocumentType, toDocumentType: T.documentType),
 //				to: document, summedFromCachedValueWithName: name)
 //	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func addAttachment<T : MDSDocument>(for document :T, info :[String : Any], content :String) {
-		// Add attachment
-		addAttachment(for: document, info: info, content: content.data(using: .utf8)!)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func addAttachment<T : MDSDocument>(for document :T, info :[String : Any], content :[String : Any]) {
-		// Add attachment
-		addAttachment(for: document, info: info,
-				content: try! JSONSerialization.data(withJSONObject: content, options: []))
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func addAttachment<T : MDSDocument>(for document :T, info :[String : Any], content :[[String : Any]]) {
-		// Add attachment
-		addAttachment(for: document, info: info,
-				content: try! JSONSerialization.data(withJSONObject: content, options: []))
-	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerCache<T : MDSDocument>(version :Int = 1, relevantProperties :[String] = [],
