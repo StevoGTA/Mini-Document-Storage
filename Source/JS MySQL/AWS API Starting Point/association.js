@@ -34,7 +34,8 @@ exports.registerV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		await MDSDocumentStorage.associationRegister(documentStorageID, info);
+		let	mdsDocumentStorage = new MDSDocumentStorage();
+		await mdsDocumentStorage.associationRegister(documentStorageID, info);
 
 		return {
 				statusCode: 200,
@@ -81,7 +82,8 @@ exports.updateV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		await MDSDocumentStorage.associationUpdate(documentStorageID, name, info);
+		let	mdsDocumentStorage = new MDSDocumentStorage();
+		await mdsDocumentStorage.associationUpdate(documentStorageID, name, info);
 
 		return {
 				statusCode: 200,
@@ -133,8 +135,9 @@ exports.getDocumentInfosV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
+		let	mdsDocumentStorage = new MDSDocumentStorage();
 		let	[totalCount, results] =
-					await MDSDocumentStorage.associationGetDocumentInfos(documentStorageID, name, fromDocumentID,
+					await mdsDocumentStorage.associationGetDocumentInfos(documentStorageID, name, fromDocumentID,
 							toDocumentID, startIndex, fullInfo == 1);
 
 		// Success
@@ -196,8 +199,9 @@ exports.getValueV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
+		let	mdsDocumentStorage = new MDSDocumentStorage();
 		let	[value, upToDate] =
-					await MDSDocumentStorage.associationGetValue(documentStorageID, name, toDocumentID, action,
+					await mdsDocumentStorage.associationGetValue(documentStorageID, name, toDocumentID, action,
 							cacheName, cacheValueName);
 		if (upToDate)
 			// Success

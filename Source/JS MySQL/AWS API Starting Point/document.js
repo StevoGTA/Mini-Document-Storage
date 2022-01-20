@@ -54,7 +54,8 @@ exports.createV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		let	results = await MDSDocumentStorage.documentCreate(documentStorageID, documentType, infos);
+		let	mdsDocumentStorage = new MDSDocumentStorage();
+		let	results = await mdsDocumentStorage.documentCreate(documentStorageID, documentType, infos);
 
 		return {
 				statusCode: 200,
@@ -123,8 +124,9 @@ exports.getV1 = async (event) => {
 		// Check request type
 		if (sinceRevision) {
 			// Since revision
+			let	mdsDocumentStorage = new MDSDocumentStorage();
 			let	[totalCount, results] =
-						await MDSDocumentStorage.documentGetSinceRevision(documentStorageID, documentType,
+						await mdsDocumentStorage.documentGetSinceRevision(documentStorageID, documentType,
 								sinceRevision);
 
 			return {
@@ -142,7 +144,8 @@ exports.getV1 = async (event) => {
 			};
 		} else {
 			// IDs
-			let	results = await MDSDocumentStorage.documentGetIDs(documentStorageID, documentType, ids);
+			let	mdsDocumentStorage = new MDSDocumentStorage();
+			let	results = await mdsDocumentStorage.documentGetIDs(documentStorageID, documentType, ids);
 
 			return {
 					statusCode: 200,
@@ -199,7 +202,8 @@ exports.updateV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		await MDSDocumentStorage.documentUpdate(documentStorageID, documentType, infos);
+		let	mdsDocumentStorage = new MDSDocumentStorage();
+		await mdsDocumentStorage.documentUpdate(documentStorageID, documentType, infos);
 
 		return {
 				statusCode: 200,
@@ -242,8 +246,9 @@ exports.getAttachmentV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
+		let	mdsDocumentStorage = new MDSDocumentStorage();
 		let	results =
-					await MDSDocumentStorage.documentAttachmentGet(documentStorageID, documentType, documentID,
+					await mdsDocumentStorage.documentAttachmentGet(documentStorageID, documentType, documentID,
 							attachmentID);
 
 		return {
@@ -290,7 +295,8 @@ exports.addAttachmentV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		await MDSDocumentStorage.documentAttachmentAdd(documentStorageID, documentType, documentID, info, content);
+		let	mdsDocumentStorage = new MDSDocumentStorage();
+		await mdsDocumentStorage.documentAttachmentAdd(documentStorageID, documentType, documentID, info, content);
 
 		return {
 				statusCode: 200,
@@ -337,7 +343,8 @@ exports.updateAttachmentV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		await MDSDocumentStorage.documentAttachmentUpdate(documentStorageID, documentType, documentID, attachmentID,
+		let	mdsDocumentStorage = new MDSDocumentStorage();
+		await mdsDocumentStorage.documentAttachmentUpdate(documentStorageID, documentType, documentID, attachmentID,
 				info, content);
 
 		return {
@@ -370,7 +377,8 @@ exports.removeAttachmentV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		await MDSDocumentStorage.documentAttachmentRemove(documentStorageID, documentType, documentID, attachmentID);
+		let	mdsDocumentStorage = new MDSDocumentStorage();
+		await mdsDocumentStorage.documentAttachmentRemove(documentStorageID, documentType, documentID, attachmentID);
 
 		return {
 				statusCode: 200,

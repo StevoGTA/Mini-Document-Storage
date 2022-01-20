@@ -33,7 +33,8 @@ exports.getV1 = async (request, result, next) => {
 	// Catch errors
 	try {
 		// Get info
-		let	results = await MDSDocumentStorage.infoGet(documentStorageID, keys);
+		let	mdsDocumentStorage = new MDSDocumentStorage();
+		let	results = await mdsDocumentStorage.infoGet(documentStorageID, keys);
 
 		response
 				.statusCode(200)
@@ -73,7 +74,8 @@ exports.setV1 = async (request, result, next) => {
 	// Catch errors
 	try {
 		// Get info
-		await MDSDocumentStorage.infoSet(documentStorageID, info);
+		let	mdsDocumentStorage = new MDSDocumentStorage();
+		await mdsDocumentStorage.infoSet(documentStorageID, info);
 
 		response
 				.statusCode(200)

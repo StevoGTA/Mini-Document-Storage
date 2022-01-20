@@ -40,7 +40,8 @@ exports.registerV1 = async (request, result, next) => {
 	// Catch errors
 	try {
 		// Get info
-		await MDSDocumentStorage.collectionRegister(documentStorageID, info);
+		let	mdsDocumentStorage = new MDSDocumentStorage();
+		await mdsDocumentStorage.collectionRegister(documentStorageID, info);
 
 		response
 				.statusCode(200)
@@ -69,8 +70,9 @@ exports.getDocumentCountV1 = async (request, result, next) => {
 	// Catch errors
 	try {
 		// Get info
+		let	mdsDocumentStorage = new MDSDocumentStorage();
 		let	[count, upToDate] =
-					await MDSDocumentStorage.collectionGetDocumentCount(documentStorageID, name);
+					await mdsDocumentStorage.collectionGetDocumentCount(documentStorageID, name);
 		if (upToDate)
 			// Success
 			response
@@ -113,8 +115,9 @@ exports.getDocumentInfosV1 = async (request, result, next) => {
 	// Catch errors
 	try {
 		// Get info
+		let	mdsDocumentStorage = new MDSDocumentStorage();
 		let	[totalCount, results, upToDate] =
-					await MDSDocumentStorage.collectionGetDocumentInfos(documentStorageID, name, startIndex);
+					await mdsDocumentStorage.collectionGetDocumentInfos(documentStorageID, name, startIndex);
 		if (upToDate) {
 			// Success
 			let	endIndex = startIndex + Object.keys(results).length - 1;

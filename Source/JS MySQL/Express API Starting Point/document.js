@@ -53,7 +53,8 @@ exports.createV1 = async (request, result, next) => {
 	// Catch errors
 	try {
 		// Get info
-		let	results = await MDSDocumentStorage.documentCreate(documentStorageID, documentType, infos);
+		let	mdsDocumentStorage = new MDSDocumentStorage();
+		let	results = await mdsDocumentStorage.documentCreate(documentStorageID, documentType, infos);
 
 		response
 				.statusCode(200)
@@ -116,8 +117,9 @@ exports.getV1 = async (request, result, next) => {
 		// Check request type
 		if (sinceRevision) {
 			// Since revision
+			let	mdsDocumentStorage = new MDSDocumentStorage();
 			let	[totalCount, results] =
-						await MDSDocumentStorage.documentGetSinceRevision(documentStorageID, documentType,
+						await mdsDocumentStorage.documentGetSinceRevision(documentStorageID, documentType,
 								sinceRevision);
 
 			response
@@ -132,7 +134,8 @@ exports.getV1 = async (request, result, next) => {
 					.send(results);
 		} else {
 			// IDs
-			let	results = await MDSDocumentStorage.documentGetIDs(documentStorageID, documentType, ids);
+			let	mdsDocumentStorage = new MDSDocumentStorage();
+			let	results = await mdsDocumentStorage.documentGetIDs(documentStorageID, documentType, ids);
 
 			response
 					.statusCode(200)
@@ -186,7 +189,8 @@ exports.updateV1 = async (request, result, next) => {
 	// Catch errors
 	try {
 		// Get info
-		await MDSDocumentStorage.documentUpdate(documentStorageID, documentType, infos);
+		let	mdsDocumentStorage = new MDSDocumentStorage();
+		await mdsDocumentStorage.documentUpdate(documentStorageID, documentType, infos);
 
 		response
 				.statusCode(200)
@@ -226,8 +230,9 @@ exports.getAttachmentV1 = async (request, result, next) => {
 	// Catch errors
 	try {
 		// Get info
+		let	mdsDocumentStorage = new MDSDocumentStorage();
 		let	results =
-					await MDSDocumentStorage.documentAttachmentGet(documentStorageID, documentType, documentID,
+					await mdsDocumentStorage.documentAttachmentGet(documentStorageID, documentType, documentID,
 							attachmentID);
 
 		response
@@ -271,7 +276,8 @@ exports.addAttachmentV1 = async (request, result, next) => {
 	// Catch errors
 	try {
 		// Get info
-		await MDSDocumentStorage.documentAttachmentAdd(documentStorageID, documentType, documentID, info, content);
+		let	mdsDocumentStorage = new MDSDocumentStorage();
+		await mdsDocumentStorage.documentAttachmentAdd(documentStorageID, documentType, documentID, info, content);
 
 		response
 				.statusCode(200)
@@ -315,7 +321,8 @@ exports.updateAttachmentV1 = async (request, result, next) => {
 	// Catch errors
 	try {
 		// Get info
-		await MDSDocumentStorage.documentAttachmentUpdate(documentStorageID, documentType, documentID, attachmentID,
+		let	mdsDocumentStorage = new MDSDocumentStorage();
+		await mdsDocumentStorage.documentAttachmentUpdate(documentStorageID, documentType, documentID, attachmentID,
 				info, content);
 
 		response
@@ -346,7 +353,8 @@ exports.removeAttachmentV1 = async (request, result, next) => {
 	// Catch errors
 	try {
 		// Get info
-		await MDSDocumentStorage.documentAttachmentRemove(documentStorageID, documentType, documentID, attachmentID);
+		let	mdsDocumentStorage = new MDSDocumentStorage();
+		await mdsDocumentStorage.documentAttachmentRemove(documentStorageID, documentType, documentID, attachmentID);
 
 		response
 				.statusCode(200)

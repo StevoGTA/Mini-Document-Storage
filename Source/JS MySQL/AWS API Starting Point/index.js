@@ -41,7 +41,8 @@ exports.registerV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		await MDSDocumentStorage.indexRegister(documentStorageID, info);
+		let	mdsDocumentStorage = new MDSDocumentStorage();
+		await mdsDocumentStorage.indexRegister(documentStorageID, info);
 
 		return {
 				statusCode: 200,
@@ -92,7 +93,8 @@ exports.getDocumentInfosV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		let	[results, upToDate] = await MDSDocumentStorage.indexGetDocumentInfos(documentStorageID, name, keys);
+		let	mdsDocumentStorage = new MDSDocumentStorage();
+		let	[results, upToDate] = await mdsDocumentStorage.indexGetDocumentInfos(documentStorageID, name, keys);
 		if (upToDate)
 			// Success
 			return {

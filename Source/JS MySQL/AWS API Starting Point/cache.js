@@ -45,7 +45,8 @@ exports.registerV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		await MDSDocumentStorage.cacheRegister(documentStorageID, info);
+		let	mdsDocumentStorage = new MDSDocumentStorage();
+		await mdsDocumentStorage.cacheRegister(documentStorageID, info);
 
 		return {
 				statusCode: 200,
