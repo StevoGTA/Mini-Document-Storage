@@ -202,7 +202,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 							// Call network client
 							self.httpEndpointClient.queue(
 									MDSHTTPServices.httpEndpointRequestForGetDocuments(
-											documentStorageID: self.documentStorageID, type: documentType,
+											documentStorageID: self.documentStorageID, documentType: documentType,
 											sinceRevision: lastRevision, authorization: self.authorization),
 									partialResultsProc: { self.updateCaches(for: documentType, with: $0) },
 									completionProc: { (isComplete :Bool?, error :Error?) in
@@ -493,8 +493,9 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 							// Queue
 							self.httpEndpointClient.queue(
 									MDSHTTPServices.httpEndpointRequestForGetAssociationDocumentInfos(
-											documentStorageID: self.documentStorageID, name: name, fromID: document.id,
-											startIndex: startIndex, authorization: self.authorization))
+											documentStorageID: self.documentStorageID, name: name,
+											fromDocumentID: document.id, startIndex: startIndex,
+											authorization: self.authorization))
 									{ (documentRevisionInfos :[MDSDocument.RevisionInfo]?, isComplete :Bool?,
 											error :Error?) in
 										// Call completion proc
@@ -537,8 +538,9 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 							// Queue
 							self.httpEndpointClient.queue(
 									MDSHTTPServices.httpEndpointRequestForGetAssociationDocumentInfos(
-											documentStorageID: self.documentStorageID, name: name, toID: document.id,
-											startIndex: startIndex, authorization: self.authorization))
+											documentStorageID: self.documentStorageID, name: name,
+											toDocumentID: document.id, startIndex: startIndex,
+											authorization: self.authorization))
 									{ (documentRevisionInfos :[MDSDocument.RevisionInfo]?, isComplete :Bool?,
 											error :Error?) in
 										// Call completion proc
@@ -1206,7 +1208,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		// Queue document retrieval
 		self.httpEndpointClient.queue(
 				MDSHTTPServices.httpEndpointRequestForGetDocuments(documentStorageID: self.documentStorageID,
-						type: documentType, documentIDs: documentIDs, authorization: self.authorization),
+						documentType: documentType, documentIDs: documentIDs, authorization: self.authorization),
 				partialResultsProc: {
 					// Handle results
 					if $0 != nil {
