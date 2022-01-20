@@ -16,10 +16,9 @@ let	{MDSDocumentStorage} = require('mini-document-storage-mysql');
 //		"key" :String
 //		...
 //	   ]
-exports.getV1 = async (event, context) => {
+exports.getV1 = async (event) => {
 	// Setup
-	let	pathParameters = event.pathParameters || {};
-	let	documentStorageID = pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
 
 	let	multiValueQueryStringParameters = event.multiValueQueryStringParameters || {};
 	let	keys = multiValueQueryStringParameters.key;
@@ -61,10 +60,9 @@ exports.getV1 = async (event, context) => {
 //			"key" :String
 //			...
 //		]
-exports.setV1 = async (event, context) => {
+exports.setV1 = async (event) => {
 	// Setup
-	let	pathParameters = event.pathParameters || {};
-	let	documentStorageID = pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
 
 	let	info = (event.body) ? JSON.parse(event.body) : null;
 

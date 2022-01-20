@@ -23,37 +23,34 @@ let	{MDSDocumentStorage} = require('mini-document-storage-mysql');
 //											...
 //									  },
 //		}
-exports.registerV1 = async (event) => {
+exports.registerV1 = async (request, result, next) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.projectID;
+	let	documentStorageID = request.params.projectID;
 
-	let	info = (event.body) ? JSON.parse(event.body) : null;
+	let	info = request.body;
 
 	// Validate input
 	if (!info)
 		// Must specify keys
-		return {
-				statusCode: 400,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify({message: 'missing info'}),
-		};
+		response
+				.statusCode(400)
+				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+				.send({message: 'missing info'});
 
 	// Catch errors
 	try {
 		// Get info
 		await MDSDocumentStorage.collectionRegister(documentStorageID, info);
 
-		return {
-				statusCode: 200,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-		};
+		response
+				.statusCode(200)
+				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true});
 	} catch (error) {
 		// Error
-		return {
-				statusCode: 500,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: 'Error: ' + error,
-		};
+		response
+				.statusCode(500)
+				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+				.send('Error: ' + error);
 	}
 };
 
@@ -64,10 +61,10 @@ exports.registerV1 = async (event) => {
 //
 //	<= HTTP Status 409 if collection is out of date => call endpoint again
 //	<= count in header
-exports.getDocumentCountV1 = async (event) => {
+exports.getDocumentCountV1 = async (request, result, next) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.projectID;
-	let	name = event.pathParameters.name.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = request.params.projectID;
+	let	name = request.params.name.replace(/%2B/g, '+').replace(/_/g, '/');
 
 	// Catch errors
 	try {
@@ -76,24 +73,21 @@ exports.getDocumentCountV1 = async (event) => {
 					await MDSDocumentStorage.collectionGetDocumentCount(documentStorageID, name);
 		if (upToDate)
 			// Success
-			return {
-					statusCode: 200,
-					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: count,
-			};
+			response
+					.statusCode(200)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send(count);
 		else
 			// Not up to date
-			return {
-					statusCode: 409,
-					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-			};
+			response
+					.statusCode(409)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true});
 	} catch (error) {
 		// Error
-		return {
-				statusCode: 500,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: 'Error: ' + error,
-		};
+		response
+				.statusCode(500)
+				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+				.send('Error: ' + error);
 	}
 };
 
@@ -109,13 +103,12 @@ exports.getDocumentCountV1 = async (event) => {
 //			String (documentID) : Int (revision),
 //			...
 //		}
-exports.getDocumentInfosV1 = async (event) => {
+exports.getDocumentInfosV1 = async (request, result, next) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.projectID;
-	let	name = event.pathParameters.name.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = request.params.projectID;
+	let	name = request.params.name.replace(/%2B/g, '+').replace(/_/g, '/');
 
-	let	queryStringParameters = event.queryStringParameters || {};
-	let	startIndex = queryStringParameters.startIndex || 0;
+	let	startIndex = request.query.startIndex || 0;
 
 	// Catch errors
 	try {
@@ -129,28 +122,24 @@ exports.getDocumentInfosV1 = async (event) => {
 						(totalCount > 0) ?
 								'documents ' + startIndex + '-' + endIndex + '/' + totalCount : 'documents */0';
 
-			return {
-					statusCode: 200,
-					headers:
-							{
-								'Access-Control-Allow-Origin': '*',
-								'Access-Control-Allow-Credentials': true,
-								'Content-Range': contentRange,
-							},
-					body: JSON.stringify(results),
-			};
+			response
+					.statusCode(200)
+					.set({
+						'Access-Control-Allow-Origin': '*',
+						'Access-Control-Allow-Credentials': true,
+						'Content-Range': contentRange,
+					})
+					.send(results);
 		} else
 			// Not up to date
-			return {
-					statusCode: 409,
-					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-			};
+			response
+					.statusCode(409)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true});
 	} catch (error) {
 		// Error
-		return {
-				statusCode: 500,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: 'Error: ' + error,
-		};
+		response
+				.statusCode(500)
+				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+				.send('Error: ' + error);
 	}
 };

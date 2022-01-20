@@ -23,10 +23,9 @@ let	{MDSDocumentStorage} = require('mini-document-storage-mysql');
 //									...
 //							    },
 //		}
-exports.registerV1 = async (event, context) => {
+exports.registerV1 = async (event) => {
 	// Setup
-	let	pathParameters = event.pathParameters || {};
-	let	documentStorageID = pathParameters.projectID;
+	let	documentStorageID = event.pathParameters.projectID;
 
 	let	info = (event.body) ? JSON.parse(event.body) : null;
 
@@ -73,11 +72,10 @@ exports.registerV1 = async (event, context) => {
 //				}
 //			...
 //		}
-exports.getDocumentInfosV1 = async (event, context) => {
+exports.getDocumentInfosV1 = async (event) => {
 	// Setup
-	let	pathParameters = event.pathParameters || {};
-	let	documentStorageID = pathParameters.projectID;
-	let	name = pathParameters.name.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = event.pathParameters.projectID;
+	let	name = event.pathParameters.name.replace(/%2B/g, '+').replace(/_/g, '/');
 
 	let	multiValueQueryStringParameters = event.multiValueQueryStringParameters || {};
 	let	keys = multiValueQueryStringParameters.key;
@@ -88,7 +86,7 @@ exports.getDocumentInfosV1 = async (event, context) => {
 		return {
 				statusCode: 400,
 				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify({message: 'missing key(s)'})
+				body: JSON.stringify({message: 'missing key(s)'}),
 		};
 
 	// Catch errors
@@ -100,7 +98,7 @@ exports.getDocumentInfosV1 = async (event, context) => {
 			return {
 					statusCode: 200,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: JSON.stringify(results)
+					body: JSON.stringify(results),
 			};
 		else
 			// Not up to date

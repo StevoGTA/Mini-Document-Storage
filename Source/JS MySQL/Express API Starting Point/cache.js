@@ -24,20 +24,19 @@ let	{MDSDocumentStorage} = require('mini-document-storage-mysql');
 //							},
 //							...
 //				 		   ]
-exports.registerV1 = async (event) => {
+exports.registerV1 = async (request, result, next) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.projectID;
+	let	documentStorageID = request.params.projectID;
 
-	let	info = (event.body) ? JSON.parse(event.body) : null;
+	let	info = request.body;
 
 	// Validate input
 	if (!info)
 		// Must specify keys
-		return {
-				statusCode: 400,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify({message: 'missing info'}),
-		};
+		response
+				.statusCode(400)
+				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+				.send({message: 'missing info'});
 
 	// Prevent timeout from waiting on event loop
 	context.callbackWaitsForEmptyEventLoop = false;
@@ -47,16 +46,14 @@ exports.registerV1 = async (event) => {
 		// Get info
 		await MDSDocumentStorage.cacheRegister(documentStorageID, info);
 
-		return {
-				statusCode: 200,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-		};
+		response
+				.statusCode(200)
+				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true});
 	} catch (error) {
 		// Error
-		return {
-				statusCode: 500,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: 'Error: ' + error,
-		};
+		response
+				.statusCode(500)
+				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+				.send('Error: ' + error);
 	}
 };

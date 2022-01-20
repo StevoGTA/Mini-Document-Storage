@@ -16,10 +16,9 @@ let	{MDSDocumentStorage} = require('mini-document-storage-mysql');
 //			"fromDocumentType" :String,
 //			"toDocumentType" :String,
 //		}
-exports.registerV1 = async (event, context) => {
+exports.registerV1 = async (event) => {
 	// Setup
-	let	pathParameters = event.pathParameters || {};
-	let	documentStorageID = pathParameters.documentStorageID;
+	let	documentStorageID = event.pathParameters.documentStorageID;
 
 	let	info = (event.body) ? JSON.parse(event.body) : null;
 
@@ -29,7 +28,7 @@ exports.registerV1 = async (event, context) => {
 		return {
 				statusCode: 400,
 				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify({message: 'missing info'})
+				body: JSON.stringify({message: 'missing info'}),
 		};
 
 	// Catch errors
@@ -63,11 +62,10 @@ exports.registerV1 = async (event, context) => {
 //				"toID :String
 //			}
 //		]
-exports.updateV1 = async (event, context) => {
+exports.updateV1 = async (event) => {
 	// Setup
-	let	pathParameters = event.pathParameters || {};
-	let	documentStorageID = pathParameters.documentStorageID;
-	let	name = pathParameters.name;
+	let	documentStorageID = event.pathParameters.documentStorageID;
+	let	name = event.pathParameters.name;
 
 	let	info = (event.body) ? JSON.parse(event.body) : null;
 
@@ -77,7 +75,7 @@ exports.updateV1 = async (event, context) => {
 		return {
 				statusCode: 400,
 				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify({message: 'missing info'})
+				body: JSON.stringify({message: 'missing info'}),
 		};
 
 	// Catch errors
@@ -112,11 +110,10 @@ exports.updateV1 = async (event, context) => {
 //			String (documentID) : Int (revision),
 //			...
 //		}
-exports.getDocumentInfosV1 = async (event, context) => {
+exports.getDocumentInfosV1 = async (event) => {
 	// Setup
-	let	pathParameters = event.pathParameters || {};
-	let	documentStorageID = pathParameters.documentStorageID;
-	let	name = pathParameters.name;
+	let	documentStorageID = event.pathParameters.documentStorageID;
+	let	name = event.pathParameters.name;
 
 	let	queryStringParameters = event.queryStringParameters || {};
 	let	fromDocumentID = queryStringParameters.fromID;
@@ -154,7 +151,7 @@ exports.getDocumentInfosV1 = async (event, context) => {
 							'Access-Control-Allow-Credentials': true,
 							'Content-Range': contentRange,
 						},
-				body: JSON.stringify(results)
+				body: JSON.stringify(results),
 			};
 	} catch (error) {
 		// Error
@@ -176,11 +173,10 @@ exports.getDocumentInfosV1 = async (event, context) => {
 //	=> cacheValueName (query)
 //
 //	<= count
-exports.getValueV1 = async (event, context) => {
+exports.getValueV1 = async (event) => {
 	// Setup
-	let	pathParameters = event.pathParameters || {};
-	let	documentStorageID = pathParameters.documentStorageID;
-	let	name = pathParameters.name;
+	let	documentStorageID = event.pathParameters.documentStorageID;
+	let	name = event.pathParameters.name;
 
 	let	queryStringParameters = event.queryStringParameters || {};
 	let	toDocumentID = queryStringParameters.toID;

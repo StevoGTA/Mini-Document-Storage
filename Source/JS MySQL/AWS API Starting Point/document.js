@@ -35,11 +35,10 @@ let	{MDSDocumentStorage} = require('mini-document-storage-mysql');
 //			},
 //			...
 //		]
-exports.createV1 = async (event, context) => {
+exports.createV1 = async (event) => {
 	// Setup
-	let	pathParameters = event.pathParameters || {};
-	let	documentStorageID = pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
-	let	documentType = pathParameters.documentType;
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentType = event.pathParameters.documentType;
 
 	let	infos = (event.body) ? JSON.parse(event.body) : null;
 
@@ -60,7 +59,7 @@ exports.createV1 = async (event, context) => {
 		return {
 				statusCode: 200,
 				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify(results)
+				body: JSON.stringify(results),
 		};
 	} catch (error) {
 		// Error
@@ -95,11 +94,10 @@ exports.createV1 = async (event, context) => {
 //			},
 //			...
 //		]
-exports.getV1 = async (event, context) => {
+exports.getV1 = async (event) => {
 	// Setup
-	let	pathParameters = event.pathParameters || {};
-	let	documentStorageID = pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
-	let	documentType = pathParameters.documentType;
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentType = event.pathParameters.documentType;
 
 	let	queryStringParameters = event.queryStringParameters || {};
 	let	sinceRevision = queryStringParameters.sinceRevision;
@@ -140,7 +138,7 @@ exports.getV1 = async (event, context) => {
 												'documents 0-' + (results.length - 1) + '/' + totalCount :
 												'documents */0',
 							},
-					body: JSON.stringify(results)
+					body: JSON.stringify(results),
 			};
 		} else {
 			// IDs
@@ -149,7 +147,7 @@ exports.getV1 = async (event, context) => {
 			return {
 					statusCode: 200,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: JSON.stringify(results)
+					body: JSON.stringify(results),
 			};
 		}
 	} catch (error) {
@@ -182,11 +180,10 @@ exports.getV1 = async (event, context) => {
 //			},
 //			...
 //		]
-exports.updateV1 = async (event, context) => {
+exports.updateV1 = async (event) => {
 	// Setup
-	let	pathParameters = event.pathParameters || {};
-	let	documentStorageID = pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
-	let	documentType = pathParameters.documentType;
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentType = event.pathParameters.documentType;
 
 	let	infos = (event.body) ? JSON.parse(event.body) : null;
 
@@ -226,13 +223,12 @@ exports.updateV1 = async (event, context) => {
 //	=> attachmentID (path)
 //
 //	<= string
-exports.getAttachmentV1 = async (event, context) => {
+exports.getAttachmentV1 = async (event) => {
 	// Setup
-	let	pathParameters = event.pathParameters || {};
-	let	documentStorageID = pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
-	let	documentType = pathParameters.documentType;
-	let	documentID = pathParameters.documentID.replace(/%2B/g, '+').replace(/_/g, '/');
-	let	attachmentID = pathParameters.attachmentID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentType = event.pathParameters.documentType;
+	let	documentID = event.pathParameters.documentID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	attachmentID = event.pathParameters.attachmentID.replace(/%2B/g, '+').replace(/_/g, '/');
 
 	// Validate input
 	if (!infos)
@@ -272,12 +268,11 @@ exports.getAttachmentV1 = async (event, context) => {
 //	=> documentID (path)
 //	=> info (body)
 //	=> content (body)
-exports.addAttachmentV1 = async (event, context) => {
+exports.addAttachmentV1 = async (event) => {
 	// Setup
-	let	pathParameters = event.pathParameters || {};
-	let	documentStorageID = pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
-	let	documentType = pathParameters.documentType;
-	let	documentID = pathParameters.documentID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentType = event.pathParameters.documentType;
+	let	documentID = event.pathParameters.documentID.replace(/%2B/g, '+').replace(/_/g, '/');
 
 	let	body = JSON.parse(event.body || {});
 	let info = body.info;
@@ -319,13 +314,12 @@ exports.addAttachmentV1 = async (event, context) => {
 //	=> attachmentID (path)
 //	=> info (body)
 //	=> content (body)
-exports.updateAttachmentV1 = async (event, context) => {
+exports.updateAttachmentV1 = async (event) => {
 	// Setup
-	let	pathParameters = event.pathParameters || {};
-	let	documentStorageID = pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
-	let	documentType = pathParameters.documentType;
-	let	documentID = pathParameters.documentID.replace(/%2B/g, '+').replace(/_/g, '/');
-	let	attachmentID = pathParameters.attachmentID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentType = event.pathParameters.documentType;
+	let	documentID = event.pathParameters.documentID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	attachmentID = event.pathParameters.attachmentID.replace(/%2B/g, '+').replace(/_/g, '/');
 
 	let	body = JSON.parse(event.body || {});
 	let info = body.info;
@@ -366,13 +360,12 @@ exports.updateAttachmentV1 = async (event, context) => {
 //	=> documentType (path)
 //	=> documentID (path)
 //	=> attachmentID (path)
-exports.removeAttachmentV1 = async (event, context) => {
+exports.removeAttachmentV1 = async (event) => {
 	// Setup
-	let	pathParameters = event.pathParameters || {};
-	let	documentStorageID = pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
-	let	documentType = pathParameters.documentType;
-	let	documentID = pathParameters.documentID.replace(/%2B/g, '+').replace(/_/g, '/');
-	let	attachmentID = pathParameters.attachmentID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentType = event.pathParameters.documentType;
+	let	documentID = event.pathParameters.documentID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	attachmentID = event.pathParameters.attachmentID.replace(/%2B/g, '+').replace(/_/g, '/');
 
 	// Catch errors
 	try {
