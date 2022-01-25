@@ -111,9 +111,44 @@ class MDSBatchInfo<T> {
 		func remove() { self.lock.write() { self.removed = true; self.modificationDate = Date() } }
 	}
 
+	// MARK: AddAttachmentInfo
+	struct AddAttachmentInfo {
+
+		// MARK: Properties
+		let	documentType :String
+		let	documentID :String
+		let	info :[String : Any]
+		let	content :Data
+	}
+
+	// MARK: UpdateAttachmentInfo
+	struct UpdateAttachmentInfo {
+
+		// MARK: Properties
+		let	documentType :String
+		let	documentID :String
+		let	attachmentID :String
+		let	currentRevision :Int
+		let	info :[String : Any]
+		let	content :Data
+	}
+
+	// MARK: RemoveAttachmentInfo
+	struct RemoveAttachmentInfo {
+
+		// MARK: Properties
+		let	documentType :String
+		let	documentID :String
+		let	attachmentID :String
+	}
+
 	// MARK: Properties
 	private	var	documentInfoMap = [/* Document ID */ String : DocumentInfo<T>]()
 	private	let	documentInfoMapLock = ReadPreferringReadWriteLock()
+
+	private	var	addAttachmentInfos = [AddAttachmentInfo]()
+	private	var	updateAttachmentInfos = [UpdateAttachmentInfo]()
+	private	var	removeAttachmentInfos = [RemoveAttachmentInfo]()
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -137,12 +172,20 @@ class MDSBatchInfo<T> {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func forEach(
+	func note(_ addAttachmentInfo :AddAttachmentInfo) { self.addAttachmentInfos.append(addAttachmentInfo) }
+
+	//------------------------------------------------------------------------------------------------------------------
+	func note(_ updateAttachmentInfo :UpdateAttachmentInfo) { self.updateAttachmentInfos.append(updateAttachmentInfo) }
+
+	//------------------------------------------------------------------------------------------------------------------
+	func note(_ removeAttachmentInfo :RemoveAttachmentInfo) { self.removeAttachmentInfos.append(removeAttachmentInfo) }
+
+	//------------------------------------------------------------------------------------------------------------------
+	func iterateDocumentChanges(
 			_ proc
 					:(_ documentType :String, _ documentInfoMap :[/* Document ID */ String : DocumentInfo<T>]) throws ->
-							Void)
-			rethrows {
-		// Collate
+							Void) rethrows {
+		// Setup
 		var	map = [/* Documewnt Type */ String : [/* Document ID */ String : DocumentInfo<T>]]()
 		self.documentInfoMapLock.read() {
 			// Collect info
@@ -160,7 +203,17 @@ class MDSBatchInfo<T> {
 			}
 		}
 
-		// Iterate and call proc
+		// Process all document info
 		try map.forEach() { try proc($0.key, $0.value) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func iterateAttachmentChanges(addAttachmentProc :(_ addAttachmentInfo :AddAttachmentInfo) -> Void,
+			updateAttachmentProc :(_ updateAttachmentInfo :UpdateAttachmentInfo) -> Void,
+			removeAttachmentProc :(_ removeAttachmentInfo :RemoveAttachmentInfo) -> Void) {
+		// Process attachment info
+		self.removeAttachmentInfos.forEach() { removeAttachmentProc($0) }
+		self.addAttachmentInfos.forEach() { addAttachmentProc($0) }
+		self.updateAttachmentInfos.forEach() { updateAttachmentProc($0) }
 	}
 }

@@ -294,7 +294,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		// Check result
 		if result == .commit {
 			// Iterate all document changes
-			batchInfo.forEach() { documentType, batchDocumentInfosMap in
+			batchInfo.iterateDocumentChanges() { documentType, batchDocumentInfosMap in
 				// Setup
 				var	updateInfos = [MDSUpdateInfo<String>]()
 				var	removedDocumentIDs = Set<String>()
@@ -385,6 +385,13 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 				removeFromIndexes(documentIDs: removedDocumentIDs)
 				updateIndexes(for: documentType, updateInfos: updateInfos)
 			}
+			batchInfo.iterateAttachmentChanges(addAttachmentProc: { _ in
+// TODO: MDSEphemeral Add Attachment after Batch
+			}, updateAttachmentProc: { _ in
+// TODO: MDSEphemeral Update Attachment after Batch
+			}, removeAttachmentProc: { _ in
+// TODO: MDSEphemeral Remove Attachment after Batch
+			})
 		}
 
 		// Remove

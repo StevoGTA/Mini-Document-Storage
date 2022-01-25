@@ -335,7 +335,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			// Batch changes
 			self.databaseManager.batch() {
 				// Iterate all document changes
-				batchInfo.forEach() { documentType, batchDocumentInfosMap in
+				batchInfo.iterateDocumentChanges() { documentType, batchDocumentInfosMap in
 					// Setup
 					let	updateBatchQueue =
 								BatchQueue<MDSUpdateInfo<Int64>>() {
@@ -428,6 +428,13 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 					self.removeFromCollections(for: documentType, documentBackingIDs: removedDocumentBackingIDs)
 					self.removeFromIndexes(for: documentType, documentBackingIDs: removedDocumentBackingIDs)
 				}
+				batchInfo.iterateAttachmentChanges(addAttachmentProc: { _ in
+// TODO: MDSSQLite Add Attachment after Batch
+				}, updateAttachmentProc: { _ in
+// TODO: MDSSQLite Update Attachment after Batch
+				}, removeAttachmentProc: { _ in
+// TODO: MDSSQLite Remove Attachment after Batch
+				})
 			}
 		}
 
