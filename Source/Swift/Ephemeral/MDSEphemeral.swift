@@ -674,14 +674,14 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		// Iterate all collections for this document type
 		self.collectionsByDocumentTypeMap.values(for: documentType)?.forEach() {
 			// Query update info
-			let	(includedIDs, notIncludedIDs, _) = $0.update(updateInfos)
+			if let (includedIDs, notIncludedIDs, _) = $0.update(updateInfos) {
+				// Update storage
+				self.collectionValuesMap.update(for: $0.name) {
+					// Compose updated values
+					let	updatedValues = ($0 ?? Set<String>()).subtracting(notIncludedIDs).union(includedIDs)
 
-			// Update storage
-			self.collectionValuesMap.update(for: $0.name) {
-				// Compose updated values
-				let	updatedValues = ($0 ?? Set<String>()).subtracting(notIncludedIDs).union(includedIDs)
-
-				return !updatedValues.isEmpty ? updatedValues : nil
+					return !updatedValues.isEmpty ? updatedValues : nil
+				}
 			}
 		}
 	}
@@ -698,19 +698,18 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		// Iterate all indexes for this document type
 		self.indexesByDocumentTypeMap.values(for: documentType)?.forEach() {
 			// Query update info
-			let	(keysInfos, _) = $0.update(updateInfos)
-			guard !keysInfos.isEmpty else { return }
+			if let (keysInfos, _) = $0.update(updateInfos) {
+				// Update storage
+				let	documentIDs = Set<String>(keysInfos.map({ $0.value }))
+				self.indexValuesMap.update(for: $0.name) {
+					// Filter out document IDs included in update
+					var	updatedValueInfo = ($0 ?? [:]).filter({ !documentIDs.contains($0.value) })
 
-			// Update storage
-			let	documentIDs = Set<String>(keysInfos.map({ $0.value }))
-			self.indexValuesMap.update(for: $0.name) {
-				// Filter out document IDs included in update
-				var	updatedValueInfo = ($0 ?? [:]).filter({ !documentIDs.contains($0.value) })
+					// Add/Update keys => document IDs
+					keysInfos.forEach() { keys, value in keys.forEach() { updatedValueInfo[$0] = value } }
 
-				// Add/Update keys => document IDs
-				keysInfos.forEach() { keys, value in keys.forEach() { updatedValueInfo[$0] = value } }
-
-				return !updatedValueInfo.isEmpty ? updatedValueInfo : nil
+					return !updatedValueInfo.isEmpty ? updatedValueInfo : nil
+				}
 			}
 		}
 	}

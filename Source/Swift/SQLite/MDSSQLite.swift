@@ -950,11 +950,11 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			// Check revision state
 			if $0.lastRevision + 1 == minRevision {
 				// Update collection
-				let	(includedIDs, notIncludedIDs, lastRevision) = $0.update(updateInfos)
-
-				// Update database
-				self.databaseManager.updateCollection(name: $0.name, includedIDs: includedIDs,
-						notIncludedIDs: processNotIncluded ? notIncludedIDs : [], lastRevision: lastRevision)
+				if let (includedIDs, notIncludedIDs, lastRevision) = $0.update(updateInfos) {
+					// Update database
+					self.databaseManager.updateCollection(name: $0.name, includedIDs: includedIDs,
+							notIncludedIDs: processNotIncluded ? notIncludedIDs : [], lastRevision: lastRevision)
+				}
 			} else {
 				// Bring up to date
 				bringUpToDate($0)
@@ -1041,11 +1041,11 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			// Check revision state
 			if $0.lastRevision + 1 == minRevision {
 				// Update index
-				let	(keysInfos, lastRevision) = $0.update(updateInfos)
-
-				// Update database
-				self.databaseManager.updateIndex(name: $0.name, keysInfos: keysInfos, removedIDs: [],
-						lastRevision: lastRevision)
+				if let (keysInfos, lastRevision) = $0.update(updateInfos) {
+					// Update database
+					self.databaseManager.updateIndex(name: $0.name, keysInfos: keysInfos, removedIDs: [],
+							lastRevision: lastRevision)
+				}
 			} else {
 				// Bring up to date
 				bringUpToDate($0)

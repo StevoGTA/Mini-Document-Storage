@@ -64,7 +64,7 @@ class MDSDocumentBackingCache<T> {
 			documentBackingInfos.forEach() { self.referenceMap[$0.documentID] = Reference(documentBackingInfo: $0) }
 
 			// Reset pruning timer if needed
-			resetPruningTimerIfNeeded()
+//			resetPruningTimerIfNeeded()
 		}
 	}
 
@@ -138,58 +138,58 @@ class MDSDocumentBackingCache<T> {
 			documentIDs.forEach() { self.referenceMap[$0] = nil }
 
 			// Reset pruning timer if needed
-			resetPruningTimerIfNeeded()
+//			resetPruningTimerIfNeeded()
 		}
 	}
 
-	// MARK: Private methods
-	//------------------------------------------------------------------------------------------------------------------
-	private func resetPruningTimerIfNeeded() {
-		// Invalidate existing timer
-		self.timer?.invalidate()
-		self.timer = nil
-
-		// Check if need to prune
-		if self.referenceMap.count > self.limit {
-			// Need to prune
-			self.timer = Timer.scheduledTimer(timeInterval: 5.0, runLoop: RunLoop.main) { [weak self] _ in
-				// Ensure we are still around
-				guard let strongSelf = self else { return }
-
-				// Prune
-				strongSelf.lock.write() {
-					// Only need to consider things if we have moved past the document limit
-					let	countToRemove = strongSelf.referenceMap.count - strongSelf.limit
-					if countToRemove > 0 {
-						// Iterate all references
-						var	referencesToRemove = [Reference<T>]()
-						var	earliestReferencedDate = Date.distantFuture
-						strongSelf.referenceMap.values.forEach() {
-							// Compare date
-// This is broken.  It's possible to miss a reference that needs to be removed simply because the order of dates
-//	seen is random.
-//							if $0.lastReferencedDate < earliestReferencedDate {
-//								// Update references to remove
-//								referencesToRemove.append($0)
-//								referencesToRemove.sort() { $0.lastReferencedDate < $1.lastReferencedDate }
-//								if referencesToRemove.count > countToRemove {
-//									// Pop the last
-//									let	reference = referencesToRemove.popLast()!
-//									earliestReferencedDate = reference.lastReferencedDate
-//								}
-//							}
-_ = $0
-						}
-
-						// Remove
-						referencesToRemove.forEach()
-								{ strongSelf.referenceMap[$0.documentBackingInfo.documentID] = nil }
-					}
-				}
-
-				// Cleanup
-				strongSelf.timer = nil
-			}
-		}
-	}
+//	// MARK: Private methods
+//	//------------------------------------------------------------------------------------------------------------------
+//	private func resetPruningTimerIfNeeded() {
+//		// Invalidate existing timer
+//		self.timer?.invalidate()
+//		self.timer = nil
+//
+//		// Check if need to prune
+//		if self.referenceMap.count > self.limit {
+//			// Need to prune
+//			self.timer = Timer.scheduledTimer(timeInterval: 5.0, runLoop: RunLoop.main) { [weak self] _ in
+//				// Ensure we are still around
+//				guard let strongSelf = self else { return }
+//
+//				// Prune
+//				strongSelf.lock.write() {
+//					// Only need to consider things if we have moved past the document limit
+//					let	countToRemove = strongSelf.referenceMap.count - strongSelf.limit
+//					if countToRemove > 0 {
+//						// Iterate all references
+//						var	referencesToRemove = [Reference<T>]()
+//						var	earliestReferencedDate = Date.distantFuture
+//						strongSelf.referenceMap.values.forEach() {
+//							// Compare date
+//// This is broken.  It's possible to miss a reference that needs to be removed simply because the order of dates
+////	seen is random.
+////							if $0.lastReferencedDate < earliestReferencedDate {
+////								// Update references to remove
+////								referencesToRemove.append($0)
+////								referencesToRemove.sort() { $0.lastReferencedDate < $1.lastReferencedDate }
+////								if referencesToRemove.count > countToRemove {
+////									// Pop the last
+////									let	reference = referencesToRemove.popLast()!
+////									earliestReferencedDate = reference.lastReferencedDate
+////								}
+////							}
+//_ = $0
+//						}
+//
+//						// Remove
+//						referencesToRemove.forEach()
+//								{ strongSelf.referenceMap[$0.documentBackingInfo.documentID] = nil }
+//					}
+//				}
+//
+//				// Cleanup
+//				strongSelf.timer = nil
+//			}
+//		}
+//	}
 }
