@@ -109,14 +109,14 @@ class MDSHTTPServicesAdapter {
 			if let documentIDs = info.documentIDs {
 				// Iterate documentIDs
 				var	documentInfos = [[String : Any]]()
-				documentStorageServerHandler.iterate(documentType: info.type, documentIDs: documentIDs)
+				documentStorageServerHandler.iterate(documentType: info.documentType, documentIDs: documentIDs)
 						{ documentInfos.append($0.httpServicesInfo) }
 
 				return (.ok, nil, .json(documentInfos))
 			} else {
 				// Iterate documents since revision
 				var	documentInfos = [[String : Any]]()
-				documentStorageServerHandler.iterate(documentType: info.type, sinceRevision: info.sinceRevision!)
+				documentStorageServerHandler.iterate(documentType: info.documentType, sinceRevision: info.sinceRevision!)
 						{ documentInfos.append($0.httpServicesInfo) }
 
 				return (.ok,
@@ -143,7 +143,7 @@ class MDSHTTPServicesAdapter {
 			}
 
 			// Create documents
-			documentStorageServerHandler.newDocuments(documentType: info.type,
+			documentStorageServerHandler.newDocuments(documentType: info.documentType,
 					documentCreateInfos: info.documentCreateInfos)
 
 			return (.ok, nil, nil)
@@ -166,7 +166,7 @@ class MDSHTTPServicesAdapter {
 			}
 
 			// Update documents
-			documentStorageServerHandler.updateDocuments(documentType: info.type,
+			documentStorageServerHandler.updateDocuments(documentType: info.documentType,
 					documentUpdateInfos: info.documentUpdateInfos)
 
 			return (.ok, nil, nil)
