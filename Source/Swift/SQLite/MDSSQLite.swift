@@ -8,11 +8,6 @@
 
 import Foundation
 
-/*
-	// TODOs:
-		-Document backing cache needs to be make more performant
-*/
-
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: MDSSQLiteError
 public enum MDSSQLiteError : Error {

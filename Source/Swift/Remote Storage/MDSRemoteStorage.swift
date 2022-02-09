@@ -9,7 +9,25 @@
 import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: MDSRemoteStorage
+// MARK: MDSRemoteStorageError
+public enum MDSRemoteStorageError : Error {
+	case serverResponseMissingExpectedInfo(serverResponseInfo :[String : Any], expectedKey :String)
+}
+
+extension MDSRemoteStorageError : CustomStringConvertible, LocalizedError {
+
+	// MARK: Properties
+	public 	var	description :String { self.localizedDescription }
+	public	var	errorDescription :String? {
+						switch self {
+							case .serverResponseMissingExpectedInfo(let serverResponseInfo, let expectedKey):
+								return "MDSRemoteStorage server response (\(serverResponseInfo)) is missing expected key \(expectedKey)"
+						}
+					}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSRemoteStorage
 open class MDSRemoteStorage : MDSDocumentStorage {
 
 	// MARK: Types
@@ -74,9 +92,9 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	public	let	documentStorageID :String
 
 	public	var	id :String = UUID().uuidString
+	public	var	authorization :String?
 
 	private	let	httpEndpointClient :HTTPEndpointClient
-	private	let	authorization :String?
 	private	let	remoteStorageCache :MDSRemoteStorageCache
 	private	let	batchInfoMap = LockingDictionary<Thread, MDSBatchInfo<DocumentBacking>>()
 	private	let	documentBackingCache = MDSDocumentBackingCache<DocumentBacking>()
@@ -650,6 +668,9 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func attachmentContent<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) ->
 			Data? {
+		// Check cache
+		if let content = self.remoteStorageCache.attachmentContent(for: attachmentInfo.id) { return content }
+
 		// Setup
 		let	documentType = type(of: document).documentType
 
@@ -664,14 +685,17 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 										authorization: self.authorization))
 								{ completionProc(($1, $2)) }
 					}
-		guard error == nil else {
+		if data != nil {
+			// Update cache
+			self.remoteStorageCache.setAttachment(content: data!, for: attachmentInfo.id)
+
+			return data!
+		} else {
 			// Store error
 			self.recentErrors.append(error!)
 
 			return nil
 		}
-
-		return data
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1343,7 +1367,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	private func addAttachment(documentType :String, documentID :String, info :[String : Any], content :Data) {
 		// Perform
-		let	error =
+		let	(info, error) =
 					DispatchQueue.performBlocking() { completionProc in
 						// Call network client
 						self.httpEndpointClient.queue(
@@ -1351,13 +1375,22 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 										documentStorageID: self.documentStorageID, documentType: documentType,
 										documentID: documentID, info: info, content: content,
 										authorization: self.authorization))
-								{ completionProc($1) }
+								{ completionProc(($1, $2)) }
 					}
-		guard error == nil else {
+		if info != nil {
+			// Success
+			if let id = info!["id"] as? String {
+				// Update cache
+				self.remoteStorageCache.setAttachment(content: content, for: id)
+			} else {
+				// Missing id
+				self.recentErrors.append(
+						MDSRemoteStorageError.serverResponseMissingExpectedInfo(serverResponseInfo: info!,
+								expectedKey: "id"))
+			}
+		} else {
 			// Store error
 			self.recentErrors.append(error!)
-
-			return
 		}
 	}
 
@@ -1375,11 +1408,12 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 										content: content, authorization: self.authorization))
 								{ completionProc($1) }
 					}
-		guard error == nil else {
+		if error == nil {
+			// Update cache
+			self.remoteStorageCache.setAttachment(content: content, for: attachmentID)
+		} else {
 			// Store error
 			self.recentErrors.append(error!)
-
-			return
 		}
 	}
 
@@ -1396,11 +1430,12 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 										authorization: self.authorization))
 								{ completionProc($1) }
 					}
-		guard error == nil else {
+		if error == nil {
+			// Update cache
+			self.remoteStorageCache.setAttachment(for: attachmentID)
+		} else {
 			// Store error
 			self.recentErrors.append(error!)
-
-			return
 		}
 	}
 

@@ -406,13 +406,13 @@ class MDSHTTPServices {
 	//	=> authorization (header) (optional)
 	static func httpEndpointRequestForAddDocumentAttachment(documentStorageID :String, documentType :String,
 			documentID :String, info :[String : Any], content :Data, authorization :String? = nil) ->
-			SuccessHTTPEndpointRequest {
+			JSONHTTPEndpointRequest<[String : Any]> {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	documentIDUse = documentID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return SuccessHTTPEndpointRequest(method: .post,
+		return JSONHTTPEndpointRequest<[String : Any]>(method: .post,
 				path: "/v1/document/\(documentStorageIDUse)/\(documentType)/\(documentIDUse)/attachment",
 				headers: headers, jsonBody: ["info": info, "content": content.base64EncodedString()])
 	}
