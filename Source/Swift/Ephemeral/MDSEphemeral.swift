@@ -19,9 +19,10 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		let	creationDate :Date
 
 		var	revision :Int
+		var	active = true
 		var	modificationDate :Date
 		var	propertyMap :[String : Any]
-		var	active = true
+		var	attachmentInfoMap :MDSDocument.AttachmentInfoMap = [:]
 
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
@@ -42,6 +43,14 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			self.modificationDate = Date()
 			self.propertyMap.merge(updatedPropertyMap ?? [:], uniquingKeysWith: { $1 })
 			removedProperties?.forEach() { self.propertyMap[$0] = nil }
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		func documentFullInfo(with documentID :String) -> MDSDocument.FullInfo {
+			// Return full info
+			return MDSDocument.FullInfo(documentID: documentID, revision: self.revision, active: self.active,
+					creationDate: self.creationDate, modificationDate: self.modificationDate,
+					propertyMap: self.propertyMap, attachmentInfoMap: self.attachmentInfoMap)
 		}
 	}
 
@@ -133,6 +142,26 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func document<T : MDSDocument>(for documentID :String) -> T? { T(id: documentID, documentStorage: self) }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func iterate<T : MDSDocument>(proc :(_ document : T) -> Void) {
+		// Collect document IDs
+		let	documentIDs =
+					self.documentMapsLock.read() {
+						// Return IDs filtered by active
+						(self.documentIDsByTypeMap[T.documentType] ?? Set<String>())
+								.filter({ self.documentBackingByIDMap[$0]!.active })
+					}
+
+		// Call proc on each document
+		documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func iterate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void) {
+		// Iterate all
+		documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) }
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func creationDate(for document :MDSDocument) -> Date {
@@ -246,54 +275,9 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func remove(_ document :MDSDocument) {
-		// Setup
-		let	documentType = type(of: document).documentType
-
-		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
-			// In batch
-			if let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
-				// Have document in batch
-				batchDocumentInfo.remove()
-			} else {
-				// Don't have document in batch
-				let	date = Date()
-				batchInfo.addDocument(documentType: documentType, documentID: document.id, reference: [:],
-						creationDate: date, modificationDate: date)
-					.remove()
-			}
-		} else {
-			// Not in batch
-			self.documentMapsLock.write() { self.documentBackingByIDMap[document.id]?.active = false }
-
-			// Remove from collections and indexes
-			removeFromCollections(documentIDs: Set<String>([document.id]))
-			removeFromIndexes(documentIDs: Set<String>([document.id]))
-
-			// Call document changed procs
-			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .removed) }
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func iterate<T : MDSDocument>(proc :(_ document : T) -> Void) {
-		// Collect document IDs
-		let	documentIDs =
-					self.documentMapsLock.read() {
-						// Return IDs filtered by active
-						(self.documentIDsByTypeMap[T.documentType] ?? Set<String>())
-								.filter({ self.documentBackingByIDMap[$0]!.active })
-					}
-
-		// Call proc on each document
-		documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) }
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func iterate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void) {
-		// Iterate all
-		documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) }
+	public func attachmentInfoMap(for document :MDSDocument) -> MDSDocument.AttachmentInfoMap {
+		// Unimplemented
+		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -310,7 +294,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		// Check result
 		if result == .commit {
 			// Iterate all document changes
-			batchInfo.forEach() { documentType, batchDocumentInfosMap in
+			batchInfo.iterateDocumentChanges() { documentType, batchDocumentInfosMap in
 				// Setup
 				var	updateInfos = [MDSUpdateInfo<String>]()
 				var	removedDocumentIDs = Set<String>()
@@ -401,12 +385,50 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 				removeFromIndexes(documentIDs: removedDocumentIDs)
 				updateIndexes(for: documentType, updateInfos: updateInfos)
 			}
+			batchInfo.iterateAttachmentChanges(addAttachmentProc: { _ in
+// TODO: MDSEphemeral Add Attachment after Batch
+			}, updateAttachmentProc: { _ in
+// TODO: MDSEphemeral Update Attachment after Batch
+			}, removeAttachmentProc: { _ in
+// TODO: MDSEphemeral Remove Attachment after Batch
+			})
 		}
 
 		// Remove
 		self.batchInfoMap.set(nil, for: Thread.current)
 	}
-	
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func remove(_ document :MDSDocument) {
+		// Setup
+		let	documentType = type(of: document).documentType
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+			// In batch
+			if let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
+				// Have document in batch
+				batchDocumentInfo.remove()
+			} else {
+				// Don't have document in batch
+				let	date = Date()
+				batchInfo.addDocument(documentType: documentType, documentID: document.id, reference: [:],
+						creationDate: date, modificationDate: date)
+					.remove()
+			}
+		} else {
+			// Not in batch
+			self.documentMapsLock.write() { self.documentBackingByIDMap[document.id]?.active = false }
+
+			// Remove from collections and indexes
+			removeFromCollections(documentIDs: Set<String>([document.id]))
+			removeFromIndexes(documentIDs: Set<String>([document.id]))
+
+			// Call document changed procs
+			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .removed) }
+		}
+	}
+
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerAssociation(named name :String, fromDocumentType :String, toDocumentType :String) {
 		// Unimplemented
@@ -440,6 +462,31 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 //		// Unimplemented
 //		fatalError("Unimplemented")
 //	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func attachmentContent<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) -> Data? {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func addAttachment<T : MDSDocument>(for document :T, type :String, info :[String : Any], content :Data) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func updateAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
+			updatedInfo :[String : Any], updatedContent :Data) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func removeAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
@@ -534,17 +581,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		// Play nice
 		self.documentMapsLock.read() {
 			// Iterate
-			documentIDs.forEach() {
-				// Setup
-				let	documentBacking = self.documentBackingByIDMap[$0]!
-
-				// Call proc
-				proc(
-						MDSDocument.FullInfo(documentID: $0, revision: documentBacking.revision,
-								active: documentBacking.active, creationDate: documentBacking.creationDate,
-								modificationDate: documentBacking.modificationDate,
-								propertyMap: documentBacking.propertyMap))
-			}
+			documentIDs.forEach() { proc(self.documentBackingByIDMap[$0]!.documentFullInfo(with: $0)) }
 		}
 	}
 
@@ -558,11 +595,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 				// Retrieve info
 				if let documentBacking = self.documentBackingByIDMap[$0], documentBacking.revision > revision {
 					// Call proc
-					proc(
-							MDSDocument.FullInfo(documentID: $0, revision: documentBacking.revision,
-									active: documentBacking.active, creationDate: documentBacking.creationDate,
-									modificationDate: documentBacking.modificationDate,
-									propertyMap: documentBacking.propertyMap))
+					proc(documentBacking.documentFullInfo(with: $0))
 				}
 			}
 		}
@@ -641,14 +674,14 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		// Iterate all collections for this document type
 		self.collectionsByDocumentTypeMap.values(for: documentType)?.forEach() {
 			// Query update info
-			let	(includedIDs, notIncludedIDs, _) = $0.update(updateInfos)
+			if let (includedIDs, notIncludedIDs, _) = $0.update(updateInfos) {
+				// Update storage
+				self.collectionValuesMap.update(for: $0.name) {
+					// Compose updated values
+					let	updatedValues = ($0 ?? Set<String>()).subtracting(notIncludedIDs).union(includedIDs)
 
-			// Update storage
-			self.collectionValuesMap.update(for: $0.name) {
-				// Compose updated values
-				let	updatedValues = ($0 ?? Set<String>()).subtracting(notIncludedIDs).union(includedIDs)
-
-				return !updatedValues.isEmpty ? updatedValues : nil
+					return !updatedValues.isEmpty ? updatedValues : nil
+				}
 			}
 		}
 	}
@@ -665,19 +698,18 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 		// Iterate all indexes for this document type
 		self.indexesByDocumentTypeMap.values(for: documentType)?.forEach() {
 			// Query update info
-			let	(keysInfos, _) = $0.update(updateInfos)
-			guard !keysInfos.isEmpty else { return }
+			if let (keysInfos, _) = $0.update(updateInfos) {
+				// Update storage
+				let	documentIDs = Set<String>(keysInfos.map({ $0.value }))
+				self.indexValuesMap.update(for: $0.name) {
+					// Filter out document IDs included in update
+					var	updatedValueInfo = ($0 ?? [:]).filter({ !documentIDs.contains($0.value) })
 
-			// Update storage
-			let	documentIDs = Set<String>(keysInfos.map({ $0.value }))
-			self.indexValuesMap.update(for: $0.name) {
-				// Filter out document IDs included in update
-				var	updatedValueInfo = ($0 ?? [:]).filter({ !documentIDs.contains($0.value) })
+					// Add/Update keys => document IDs
+					keysInfos.forEach() { keys, value in keys.forEach() { updatedValueInfo[$0] = value } }
 
-				// Add/Update keys => document IDs
-				keysInfos.forEach() { keys, value in keys.forEach() { updatedValueInfo[$0] = value } }
-
-				return !updatedValueInfo.isEmpty ? updatedValueInfo : nil
+					return !updatedValueInfo.isEmpty ? updatedValueInfo : nil
+				}
 			}
 		}
 	}
