@@ -436,7 +436,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 				batchDocumentInfosMap.forEach() { documentID, batchDocumentInfo in
 					// Check if have pre-existing document
 					if let documentBacking = batchDocumentInfo.reference {
-						// Update documnet
+						// Update document
 						let	documentUpdateInfo =
 									MDSDocument.UpdateInfo(documentID: documentID,
 											active: !batchDocumentInfo.removed,
@@ -767,8 +767,8 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						// Call network client
 						self.httpEndpointClient.queue(
 								MDSHTTPServices.httpEndpointRequestForRegisterCache(
-										documentStorageID: self.documentStorageID, documentType: T.documentType,
-										name: name, version: version, relevantProperties: relevantProperties,
+										documentStorageID: self.documentStorageID, name: name,
+										documentType: T.documentType, relevantProperties: relevantProperties,
 										valueInfos: valuesInfos.map({
 											MDSHTTPServices.RegisterCacheEndpointValueInfo($0.name, $0.valueType,
 													$0.selector)
@@ -794,8 +794,8 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						// Call network client
 						self.httpEndpointClient.queue(
 								MDSHTTPServices.httpEndpointRequestForRegisterCollection(
-										documentStorageID: self.documentStorageID, documentType: T.documentType,
-										name: name, version: version, relevantProperties: relevantProperties,
+										documentStorageID: self.documentStorageID, name: name,
+										documentType: T.documentType, relevantProperties: relevantProperties,
 										isUpToDate: isUpToDate, isIncludedSelector: isIncludedSelector,
 										isIncludedSelectorInfo: isIncludedSelectorInfo,
 										authorization: self.authorization))
@@ -905,8 +905,8 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						// Call network client
 						self.httpEndpointClient.queue(
 								MDSHTTPServices.httpEndpointRequestForRegisterIndex(
-										documentStorageID: self.documentStorageID, documentType: T.documentType,
-										name: name, version: version, relevantProperties: relevantProperties,
+										documentStorageID: self.documentStorageID, name: name,
+										documentType: T.documentType, relevantProperties: relevantProperties,
 										isUpToDate: isUpToDate, keysSelector: keysSelector,
 										keysSelectorInfo: keysSelectorInfo, authorization: self.authorization))
 								{ completionProc($1) }
