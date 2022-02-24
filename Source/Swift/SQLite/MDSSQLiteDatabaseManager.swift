@@ -248,8 +248,8 @@ class MDSSQLiteDatabaseManager {
 			return MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>(documentID: info.documentRevisionInfo.documentID,
 					documentBacking:
 							MDSSQLiteDocumentBacking(id: info.id, revision: info.documentRevisionInfo.revision,
-									creationDate: creationDate, modificationDate: modificationDate,
-									propertyMap: propertyMap, active: info.active))
+									active: info.active, creationDate: creationDate, modificationDate: modificationDate,
+									propertyMap: propertyMap, attachmentInfoMap: [:]))
 		}
 
 		//--------------------------------------------------------------------------------------------------------------

@@ -18,7 +18,7 @@ protocol MDSIndex {
 
 	// MARK: Instance methods
 	func update<U>(_ updateInfos :[MDSUpdateInfo<U>]) ->
-			(keysInfos :[(keys :[String], value :U)], lastRevision :Int)
+			(keysInfos :[(keys :[String], value :U)], lastRevision :Int)?
 	func bringUpToDate<U>(_ bringUpToDateInfos :[MDSBringUpToDateInfo<U>]) ->
 			(keysInfos :[(keys :[String], value :U)], lastRevision :Int)
 }
@@ -52,7 +52,7 @@ class MDSIndexSpecialized<T : MDSDocument> : MDSIndex {
 	// MARK: MDSIndex implementation
 	//------------------------------------------------------------------------------------------------------------------
 	func update<U>(_ updateInfos :[MDSUpdateInfo<U>]) ->
-			(keysInfos :[(keys :[String], value :U)], lastRevision :Int) {
+			(keysInfos :[(keys :[String], value :U)], lastRevision :Int)? {
 		// Compose results
 		var	keysInfos = [(keys :[String], value :U)]()
 		updateInfos.forEach() {
@@ -66,7 +66,13 @@ class MDSIndexSpecialized<T : MDSDocument> : MDSIndex {
 			self.lastRevision = max(self.lastRevision, $0.revision)
 		}
 
-		return (keysInfos, self.lastRevision)
+		if !keysInfos.isEmpty {
+			// Have info
+			return (keysInfos, self.lastRevision)
+		} else {
+			// No info
+			return nil
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

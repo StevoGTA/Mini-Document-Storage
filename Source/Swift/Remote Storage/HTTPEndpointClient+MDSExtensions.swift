@@ -90,7 +90,7 @@ extension HTTPEndpointClient {
 			// Queue this chunk
 			queue(
 					MDSHTTPServices.httpEndpointRequestForCreateDocuments(documentStorageID: documentStorageID,
-							type: type, documentCreateInfos: $0, authorization: authorization))
+							documentType: type, documentCreateInfos: $0, authorization: authorization))
 					{ response, infos, error in
 						// Handle results
 						if infos != nil {
@@ -188,7 +188,7 @@ extension HTTPEndpointClient {
 			// Queue this chunk
 			queue(
 					MDSHTTPServices.httpEndpointRequestForUpdateDocuments(documentStorageID: documentStorageID,
-							type: type, documentUpdateInfos: $0, authorization: authorization))
+							documentType: type, documentUpdateInfos: $0, authorization: authorization))
 					{ response, infos, error in
 						// Handle results
 						if infos != nil {

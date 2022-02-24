@@ -18,7 +18,7 @@ protocol MDSCollection {
 
 	// MARK: Instance methods
 	func update<U>(_ updateInfos :[MDSUpdateInfo<U>]) ->
-			(includedValues :[U], notIncludedValues :[U], lastRevision :Int)
+			(includedValues :[U], notIncludedValues :[U], lastRevision :Int)?
 	func bringUpToDate<U>(_ bringUpToDateInfos :[MDSBringUpToDateInfo<U>]) ->
 			(includedValues :[U], notIncludedValues :[U], lastRevision :Int)
 }
@@ -52,7 +52,7 @@ class MDSCollectionSpecialized<T : MDSDocument> : MDSCollection {
 	// MARK: MDSCollection implementation
 	//------------------------------------------------------------------------------------------------------------------
 	func update<U>(_ updateInfos :[MDSUpdateInfo<U>]) ->
-			(includedValues :[U], notIncludedValues :[U], lastRevision :Int) {
+			(includedValues :[U], notIncludedValues :[U], lastRevision :Int)? {
 		// Compose results
 		var	includedValues = [U]()
 		var	notIncludedValues = [U]()
@@ -73,7 +73,8 @@ class MDSCollectionSpecialized<T : MDSDocument> : MDSCollection {
 			self.lastRevision = max(self.lastRevision, $0.revision)
 		}
 
-		return (includedValues, notIncludedValues, self.lastRevision)
+		return (!includedValues.isEmpty || !notIncludedValues.isEmpty) ?
+				(includedValues, notIncludedValues, self.lastRevision) : nil
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

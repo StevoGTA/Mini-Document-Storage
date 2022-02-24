@@ -8,11 +8,6 @@
 
 import Foundation
 
-/*
-	// TODOs:
-		-Document backing cache needs to be make more performant
-*/
-
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: MDSSQLiteError
 public enum MDSSQLiteError : Error {
@@ -165,6 +160,32 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func iterate<T : MDSDocument>(proc :(_ document : T) -> Void) {
+		// Collect document IDs
+		var	documentIDs = [String]()
+		autoreleasepool() {
+			// Iterate document backing infos
+			iterateDocumentBackingInfos(documentType: T.documentType,
+					innerJoin: self.databaseManager.innerJoin(for: T.documentType),
+					where: self.databaseManager.where(forDocumentActive: true))
+					{ documentIDs.append($0.documentID); _ = $1 }
+		}
+
+		// Iterate document IDs
+		autoreleasepool() { documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) } }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func iterate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void) {
+		// Iterate document backing infos to ensure they are in the cache
+		autoreleasepool()
+			{ iterateDocumentBackingInfos(documentType: T.documentType, documentIDs: documentIDs) { _ = $0 } }
+
+		// Iterate document IDs
+		autoreleasepool() { documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) } }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func creationDate(for document :MDSDocument) -> Date{
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
@@ -284,67 +305,9 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func remove(_ document :MDSDocument) {
-		// Setup
-		let	documentType = type(of: document).documentType
-		let	documentID = document.id
-
-		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
-			// In batch
-			if let batchDocumentInfo = batchInfo.documentInfo(for: documentID) {
-				// Have document in batch
-				batchDocumentInfo.remove()
-			} else {
-				// Don't have document in batch
-				let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
-				batchInfo.addDocument(documentType: documentType, documentID: documentID, reference: documentBacking,
-						creationDate: Date(), modificationDate: Date())
-					.remove()
-			}
-		} else {
-			// Not in batch
-			let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
-
-			// Remove from collections and indexes
-			removeFromCollections(for: documentType, documentBackingIDs: [documentBacking.id])
-			removeFromIndexes(for: documentType, documentBackingIDs: [documentBacking.id])
-
-			// Remove
-			self.databaseManager.remove(documentType: documentType, id: documentBacking.id)
-
-			// Remove from cache
-			self.documentBackingCache.remove([documentID])
-
-			// Call document changed procs
-			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .removed) }
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func iterate<T : MDSDocument>(proc :(_ document : T) -> Void) {
-		// Collect document IDs
-		var	documentIDs = [String]()
-		autoreleasepool() {
-			// Iterate document backing infos
-			iterateDocumentBackingInfos(documentType: T.documentType,
-					innerJoin: self.databaseManager.innerJoin(for: T.documentType),
-					where: self.databaseManager.where(forDocumentActive: true))
-					{ documentIDs.append($0.documentID); _ = $1 }
-		}
-
-		// Iterate document IDs
-		autoreleasepool() { documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) } }
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func iterate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void) {
-		// Iterate document backing infos to ensure they are in the cache
-		autoreleasepool()
-			{ iterateDocumentBackingInfos(documentType: T.documentType, documentIDs: documentIDs) { _ = $0 } }
-
-		// Iterate document IDs
-		autoreleasepool() { documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) } }
+	public func attachmentInfoMap(for document :MDSDocument) -> MDSDocument.AttachmentInfoMap {
+		// Unimplemented
+		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -367,7 +330,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			// Batch changes
 			self.databaseManager.batch() {
 				// Iterate all document changes
-				batchInfo.forEach() { documentType, batchDocumentInfosMap in
+				batchInfo.iterateDocumentChanges() { documentType, batchDocumentInfosMap in
 					// Setup
 					let	updateBatchQueue =
 								BatchQueue<MDSUpdateInfo<Int64>>() {
@@ -460,12 +423,57 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 					self.removeFromCollections(for: documentType, documentBackingIDs: removedDocumentBackingIDs)
 					self.removeFromIndexes(for: documentType, documentBackingIDs: removedDocumentBackingIDs)
 				}
+				batchInfo.iterateAttachmentChanges(addAttachmentProc: { _ in
+// TODO: MDSSQLite Add Attachment after Batch
+				}, updateAttachmentProc: { _ in
+// TODO: MDSSQLite Update Attachment after Batch
+				}, removeAttachmentProc: { _ in
+// TODO: MDSSQLite Remove Attachment after Batch
+				})
 			}
 		}
 
 		// Remove - must wait to do this until the batch has been fully processed in case processing Collections and
 		//	Indexes ends up referencing other documents that have not yet been committed.
 		self.batchInfoMap.set(nil, for: Thread.current)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func remove(_ document :MDSDocument) {
+		// Setup
+		let	documentType = type(of: document).documentType
+		let	documentID = document.id
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+			// In batch
+			if let batchDocumentInfo = batchInfo.documentInfo(for: documentID) {
+				// Have document in batch
+				batchDocumentInfo.remove()
+			} else {
+				// Don't have document in batch
+				let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
+				batchInfo.addDocument(documentType: documentType, documentID: documentID, reference: documentBacking,
+						creationDate: Date(), modificationDate: Date())
+					.remove()
+			}
+		} else {
+			// Not in batch
+			let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
+
+			// Remove from collections and indexes
+			removeFromCollections(for: documentType, documentBackingIDs: [documentBacking.id])
+			removeFromIndexes(for: documentType, documentBackingIDs: [documentBacking.id])
+
+			// Remove
+			self.databaseManager.remove(documentType: documentType, id: documentBacking.id)
+
+			// Remove from cache
+			self.documentBackingCache.remove([documentID])
+
+			// Call document changed procs
+			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .removed) }
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -501,6 +509,31 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 //		// Unimplemented
 //		fatalError("Unimplemented")
 //	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func attachmentContent<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) -> Data? {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func addAttachment<T : MDSDocument>(for document :T, type :String, info :[String : Any], content :Data) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func updateAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
+			updatedInfo :[String : Any], updatedContent :Data) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func removeAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
@@ -647,9 +680,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 		// Iterate
 		iterateDocumentBackingInfos(documentType: documentType, documentIDs: documentIDs) {
 			// Call proc
-			proc(MDSDocument.FullInfo(documentID: $0.documentID, revision: $0.documentBacking.revision,
-					active: $0.documentBacking.active, creationDate: $0.documentBacking.creationDate,
-					modificationDate: $0.documentBacking.modificationDate, propertyMap: $0.documentBacking.propertyMap))
+			proc($0.documentBacking.documentFullInfo(with: $0.documentID))
 		}
 	}
 
@@ -659,9 +690,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 		// Iterate
 		iterateDocumentBackingInfos(documentType: documentType, sinceRevision: revision, includeInactive: true) {
 			// Call proc
-			proc(MDSDocument.FullInfo(documentID: $0.documentID, revision: $0.documentBacking.revision,
-					active: $0.documentBacking.active, creationDate: $0.documentBacking.creationDate,
-					modificationDate: $0.documentBacking.modificationDate, propertyMap: $0.documentBacking.propertyMap))
+			proc($0.documentBacking.documentFullInfo(with: $0.documentID))
 		}
 	}
 
@@ -916,11 +945,11 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			// Check revision state
 			if $0.lastRevision + 1 == minRevision {
 				// Update collection
-				let	(includedIDs, notIncludedIDs, lastRevision) = $0.update(updateInfos)
-
-				// Update database
-				self.databaseManager.updateCollection(name: $0.name, includedIDs: includedIDs,
-						notIncludedIDs: processNotIncluded ? notIncludedIDs : [], lastRevision: lastRevision)
+				if let (includedIDs, notIncludedIDs, lastRevision) = $0.update(updateInfos) {
+					// Update database
+					self.databaseManager.updateCollection(name: $0.name, includedIDs: includedIDs,
+							notIncludedIDs: processNotIncluded ? notIncludedIDs : [], lastRevision: lastRevision)
+				}
 			} else {
 				// Bring up to date
 				bringUpToDate($0)
@@ -1007,11 +1036,11 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			// Check revision state
 			if $0.lastRevision + 1 == minRevision {
 				// Update index
-				let	(keysInfos, lastRevision) = $0.update(updateInfos)
-
-				// Update database
-				self.databaseManager.updateIndex(name: $0.name, keysInfos: keysInfos, removedIDs: [],
-						lastRevision: lastRevision)
+				if let (keysInfos, lastRevision) = $0.update(updateInfos) {
+					// Update database
+					self.databaseManager.updateIndex(name: $0.name, keysInfos: keysInfos, removedIDs: [],
+							lastRevision: lastRevision)
+				}
 			} else {
 				// Bring up to date
 				bringUpToDate($0)
