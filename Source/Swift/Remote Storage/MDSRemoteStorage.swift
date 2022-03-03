@@ -808,9 +808,6 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			return
 		}
 
-		// Make sure collection is up to date
-		_ = documentCountForCollection(named: name)
-
 		// Update creation proc map
 		self.documentCreationProcMap.set({ T(id: $0, documentStorage: $1) }, for: T.documentType)
 	}
@@ -917,9 +914,6 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 			return
 		}
-
-		// Make sure index is up to date
-		iterateIndex(name: name, keys: [" "]) { (key :String, t :T) in }
 
 		// Update creation proc map
 		self.documentCreationProcMap.set({ T(id: $0, documentStorage: $1) }, for: T.documentType)
