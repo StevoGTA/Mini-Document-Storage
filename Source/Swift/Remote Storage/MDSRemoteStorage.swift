@@ -100,6 +100,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	private	let	documentBackingCache = MDSDocumentBackingCache<DocumentBacking>()
 	private	let	documentsBeingCreatedPropertyMapMap = LockingDictionary<String, [String : Any]>()
 
+	private	var	ephemeralValues :[/* Key */ String : Any]?
 	private	var	documentCreationProcMap = LockingDictionary<String, DocumentCreationProc>()
 
 	// MARK: Lifecycle methods
@@ -164,6 +165,27 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	public func remove(keys :[String]) {
 		// Unimplemented
 		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func ephemeralValue<T>(for key :String) -> T? { self.ephemeralValues?[key] as? T }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func store<T>(ephemeralValue value :T?, for key :String) {
+		// Store
+		if (self.ephemeralValues == nil) && (value != nil) {
+			// First one
+			self.ephemeralValues = [key : value!]
+		} else {
+			// Update
+			self.ephemeralValues?[key] = value
+
+			// Check for empty
+			if self.ephemeralValues?.isEmpty ?? false {
+				// No more values
+				self.ephemeralValues = nil
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

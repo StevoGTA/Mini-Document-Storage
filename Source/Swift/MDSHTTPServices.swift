@@ -505,7 +505,7 @@ class MDSHTTPServices {
 	//	=> json (body)
 	//		[
 	//			{
-	//				"action" :"add", "update", or "remove"
+	//				"action" :"add" or "remove"
 	//				"fromID" :String
 	//				"toID :String
 	//			}

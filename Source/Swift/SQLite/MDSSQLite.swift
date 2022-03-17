@@ -60,6 +60,8 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 
 	private	let	databaseManager :MDSSQLiteDatabaseManager
 
+	private	var	ephemeralValues :[/* Key */ String : Any]?
+
 	private	let	batchInfoMap = LockingDictionary<Thread, MDSBatchInfo<MDSSQLiteDocumentBacking>>()
 
 	private	let	documentBackingCache = MDSDocumentBackingCache<MDSSQLiteDocumentBacking>()
@@ -95,6 +97,27 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func remove(keys :[String]) { keys.forEach() { self.databaseManager.set(nil, for: $0) } }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func ephemeralValue<T>(for key :String) -> T? { self.ephemeralValues?[key] as? T }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func store<T>(ephemeralValue value :T?, for key :String) {
+		// Store
+		if (self.ephemeralValues == nil) && (value != nil) {
+			// First one
+			self.ephemeralValues = [key : value!]
+		} else {
+			// Update
+			self.ephemeralValues?[key] = value
+
+			// Check for empty
+			if self.ephemeralValues?.isEmpty ?? false {
+				// No more values
+				self.ephemeralValues = nil
+			}
+		}
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)

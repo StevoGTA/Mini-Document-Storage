@@ -59,6 +59,8 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 
 	private	var	info = [String : String]()
 
+	private	var	ephemeralValues :[/* Key */ String : Any]?
+
 	private	let	batchInfoMap = LockingDictionary<Thread, MDSBatchInfo<[String : Any]>>()
 
 	private	var	documentBackingByIDMap = [/* Document ID */ String : DocumentBacking]()
@@ -90,6 +92,27 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func remove(keys :[String]) { keys.forEach() { self.info[$0] = nil } }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func ephemeralValue<T>(for key :String) -> T? { self.ephemeralValues?[key] as? T }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func store<T>(ephemeralValue value :T?, for key :String) {
+		// Store
+		if (self.ephemeralValues == nil) && (value != nil) {
+			// First one
+			self.ephemeralValues = [key : value!]
+		} else {
+			// Update
+			self.ephemeralValues?[key] = value
+
+			// Check for empty
+			if self.ephemeralValues?.isEmpty ?? false {
+				// No more values
+				self.ephemeralValues = nil
+			}
+		}
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)

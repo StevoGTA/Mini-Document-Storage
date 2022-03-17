@@ -40,6 +40,9 @@ public protocol MDSDocumentStorage : AnyObject {
 	func set(_ info :[String : String])
 	func remove(keys :[String])
 
+	func ephemeralValue<T>(for key :String) -> T?
+	func store<T>(ephemeralValue :T?, for key :String)
+
 	func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T) -> T
 
 	func document<T : MDSDocument>(for documentID :String) -> T?
