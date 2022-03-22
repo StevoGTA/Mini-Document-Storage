@@ -58,6 +58,11 @@ public protocol MDSDocumentStorage : AnyObject {
 	func set<T : MDSDocument>(_ value :Any?, for property :String, in document :T)
 
 	func attachmentInfoMap(for document :MDSDocument) -> MDSDocument.AttachmentInfoMap
+	func attachmentContent<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) -> Data?
+	func addAttachment<T : MDSDocument>(for document :T, type :String, info :[String : Any], content :Data)
+	func updateAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
+			updatedInfo :[String : Any], updatedContent :Data)
+	func removeAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo)
 
 	func batch(_ proc :() throws -> MDSBatchResult) rethrows
 
@@ -73,12 +78,6 @@ public protocol MDSDocumentStorage : AnyObject {
 
 //	func retrieveAssociationValue<T : MDSDocument, U>(for name :String, to document :T,
 //			summedFromCachedValueWithName cachedValueName :String) -> U
-
-	func attachmentContent<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) -> Data?
-	func addAttachment<T : MDSDocument>(for document :T, type :String, info :[String : Any], content :Data)
-	func updateAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
-			updatedInfo :[String : Any], updatedContent :Data)
-	func removeAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo)
 
 	func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)])

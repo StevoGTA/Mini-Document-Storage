@@ -432,6 +432,99 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func attachmentContent<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) ->
+			Data? {
+		// Check cache
+		if let content = self.remoteStorageCache.attachmentContent(for: attachmentInfo.id) { return content }
+
+		// Setup
+		let	documentType = type(of: document).documentType
+
+		// Get attachment
+		let	(data, error) =
+					DispatchQueue.performBlocking() { completionProc in
+						// Call network client
+						self.httpEndpointClient.queue(
+								MDSHTTPServices.httpEndpointRequestForGetDocumentAttachment(
+										documentStorageID: self.documentStorageID, documentType: documentType,
+										documentID: document.id, attachmentID: attachmentInfo.id,
+										authorization: self.authorization))
+								{ completionProc(($1, $2)) }
+					}
+		if data != nil {
+			// Update cache
+			self.remoteStorageCache.setAttachment(content: data!, for: attachmentInfo.id)
+
+			return data!
+		} else {
+			// Store error
+			self.recentErrors.append(error!)
+
+			return nil
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func addAttachment<T : MDSDocument>(for document :T, type :String, info :[String : Any], content :Data) {
+		// Setup
+		let	documentType = Swift.type(of: document).documentType
+
+		var	infoUse = info
+		infoUse["type"] = type
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+			// In batch
+			batchInfo.note(
+					MDSBatchInfo<DocumentBacking>.AddAttachmentInfo(documentType: documentType, documentID: document.id,
+							info: infoUse, content: content))
+		} else {
+			// Not in batch
+			addAttachment(documentType: documentType, documentID: document.id, info: infoUse, content: content)
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func updateAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
+			updatedInfo :[String : Any], updatedContent :Data) {
+		// Setup
+		let	documentType = type(of: document).documentType
+
+		var	info = updatedInfo
+		info["type"] = attachmentInfo.type
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+			// In batch
+			batchInfo.note(
+					MDSBatchInfo<DocumentBacking>.UpdateAttachmentInfo(documentType: documentType,
+							documentID: document.id, attachmentID: attachmentInfo.id,
+							currentRevision: attachmentInfo.revision, info: info, content: updatedContent))
+		} else {
+			// Not in batch
+			updateAttachment(documentType: documentType, documentID: document.id, attachmentID: attachmentInfo.id,
+					info: info, content: updatedContent)
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func removeAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) {
+		// Setup
+		let	documentType = type(of: document).documentType
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+			// In batch
+			batchInfo.note(
+					MDSBatchInfo<DocumentBacking>.RemoveAttachmentInfo(documentType: documentType,
+							documentID: document.id, attachmentID: attachmentInfo.id))
+		} else {
+			// Not in batch
+			removeAttachment(documentType: documentType, documentID: document.id, attachmentID: attachmentInfo.id)
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func batch(_ proc :() throws -> MDSBatchResult) rethrows {
 		// Setup
 		let	batchInfo = MDSBatchInfo<DocumentBacking>()
@@ -492,6 +585,10 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 				self.removeAttachment(documentType: $0.documentType, documentID: $0.documentID,
 						attachmentID: $0.attachmentID)
 			})
+			batchInfo.iterateAssocationChanges() {
+				// Update assocation
+				self.updateAssociation(for: $0, updates: $1)
+			}
 		}
 
 		// Remove
@@ -550,15 +647,15 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func updateAssociation<T : MDSDocument, U : MDSDocument>(for name :String,
 			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)]) {
-		// Update assocation
-		let	errors =
-					DispatchQueue.performBlocking() { completionProc in
-						// Call network client
-						self.httpEndpointClient.queue(documentStorageID: documentStorageID, name: name,
-								updates: updates, authorization: self.authorization)
-								{ completionProc($0) }
-					}
-		self.recentErrors.append(errors)
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+			// In batch
+			batchInfo.noteAssocationUpdated(for: name,
+					updates: updates.map({ ($0.action, $0.fromDocument.id, $0.toDocument.id) }))
+		} else {
+			// Not in batch
+			updateAssociation(for: name, updates: updates.map({ ($0.action, $0.fromDocument.id, $0.toDocument.id) }))
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -684,99 +781,6 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 				return 0 as! U
 			}
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func attachmentContent<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) ->
-			Data? {
-		// Check cache
-		if let content = self.remoteStorageCache.attachmentContent(for: attachmentInfo.id) { return content }
-
-		// Setup
-		let	documentType = type(of: document).documentType
-
-		// Get attachment
-		let	(data, error) =
-					DispatchQueue.performBlocking() { completionProc in
-						// Call network client
-						self.httpEndpointClient.queue(
-								MDSHTTPServices.httpEndpointRequestForGetDocumentAttachment(
-										documentStorageID: self.documentStorageID, documentType: documentType,
-										documentID: document.id, attachmentID: attachmentInfo.id,
-										authorization: self.authorization))
-								{ completionProc(($1, $2)) }
-					}
-		if data != nil {
-			// Update cache
-			self.remoteStorageCache.setAttachment(content: data!, for: attachmentInfo.id)
-
-			return data!
-		} else {
-			// Store error
-			self.recentErrors.append(error!)
-
-			return nil
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func addAttachment<T : MDSDocument>(for document :T, type :String, info :[String : Any], content :Data) {
-		// Setup
-		let	documentType = Swift.type(of: document).documentType
-
-		var	infoUse = info
-		infoUse["type"] = type
-
-		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
-			// In batch
-			batchInfo.note(
-					MDSBatchInfo<DocumentBacking>.AddAttachmentInfo(documentType: documentType, documentID: document.id,
-							info: infoUse, content: content))
-		} else {
-			// Not in batch
-			addAttachment(documentType: documentType, documentID: document.id, info: infoUse, content: content)
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func updateAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
-			updatedInfo :[String : Any], updatedContent :Data) {
-		// Setup
-		let	documentType = type(of: document).documentType
-
-		var	info = updatedInfo
-		info["type"] = attachmentInfo.type
-
-		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
-			// In batch
-			batchInfo.note(
-					MDSBatchInfo<DocumentBacking>.UpdateAttachmentInfo(documentType: documentType,
-							documentID: document.id, attachmentID: attachmentInfo.id,
-							currentRevision: attachmentInfo.revision, info: info, content: updatedContent))
-		} else {
-			// Not in batch
-			updateAttachment(documentType: documentType, documentID: document.id, attachmentID: attachmentInfo.id,
-					info: info, content: updatedContent)
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func removeAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) {
-		// Setup
-		let	documentType = type(of: document).documentType
-
-		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
-			// In batch
-			batchInfo.note(
-					MDSBatchInfo<DocumentBacking>.RemoveAttachmentInfo(documentType: documentType,
-							documentID: document.id, attachmentID: attachmentInfo.id))
-		} else {
-			// Not in batch
-			removeAttachment(documentType: documentType, documentID: document.id, attachmentID: attachmentInfo.id)
 		}
 	}
 
@@ -945,7 +949,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	public func iterateIndex<T : MDSDocument>(name :String, keys :[String],
 			proc :(_ key :String, _ document :T) -> Void) {
 		// Setup
-		var	keysUse = keys.filter({ !$0.isEmpty })
+		var	keysUse = keys
 
 		// Preflight
 		guard !keysUse.isEmpty else { return }
@@ -1165,6 +1169,20 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 					.map({ ($0.documentID, self.documentBackingCache.documentBacking(for: $0.documentID)!) })
 					.forEach() { proc($0.0) }
 		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func updateAssociation(for name :String,
+			updates :[(action :MDSAssociationAction, fromDocumentID :String, toDocumentID :String)]) {
+		// Update assocation
+		let	errors =
+					DispatchQueue.performBlocking() { completionProc in
+						// Call network client
+						self.httpEndpointClient.queue(documentStorageID: documentStorageID, name: name,
+								updates: updates.map({ ($0.action, $0.fromDocumentID, $0.toDocumentID) }),
+								authorization: self.authorization) { completionProc($0) }
+					}
+		self.recentErrors.append(errors)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

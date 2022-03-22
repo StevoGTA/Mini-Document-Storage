@@ -150,6 +150,10 @@ class MDSBatchInfo<T> {
 	private	var	updateAttachmentInfos = [UpdateAttachmentInfo]()
 	private	var	removeAttachmentInfos = [RemoveAttachmentInfo]()
 
+	private	var	assocationUpdatesByAssocationName =
+						[/* Name */ String :
+								[(action :MDSAssociationAction, fromDocumentID :String, toDocumentID :String)]]()
+
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
 	func addDocument(documentType :String, documentID :String, reference :T? = nil, creationDate :Date,
@@ -179,6 +183,13 @@ class MDSBatchInfo<T> {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func note(_ removeAttachmentInfo :RemoveAttachmentInfo) { self.removeAttachmentInfos.append(removeAttachmentInfo) }
+
+	//------------------------------------------------------------------------------------------------------------------
+	func noteAssocationUpdated(for name :String,
+			updates :[(action :MDSAssociationAction, fromDocumentID :String, toDocumentID :String)]) {
+		// Add
+		self.assocationUpdatesByAssocationName.appendArrayValueElements(key: name, values: updates)
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func iterateDocumentChanges(
@@ -215,5 +226,13 @@ class MDSBatchInfo<T> {
 		self.removeAttachmentInfos.forEach() { removeAttachmentProc($0) }
 		self.addAttachmentInfos.forEach() { addAttachmentProc($0) }
 		self.updateAttachmentInfos.forEach() { updateAttachmentProc($0) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func iterateAssocationChanges(
+			proc :(_ name :String,
+					_ updates :[(action :MDSAssociationAction, fromDocumentID :String, toDocumentID :String)]) -> Void) {
+		// Iterate info
+		self.assocationUpdatesByAssocationName.forEach() { proc($0.key, $0.value) }
 	}
 }
