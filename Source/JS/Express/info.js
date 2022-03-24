@@ -5,8 +5,6 @@
 //  Copyright © 2022 Stevo Brock. All rights reserved.
 //
 
-let	{MDSDocumentStorage} = require('mini-document-storage-mysql');
-
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get
 //	=> documentStorageID (path)
@@ -16,36 +14,40 @@ let	{MDSDocumentStorage} = require('mini-document-storage-mysql');
 //		"key" :String
 //		...
 //	   ]
-exports.getV1 = async (request, result, next) => {
+exports.getV1 = async (request, response) => {
 	// Setup
 	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
 
 	let	keys = request.query.key;
 
 	// Validate input
-	if (!keys)
+	if (!keys) {
 		// Must specify keys
 		response
-				.statusCode(400)
+				.status(400)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({message: 'missing key(s)'})
+		
+		return;
+	}
 
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		let	results = await mdsDocumentStorage.infoGet(documentStorageID, keys);
+		let	results = await request.app.locals.documentStorage.infoGet(documentStorageID, keys);
 
 		response
-				.statusCode(200)
+				.status(200)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send(results);
 	} catch (error) {
 		// Error
+		console.log(error.stack);
+
 		response
-				.statusCode(500)
+				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Error: ' + error);
+				.send('Uh Oh');
 	}
 };
 
@@ -57,34 +59,37 @@ exports.getV1 = async (request, result, next) => {
 //			"key" :String
 //			...
 //		]
-exports.setV1 = async (request, result, next) => {
+exports.setV1 = async (request, response) => {
 	// Setup
 	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
 
 	let	info = request.body;
 
 	// Validate input
-	if (!info)
+	if (!info || (Object.keys(info).length == 0)) {
 		// Must specify info
 		response
-				.statusCode(400)
+				.status(400)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({message: 'missing info'});
 
+		return;
+	}
+
 	// Catch errors
 	try {
-		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		await mdsDocumentStorage.infoSet(documentStorageID, info);
-
+		// Set info
+		await request.app.locals.documentStorage.infoSet(documentStorageID, info);
 		response
-				.statusCode(200)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true});
+				.status(200)
+				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+				.send();
 	} catch (error) {
 		// Error
+		console.log(error.stack);
 		response
-				.statusCode(500)
+				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Error: ' + error);
+				.send('Uh Oh');
 	}
 };

@@ -5,7 +5,7 @@
 //  Copyright © 2022 Stevo Brock. All rights reserved.
 //
 
-let	{MDSDocumentStorage} = require('mini-document-storage-mysql');
+let	{DocumentStorage} = require('mini-document-storage');
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Register
@@ -34,8 +34,8 @@ exports.registerV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		await mdsDocumentStorage.associationRegister(documentStorageID, info);
+		let	documentStorage = new DocumentStorage();
+		await documentStorage.associationRegister(documentStorageID, info);
 
 		return {
 				statusCode: 200,
@@ -82,8 +82,8 @@ exports.updateV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		await mdsDocumentStorage.associationUpdate(documentStorageID, name, info);
+		let	documentStorage = new DocumentStorage();
+		await documentStorage.associationUpdate(documentStorageID, name, info);
 
 		return {
 				statusCode: 200,
@@ -135,9 +135,9 @@ exports.getDocumentInfosV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
+		let	documentStorage = new DocumentStorage();
 		let	[totalCount, results] =
-					await mdsDocumentStorage.associationGetDocumentInfos(documentStorageID, name, fromDocumentID,
+					await documentStorage.associationGetDocumentInfos(documentStorageID, name, fromDocumentID,
 							toDocumentID, startIndex, fullInfo == 1);
 
 		// Success
@@ -199,9 +199,9 @@ exports.getValueV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
+		let	documentStorage = new DocumentStorage();
 		let	[value, upToDate] =
-					await mdsDocumentStorage.associationGetValue(documentStorageID, name, toDocumentID, action,
+					await documentStorage.associationGetValue(documentStorageID, name, toDocumentID, action,
 							cacheName, cacheValueName);
 		if (upToDate)
 			// Success

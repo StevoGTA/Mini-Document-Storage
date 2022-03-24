@@ -1,11 +1,8 @@
 {
-  "name": "mini-document-storage-mysql",
+  "name": "mini-document-storage",
   "version": "0.1.0",
   "description": "Fast, inexpensive document storage backed by MySQL",
-  "main": "src/index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\""
-  },
+  "main": "src/DocumentStorage.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/StevoGTA/Mini-Document-Storage.git"
@@ -18,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/StevoGTA/Mini-Document-Storage/issues"
   },
-  "homepage": "https://github.com/StevoGTA/Mini-Document-Storage#readme"
+  "homepage": "https://github.com/StevoGTA/Mini-Document-Storage#readme",
+  "dependencies": {
+    "uuid-base64": "^1.0.0"
+  }
 }

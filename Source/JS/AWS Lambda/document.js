@@ -5,7 +5,7 @@
 //  Copyright © 2022 Stevo Brock. All rights reserved.
 //
 
-let	{MDSDocumentStorage} = require('mini-document-storage-mysql');
+let	{DocumentStorage} = require('mini-document-storage');
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Create
@@ -54,8 +54,8 @@ exports.createV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		let	results = await mdsDocumentStorage.documentCreate(documentStorageID, documentType, infos);
+		let	documentStorage = new DocumentStorage();
+		let	results = await documentStorage.documentCreate(documentStorageID, documentType, infos);
 
 		return {
 				statusCode: 200,
@@ -124,9 +124,9 @@ exports.getV1 = async (event) => {
 		// Check request type
 		if (sinceRevision) {
 			// Since revision
-			let	mdsDocumentStorage = new MDSDocumentStorage();
+			let	documentStorage = new DocumentStorage();
 			let	[totalCount, results] =
-						await mdsDocumentStorage.documentGetSinceRevision(documentStorageID, documentType,
+						await documentStorage.documentGetSinceRevision(documentStorageID, documentType,
 								sinceRevision);
 
 			return {
@@ -144,8 +144,8 @@ exports.getV1 = async (event) => {
 			};
 		} else {
 			// IDs
-			let	mdsDocumentStorage = new MDSDocumentStorage();
-			let	results = await mdsDocumentStorage.documentGetIDs(documentStorageID, documentType, ids);
+			let	documentStorage = new DocumentStorage();
+			let	results = await documentStorage.documentGetForIDs(documentStorageID, documentType, ids);
 
 			return {
 					statusCode: 200,
@@ -202,8 +202,8 @@ exports.updateV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		await mdsDocumentStorage.documentUpdate(documentStorageID, documentType, infos);
+		let	documentStorage = new DocumentStorage();
+		await documentStorage.documentUpdate(documentStorageID, documentType, infos);
 
 		return {
 				statusCode: 200,
@@ -246,9 +246,9 @@ exports.getAttachmentV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
+		let	documentStorage = new DocumentStorage();
 		let	results =
-					await mdsDocumentStorage.documentAttachmentGet(documentStorageID, documentType, documentID,
+					await documentStorage.documentAttachmentGet(documentStorageID, documentType, documentID,
 							attachmentID);
 
 		return {
@@ -295,8 +295,8 @@ exports.addAttachmentV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		await mdsDocumentStorage.documentAttachmentAdd(documentStorageID, documentType, documentID, info, content);
+		let	documentStorage = new DocumentStorage();
+		await documentStorage.documentAttachmentAdd(documentStorageID, documentType, documentID, info, content);
 
 		return {
 				statusCode: 200,
@@ -343,8 +343,8 @@ exports.updateAttachmentV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		await mdsDocumentStorage.documentAttachmentUpdate(documentStorageID, documentType, documentID, attachmentID,
+		let	documentStorage = new DocumentStorage();
+		await documentStorage.documentAttachmentUpdate(documentStorageID, documentType, documentID, attachmentID,
 				info, content);
 
 		return {
@@ -377,8 +377,8 @@ exports.removeAttachmentV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		await mdsDocumentStorage.documentAttachmentRemove(documentStorageID, documentType, documentID, attachmentID);
+		let	documentStorage = new DocumentStorage();
+		await documentStorage.documentAttachmentRemove(documentStorageID, documentType, documentID, attachmentID);
 
 		return {
 				statusCode: 200,

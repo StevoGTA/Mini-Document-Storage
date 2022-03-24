@@ -5,7 +5,7 @@
 //  Copyright © 2022 Stevo Brock. All rights reserved.
 //
 
-let	{MDSDocumentStorage} = require('mini-document-storage-mysql');
+let	{DocumentStorage} = require('mini-document-storage');
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Register
@@ -45,8 +45,8 @@ exports.registerV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		await mdsDocumentStorage.cacheRegister(documentStorageID, info);
+		let	documentStorage = new DocumentStorage();
+		await documentStorage.cacheRegister(documentStorageID, info);
 
 		return {
 				statusCode: 200,

@@ -5,8 +5,6 @@
 //  Copyright © 2022 Stevo Brock. All rights reserved.
 //
 
-let	{MDSDocumentStorage} = require('mini-document-storage-mysql');
-
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Create
 //	=> documentStorageID (path)
@@ -35,7 +33,7 @@ let	{MDSDocumentStorage} = require('mini-document-storage-mysql');
 //			},
 //			...
 //		]
-exports.createV1 = async (request, result, next) => {
+exports.createV1 = async (request, response) => {
 	// Setup
 	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
 	let	documentType = request.params.documentType;
@@ -43,29 +41,32 @@ exports.createV1 = async (request, result, next) => {
 	let	infos = request.body;
 
 	// Validate input
-	if (!infos)
+	if (!infos) {
 		// Must specify keys
 		response
-				.statusCode(400)
+				.status(400)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({message: 'missing info(s)'});
 
+		return;
+	}
+
 	// Catch errors
 	try {
-		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		let	results = await mdsDocumentStorage.documentCreate(documentStorageID, documentType, infos);
+		// Create documents
+		let	results = await request.app.locals.documentStorage.documentCreate(documentStorageID, documentType, infos);
 
 		response
-				.statusCode(200)
+				.status(200)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send(results);
 	} catch (error) {
 		// Error
+		console.log(error.stack);
 		response
-				.statusCode(500)
+				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Error: ' + error);
+				.send('Uh Oh');
 	}
 };
 
@@ -73,7 +74,9 @@ exports.createV1 = async (request, result, next) => {
 // MARK: Get
 //	=> documentStorageID (path)
 //	=> type (path)
+//
 //	=> sinceRevision (query)
+//	=> maxDocumentCount (query, optional)
 //		-or-
 //	=> id (query) (can specify multiple)
 //
@@ -89,41 +92,53 @@ exports.createV1 = async (request, result, next) => {
 //							"key" :Any,
 //							...
 //						},
+//				"attachments":
+//						{
+//							id :
+//								{
+//									"revision" :Int,
+//									"info" :{
+//												"key" :Any,
+//												...
+//											},
+//								},
+//								..
+//						}
 //			},
 //			...
 //		]
-exports.getV1 = async (request, result, next) => {
+exports.getV1 = async (request, response) => {
 	// Setup
 	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
 	let	documentType = request.params.documentType;
 
 	let	sinceRevision = request.query.sinceRevision;
-	var	ids = request.query.id || [];
-	for (var i = 0; i < ids.length; i++)
-		ids[i] = ids[i].replace(/%2B/g, '+').replace(/_/g, '/');	// Convert back to + and from _ to /
-
-	let	infos = request.body;
+	let	maxDocumentCount = request.query.maxDocumentCount;
+	var	documentIDs = request.query.id || [];
+	for (var i = 0; i < documentIDs.length; i++)
+	documentIDs[i] = documentIDs[i].replace(/%2B/g, '+').replace(/_/g, '/');	// Convert back to + and from _ to /
 
 	// Validate input
-	if ((ids.length == 0) && !sinceRevision)
-		// Must specify documentIDs or sinceRevision
+	if ((documentIDs.length == 0) && !sinceRevision) {
+		// Must specify ids or sinceRevision
 		response
-				.statusCode(400)
+				.status(400)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({message: 'must specify id(s) or sinceRevision'});
+
+		return;
+	}
 
 	// Catch errors
 	try {
 		// Check request type
 		if (sinceRevision) {
 			// Since revision
-			let	mdsDocumentStorage = new MDSDocumentStorage();
 			let	[totalCount, results] =
-						await mdsDocumentStorage.documentGetSinceRevision(documentStorageID, documentType,
-								sinceRevision);
-
+						await request.app.locals.documentStorage.documentGetSinceRevision(documentStorageID,
+								documentType, sinceRevision, maxDocumentCount);
 			response
-					.statusCode(200)
+					.status(200)
 					.set({
 						'Access-Control-Allow-Origin': '*',
 						'Access-Control-Allow-Credentials': true,
@@ -133,21 +148,30 @@ exports.getV1 = async (request, result, next) => {
 					})
 					.send(results);
 		} else {
-			// IDs
-			let	mdsDocumentStorage = new MDSDocumentStorage();
-			let	results = await mdsDocumentStorage.documentGetIDs(documentStorageID, documentType, ids);
-
-			response
-					.statusCode(200)
-					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-					.send(results);
+			// DocumentIDs
+			let	[results, error] =
+						await request.app.locals.documentStorage.documentGetForDocumentIDs(documentStorageID,
+								documentType, documentIDs);
+			if (results)
+				// Success
+				response
+						.status(200)
+						.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+						.send(results);
+			else
+				// Error
+				response
+						.status(400)
+						.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+						.send(error);
 		}
 	} catch (error) {
 		// Error
+		console.log(error.stack);
 		response
-				.statusCode(500)
+				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Error: ' + error);
+				.send('Uh Oh');
 	}
 };
 
@@ -159,10 +183,10 @@ exports.getV1 = async (request, result, next) => {
 //		[
 //			{
 //				"documentID" :String
-//				"updated" :[
+//				"updated" :{
 //								"key" :Any,
 //								...
-//						   ]
+//						   }
 //				"removed" :[
 //								"key",
 //								...
@@ -171,7 +195,22 @@ exports.getV1 = async (request, result, next) => {
 //			},
 //			...
 //		]
-exports.updateV1 = async (request, result, next) => {
+//
+//	<= json
+//		[
+//			{
+//				"documentID" :String,
+//				"revision" :Int,
+//				"active" :0/1,
+//				"modificationDate" :String,
+//				"json" :{
+//							"key" :Any,
+//							...
+//						},
+//			},
+//			...
+//		]
+exports.updateV1 = async (request, response) => {
 	// Setup
 	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
 	let	documentType = request.params.documentType;
@@ -179,72 +218,40 @@ exports.updateV1 = async (request, result, next) => {
 	let	infos = request.body;
 
 	// Validate input
-	if (!infos)
+	if (!infos) {
 		// Must specify keys
 		response
-				.statusCode(400)
+				.status(400)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({message: 'missing info(s)'});
-
-	// Catch errors
-	try {
-		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		await mdsDocumentStorage.documentUpdate(documentStorageID, documentType, infos);
-
-		response
-				.statusCode(200)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true});
-	} catch (error) {
-		// Error
-		response
-				.statusCode(500)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Error: ' + error);
+		
+		return;
 	}
-};
-
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: Get Attachment
-//	=> documentStorageID (path)
-//	=> documentType (path)
-//	=> documentID (path)
-//	=> attachmentID (path)
-//
-//	<= string
-exports.getAttachmentV1 = async (request, result, next) => {
-	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
-	let	documentType = request.params.documentType;
-	let	documentID = request.params.documentID.replace(/%2B/g, '+').replace(/_/g, '/');
-	let	attachmentID = request.params.attachmentID.replace(/%2B/g, '+').replace(/_/g, '/');
-
-	// Validate input
-	if (!infos)
-		// Must specify keys
-		response
-				.statusCode(400)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send({message: 'missing info(s)'});
 
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		let	results =
-					await mdsDocumentStorage.documentAttachmentGet(documentStorageID, documentType, documentID,
-							attachmentID);
-
-		response
-				.statusCode(200)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send(results);
+		let	[results, error] =
+					await request.app.locals.documentStorage.documentUpdate(documentStorageID, documentType, infos);
+		if (results)
+			// Success
+			response
+					.status(200)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send(results);
+		else
+			// Error
+			response
+					.status(400)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send(error);
 	} catch (error) {
 		// Error
+		console.log(error.stack);
 		response
-				.statusCode(500)
+				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Error: ' + error);
+				.send('Uh Oh');
 	}
 };
 
@@ -255,39 +262,94 @@ exports.getAttachmentV1 = async (request, result, next) => {
 //	=> documentID (path)
 //	=> info (body)
 //	=> content (body)
-exports.addAttachmentV1 = async (request, result, next) => {
+exports.addAttachmentV1 = async (request, response) => {
 	// Setup
 	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
 	let	documentType = request.params.documentType;
 	let	documentID = request.params.documentID.replace(/%2B/g, '+').replace(/_/g, '/');
 
-	let	body = JSON.parse(event.body || {});
-	let info = body.info;
-	let	content = body.content;
+	let info = request.body.info;
+	let	content = request.body.content;
 	
 	// Validate input
-	if (!info || !content)
+	if (!info || !content) {
 		// Must specify keys
 		response
-				.statusCode(400)
+				.status(400)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({message: 'missing info and/or content'});
+
+		return;
+	}
 
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		await mdsDocumentStorage.documentAttachmentAdd(documentStorageID, documentType, documentID, info, content);
-
-		response
-				.statusCode(200)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true});
+		let	[results, error] =
+					await request.app.locals.documentStorage.documentAttachmentAdd(documentStorageID, documentType,
+							documentID, info, Buffer.from(content, 'base64'));
+		if (results)
+			// Success
+			response
+					.status(200)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send(results);
+		else
+			// Error
+			response
+					.status(400)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send(error);
 	} catch (error) {
 		// Error
+		console.log(error.stack);
 		response
-				.statusCode(500)
+				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Error: ' + error);
+				.send('Uh Oh');
+	}
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: Get Attachment
+//	=> documentStorageID (path)
+//	=> documentType (path)
+//	=> documentID (path)
+//	=> attachmentID (path)
+//
+//	<= data
+exports.getAttachmentV1 = async (request, response) => {
+	// Setup
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentType = request.params.documentType;
+	let	documentID = request.params.documentID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	attachmentID = request.params.attachmentID.replace(/%2B/g, '+').replace(/_/g, '/');
+
+	// Catch errors
+	try {
+		// Get info
+		let	[results, error] =
+					await request.app.locals.documentStorage.documentAttachmentGet(documentStorageID, documentType,
+							documentID, attachmentID);
+		if (results)
+			// Success
+			response
+					.status(200)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send(results);
+		else
+			// Error
+			response
+					.status(400)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send(error);
+	} catch (error) {
+		// Error
+		console.log(error.stack);
+		response
+				.status(500)
+				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+				.send('Uh Oh');
 	}
 };
 
@@ -299,41 +361,52 @@ exports.addAttachmentV1 = async (request, result, next) => {
 //	=> attachmentID (path)
 //	=> info (body)
 //	=> content (body)
-exports.updateAttachmentV1 = async (request, result, next) => {
+exports.updateAttachmentV1 = async (request, response) => {
 	// Setup
 	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
 	let	documentType = request.params.documentType;
 	let	documentID = request.params.documentID.replace(/%2B/g, '+').replace(/_/g, '/');
 	let	attachmentID = request.params.attachmentID.replace(/%2B/g, '+').replace(/_/g, '/');
 
-	let	body = JSON.parse(event.body || {});
-	let info = body.info;
-	let	content = body.content;
+	let info = request.body.info;
+	let	content = request.body.content;
 	
 	// Validate input
-	if (!info || !content)
+	if (!info || !content) {
 		// Must specify keys
 		response
-				.statusCode(400)
+				.status(400)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({message: 'missing info and/or content'});
+
+		return;
+	}
 
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		await mdsDocumentStorage.documentAttachmentUpdate(documentStorageID, documentType, documentID, attachmentID,
-				info, content);
-
-		response
-				.statusCode(200)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true});
+		let	error =
+					await request.app.locals.documentStorage.documentAttachmentUpdate(documentStorageID, documentType,
+							documentID, attachmentID, info, content);
+		if (!error)
+			// Success
+			response
+					.status(200)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send();
+		else
+			// Error
+			response
+					.status(400)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send(error);
 	} catch (error) {
 		// Error
+		console.log(error.stack);
 		response
-				.statusCode(500)
+				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Error: ' + error);
+				.send('Uh Oh');
 	}
 };
 
@@ -343,7 +416,7 @@ exports.updateAttachmentV1 = async (request, result, next) => {
 //	=> documentType (path)
 //	=> documentID (path)
 //	=> attachmentID (path)
-exports.removeAttachmentV1 = async (request, result, next) => {
+exports.removeAttachmentV1 = async (request, response) => {
 	// Setup
 	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
 	let	documentType = request.params.documentType;
@@ -353,17 +426,27 @@ exports.removeAttachmentV1 = async (request, result, next) => {
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		await mdsDocumentStorage.documentAttachmentRemove(documentStorageID, documentType, documentID, attachmentID);
-
-		response
-				.statusCode(200)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true});
+		let	error =
+					await request.app.locals.documentStorage.documentAttachmentRemove(documentStorageID, documentType,
+							documentID, attachmentID);
+		if (!error)
+			// Success
+			response
+					.status(200)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send();
+		else
+			// Error
+			response
+					.status(400)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send(error);
 	} catch (error) {
 		// Error
+		console.log(error.stack);
 		response
-				.statusCode(500)
+				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Error: ' + error);
+				.send('Uh Oh');
 	}
 };

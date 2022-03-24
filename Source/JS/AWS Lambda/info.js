@@ -5,7 +5,7 @@
 //  Copyright © 2022 Stevo Brock. All rights reserved.
 //
 
-let	{MDSDocumentStorage} = require('mini-document-storage-mysql');
+let	{DocumentStorage} = require('mini-document-storage');
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get
@@ -35,8 +35,8 @@ exports.getV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		let	results = await mdsDocumentStorage.infoGet(documentStorageID, keys);
+		let	documentStorage = new DocumentStorage();
+		let	results = await documentStorage.infoGet(documentStorageID, keys);
 
 		return {
 				statusCode: 200,
@@ -79,8 +79,8 @@ exports.setV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		await mdsDocumentStorage.infoSet(documentStorageID, info);
+		let	documentStorage = new DocumentStorage();
+		await documentStorage.infoSet(documentStorageID, info);
 
 		return {
 				statusCode: 200,

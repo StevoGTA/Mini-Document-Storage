@@ -5,8 +5,6 @@
 //  Copyright © 2022 Stevo Brock. All rights reserved.
 //
 
-let	{MDSDocumentStorage} = require('mini-document-storage-mysql');
-
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Register
 //	=> documentStorageID (path)
@@ -14,7 +12,6 @@ let	{MDSDocumentStorage} = require('mini-document-storage-mysql');
 //		{
 //			"documentType" :String,
 //			"name" :String,
-//			"version" :Int,
 //			"relevantProperties" :[String]
 //			"isUpToDate" :Int (0 or 1)
 //			"keysSelector" :String,
@@ -23,35 +20,34 @@ let	{MDSDocumentStorage} = require('mini-document-storage-mysql');
 //									...
 //							    },
 //		}
-exports.registerV1 = async (request, result, next) => {
+exports.registerV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.projectID;
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
 
 	let	info = request.body;
-
-	// Validate input
-	if (!info)
-		// Must specify keys
-		response
-				.statusCode(400)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send({message: 'missing info'});
 
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		await mdsDocumentStorage.indexRegister(documentStorageID, info);
-
-		response
-				.statusCode(200)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true});
+		let	result = await request.app.locals.documentStorage.indexRegister(documentStorageID, info);
+		if (!result)
+			// Success
+			response
+					.status(200)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send();
+		else
+			response
+					.status(400)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send({message: result});
 	} catch (error) {
 		// Error
+		console.log(error.stack);
 		response
-				.statusCode(500)
+				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Error: ' + error);
+				.send('Uh Oh');
 	}
 };
 
@@ -70,42 +66,47 @@ exports.registerV1 = async (request, result, next) => {
 //				}
 //			...
 //		}
-exports.getDocumentInfosV1 = async (request, result, next) => {
+exports.getDocumentInfosV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.projectID;
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
 	let	name = request.params.name.replace(/%2B/g, '+').replace(/_/g, '/');
 
 	let	keys = request.query.key;
 
 	// Validate input
-	if (!keys)
+	if (!keys) {
 		// Must specify projectID
 		response
-				.statusCode(400)
+				.status(400)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({message: 'missing key(s)'});
+
+		return;
+	}
 
 	// Catch errors
 	try {
 		// Get info
-		let	mdsDocumentStorage = new MDSDocumentStorage();
-		let	[results, upToDate] = await mdsDocumentStorage.indexGetDocumentInfos(documentStorageID, name, keys);
+		let	documentStorage = new DocumentStorage();
+		let	[results, upToDate] = await documentStorage.indexGetDocumentInfos(documentStorageID, name, keys);
 		if (upToDate)
 			// Success
 			response
-					.statusCode(200)
+					.status(200)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 					.send(results);
 		else
 			// Not up to date
 			response
-					.statusCode(409)
-					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true});
+					.status(409)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send();
 	} catch (error) {
 		// Error
+		console.log(error.stack);
 		response
-				.statusCode(500)
+				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Error: ' + error);
+				.send('Uh Oh');
 	}
 };
