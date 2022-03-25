@@ -313,6 +313,43 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	async getIDsForDocumentIDs(documentType, documentIDs) {
+		// Setup
+		let	internals = this.internals;
+		let	statementPerformer = internals.statementPerformer;
+
+		let	documentInfo = this.documentInfo(documentType);
+
+		// Catch errors
+		try {
+			// Retrieve document ids
+			let	results =
+						await statementPerformer.select(documentInfo.infoTable,
+								[documentInfo.infoTable.idTableColumn, documentInfo.infoTable.documentIDTableColumn],
+								statementPerformer.where(documentInfo.infoTable.documentIDTableColumn, documentIDs));
+			if (results.length == documentIDs.length) {
+				// documentIDs found!
+				var	info = {};
+				for (let result of results)
+					// Update info
+					info[result.documentID] = result.id;
+
+				return [info, null];
+			} else
+				// Not all documentIDs not found
+				return [null, 'Not all documentIDs found'];
+		} catch (error) {
+			// Check error
+			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
+				// No such table
+				return [null, 'No Documents'];
+			else
+				// Other error
+				throw error;
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	async update(documentType, infos) {
 		// Setup
 		let	internals = this.internals;

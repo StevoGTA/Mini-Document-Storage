@@ -52,7 +52,7 @@ exports.registerV1 = async (request, response) => {
 //	=> json (body)
 //		[
 //			{
-//				"action" :"add", "update", or "remove"
+//				"action" :"add" or "remove"
 //				"fromID" :String
 //				"toID :String
 //			}
@@ -62,10 +62,10 @@ exports.updateV1 = async (request, response) => {
 	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
 	let	name = request.params.name;
 
-	let	info = request.body;
+	let	infos = request.body;
 
 	// Validate input
-	if (!info) {
+	if (!infos) {
 		// Must specify keys
 		response
 				.status(400)
@@ -78,12 +78,19 @@ exports.updateV1 = async (request, response) => {
 	// Catch errors
 	try {
 		// Get info
-		await request.app.locals.documentStorage.associationUpdate(documentStorageID, name, info);
-
-		response
-				.status(200)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send();
+		let	error = await request.app.locals.documentStorage.associationUpdate(documentStorageID, name, infos);
+		if (!error)
+			// Success
+			response
+					.status(200)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send();
+		else
+			// Error
+			response
+					.status(400)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send(error);
 	} catch (error) {
 		// Error
 		console.log(error.stack);

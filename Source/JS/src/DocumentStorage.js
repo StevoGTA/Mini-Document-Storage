@@ -46,8 +46,17 @@ module.exports = class DocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async associationUpdate(documentStorageID, name, info) {
-// TODO: associationUpdate
+	async associationUpdate(documentStorageID, name, infos) {
+		// Setup
+		let	internals = this.internals(documentStorageID);
+
+		// Do it
+		this.statementPerformer.use(documentStorageID);
+		let	{mySQLResults, results} =
+					await internals.statementPerformer.batch(
+							() => { return internals.associations.update(name, infos); });
+		
+		return results;
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
