@@ -18,7 +18,7 @@ let	{DocumentStorage} = require('mini-document-storage');
 //	   ]
 exports.getV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
 
 	let	multiValueQueryStringParameters = event.multiValueQueryStringParameters || {};
 	let	keys = multiValueQueryStringParameters.key;
@@ -63,7 +63,7 @@ exports.getV1 = async (event) => {
 //		]
 exports.setV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
 
 	let	info = (event.body) ? JSON.parse(event.body) : null;
 

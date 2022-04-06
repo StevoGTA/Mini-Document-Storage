@@ -32,12 +32,21 @@ module.exports = class Info {
 	// Instance methods
 	//------------------------------------------------------------------------------------------------------------------
 	async get(keys) {
+		// Validate
+		if (!keys)
+			return [null, 'Missing key(s)'];
+		if (typeof keys == 'string')
+			// Single key
+			keys = [keys];
+		else if (!Array.isArray(keys))
+			return [null, 'Missing key(s)'];
+
 		// Setup
 		let	statementPerformer = this.internals.statementPerformer;
 
 		// Catch errors
 		try {
-			// Perform
+			// Select
 			let	results =
 						await statementPerformer.select(this.table,
 								[this.table.keyTableColumn, this.table.valueTableColumn],
@@ -49,12 +58,12 @@ module.exports = class Info {
 				// Update stuffs
 				info[result.key] = result.value;
 
-			return info;
+			return [info, null];
 		} catch (error) {
 			// Check error
-			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
-				// No such table
-				return {};
+			if (statementPerformer.isUnknownTableError(error))
+				// Unknown table
+				return [{}, null];
 			else
 				// Other error
 				throw error;
@@ -63,6 +72,10 @@ module.exports = class Info {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async set(info) {
+		// Validate
+		if (!info || (Object.keys(info).length == 0))
+			return 'Missing info';
+
 		// Setup
 		let	internals = this.internals;
 		let	statementPerformer = this.internals.statementPerformer;

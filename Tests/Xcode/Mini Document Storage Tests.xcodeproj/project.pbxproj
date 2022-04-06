@@ -155,6 +155,7 @@
 		0A5E188A27C71FB90089E550 /* LockingArray.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55525B27C5DA60003E497B /* LockingArray.swift */; };
 		0A5E188B27C71FB90089E550 /* LockingArray.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55525B27C5DA60003E497B /* LockingArray.swift */; };
 		0A5E188C27C71FBA0089E550 /* LockingArray.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55525B27C5DA60003E497B /* LockingArray.swift */; };
+		0A5EAB6C27F52F04003E0034 /* DocumentTransactionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5EAB6B27F52F04003E0034 /* DocumentTransactionTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -265,6 +266,7 @@
 		0A5E182327C70D3F0089E550 /* InfoTransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoTransactionTests.swift; sourceTree = "<group>"; };
 		0A5E182C27C70D500089E550 /* Performance Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Performance Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A5E182E27C70D500089E550 /* Performance_Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Performance_Tests.swift; sourceTree = "<group>"; };
+		0A5EAB6B27F52F04003E0034 /* DocumentTransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentTransactionTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -318,8 +320,8 @@
 		0A5551E127C5CD13003E497B /* Unit Tests */ = {
 			isa = PBXGroup;
 			children = (
-				0A55527327C5DF6E003E497B /* InfoUnitTests.swift */,
 				0A1F7FDC27E40244007F8920 /* DocumentUnitTests.swift */,
+				0A55527327C5DF6E003E497B /* InfoUnitTests.swift */,
 			);
 			path = "Unit Tests";
 			sourceTree = "<group>";
@@ -570,6 +572,7 @@
 		0A5E182227C70D3F0089E550 /* Transaction Tests */ = {
 			isa = PBXGroup;
 			children = (
+				0A5EAB6B27F52F04003E0034 /* DocumentTransactionTests.swift */,
 				0A5E182327C70D3F0089E550 /* InfoTransactionTests.swift */,
 			);
 			path = "Transaction Tests";
@@ -771,6 +774,7 @@
 				0A1F800E27E40544007F8920 /* SQLiteOrderBy.swift in Sources */,
 				0A5E188B27C71FB90089E550 /* LockingArray.swift in Sources */,
 				0A5E187427C71F610089E550 /* HTTPEndpointHandler.swift in Sources */,
+				0A5EAB6C27F52F04003E0034 /* DocumentTransactionTests.swift in Sources */,
 				0A5E188427C71F950089E550 /* String+Extensions.swift in Sources */,
 				0A5E182427C70D3F0089E550 /* InfoTransactionTests.swift in Sources */,
 				0A5E186227C71F1F0089E550 /* MDSHTTPServices.swift in Sources */,

@@ -60,8 +60,20 @@ module.exports = class DocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async associationGetDocumentInfos(documentStorageID, name, fromDocumentID, toDocumentID, startIndex, fullInfo) {
-// TODO: associationGetDocumentInfos
+	async associationGetDocumentInfos(documentStorageID, name, fromDocumentID, toDocumentID, startIndex, documentCount,
+			fullInfo) {
+		// Setup
+		let	internals = this.internals(documentStorageID);
+
+		// Do it
+		this.statementPerformer.use(documentStorageID);
+		let	{mySQLResults, results} =
+					await internals.statementPerformer.batch(
+							() =>
+									{ return internals.associations.getDocumentInfos(name, fromDocumentID, toDocumentID,
+											startIndex, fullInfo); });
+		
+		return results;
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -111,13 +123,24 @@ module.exports = class DocumentStorage {
 		// Setup
 		let	internals = this.internals(documentStorageID);
 
-		// Do it
-		this.statementPerformer.use(documentStorageID);
-		let	{mySQLResults, results} =
-					await internals.statementPerformer.batch(
-							() => { return internals.documents.create(documentType, infos); });
-		
-		return results;
+		// Catch errors
+		try {
+			// Do it
+			this.statementPerformer.use(documentStorageID);
+			let	{mySQLResults, results} =
+						await internals.statementPerformer.batch(
+								() => { return internals.documents.create(documentType, infos); });
+			
+			return results;
+		} catch (error) {
+			// Error
+			if (this.statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return [null, 'Invalid documentStorageID'];
+			else
+				// Other
+				throw error;
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -125,16 +148,27 @@ module.exports = class DocumentStorage {
 		// Setup
 		let	internals = this.internals(documentStorageID);
 
-		// Do it
-		this.statementPerformer.use(documentStorageID);
-		let	{mySQLResults, results} =
-					await internals.statementPerformer.batch(
-							() =>
-									{ return internals.documents.getSinceRevision(documentType, sinceRevision,
-											maxDocumentCount); }
-					);
-		
-		return results;
+		// Catch errors
+		try {
+			// Do it
+			this.statementPerformer.use(documentStorageID);
+			let	{mySQLResults, results} =
+						await internals.statementPerformer.batch(
+								() =>
+										{ return internals.documents.getSinceRevision(documentType, sinceRevision,
+												maxDocumentCount); }
+						);
+			
+			return results;
+		} catch (error) {
+			// Error
+			if (this.statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return [null, null, 'Invalid documentStorageID'];
+			else
+				// Other
+				throw error;
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -142,13 +176,24 @@ module.exports = class DocumentStorage {
 		// Setup
 		let	internals = this.internals(documentStorageID);
 
-		// Do it
-		this.statementPerformer.use(documentStorageID);
-		let	{mySQLResults, results} =
-					await internals.statementPerformer.batch(
-							() => { return internals.documents.getForDocumentIDs(documentType, documentIDs); });
-		
-		return results;
+		// Catch errors
+		try {
+			// Do it
+			this.statementPerformer.use(documentStorageID);
+			let	{mySQLResults, results} =
+						await internals.statementPerformer.batch(
+								() => { return internals.documents.getForDocumentIDs(documentType, documentIDs); });
+			
+			return results;
+		} catch (error) {
+			// Error
+			if (this.statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return [null, 'Invalid documentStorageID'];
+			else
+				// Other
+				throw error;
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -156,13 +201,24 @@ module.exports = class DocumentStorage {
 		// Setup
 		let	internals = this.internals(documentStorageID);
 
-		// Do it
-		this.statementPerformer.use(documentStorageID);
-		let	{mySQLResults, results} =
-					await internals.statementPerformer.batch(
-							() => { return internals.documents.update(documentType, infos); });
-		
-		return results;
+		// Catch errors
+		try {
+				// Do it
+			this.statementPerformer.use(documentStorageID);
+			let	{mySQLResults, results} =
+						await internals.statementPerformer.batch(
+								() => { return internals.documents.update(documentType, infos); });
+			
+			return results;
+		} catch (error) {
+			// Error
+			if (this.statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return [null, 'Invalid documentStorageID'];
+			else
+				// Other
+				throw error;
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -170,15 +226,26 @@ module.exports = class DocumentStorage {
 		// Setup
 		let	internals = this.internals(documentStorageID);
 
-		// Do it
-		this.statementPerformer.use(documentStorageID);
-		let	{mySQLResults, results} =
-					await internals.statementPerformer.batch(
-							() =>
-									{ return internals.documents.attachmentAdd(documentType, documentID, info,
-											content); });
-		
-		return results;
+		// Catch errors
+		try {
+			// Do it
+			this.statementPerformer.use(documentStorageID);
+			let	{mySQLResults, results} =
+						await internals.statementPerformer.batch(
+								() =>
+										{ return internals.documents.attachmentAdd(documentType, documentID, info,
+												content); });
+			
+			return results;
+		} catch (error) {
+			// Error
+			if (this.statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return [null, 'Invalid documentStorageID'];
+			else
+				// Other
+				throw error;
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -186,15 +253,26 @@ module.exports = class DocumentStorage {
 		// Setup
 		let	internals = this.internals(documentStorageID);
 
-		// Do it
-		this.statementPerformer.use(documentStorageID);
-		let	{mySQLResults, results} =
-					await internals.statementPerformer.batch(
-							() =>
-									{ return internals.documents.attachmentGet(documentType, documentID,
-											attachmentID); });
-		
-		return results;
+		// Catch errors
+		try {
+				// Do it
+			this.statementPerformer.use(documentStorageID);
+			let	{mySQLResults, results} =
+						await internals.statementPerformer.batch(
+								() =>
+										{ return internals.documents.attachmentGet(documentType, documentID,
+												attachmentID); });
+			
+			return results;
+		} catch (error) {
+			// Error
+			if (this.statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return [null, 'Invalid documentStorageID'];
+			else
+				// Other
+				throw error;
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -202,15 +280,26 @@ module.exports = class DocumentStorage {
 		// Setup
 		let	internals = this.internals(documentStorageID);
 
-		// Do it
-		this.statementPerformer.use(documentStorageID);
-		let	{mySQLResults, results} =
-					await internals.statementPerformer.batch(
-							() =>
-									{ return internals.documents.attachmentUpdate(documentType, documentID,
-											attachmentID, info, content); });
-		
-		return results;
+		// Catch errors
+		try {
+				// Do it
+			this.statementPerformer.use(documentStorageID);
+			let	{mySQLResults, results} =
+						await internals.statementPerformer.batch(
+								() =>
+										{ return internals.documents.attachmentUpdate(documentType, documentID,
+												attachmentID, info, content); });
+			
+			return results;
+		} catch (error) {
+			// Error
+			if (this.statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return 'Invalid documentStorageID';
+			else
+				// Other
+				throw error;
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -218,15 +307,26 @@ module.exports = class DocumentStorage {
 		// Setup
 		let	internals = this.internals(documentStorageID);
 
-		// Do it
-		this.statementPerformer.use(documentStorageID);
-		let	{mySQLResults, results} =
-					await internals.statementPerformer.batch(
-							() =>
-									{ return internals.documents.attachmentRemove(documentType, documentID,
-											attachmentID); });
-		
-		return results;
+		// Catch errors
+		try {
+				// Do it
+			this.statementPerformer.use(documentStorageID);
+			let	{mySQLResults, results} =
+						await internals.statementPerformer.batch(
+								() =>
+										{ return internals.documents.attachmentRemove(documentType, documentID,
+												attachmentID); });
+			
+			return results;
+		} catch (error) {
+			// Error
+			if (this.statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return 'Invalid documentStorageID';
+			else
+				// Other
+				throw error;
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -252,12 +352,23 @@ module.exports = class DocumentStorage {
 		// Setup
 		let	internals = this.internals(documentStorageID);
 
-		// Do it
-		this.statementPerformer.use(documentStorageID);
-		let	{mySQLResults, results} =
-					await internals.statementPerformer.batch(() => { return internals.info.get(keys); });
+		// Catch errors
+		try {
+			// Do it
+			this.statementPerformer.use(documentStorageID);
+			let	{mySQLResults, results} =
+						await internals.statementPerformer.batch(() => { return internals.info.get(keys); });
 
-		return results;
+			return results;
+		} catch (error) {
+			// Error
+			if (this.statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return [null, 'Invalid documentStorageID'];
+			else
+				// Other
+				throw error;
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -265,9 +376,23 @@ module.exports = class DocumentStorage {
 		// Setup
 		let	internals = this.internals(documentStorageID);
 
-		// Do it
-		this.statementPerformer.use(documentStorageID);
-		await internals.statementPerformer.batch(() => internals.info.set(keysAndValues));
+		// Catch errors
+		try {
+			// Do it
+			this.statementPerformer.use(documentStorageID);
+			let	{mySQLResults, results} =
+						await internals.statementPerformer.batch(() => internals.info.set(keysAndValues));
+			
+			return results;
+		} catch (error) {
+			// Error
+			if (this.statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return 'Invalid documentStorageID';
+			else
+				// Other
+				throw error;
+		}
 	}
 
 	// Private methods

@@ -16,30 +16,25 @@
 //	   ]
 exports.getV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
-
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	keys = request.query.key;
-
-	// Validate input
-	if (!keys) {
-		// Must specify keys
-		response
-				.status(400)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send({message: 'missing key(s)'})
-		
-		return;
-	}
 
 	// Catch errors
 	try {
 		// Get info
-		let	results = await request.app.locals.documentStorage.infoGet(documentStorageID, keys);
-
-		response
-				.status(200)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send(results);
+		let	[results, error] = await request.app.locals.documentStorage.infoGet(documentStorageID, keys);
+		if (!error)
+			// Success
+			response
+					.status(200)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send(results);
+		else
+			// Error
+			response
+					.status(400)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send({error: error});
 	} catch (error) {
 		// Error
 		console.log(error.stack);
@@ -47,7 +42,7 @@ exports.getV1 = async (request, response) => {
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Uh Oh');
+				.send({error: 'Internal error'});
 	}
 };
 
@@ -61,35 +56,31 @@ exports.getV1 = async (request, response) => {
 //		]
 exports.setV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
-
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	info = request.body;
-
-	// Validate input
-	if (!info || (Object.keys(info).length == 0)) {
-		// Must specify info
-		response
-				.status(400)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send({message: 'missing info'});
-
-		return;
-	}
 
 	// Catch errors
 	try {
 		// Set info
-		await request.app.locals.documentStorage.infoSet(documentStorageID, info);
-		response
-				.status(200)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send();
+		let	error = await request.app.locals.documentStorage.infoSet(documentStorageID, info);
+		if (!error)
+			// Success
+			response
+					.status(200)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send({});
+		else
+			// Error
+			response
+					.status(400)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send({error: error});
 	} catch (error) {
 		// Error
 		console.log(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Uh Oh');
+				.send({error: 'Internal error'});
 	}
 };

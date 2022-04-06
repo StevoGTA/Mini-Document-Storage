@@ -44,28 +44,46 @@ module.exports = class Caches {
 	// Instance methods
 	//------------------------------------------------------------------------------------------------------------------
 	async register(info) {
-		// Setup
+		// Validate
+		if (!info || (typeof info != 'object'))
+			return 'Missing info';
+
 		let	name = info.name;
+		if (!name)
+			return 'Missing name';
+
 		let	documentType = info.documentType;
+		if (!documentType)
+			return 'Missing documentType';
+
 		let	relevantProperties = info.relevantProperties;
+		if (!relevantProperties)
+			return 'Missing relevantProperties';
+
 		let	valuesInfos = info.valuesInfos;
+		if (!valuesInfos)
+			return 'Missing valuesInfos';
 
-		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
-
-		// Validate info
-		if (!name || !documentType || !relevantProperties || !valuesInfos)
-			return 'Missing required info';
 		for (let valueInfo of valuesInfos) {
 			// Setup
 			let	name = valueInfo.name;
+			if (!name)
+				return 'Missing value name';
+
 			let	valueType = valueInfo.valueType;
-			let	selector = valueInfo.selector;
-			if (!name || !valueType || !selector)
-				return 'Missing required info';
+			if (!valueType)
+				return 'Missing value valueType';
 			if (valueType != 'integer')
-				return 'Unsupported value type: ' + valueType;
+				return 'Unsupported value valueType: ' + valueType;
+
+			let	selector = valueInfo.selector;
+			if (!selector)
+				return 'Missing value selector';
 		}
+
+		// Setup
+		let	internals = this.internals;
+		let	statementPerformer = internals.statementPerformer;
 
 		// Check if need to create Caches table
 		await internals.createTableIfNeeded(this.cachesTable);

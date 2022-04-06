@@ -35,38 +35,34 @@
 //		]
 exports.createV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	documentType = request.params.documentType;
-
 	let	infos = request.body;
-
-	// Validate input
-	if (!infos) {
-		// Must specify keys
-		response
-				.status(400)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send({message: 'missing info(s)'});
-
-		return;
-	}
 
 	// Catch errors
 	try {
 		// Create documents
-		let	results = await request.app.locals.documentStorage.documentCreate(documentStorageID, documentType, infos);
-
-		response
-				.status(200)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send(results);
+		let	[results, error] =
+					await request.app.locals.documentStorage.documentCreate(documentStorageID, documentType, infos);
+		if (!error)
+			// Success
+			response
+					.status(200)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send(results);
+		else
+			// Error
+			response
+					.status(400)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send({error: error});
 	} catch (error) {
 		// Error
 		console.log(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Uh Oh');
+				.send({error: 'Internal error'});
 	}
 };
 
@@ -109,44 +105,44 @@ exports.createV1 = async (request, response) => {
 //		]
 exports.getV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	documentType = request.params.documentType;
 
 	let	sinceRevision = request.query.sinceRevision;
 	let	maxDocumentCount = request.query.maxDocumentCount;
+	
 	var	documentIDs = request.query.id || [];
-	for (var i = 0; i < documentIDs.length; i++)
-	documentIDs[i] = documentIDs[i].replace(/%2B/g, '+').replace(/_/g, '/');	// Convert back to + and from _ to /
-
-	// Validate input
-	if ((documentIDs.length == 0) && !sinceRevision) {
-		// Must specify ids or sinceRevision
-		response
-				.status(400)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send({message: 'must specify id(s) or sinceRevision'});
-
-		return;
-	}
+	if (typeof documentIDs == 'string')
+		documentIDs = [documentIDs];
+	// Convert back to + and from _ to /
+	documentIDs = documentIDs.map(documentID => documentID.replace(/%2B/g, '+'));
 
 	// Catch errors
 	try {
 		// Check request type
 		if (sinceRevision) {
 			// Since revision
-			let	[totalCount, results] =
+			let	[totalCount, results, error] =
 						await request.app.locals.documentStorage.documentGetSinceRevision(documentStorageID,
 								documentType, sinceRevision, maxDocumentCount);
-			response
-					.status(200)
-					.set({
-						'Access-Control-Allow-Origin': '*',
-						'Access-Control-Allow-Credentials': true,
-						'Content-Range':
-								(totalCount > 0) ?
-										'documents 0-' + (results.length - 1) + '/' + totalCount : 'documents */0',
-					})
-					.send(results);
+			if (!error)
+				// Success
+				response
+						.status(200)
+						.set({
+							'Access-Control-Allow-Origin': '*',
+							'Access-Control-Allow-Credentials': true,
+							'Content-Range':
+									(totalCount > 0) ?
+											'documents 0-' + (results.length - 1) + '/' + totalCount : 'documents */0',
+						})
+						.send(results);
+			else
+				// Error
+				response
+						.status(400)
+						.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+						.send({error: error});
 		} else {
 			// DocumentIDs
 			let	[results, error] =
@@ -163,7 +159,7 @@ exports.getV1 = async (request, response) => {
 				response
 						.status(400)
 						.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-						.send(error);
+						.send({error: error});
 		}
 	} catch (error) {
 		// Error
@@ -171,7 +167,7 @@ exports.getV1 = async (request, response) => {
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Uh Oh');
+				.send({error: 'Internal error'});
 	}
 };
 
@@ -212,21 +208,9 @@ exports.getV1 = async (request, response) => {
 //		]
 exports.updateV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	documentType = request.params.documentType;
-
 	let	infos = request.body;
-
-	// Validate input
-	if (!infos) {
-		// Must specify keys
-		response
-				.status(400)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send({message: 'missing info(s)'});
-		
-		return;
-	}
 
 	// Catch errors
 	try {
@@ -244,14 +228,14 @@ exports.updateV1 = async (request, response) => {
 			response
 					.status(400)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-					.send(error);
+					.send({error: error});
 	} catch (error) {
 		// Error
 		console.log(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Uh Oh');
+				.send({error: 'Internal error'});
 	}
 };
 
@@ -264,23 +248,11 @@ exports.updateV1 = async (request, response) => {
 //	=> content (body)
 exports.addAttachmentV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	documentType = request.params.documentType;
-	let	documentID = request.params.documentID.replace(/%2B/g, '+').replace(/_/g, '/');
-
+	let	documentID = request.params.documentID.replace(/%2B/g, '+');
 	let info = request.body.info;
 	let	content = request.body.content;
-	
-	// Validate input
-	if (!info || !content) {
-		// Must specify keys
-		response
-				.status(400)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send({message: 'missing info and/or content'});
-
-		return;
-	}
 
 	// Catch errors
 	try {
@@ -299,14 +271,14 @@ exports.addAttachmentV1 = async (request, response) => {
 			response
 					.status(400)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-					.send(error);
+					.send({error: error});
 	} catch (error) {
 		// Error
 		console.log(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Uh Oh');
+				.send({error: 'Internal error'});
 	}
 };
 
@@ -320,10 +292,10 @@ exports.addAttachmentV1 = async (request, response) => {
 //	<= data
 exports.getAttachmentV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	documentType = request.params.documentType;
-	let	documentID = request.params.documentID.replace(/%2B/g, '+').replace(/_/g, '/');
-	let	attachmentID = request.params.attachmentID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentID = request.params.documentID.replace(/%2B/g, '+');
+	let	attachmentID = request.params.attachmentID.replace(/%2B/g, '+');
 
 	// Catch errors
 	try {
@@ -342,14 +314,14 @@ exports.getAttachmentV1 = async (request, response) => {
 			response
 					.status(400)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-					.send(error);
+					.send({error: error});
 	} catch (error) {
 		// Error
 		console.log(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Uh Oh');
+				.send({error: 'Internal error'});
 	}
 };
 
@@ -363,31 +335,19 @@ exports.getAttachmentV1 = async (request, response) => {
 //	=> content (body)
 exports.updateAttachmentV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	documentType = request.params.documentType;
-	let	documentID = request.params.documentID.replace(/%2B/g, '+').replace(/_/g, '/');
-	let	attachmentID = request.params.attachmentID.replace(/%2B/g, '+').replace(/_/g, '/');
-
+	let	documentID = request.params.documentID.replace(/%2B/g, '+');
+	let	attachmentID = request.params.attachmentID.replace(/%2B/g, '+');
 	let info = request.body.info;
 	let	content = request.body.content;
-	
-	// Validate input
-	if (!info || !content) {
-		// Must specify keys
-		response
-				.status(400)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send({message: 'missing info and/or content'});
-
-		return;
-	}
 
 	// Catch errors
 	try {
 		// Get info
 		let	error =
 					await request.app.locals.documentStorage.documentAttachmentUpdate(documentStorageID, documentType,
-							documentID, attachmentID, info, content);
+							documentID, attachmentID, info, Buffer.from(content, 'base64'));
 		if (!error)
 			// Success
 			response
@@ -399,14 +359,14 @@ exports.updateAttachmentV1 = async (request, response) => {
 			response
 					.status(400)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-					.send(error);
+					.send({error: error});
 	} catch (error) {
 		// Error
 		console.log(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Uh Oh');
+				.send({error: 'Internal error'});
 	}
 };
 
@@ -418,10 +378,10 @@ exports.updateAttachmentV1 = async (request, response) => {
 //	=> attachmentID (path)
 exports.removeAttachmentV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	documentType = request.params.documentType;
-	let	documentID = request.params.documentID.replace(/%2B/g, '+').replace(/_/g, '/');
-	let	attachmentID = request.params.attachmentID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentID = request.params.documentID.replace(/%2B/g, '+');
+	let	attachmentID = request.params.attachmentID.replace(/%2B/g, '+');
 
 	// Catch errors
 	try {
@@ -440,13 +400,13 @@ exports.removeAttachmentV1 = async (request, response) => {
 			response
 					.status(400)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-					.send(error);
+					.send({error: error});
 	} catch (error) {
 		// Error
 		console.log(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Uh Oh');
+				.send({error: 'Internal error'});
 	}
 };

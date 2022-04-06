@@ -41,6 +41,10 @@ module.exports = class Documents {
 	// Instance methods
 	//------------------------------------------------------------------------------------------------------------------
 	async create(documentType, infos) {
+		// Validate
+		if (!infos || !Array.isArray(infos) || (infos.length == 0))
+			return [null, 'Missing infos'];
+
 		// Setup
 		let	internals = this.internals;
 		let	statementPerformer = internals.statementPerformer;
@@ -59,71 +63,83 @@ module.exports = class Documents {
 		let	tables =
 					[this.documentsTable, documentInfo.infoTable, documentInfo.contentTable]
 							.concat(documentUpdateTracker.tables());
+		let	results =
+					await statementPerformer.batchLockedForWrite(tables,
+							() => { return (async() => {
+								// Setup
+								let	initialLastRevision = await this.getLastRevision(documentType);
+								var	lastRevision = initialLastRevision;
+								var	returnDocumentInfos = [];
+
+								// Iterate infos and queue statements
+								for (let info of infos) {
+									// Setup
+									let	now = new Date().toISOString();
+
+									let	documentID = info.documentID || uuidBase64.encode(uuid.v4());
+									let	creationDate = info.creationDate || now;
+									let	modificationDate = info.modificationDate || now;
+									let	revision = lastRevision + 1;
+									let	json = info.json;
+
+									let	idVariableName = "@id" + revision;
+
+									// Add document infos
+									returnDocumentInfos.push(
+											{
+												documentID: documentID,
+												creationDate: creationDate,
+												modificationDate: modificationDate,
+												revision: revision,
+											});
+									documentUpdateTracker.addDocumentInfo(
+											{
+												idVariable: idVariableName,
+												revision: revision,
+												active: true,
+												json: json,
+												updatedProperties: Object.keys(json),
+											});
+
+									// Queue
+									statementPerformer.queueInsertInto(documentInfo.infoTable,
+											[
+												{tableColumn: documentInfo.infoTable.documentIDTableColumn,
+														value: documentID},
+												{tableColumn: documentInfo.infoTable.revisionTableColumn,
+														value: revision},
+												{tableColumn: documentInfo.infoTable.activeTableColumn, value: 1},
+											]);
+									statementPerformer.queueSet(idVariableName, 'LAST_INSERT_ID()');
+									statementPerformer.queueInsertInto(documentInfo.contentTable,
+									[
+										{tableColumn: documentInfo.contentTable.idTableColumn,
+												variable: idVariableName},
+										{tableColumn: documentInfo.contentTable.creationDateTableColumn,
+												value: creationDate},
+										{tableColumn: documentInfo.contentTable.modificationDateTableColumn,
+												value: modificationDate},
+										{tableColumn: documentInfo.contentTable.jsonTableColumn, value: json},
+									]);
+									
+									// Update
+									lastRevision += 1;
+								}
+								this.queueUpdateLastRevision(documentType, lastRevision);
+								documentUpdateTracker.finalize();
+
+								return returnDocumentInfos;
+							})()});
 		
-		return await statementPerformer.batchLockedForWrite(tables, statementPerformer => { return (async() => {
-			// Setup
-			let	initialLastRevision = await this.getLastRevision(documentType);
-			var	lastRevision = initialLastRevision;
-			var	returnDocumentInfos = [];
-
-			// Iterate infos and queue statements
-			for (let info of infos) {
-				// Setup
-				let	now = new Date().toISOString();
-
-				let	documentID = info.documentID || uuidBase64.encode(uuid.v4());
-				let	creationDate = info.creationDate || now;
-				let	modificationDate = info.modificationDate || now;
-				let	revision = lastRevision + 1;
-				let	json = info.json;
-
-				let	idVariableName = "@id" + revision;
-
-				// Add document infos
-				returnDocumentInfos.push(
-						{
-							documentID: documentID,
-							creationDate: creationDate,
-							modificationDate: modificationDate,
-							revision: revision,
-						});
-				documentUpdateTracker.addDocumentInfo(
-						{
-							idVariable: idVariableName,
-							revision: revision,
-							active: true,
-							json: json,
-							updatedProperties: Object.keys(json),
-						});
-
-				// Queue
-				statementPerformer.queueInsertInto(documentInfo.infoTable,
-						[
-							{tableColumn: documentInfo.infoTable.documentIDTableColumn, value: documentID},
-							{tableColumn: documentInfo.infoTable.revisionTableColumn, value: revision},
-							{tableColumn: documentInfo.infoTable.activeTableColumn, value: 1},
-						]);
-				statementPerformer.queueSet(idVariableName, 'LAST_INSERT_ID()');
-				statementPerformer.queueInsertInto(documentInfo.contentTable,
-				[
-					{tableColumn: documentInfo.contentTable.idTableColumn, variable: idVariableName},
-					{tableColumn: documentInfo.contentTable.creationDateTableColumn, value: creationDate},
-					{tableColumn: documentInfo.contentTable.modificationDateTableColumn, value: modificationDate},
-					{tableColumn: documentInfo.contentTable.jsonTableColumn, value: json},
-				]);
-				
-				// Update
-				lastRevision += 1;
-			}
-			this.queueUpdateLastRevision(documentType, lastRevision);
-			documentUpdateTracker.finalize();
-
-			return returnDocumentInfos;
-		})()});
+		return [results, null];
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	async getSinceRevision(documentType, sinceRevision, maxDocumentCount) {
+		// Validate
+		if (!sinceRevision)
+			return [null, null, 'Missing sinceRevision'];
+
 		// Setup
 		let	internals = this.internals;
 		let	statementPerformer = internals.statementPerformer;
@@ -229,6 +245,10 @@ module.exports = class Documents {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async getForDocumentIDs(documentType, documentIDs) {
+		// Validate
+		if (documentIDs.length == 0)
+			return [null, 'Missing id(s)'];
+
 		// Setup
 		let	internals = this.internals;
 		let	statementPerformer = internals.statementPerformer;
@@ -258,7 +278,6 @@ module.exports = class Documents {
 				// Not all documents were found
 				return [null, 'Not all documentIDs were found'];
 
-
 			// Handle results
 			for (let result of results) {
 				// Update info
@@ -278,7 +297,7 @@ module.exports = class Documents {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
 				// No such table
-				return [[], 'No Documents'];
+				return [null, 'No Documents'];
 			else
 				// Other error
 				throw error;
@@ -313,44 +332,11 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getIDsForDocumentIDs(documentType, documentIDs) {
-		// Setup
-		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
-
-		let	documentInfo = this.documentInfo(documentType);
-
-		// Catch errors
-		try {
-			// Retrieve document ids
-			let	results =
-						await statementPerformer.select(documentInfo.infoTable,
-								[documentInfo.infoTable.idTableColumn, documentInfo.infoTable.documentIDTableColumn],
-								statementPerformer.where(documentInfo.infoTable.documentIDTableColumn, documentIDs));
-			if (results.length == documentIDs.length) {
-				// documentIDs found!
-				var	info = {};
-				for (let result of results)
-					// Update info
-					info[result.documentID] = result.id;
-
-				return [info, null];
-			} else
-				// Not all documentIDs not found
-				return [null, 'Not all documentIDs found'];
-		} catch (error) {
-			// Check error
-			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
-				// No such table
-				return [null, 'No Documents'];
-			else
-				// Other error
-				throw error;
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
 	async update(documentType, infos) {
+		// Validate
+		if (!infos || !Array.isArray(infos) || (infos.length == 0))
+			return [null, 'Missing infos'];
+
 		// Setup
 		let	internals = this.internals;
 		let	statementPerformer = internals.statementPerformer;
@@ -366,88 +352,97 @@ module.exports = class Documents {
 			let	tables =
 						[this.documentsTable, documentInfo.infoTable, documentInfo.contentTable]
 								.concat(documentUpdateTracker.tables());
+			let	results =
+						await statementPerformer.batchLockedForWrite(tables,
+								() => { return (async() => {
+									// Setup
+									let	initialLastRevision = await this.getLastRevision(documentType);
 
-			return await statementPerformer.batchLockedForWrite(tables, statementPerformer => { return (async() => {
-				// Setup
-				let	initialLastRevision = await this.getLastRevision(documentType);
+									// Retrieve current document info
+									let	results =
+												await statementPerformer.select(documentInfo.infoTable,
+														[
+															documentInfo.infoTable.idTableColumn,
+															documentInfo.infoTable.documentIDTableColumn,
+															documentInfo.infoTable.activeTableColumn,
+															documentInfo.contentTable.jsonTableColumn,
+														],
+														statementPerformer.innerJoin(documentInfo.contentTable,
+																documentInfo.infoTable.idTableColumn),
+														statementPerformer.where(
+																documentInfo.infoTable.documentIDTableColumn,
+																Object.values(infos).map(info => info.documentID)));
+									let	documentsByID =
+												Object.fromEntries(results.map(result => [result.documentID, result]));
 
-				// Retrieve current document info
-				let	results =
-							await statementPerformer.select(documentInfo.infoTable,
-									[
-										documentInfo.infoTable.idTableColumn,
-										documentInfo.infoTable.documentIDTableColumn,
-										documentInfo.infoTable.activeTableColumn,
-										documentInfo.contentTable.jsonTableColumn,
-									],
-									statementPerformer.innerJoin(documentInfo.contentTable,
-											documentInfo.infoTable.idTableColumn),
-									statementPerformer.where(documentInfo.infoTable.documentIDTableColumn,
-											Object.values(infos).map(info => info.documentID)));
-				let	documentsByID = Object.fromEntries(results.map(result => [result.documentID, result]));
+									// Setup
+									var	lastRevision = initialLastRevision;
+									var	returnDocumentInfos = [];
 
-				// Setup
-				var	lastRevision = initialLastRevision;
-				var	returnDocumentInfos = [];
+									// Iterate infos and queue statements
+									for (let info of infos) {
+										// Setup
+										let	documentID = info.documentID;
+										let	currentDocument = documentsByID[documentID];
+										if (!currentDocument)
+											return [null, 'Document for ' + documentID + ' not found.'];
+										
+										let	id = currentDocument.id;
+										let	revision = lastRevision + 1;
+										let	active = info.active;
+										let	modificationDate = new Date().toISOString();
 
-				// Iterate infos and queue statements
-				for (let info of infos) {
-					// Setup
-					let	documentID = info.documentID;
-					let	currentDocument = documentsByID[documentID];
-					if (!currentDocument)
-						return [null, 'Document for ' + documentID + ' not found.'];
-					
-					let	id = currentDocument.id;
-					let	revision = lastRevision + 1;
-					let	active = info.active;
-					let	modificationDate = new Date().toISOString();
+										var	jsonObject =
+													Object.assign(JSON.parse(currentDocument.json.toString()),
+															info.updated);
+										info.removed.forEach(key => delete jsonObject[key]);
 
-					var	jsonObject = Object.assign(JSON.parse(currentDocument.json.toString()), info.updated);
-					info.removed.forEach(key => delete jsonObject[key]);
+										// Add document infos
+										returnDocumentInfos.push(
+												{
+													documentID: documentID,
+													revision: revision,
+													active: active,
+													modificationDate: modificationDate,
+													json: jsonObject,
+												});
+										documentUpdateTracker.addDocumentInfo(
+												{
+													id: id,
+													revision: revision,
+													active: active,
+													json: jsonObject,
+													updatedProperties: Object.keys(info.updated).concat(info.removed),
+												});
 
-					// Add document infos
-					returnDocumentInfos.push(
-							{
-								documentID: documentID,
-								revision: revision,
-								active: active,
-								modificationDate: modificationDate,
-								json: jsonObject,
-							});
-					documentUpdateTracker.addDocumentInfo(
-							{
-								id: id,
-								revision: revision,
-								active: active,
-								json: jsonObject,
-								updatedProperties: Object.keys(info.updated).concat(info.removed),
-							});
+										// Queue
+										statementPerformer.queueUpdate(documentInfo.infoTable,
+												[
+													{tableColumn: documentInfo.infoTable.revisionTableColumn,
+															value: revision},
+													{tableColumn: documentInfo.infoTable.activeTableColumn,
+															value: active},
+												],
+												statementPerformer.where(documentInfo.infoTable.idTableColumn, id));
+										statementPerformer.queueUpdate(documentInfo.contentTable,
+												[
+													{tableColumn: documentInfo.contentTable.modificationDateTableColumn,
+															value: modificationDate},
+													{tableColumn: documentInfo.contentTable.jsonTableColumn,
+															value: JSON.stringify(jsonObject)},
+												],
+												statementPerformer.where(documentInfo.contentTable.idTableColumn, id));
+										
+										// Update
+										lastRevision += 1;
+									}
+									this.queueUpdateLastRevision(documentType, lastRevision);
+									documentUpdateTracker.finalize();
 
-					// Queue
-					statementPerformer.queueUpdate(documentInfo.infoTable,
-							[
-								{tableColumn: documentInfo.infoTable.revisionTableColumn, value: revision},
-								{tableColumn: documentInfo.infoTable.activeTableColumn, value: active},
-							],
-							statementPerformer.where(documentInfo.infoTable.idTableColumn, id));
-					statementPerformer.queueUpdate(documentInfo.contentTable,
-							[
-								{tableColumn: documentInfo.contentTable.modificationDateTableColumn,
-										value: modificationDate},
-								{tableColumn: documentInfo.contentTable.jsonTableColumn,
-										value: JSON.stringify(jsonObject)},
-							],
-							statementPerformer.where(documentInfo.contentTable.idTableColumn, id));
-					
-					// Update
-					lastRevision += 1;
-				}
-				this.queueUpdateLastRevision(documentType, lastRevision);
-				documentUpdateTracker.finalize();
+									return [returnDocumentInfos, null];
+								})()});
 
-				return [returnDocumentInfos, null];
-			})()});
+			return results;
 		} catch (error) {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
@@ -461,6 +456,12 @@ module.exports = class Documents {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async attachmentAdd(documentType, documentID, info, content) {
+		// Validate
+		if (!info)
+			return [null, 'Missing info'];
+		if (!content)
+			return [null, 'Missing content'];
+
 		// Setup
 		let	internals = this.internals;
 		let	statementPerformer = internals.statementPerformer;
@@ -478,31 +479,33 @@ module.exports = class Documents {
 
 		// Perform with tables locked
 		let	tables = [this.documentsTable, documentInfo.infoTable, documentInfo.attachmentTable];
+		
+		return await statementPerformer.batchLockedForWrite(tables,
+				() => { return (async() => {
+					// Setup
+					let	initialLastRevision = await this.getLastRevision(documentType);
 
-		return await statementPerformer.batchLockedForWrite(tables, statementPerformer => { return (async() => {
-			// Setup
-			let	initialLastRevision = await this.getLastRevision(documentType);
+					// Add attachment
+					let	revision = initialLastRevision + 1;
+					let	attachmentID = uuidBase64.encode(uuid.v4());
 
-			// Add attachment
-			let	revision = initialLastRevision + 1;
-			let	attachmentID = uuidBase64.encode(uuid.v4());
-
-			statementPerformer.queueInsertInto(documentInfo.attachmentTable,
-					[
-						{tableColumn: documentInfo.attachmentTable.idTableColumn, value: id},
-						{tableColumn: documentInfo.attachmentTable.attachmentIDTableColumn,
-								value: attachmentID},
-						{tableColumn: documentInfo.attachmentTable.revisionTableColumn, value: 1},
-						{tableColumn: documentInfo.attachmentTable.infoTableColumn, value: info},
-						{tableColumn: documentInfo.attachmentTable.contentTableColumn, value: content},
-					]);
-			statementPerformer.queueUpdate(documentInfo.infoTable,
-					[{tableColumn: documentInfo.infoTable.revisionTableColumn, value: revision}],
-					statementPerformer.where(documentInfo.infoTable.idTableColumn, id));
-			this.queueUpdateLastRevision(documentType, revision);
-			
-			return [{id: attachmentID}, null];
-		})()});
+					statementPerformer.queueInsertInto(documentInfo.attachmentTable,
+							[
+								{tableColumn: documentInfo.attachmentTable.idTableColumn, value: id},
+								{tableColumn: documentInfo.attachmentTable.attachmentIDTableColumn,
+										value: attachmentID},
+								{tableColumn: documentInfo.attachmentTable.revisionTableColumn, value: 1},
+								{tableColumn: documentInfo.attachmentTable.infoTableColumn, value: info},
+								{tableColumn: documentInfo.attachmentTable.contentTableColumn,
+										value: content},
+							]);
+					statementPerformer.queueUpdate(documentInfo.infoTable,
+							[{tableColumn: documentInfo.infoTable.revisionTableColumn, value: revision}],
+							statementPerformer.where(documentInfo.infoTable.idTableColumn, id));
+					this.queueUpdateLastRevision(documentType, revision);
+					
+					return [{id: attachmentID}, null];
+				})()});
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -527,7 +530,8 @@ module.exports = class Documents {
 			else
 				// Error
 				return [null,
-						'Attachment ' + attachmentID + ' for ' + documentID + ' of type ' + documentType + ' not found.'];
+						'Attachment ' + attachmentID + ' for ' + documentID + ' of type ' + documentType +
+								' not found.'];
 		} catch (error) {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
@@ -543,6 +547,12 @@ module.exports = class Documents {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async attachmentUpdate(documentType, documentID, attachmentID, info, content) {
+		// Validate
+		if (!info)
+			return 'Missing info';
+		if (!content)
+			return 'Missing content';
+
 		// Setup
 		let	internals = this.internals;
 		let	statementPerformer = internals.statementPerformer;
@@ -558,7 +568,7 @@ module.exports = class Documents {
 		// Perform with tables locked
 		let	tables = [this.documentsTable, documentInfo.infoTable, documentInfo.attachmentTable];
 
-		return await statementPerformer.batchLockedForWrite(tables, statementPerformer => { return (async() => {
+		return await statementPerformer.batchLockedForWrite(tables, () => { return (async() => {
 			// Catch errors
 			try {
 				// Setup
@@ -620,33 +630,219 @@ module.exports = class Documents {
 		// Perform with tables locked
 		let	tables = [this.documentsTable, documentInfo.infoTable, documentInfo.attachmentTable];
 
-		return await statementPerformer.batchLockedForWrite(tables, statementPerformer => { return (async() => {
-			// Catch errors
-			try {
-				// Setup
-				let	initialLastRevision = await this.getLastRevision(documentType);
+		return await statementPerformer.batchLockedForWrite(tables,
+				() => { return (async() => {
+					// Catch errors
+					try {
+						// Setup
+						let	initialLastRevision = await this.getLastRevision(documentType);
 
-				// Update
-				let	revision = initialLastRevision + 1;
-				statementPerformer.queueDelete(documentInfo.attachmentTable,
-						statementPerformer.where(documentInfo.attachmentTable.attachmentIDTableColumn, attachmentID));
-				statementPerformer.queueUpdate(documentInfo.infoTable,
-						[{tableColumn: documentInfo.infoTable.revisionTableColumn, value: revision}],
-						statementPerformer.where(documentInfo.infoTable.idTableColumn, id));
-				this.queueUpdateLastRevision(documentType, revision);
-				
-				return null;
-			} catch (error) {
-				// Check error
-				if (error.message.startsWith('ER_NO_SUCH_TABLE'))
-					// No such table
-					return 'Attachment ' + attachmentID + ' for ' + documentID + ' of type ' + documentType +
-							' not found.';
-				else
-					// Other error
-					throw error;
+						// Update
+						let	revision = initialLastRevision + 1;
+						statementPerformer.queueDelete(documentInfo.attachmentTable,
+								statementPerformer.where(documentInfo.attachmentTable.attachmentIDTableColumn,
+										attachmentID));
+						statementPerformer.queueUpdate(documentInfo.infoTable,
+								[{tableColumn: documentInfo.infoTable.revisionTableColumn, value: revision}],
+								statementPerformer.where(documentInfo.infoTable.idTableColumn, id));
+						this.queueUpdateLastRevision(documentType, revision);
+						
+						return null;
+					} catch (error) {
+						// Check error
+						if (error.message.startsWith('ER_NO_SUCH_TABLE'))
+							// No such table
+							return 'Attachment ' + attachmentID + ' for ' + documentID + ' of type ' + documentType +
+									' not found.';
+						else
+							// Other error
+							throw error;
+					}
+				})()});
+	}
+
+	// Internal methods
+	//------------------------------------------------------------------------------------------------------------------
+	async getIDsForDocumentIDs(documentType, documentIDs) {
+		// Setup
+		let	internals = this.internals;
+		let	statementPerformer = internals.statementPerformer;
+
+		let	documentInfo = this.documentInfo(documentType);
+
+		// Catch errors
+		try {
+			// Retrieve document ids
+			let	results =
+						await statementPerformer.select(documentInfo.infoTable,
+								[documentInfo.infoTable.idTableColumn, documentInfo.infoTable.documentIDTableColumn],
+								statementPerformer.where(documentInfo.infoTable.documentIDTableColumn, documentIDs));
+			if (results.length == documentIDs.length) {
+				// documentIDs found!
+				var	info = {};
+				for (let result of results)
+					// Update info
+					info[result.documentID] = result.id;
+
+				return [info, null];
+			} else
+				// Not all documentIDs not found
+				return [null, 'Not all documentIDs found'];
+		} catch (error) {
+			// Check error
+			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
+				// No such table
+				return [null, 'No Documents'];
+			else
+				// Other error
+				throw error;
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	getDocumentInfoInnerJoin(documentType, idTableColumn) {
+		// Setup
+		let	documentInfo = this.documentInfo(documentType);
+
+		return this.internals.statementPerformer.innerJoin(documentInfo.infoTable, documentInfo.infoTable.idTableColumn,
+				idTableColumn);
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	getDocumentInnerJoin(documentType, idTableColumn) {
+		// Setup
+		let	documentInfo = this.documentInfo(documentType);
+
+		return this.internals.statementPerformer.innerJoin(
+				[
+					{
+						table: documentInfo.infoTable,
+						tableColumn: documentInfo.infoTable.idTableColumn,
+						joinTableColumn: idTableColumn,
+					},
+					{
+						table: documentInfo.contentTable,
+						tableColumn: documentInfo.contentTable.idTableColumn,
+						joinTableColumn: idTableColumn,
+					},
+				]);
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async getDocumentInfos(documentType, table, innerJoin, where, limit) {
+		// Setup
+		let	internals = this.internals;
+		let	statementPerformer = internals.statementPerformer;
+
+		let	documentInfo = this.documentInfo(documentType);
+
+		// Catch errors
+		var	ids = [];
+		var	documentsByID = {};
+		try {
+			// Retrieve relevant documents
+			let	results =
+						await statementPerformer.select(table,
+								[
+									documentInfo.infoTable.documentIDTableColumn,
+									documentInfo.infoTable.revisionTableColumn,
+								],
+								innerJoin, where, limit);
+			
+			var	infos = {};
+			for (let result of results)
+				// Update infos
+				infos[result.documentID] = result.revision;
+			
+			return [infos, null];
+		} catch (error) {
+			// Check error
+			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
+				// No such table
+				return [null, 'No Documents'];
+			else
+				// Other error
+				throw error;
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async getDocuments(documentType, table, innerJoin, where, limit) {
+		// Setup
+		let	internals = this.internals;
+		let	statementPerformer = internals.statementPerformer;
+
+		let	documentInfo = this.documentInfo(documentType);
+
+		// Catch errors
+		var	ids = [];
+		var	documentsByID = {};
+		try {
+			// Retrieve relevant documents
+			let	results =
+						await statementPerformer.select(table,
+								[
+									documentInfo.infoTable.idTableColumn,
+									documentInfo.infoTable.documentIDTableColumn,
+									documentInfo.infoTable.revisionTableColumn,
+									documentInfo.infoTable.activeTableColumn,
+									documentInfo.contentTable.creationDateTableColumn,
+									documentInfo.contentTable.modificationDateTableColumn,
+									documentInfo.contentTable.jsonTableColumn,
+								],
+								innerJoin, where, limit);
+
+			// Handle results
+			for (let result of results) {
+				// Update info
+				ids.push(result.id);
+				documentsByID[result.id] =
+						{
+							documentID: result.documentID,
+							revision: result.revision,
+							active: result.active,
+							creationDate: result.creationDate,
+							modificationDate: result.modificationDate,
+							json: JSON.parse(result.json.toString()),
+							attachments: {},
+						};
 			}
-		})()});
+		} catch (error) {
+			// Check error
+			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
+				// No such table
+				return [null, 'No Documents'];
+			else
+				// Other error
+				throw error;
+		}
+
+		// Retrieve attachments
+		try {
+			// Perform
+			let	results =
+						await statementPerformer.select(documentInfo.attachmentTable,
+								[
+									documentInfo.attachmentTable.idTableColumn,
+									documentInfo.attachmentTable.attachmentIDTableColumn,
+									documentInfo.attachmentTable.revisionTableColumn,
+									documentInfo.attachmentTable.infoTableColumn,
+								],
+								statementPerformer.where(documentInfo.attachmentTable.idTableColumn, ids));
+			
+			// Handle results
+			for (let result of results)
+				// Add attachment info
+				documentsByID[result.id].attachments[result.attachmentID] =
+						{revision: result.revision, info: JSON.parse(result.info.toString())};
+		} catch (error) {
+			// Check error
+			if (!error.message.startsWith('ER_NO_SUCH_TABLE'))
+				// Other error
+				throw error;
+		}
+
+		return [Object.values(documentsByID), null];
 	}
 
 	// Private methods

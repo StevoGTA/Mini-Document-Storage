@@ -649,18 +649,19 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			// Iterate all infos
 			documentCreateInfos.forEach() {
 				// Add document
+				let	documentID = $0.documentID ?? UUID().base64EncodedString
 				let	documentBacking =
-							MDSSQLiteDocumentBacking(documentType: documentType, documentID: $0.documentID,
+							MDSSQLiteDocumentBacking(documentType: documentType, documentID: documentID,
 									creationDate: $0.creationDate, modificationDate: $0.modificationDate,
 									propertyMap: $0.propertyMap, with: self.databaseManager)
 				self.documentBackingCache.add(
-						[MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>(documentID: $0.documentID,
+						[MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>(documentID: documentID,
 								documentBacking: documentBacking)])
 
 				// Check if we have creation proc
 				if let creationProc = self.documentCreationProcMap.value(for: documentType) {
 					// Create document
-					let	document = creationProc($0.documentID, self)
+					let	document = creationProc(documentID, self)
 
 					// Update collections and indexes
 					batchQueue.add(

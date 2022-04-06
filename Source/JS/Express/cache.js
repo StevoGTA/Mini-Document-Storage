@@ -23,15 +23,14 @@
 //				 		   ]
 exports.registerV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
-
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	info = request.body || {};
 
 	// Catch errors
 	try {
 		// Get info
-		let	result = await request.app.locals.documentStorage.cacheRegister(documentStorageID, info);
-		if (!result)
+		let	error = await request.app.locals.documentStorage.cacheRegister(documentStorageID, info);
+		if (!error)
 			// Success
 			response
 					.status(200)
@@ -41,7 +40,7 @@ exports.registerV1 = async (request, response) => {
 			response
 					.status(400)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-					.send({message: result});
+					.send({error: error});
 	} catch (error) {
 		// Error
 		console.log(error.stack);
@@ -49,6 +48,6 @@ exports.registerV1 = async (request, response) => {
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Uh Oh');
+				.send({error: 'Internal error'});
 	}
 };

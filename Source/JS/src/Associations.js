@@ -38,17 +38,25 @@ module.exports = class Associations {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async register(info) {
-		// Setup
-		let	name = info.name;
-		let	fromDocumentType = info.fromDocumentType;
-		let	toDocumentType = info.toDocumentType;
+		// Validate
+		if (!info || (typeof info != 'object'))
+			return 'Missing info';
 
+		let	name = info.name;
+		if (!name)
+			return 'Missing name';
+		
+		let	fromDocumentType = info.fromDocumentType;
+		if (!fromDocumentType)
+			return 'Missing fromDocumentType';
+
+		let	toDocumentType = info.toDocumentType;
+		if (!toDocumentType)
+			return 'Missing toDocumentType';
+
+		// Setup
 		let	internals = this.internals;
 		let	statementPerformer = internals.statementPerformer;
-
-		// Validate info
-		if (!name || !fromDocumentType || !toDocumentType)
-			return 'Missing required info';
 
 		// Check if need to create Associations table
 		await internals.createTableIfNeeded(this.associationsTable);
@@ -74,10 +82,7 @@ module.exports = class Associations {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async update(name, infos) {
-		// Setup
-		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
-
+		// Validate
 		let	fromDocumentIDs = new Set();
 		let	toDocumentIDs = new Set();
 		for (let info of infos) {
@@ -104,6 +109,10 @@ module.exports = class Associations {
 			fromDocumentIDs.add(fromID);
 			toDocumentIDs.add(toID);
 		}
+
+		// Setup
+		let	internals = this.internals;
+		let	statementPerformer = internals.statementPerformer;
 
 		// Get association
 		let	[association, associationError] = await this.getAssociation(name);
@@ -140,6 +149,56 @@ module.exports = class Associations {
 								association.update(action, fromID, toID);
 							}
 						});
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async getDocumentInfos(name, fromDocumentID, toDocumentID, startIndex, documentCount, fullInfo) {
+		// Validate
+		if ((!fromDocumentID && !toDocumentID) || (fromDocumentID && toDocumentID))
+			return [null, null, 'Must specify one of fromDocumentID or toDocumentID'];
+
+		// Setup
+		let	internals = this.internals;
+		let	statementPerformer = internals.statementPerformer;
+
+		// Get association
+		let	[association, associationError] = await this.getAssociation(name);
+		if (associationError)
+			// Error
+			return [null, null, associationError];
+		
+
+		// Compose where
+		let	documentType = fromDocumentID ? association.fromType : association.toType;
+		let	idTableColumn = fromDocumentID ? association.table.fromIDTableColumn : association.table.toIDTableColumn;
+		let	documentID = fromDocumentID ? fromDocumentID : toDocumentID;
+		let	[documentInfo, documentInfoError] = await internals.getIDsForDocumentIDs(documentType, [documentID]);
+		if (documentInfoError)
+			return [null, null, documentInfoError];
+		
+		let	where = statementPerformer.where(idTableColumn, documentInfo[documentID]);
+
+		// Query count
+		let	totalCount = await statementPerformer.count(association.table, where);
+
+		// Check for full info
+		var	results, resultsError;
+		if (fullInfo == 0) {
+			// Document info
+			[results, resultsError] =
+					await internals.documents.getDocumentInfos(documentType, association.table,
+							internals.documents.getDocumentInfoInnerJoin(documentType, idTableColumn),
+							where, statementPerformer.limit(startIndex + ',' + documentCount));
+		} else
+			// Documents
+			[results, resultsError] =
+					await internals.documents.getDocuments(documentType, association.table,
+							internals.documents.getDocumentInnerJoin(documentType, idTableColumn),
+							where, statementPerformer.limit(startIndex + ',' + documentCount));
+		if (resultsError)
+			return [null, null, resultsError];
+		
+		return [totalCount, results, null];
 	}
 
 	// Private methods

@@ -18,7 +18,7 @@ class InfoTransactionTests : XCTestCase {
 		let	config = Config.shared
 
 		// Set some info
-		let	(_, infoSetError) =
+		let	(infoSetResponse, infoSetInfo, infoSetError) =
 					config.httpEndpointClient.infoSet(documentStorageID: config.documentStorageID,
 							info: [
 									"abc": "abc",
@@ -26,38 +26,48 @@ class InfoTransactionTests : XCTestCase {
 									"xyz": "xyz",
 								  ])
 
-		// Handle results
-		if infoSetError != nil {
-			// Error
-			XCTFail("\(infoSetError!)")
+		// Evaluate results
+		XCTAssertNotNil(infoSetResponse, "set did not receive response")
+		if infoSetResponse != nil {
+			XCTAssertEqual(infoSetResponse!.statusCode, 200, "set unexpected response status")
 		}
 
+		XCTAssertNotNil(infoSetInfo, "set did not receive info")
+		if infoSetInfo != nil {
+			XCTAssert(infoSetInfo!.isEmpty, "set did not receive empty info")
+		}
+
+		XCTAssertNil(infoSetError, "set received error \(infoSetError!)")
+
 		// Get some info
-		let	(_, info, infoGetError) =
+		let	(infoGetResponse, infoGetInfo, infoGetError) =
 					config.httpEndpointClient.infoGet(documentStorageID: config.documentStorageID,
 							keys: ["abc", "def", "xyz"])
 
-		// Handle results
-		if let results = info {
-			// Success
-			var	value = results["abc"]
-			XCTAssert(value != nil)
-			XCTAssert(value == "abc")
-
-			value = results["def"]
-			XCTAssert(value != nil)
-			XCTAssert(value == "def")
-
-			value = results["xyz"]
-			XCTAssert(value != nil)
-			XCTAssert(value == "xyz")
-
-			value = results["123"]
-			XCTAssert(value == nil)
-		} else {
-			// Error
-			XCTFail("\(infoGetError!)")
+		// Evaluate results
+		XCTAssertNotNil(infoGetResponse, "get did not receive response")
+		if infoGetResponse != nil {
+			XCTAssertEqual(infoGetResponse!.statusCode, 200, "get unexpected response status")
 		}
 
+		XCTAssert(infoGetInfo != nil, "get did not receive info")
+		if infoGetInfo != nil {
+			XCTAssert(infoGetInfo!["abc"] != nil, "get did not receive abc in info")
+			if infoGetInfo!["abc"] != nil {
+				XCTAssertEqual(infoGetInfo!["abc"], "abc", "get did not receive expected value for key abc")
+			}
+
+			XCTAssert(infoGetInfo!["def"] != nil, "get did not receive def in info")
+			if infoGetInfo!["def"] != nil {
+				XCTAssertEqual(infoGetInfo!["def"], "def", "get did not receive expected value for key def")
+			}
+
+			XCTAssert(infoGetInfo!["xyz"] != nil, "get did not receive xyz in info")
+			if infoGetInfo!["xyz"] != nil {
+				XCTAssertEqual(infoGetInfo!["xyz"], "xyz", "get did not receive expected value for key xyz")
+			}
+		}
+
+		XCTAssertNil(infoGetError, "get received error \(infoGetError!)")
 	}
 }

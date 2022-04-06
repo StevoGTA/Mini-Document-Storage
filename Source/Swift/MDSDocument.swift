@@ -77,14 +77,14 @@ open class MDSDocument : Hashable {
 	struct CreateInfo {
 
 		// MARK: Properties
-		let	documentID :String
+		let	documentID :String?
 		let	creationDate :Date?
 		let	modificationDate :Date?
 		let	propertyMap :[String : Any]
 
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
-		init(documentID :String, creationDate :Date? = nil, modificationDate :Date? = nil,
+		init(documentID :String? = nil, creationDate :Date? = nil, modificationDate :Date? = nil,
 				propertyMap :[String : Any]) {
 			// Store
 			self.documentID = documentID

@@ -16,4 +16,8 @@ class Config {
 
 			let	httpEndpointClient = HTTPEndpointClient(scheme: "http", hostName: "localhost", port: 1138)
 			let	documentStorageID = "Sandbox"
+
+			let	documentType = "test"
+			let	parentDocumentType = "parent"
+			let	childDocumentType = "child"
 }

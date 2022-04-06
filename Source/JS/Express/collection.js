@@ -22,15 +22,14 @@
 //		}
 exports.registerV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
-
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	info = request.body;
 
 	// Catch errors
 	try {
 		// Get info
-		let	result = await request.app.locals.documentStorage.collectionRegister(documentStorageID, info);
-		if (!result)
+		let	error = await request.app.locals.documentStorage.collectionRegister(documentStorageID, info);
+		if (!error)
 			// Success
 			response
 					.status(200)
@@ -40,14 +39,14 @@ exports.registerV1 = async (request, response) => {
 			response
 					.status(400)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-					.send({message: result});
+					.send({error: error});
 	} catch (error) {
 		// Error
 		console.log(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Uh Oh');
+				.send({error: 'Internal error'});
 	}
 };
 
@@ -60,13 +59,13 @@ exports.registerV1 = async (request, response) => {
 //	<= count in header
 exports.getDocumentCountV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	name = request.params.name.replace(/%2B/g, '+').replace(/_/g, '/');
 
 	// Catch errors
 	try {
 		// Get info
-		let	[count, upToDate] =
+		let	[count, upToDate, error] =
 					await request.app.locals.documentStorage.collectionGetDocumentCount(documentStorageID, name);
 		if (upToDate)
 			// Success
@@ -86,7 +85,7 @@ exports.getDocumentCountV1 = async (request, response) => {
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Uh Oh');
+				.send({error: 'Internal error'});
 	}
 };
 
@@ -104,7 +103,7 @@ exports.getDocumentCountV1 = async (request, response) => {
 //		}
 exports.getDocumentInfosV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	name = request.params.name.replace(/%2B/g, '+').replace(/_/g, '/');
 
 	let	startIndex = request.query.startIndex || 0;
@@ -112,7 +111,7 @@ exports.getDocumentInfosV1 = async (request, response) => {
 	// Catch errors
 	try {
 		// Get info
-		let	[totalCount, results, upToDate] =
+		let	[totalCount, results, upToDate, error] =
 					await request.app.locals.documentStorage.collectionGetDocumentInfos(documentStorageID, name,
 							startIndex);
 		if (upToDate) {
@@ -142,6 +141,6 @@ exports.getDocumentInfosV1 = async (request, response) => {
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Uh Oh');
+				.send({error: 'Internal error'});
 	}
 };

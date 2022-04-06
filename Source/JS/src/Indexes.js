@@ -45,20 +45,37 @@ module.exports = class Indexes {
 	// Instance methods
 	//------------------------------------------------------------------------------------------------------------------
 	async register(info) {
-		// Setup
-		let	name = info.name;
-		let	documentType = info.documentType;
-		let	relevantProperties = info.relevantProperties;
-		let	isUpToDate = info.isUpToDate;
-		let	keysSelector = info.keysSelector;
-		let	keysSelectorInfo = info.keysSelectorInfo;
+		// Validate
+		if (!info || (typeof info != 'object'))
+			return 'Missing info';
 
+		let	name = info.name;
+		if (!name)
+			return 'Missing name';
+
+		let	documentType = info.documentType;
+		if (!documentType)
+			return 'Missing documentType';
+
+		let	relevantProperties = info.relevantProperties;
+		if (!relevantProperties)
+			return 'Missing relevantProperties';
+
+		let	isUpToDate = info.isUpToDate;
+		if (!isUpToDate)
+			return 'Missing isUpToDate';
+
+		let	keysSelector = info.keysSelector;
+		if (!keysSelector)
+			return 'Missing keysSelector';
+
+		let	keysSelectorInfo = info.keysSelectorInfo;
+		if (!keysSelectorInfo)
+			return 'Missing keysSelectorInfo';
+
+		// Setup
 		let	internals = this.internals;
 		let	statementPerformer = internals.statementPerformer;
-
-		// Validate info
-		if (!name || !documentType || !relevantProperties || !keysSelector || !keysSelectorInfo)
-			return 'Missing required info';
 
 		// Check if need to create Indexes table
 		await internals.createTableIfNeeded(this.indexesTable);

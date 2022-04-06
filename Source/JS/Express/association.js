@@ -16,15 +16,14 @@
 //		}
 exports.registerV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
-
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	info = request.body;
 
 	// Catch errors
 	try {
 		// Get info
-		let	result = await request.app.locals.documentStorage.associationRegister(documentStorageID, info);
-		if (!result)
+		let	error = await request.app.locals.documentStorage.associationRegister(documentStorageID, info);
+		if (!error)
 			// Success
 			response
 					.status(200)
@@ -34,14 +33,14 @@ exports.registerV1 = async (request, response) => {
 			response
 					.status(400)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-					.send({message: result});
+					.send({error: error});
 	} catch (error) {
 		// Error
 		console.log(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Uh Oh');
+				.send({error: 'Internal error'});
 	}
 };
 
@@ -59,21 +58,9 @@ exports.registerV1 = async (request, response) => {
 //		]
 exports.updateV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	name = request.params.name;
-
 	let	infos = request.body;
-
-	// Validate input
-	if (!infos) {
-		// Must specify keys
-		response
-				.status(400)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send({message: 'missing info'});
-		
-		return;
-	}
 
 	// Catch errors
 	try {
@@ -90,14 +77,14 @@ exports.updateV1 = async (request, response) => {
 			response
 					.status(400)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-					.send(error);
+					.send({error: error});
 	} catch (error) {
 		// Error
 		console.log(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Uh Oh');
+				.send({error: 'Internal error'});
 	}
 };
 
@@ -116,54 +103,47 @@ exports.updateV1 = async (request, response) => {
 //		}
 exports.getDocumentInfosV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	name = request.params.name;
-
 	let	fromDocumentID = request.query.fromID;
 	let	toDocumentID = request.query.toID;
 	let	startIndex = request.query.startIndex || 0;
 	let	fullInfo = request.query.fullInfo || 0;
 
-	// Validate input
-	if ((!fromDocumentID && !toDocumentID) || (fromDocumentID && toDocumentID)) {
-		// Must specify fromDocumentID or toDocumentID
-		response
-				.status(400)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send({message: 'must specify fromDocumentID or toDocumentID'});
-		
-		return;
-	}
-
 	// Catch errors
 	try {
 		// Get info
-		let	documentStorage = new DocumentStorage(config);
-		let	[totalCount, results] =
+		let	[totalCount, results, error] =
 					await request.app.locals.documentStorage.associationGetDocumentInfos(documentStorageID, name,
-							fromDocumentID, toDocumentID, startIndex, fullInfo == 1);
+							fromDocumentID, toDocumentID, startIndex, 150000, fullInfo == 1);
+		if (!error) {
+			// Success
+			let	endIndex = startIndex + Object.keys(results).length - 1;
+			let	contentRange =
+						(totalCount > 0) ?
+								'documents ' + startIndex + '-' + endIndex + '/' + totalCount : 'documents */0';
 
-		// Success
-		let	endIndex = startIndex + Object.keys(results).length - 1;
-		let	contentRange =
-					(totalCount > 0) ?
-							'documents ' + startIndex + '-' + endIndex + '/' + totalCount : 'documents */0';
-
-		response
-				.status(200)
-				.set({
-					'Access-Control-Allow-Origin': '*',
-					'Access-Control-Allow-Credentials': true,
-					'Content-Range': contentRange,
-				})
-				.send(results);
+			response
+					.status(200)
+					.set({
+						'Access-Control-Allow-Origin': '*',
+						'Access-Control-Allow-Credentials': true,
+						'Content-Range': contentRange,
+					})
+					.send(results);
+		} else
+			// Error
+			response
+					.status(400)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send({error: error});
 	} catch (error) {
 		// Error
 		console.log(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Uh Oh');
+				.send({error: 'Internal error'});
 	}
 };
 
@@ -179,7 +159,7 @@ exports.getDocumentInfosV1 = async (request, response) => {
 //	<= count
 exports.getValueV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	name = request.params.name;
 
 	let	toDocumentID = request.query.toID;
@@ -193,7 +173,7 @@ exports.getValueV1 = async (request, response) => {
 		response
 				.status(400)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send({message: 'must specify toID, action, cacheName, and cacheValueName'});
+				.send({error: 'must specify toID, action, cacheName, and cacheValueName'});
 
 		return;
 	}
@@ -201,7 +181,7 @@ exports.getValueV1 = async (request, response) => {
 	// Catch errors
 	try {
 		// Get info
-		let	[value, upToDate] =
+		let	[value, upToDate, error] =
 					await request.app.locals.documentStorage.associationGetValue(documentStorageID, name, toDocumentID,
 							action, cacheName, cacheValueName);
 		if (upToDate)
@@ -222,6 +202,6 @@ exports.getValueV1 = async (request, response) => {
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send('Uh Oh');
+				.send({error: 'Internal error'});
 	}
 }; 

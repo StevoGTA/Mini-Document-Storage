@@ -121,14 +121,9 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		guard !keys.isEmpty else { return [:] }
 
 		// Retrieve info
-		let	(info, error) =
-					DispatchQueue.performBlocking() { completionProc in
-						// Call network client
-						self.httpEndpointClient.queue(
-								MDSHTTPServices.httpEndpointRequestForGetInfo(documentStorageID: self.documentStorageID,
-										keys: keys, authorization: self.authorization))
-								{ completionProc(($1, $2)) }
-					}
+		let	(_, info, error) =
+					self.httpEndpointClient.infoGet(documentStorageID: self.documentStorageID, keys: keys,
+							authorization: self.authorization)
 		guard error == nil else {
 			// Store error
 			self.recentErrors.append(error!)
@@ -145,15 +140,9 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		guard !info.isEmpty else { return }
 
 		// Set info
-		let	error =
-					DispatchQueue.performBlocking() { completionProc in
-						// Call network client
-						self.httpEndpointClient.queue(
-									MDSHTTPServices.httpEndpointRequewstForSetInfo(
-											documentStorageID: self.documentStorageID,
-											info: info, authorization: self.authorization))
-									{ completionProc($1) }
-					}
+		let	(_, _, error) =
+					self.httpEndpointClient.infoSet(documentStorageID: self.documentStorageID, info: info,
+							authorization: self.authorization)
 		if error != nil {
 			// Store error
 			self.recentErrors.append(error!)
@@ -507,16 +496,10 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerAssociation(named name :String, fromDocumentType :String, toDocumentType :String) {
 		// Register assocation
-		let	error =
-					DispatchQueue.performBlocking() { completionProc in
-						// Call network client
-						self.httpEndpointClient.queue(
-								MDSHTTPServices.httpEndpointRequestForRegisterAssociation(
-										documentStorageID: self.documentStorageID, name: name,
-										fromDocumentType: fromDocumentType, toDocumentType: toDocumentType,
-										authorization: self.authorization))
-								{ completionProc($1) }
-					}
+		let	(_, error) =
+					self.httpEndpointClient.associationRegister(documentStorageID: self.documentStorageID, name: name,
+							fromDocumentType: fromDocumentType, toDocumentType: toDocumentType,
+							authorization: self.authorization)
 		guard error == nil else {
 			// Store error
 			self.recentErrors.append(error!)
@@ -530,12 +513,8 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)]) {
 		// Update assocation
 		let	errors =
-					DispatchQueue.performBlocking() { completionProc in
-						// Call network client
-						self.httpEndpointClient.queue(documentStorageID: documentStorageID, name: name,
-								updates: updates, authorization: self.authorization)
-								{ completionProc($0) }
-					}
+					self.httpEndpointClient.associationUpdate(documentStorageID: self.documentStorageID, name: name,
+							updates: updates, authorization: self.authorization)
 		self.recentErrors.append(errors)
 	}
 
@@ -675,16 +654,10 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		let	documentType = type(of: document).documentType
 
 		// Get attachment
-		let	(data, error) =
-					DispatchQueue.performBlocking() { completionProc in
-						// Call network client
-						self.httpEndpointClient.queue(
-								MDSHTTPServices.httpEndpointRequestForGetDocumentAttachment(
-										documentStorageID: self.documentStorageID, documentType: documentType,
-										documentID: document.id, attachmentID: attachmentInfo.id,
-										authorization: self.authorization))
-								{ completionProc(($1, $2)) }
-					}
+		let	(_, data, error) =
+					self.httpEndpointClient.documentGetAttachment(documentStorageID: self.documentStorageID,
+							documentType: documentType, documentID: document.id, attachmentID: attachmentInfo.id,
+							authorization: self.authorization)
 		if data != nil {
 			// Update cache
 			self.remoteStorageCache.setAttachment(content: data!, for: attachmentInfo.id)
@@ -762,20 +735,14 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	public func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)]) {
 		// Register cache
-		let	error =
-					DispatchQueue.performBlocking() { completionProc in
-						// Call network client
-						self.httpEndpointClient.queue(
-								MDSHTTPServices.httpEndpointRequestForRegisterCache(
-										documentStorageID: self.documentStorageID, name: name,
-										documentType: T.documentType, relevantProperties: relevantProperties,
-										valueInfos: valuesInfos.map({
-											MDSHTTPServices.RegisterCacheEndpointValueInfo($0.name, $0.valueType,
-													$0.selector)
-										}),
-										authorization: self.authorization))
-								{ completionProc($1) }
-					}
+		let	(_, error) =
+					self.httpEndpointClient.cacheRegister(documentStorageID: self.documentStorageID, name: name,
+							documentType: T.documentType, relevantProperties: relevantProperties,
+							valueInfos:
+									valuesInfos.map(
+											{ MDSHTTPServices.RegisterCacheEndpointValueInfo($0.name, $0.valueType,
+													$0.selector) }),
+							authorization: self.authorization)
 		guard error == nil else {
 			// Store error
 			self.recentErrors.append(error!)
@@ -789,18 +756,11 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
 			isIncludedProc :@escaping (_ document :T) -> Bool) {
 		// Register collection
-		let	error =
-					DispatchQueue.performBlocking() { completionProc in
-						// Call network client
-						self.httpEndpointClient.queue(
-								MDSHTTPServices.httpEndpointRequestForRegisterCollection(
-										documentStorageID: self.documentStorageID, name: name,
-										documentType: T.documentType, relevantProperties: relevantProperties,
-										isUpToDate: isUpToDate, isIncludedSelector: isIncludedSelector,
-										isIncludedSelectorInfo: isIncludedSelectorInfo,
-										authorization: self.authorization))
-								{ completionProc($1) }
-					}
+		let	(_, error) =
+					self.httpEndpointClient.collectionRegister(documentStorageID: self.documentStorageID, name: name,
+							documentType: T.documentType, relevantProperties: relevantProperties,
+							isUpToDate: isUpToDate, isIncludedSelector: isIncludedSelector,
+							isIncludedSelectorInfo: isIncludedSelectorInfo, authorization: self.authorization)
 		guard error == nil else {
 			// Store error
 			self.recentErrors.append(error!)
@@ -900,17 +860,11 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any],
 			keysProc :@escaping (_ document :T) -> [String]) {
 		// Register index
-		let	error =
-					DispatchQueue.performBlocking() { completionProc in
-						// Call network client
-						self.httpEndpointClient.queue(
-								MDSHTTPServices.httpEndpointRequestForRegisterIndex(
-										documentStorageID: self.documentStorageID, name: name,
-										documentType: T.documentType, relevantProperties: relevantProperties,
-										isUpToDate: isUpToDate, keysSelector: keysSelector,
-										keysSelectorInfo: keysSelectorInfo, authorization: self.authorization))
-								{ completionProc($1) }
-					}
+		let	(_, error) =
+					self.httpEndpointClient.indexRegister(documentStorageID: self.documentStorageID, name: name,
+							documentType: T.documentType, relevantProperties: relevantProperties,
+							isUpToDate: isUpToDate, keysSelector: keysSelector, keysSelectorInfo: keysSelectorInfo,
+							authorization: self.authorization)
 		guard error == nil else {
 			// Store error
 			self.recentErrors.append(error!)
@@ -1193,7 +1147,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 		// Setup
 		let	documentCreateInfosMap = Dictionary(documentCreateInfos.map({ ($0.documentID, $0) }))
-		let	documentCreateReturnInfos = LockingArray<MDSDocumentCreateReturnInfo>()
+		let	documentCreateReturnInfos = LockingArray<MDSDocument.CreateReturnInfo>()
 		let	semaphore = DispatchSemaphore(value: 0)
 		var	allDone = false
 
@@ -1306,7 +1260,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 		// Setup
 		let	documentUpdateInfosMap = Dictionary(documentUpdateInfos.map({ ($0.documentUpdateInfo.documentID, $0) }))
-		let	documentUpdateReturnInfos = LockingArray<MDSDocumentUpdateReturnInfo>()
+		let	documentUpdateReturnInfos = LockingArray<MDSDocument.UpdateReturnInfo>()
 		let	semaphore = DispatchSemaphore(value: 0)
 		var	allDone = false
 
@@ -1367,16 +1321,10 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	private func addAttachment(documentType :String, documentID :String, info :[String : Any], content :Data) {
 		// Perform
-		let	(info, error) =
-					DispatchQueue.performBlocking() { completionProc in
-						// Call network client
-						self.httpEndpointClient.queue(
-								MDSHTTPServices.httpEndpointRequestForAddDocumentAttachment(
-										documentStorageID: self.documentStorageID, documentType: documentType,
-										documentID: documentID, info: info, content: content,
-										authorization: self.authorization))
-								{ completionProc(($1, $2)) }
-					}
+		let	(_, info, error) =
+					self.httpEndpointClient.documentAddAttachment(documentStorageID: self.documentStorageID,
+							documentType: documentType, documentID: documentID, info: info, content: content,
+							authorization: self.authorization)
 		if info != nil {
 			// Success
 			if let id = info!["id"] as? String {
@@ -1398,16 +1346,10 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	private func updateAttachment(documentType :String, documentID :String, attachmentID :String, info :[String : Any],
 			content :Data) {
 		// Perform
-		let	error =
-					DispatchQueue.performBlocking() { completionProc in
-						// Call network client
-						self.httpEndpointClient.queue(
-								MDSHTTPServices.httpEndpointRequestForUpdateDocumentAttachment(
-										documentStorageID: self.documentStorageID, documentType: documentType,
-										documentID: documentID, attachmentID: attachmentID, info: info,
-										content: content, authorization: self.authorization))
-								{ completionProc($1) }
-					}
+		let	(_, error) =
+					self.httpEndpointClient.documentUpdateAttachment(documentStorageID: self.documentStorageID,
+							documentType: documentType, documentID: documentID, attachmentID: attachmentID, info: info,
+							content: content, authorization: self.authorization)
 		if error == nil {
 			// Update cache
 			self.remoteStorageCache.setAttachment(content: content, for: attachmentID)
@@ -1420,16 +1362,10 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	private func removeAttachment(documentType :String, documentID :String, attachmentID :String) {
 		// Perform
-		let	error =
-					DispatchQueue.performBlocking() { completionProc in
-						// Call network client
-						self.httpEndpointClient.queue(
-								MDSHTTPServices.httpEndpointRequestForRemoveDocumentAttachment(
-										documentStorageID: self.documentStorageID, documentType: documentType,
-										documentID: documentID, attachmentID: attachmentID,
-										authorization: self.authorization))
-								{ completionProc($1) }
-					}
+		let	(_, error) =
+					self.httpEndpointClient.documentRemoveAttachment(documentStorageID: self.documentStorageID,
+							documentType: documentType, documentID: documentID, attachmentID: attachmentID,
+							authorization: self.authorization)
 		if error == nil {
 			// Update cache
 			self.remoteStorageCache.setAttachment(for: attachmentID)

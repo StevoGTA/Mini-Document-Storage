@@ -45,20 +45,37 @@ module.exports = class Collections {
 	// Instance methods
 	//------------------------------------------------------------------------------------------------------------------
 	async register(info) {
-		// Setup
-		let	name = info.name;
-		let	documentType = info.documentType;
-		let	relevantProperties = info.relevantProperties;
-		let	isUpToDate = info.isUpToDate;
-		let	isIncludedSelector = info.isIncludedSelector;
-		let	isIncludedSelectorInfo = info.isIncludedSelectorInfo;
+		// Validate
+		if (!info || (typeof info != 'object'))
+			return 'Missing info';
 
+		let	name = info.name;
+		if (!name)
+			return 'Missing name';
+
+		let	documentType = info.documentType;
+		if (!documentType)
+			return 'Missing documentType';
+
+		let	relevantProperties = info.relevantProperties;
+		if (!relevantProperties)
+			return 'Missing relevantProperties';
+
+		let	isUpToDate = info.isUpToDate;
+		if (!isUpToDate)
+			return 'Missing isUpToDate';
+
+		let	isIncludedSelector = info.isIncludedSelector;
+		if (!isIncludedSelector)
+			return 'Missing isIncludedSelector';
+
+		let	isIncludedSelectorInfo = info.isIncludedSelectorInfo;
+		if (!isIncludedSelectorInfo)
+			return 'Missing isIncludedSelectorInfo';
+
+		// Setup
 		let	internals = this.internals;
 		let	statementPerformer = internals.statementPerformer;
-
-		// Validate info
-		if (!name || !documentType || !relevantProperties || !isIncludedSelector || !isIncludedSelectorInfo)
-			return 'Missing required info';
 
 		// Check if need to create Collections table
 		await internals.createTableIfNeeded(this.collectionsTable);
