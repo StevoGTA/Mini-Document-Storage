@@ -19,12 +19,11 @@ module.exports = class Documents {
 
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	constructor(internals) {
+	constructor(internals, statementPerformer) {
 		// Store
 		this.internals = internals;
 
 		// Setup
-		let	statementPerformer = internals.statementPerformer;
 		let	TableColumn = statementPerformer.tableColumn();
 		this.documentsTable =
 				statementPerformer.table('Documents',
@@ -40,24 +39,23 @@ module.exports = class Documents {
 
 	// Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	async create(documentType, infos) {
+	async create(statementPerformer, documentType, infos) {
 		// Validate
 		if (!infos || !Array.isArray(infos) || (infos.length == 0))
 			return [null, 'Missing infos'];
 
 		// Setup
 		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
 
-		let	documentInfo = this.documentInfo(documentType);
+		let	documentInfo = this.documentInfo(statementPerformer, documentType);
 
 		// Create tables if needed
-		await internals.createTableIfNeeded(this.documentsTable);
-		await internals.createTableIfNeeded(documentInfo.infoTable);
-		await internals.createTableIfNeeded(documentInfo.contentTable);
+		await internals.createTableIfNeeded(statementPerformer, this.documentsTable);
+		await internals.createTableIfNeeded(statementPerformer, documentInfo.infoTable);
+		await internals.createTableIfNeeded(statementPerformer, documentInfo.contentTable);
 
 		// Get DocumentUpdateTracker
-		let	documentUpdateTracker = await internals.getDocumentUpdateTracker(documentType);
+		let	documentUpdateTracker = await internals.getDocumentUpdateTracker(statementPerformer, documentType);
 
 		// Perform with tables locked
 		let	tables =
@@ -67,7 +65,7 @@ module.exports = class Documents {
 					await statementPerformer.batchLockedForWrite(tables,
 							() => { return (async() => {
 								// Setup
-								let	initialLastRevision = await this.getLastRevision(documentType);
+								let	initialLastRevision = await this.getLastRevision(statementPerformer, documentType);
 								var	lastRevision = initialLastRevision;
 								var	returnDocumentInfos = [];
 
@@ -125,8 +123,8 @@ module.exports = class Documents {
 									// Update
 									lastRevision += 1;
 								}
-								this.queueUpdateLastRevision(documentType, lastRevision);
-								documentUpdateTracker.finalize();
+								this.queueUpdateLastRevision(statementPerformer, documentType, lastRevision);
+								documentUpdateTracker.finalize(statementPerformer, initialLastRevision);
 
 								return returnDocumentInfos;
 							})()});
@@ -135,16 +133,13 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getSinceRevision(documentType, sinceRevision, maxDocumentCount) {
+	async getSinceRevision(statementPerformer, documentType, sinceRevision, maxDocumentCount) {
 		// Validate
 		if (!sinceRevision)
 			return [null, null, 'Missing sinceRevision'];
 
 		// Setup
-		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
-
-		let	documentInfo = this.documentInfo(documentType);
+		let	documentInfo = this.documentInfo(statementPerformer, documentType);
 
 		let	where = statementPerformer.where(documentInfo.infoTable.revisionTableColumn, '>', sinceRevision);
 
@@ -244,16 +239,13 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getForDocumentIDs(documentType, documentIDs) {
+	async getForDocumentIDs(statementPerformer, documentType, documentIDs) {
 		// Validate
 		if (documentIDs.length == 0)
 			return [null, 'Missing id(s)'];
 
 		// Setup
-		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
-
-		let	documentInfo = this.documentInfo(documentType);
+		let	documentInfo = this.documentInfo(statementPerformer, documentType);
 
 		// Catch errors
 		var	ids = [];
@@ -332,19 +324,18 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async update(documentType, infos) {
+	async update(statementPerformer, documentType, infos) {
 		// Validate
 		if (!infos || !Array.isArray(infos) || (infos.length == 0))
 			return [null, 'Missing infos'];
 
 		// Setup
 		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
 
-		let	documentInfo = this.documentInfo(documentType);
+		let	documentInfo = this.documentInfo(statementPerformer, documentType);
 
 		// Get DocumentUpdateTracker
-		let	documentUpdateTracker = await internals.getDocumentUpdateTracker(documentType);
+		let	documentUpdateTracker = await internals.getDocumentUpdateTracker(statementPerformer, documentType);
 
 		// Catch errors
 		try {
@@ -356,7 +347,8 @@ module.exports = class Documents {
 						await statementPerformer.batchLockedForWrite(tables,
 								() => { return (async() => {
 									// Setup
-									let	initialLastRevision = await this.getLastRevision(documentType);
+									let	initialLastRevision =
+												await this.getLastRevision(statementPerformer, documentType);
 
 									// Retrieve current document info
 									let	results =
@@ -436,8 +428,8 @@ module.exports = class Documents {
 										// Update
 										lastRevision += 1;
 									}
-									this.queueUpdateLastRevision(documentType, lastRevision);
-									documentUpdateTracker.finalize();
+									this.queueUpdateLastRevision(statementPerformer, documentType, lastRevision);
+									documentUpdateTracker.finalize(statementPerformer, initialLastRevision);
 
 									return [returnDocumentInfos, null];
 								})()});
@@ -455,7 +447,7 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async attachmentAdd(documentType, documentID, info, content) {
+	async attachmentAdd(statementPerformer, documentType, documentID, info, content) {
 		// Validate
 		if (!info)
 			return [null, 'Missing info'];
@@ -464,18 +456,17 @@ module.exports = class Documents {
 
 		// Setup
 		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
 
-		let	documentInfo = this.documentInfo(documentType);
+		let	documentInfo = this.documentInfo(statementPerformer, documentType);
 
 		// Get ID for documentID
-		let	[id, error] = await this.getIDForDocumentID(documentInfo, documentID);
+		let	[id, error] = await this.getIDForDocumentID(statementPerformer, documentInfo, documentID);
 		if (!id)
 			// Error
 			return [null, error];
 
 		// Create table if needed
-		await internals.createTableIfNeeded(documentInfo.attachmentTable);
+		await internals.createTableIfNeeded(statementPerformer, documentInfo.attachmentTable);
 
 		// Perform with tables locked
 		let	tables = [this.documentsTable, documentInfo.infoTable, documentInfo.attachmentTable];
@@ -483,7 +474,7 @@ module.exports = class Documents {
 		return await statementPerformer.batchLockedForWrite(tables,
 				() => { return (async() => {
 					// Setup
-					let	initialLastRevision = await this.getLastRevision(documentType);
+					let	initialLastRevision = await this.getLastRevision(statementPerformer, documentType);
 
 					// Add attachment
 					let	revision = initialLastRevision + 1;
@@ -502,19 +493,16 @@ module.exports = class Documents {
 					statementPerformer.queueUpdate(documentInfo.infoTable,
 							[{tableColumn: documentInfo.infoTable.revisionTableColumn, value: revision}],
 							statementPerformer.where(documentInfo.infoTable.idTableColumn, id));
-					this.queueUpdateLastRevision(documentType, revision);
+					this.queueUpdateLastRevision(statementPerformer, documentType, revision);
 					
 					return [{id: attachmentID}, null];
 				})()});
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async attachmentGet(documentType, documentID, attachmentID) {
+	async attachmentGet(statementPerformer, documentType, documentID, attachmentID) {
 		// Setup
-		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
-
-		let	documentInfo = this.documentInfo(documentType);
+		let	documentInfo = this.documentInfo(statementPerformer, documentType);
 
 		// Catch errors
 		try {
@@ -546,7 +534,7 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async attachmentUpdate(documentType, documentID, attachmentID, info, content) {
+	async attachmentUpdate(statementPerformer, documentType, documentID, attachmentID, info, content) {
 		// Validate
 		if (!info)
 			return 'Missing info';
@@ -554,78 +542,76 @@ module.exports = class Documents {
 			return 'Missing content';
 
 		// Setup
-		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
-
-		let	documentInfo = this.documentInfo(documentType);
+		let	documentInfo = this.documentInfo(statementPerformer, documentType);
 
 		// Get ID for documentID
-		let	[id, error] = await this.getIDForDocumentID(documentInfo, documentID);
+		let	[id, error] = await this.getIDForDocumentID(statementPerformer, documentInfo, documentID);
 		if (!id)
 			// Error
-			return [null, error];
+			return error;
 
 		// Perform with tables locked
 		let	tables = [this.documentsTable, documentInfo.infoTable, documentInfo.attachmentTable];
 
-		return await statementPerformer.batchLockedForWrite(tables, () => { return (async() => {
-			// Catch errors
-			try {
-				// Setup
-				let	documentRevision = await this.getLastRevision(documentType);
+		return await statementPerformer.batchLockedForWrite(tables,
+				() => { return (async() => {
+						// Catch errors
+						try {
+							// Setup
+							let	documentRevision = await this.getLastRevision(statementPerformer, documentType);
 
-				// Retrieve attachment info
-				let	results =
-							await statementPerformer.select(documentInfo.attachmentTable,
-									[documentInfo.attachmentTable.revisionTableColumn],
-									statementPerformer.where(documentInfo.attachmentTable.attachmentIDTableColumn,
-											attachmentID));
-				var	attachmentRevision;
-				if (results.length > 0)
-					// Success
-					attachmentRevision = results[0].revision + 1;
-				else
-					// Error
-					return 'Attachment ' + attachmentID + ' for ' + documentID + ' of type ' + documentType +
-							' not found.';
+							// Retrieve attachment info
+							let	results =
+										await statementPerformer.select(documentInfo.attachmentTable,
+												[documentInfo.attachmentTable.revisionTableColumn],
+												statementPerformer.where(documentInfo.attachmentTable.attachmentIDTableColumn,
+														attachmentID));
+							var	attachmentRevision;
+							if (results.length > 0)
+								// Success
+								attachmentRevision = results[0].revision + 1;
+							else
+								// Error
+								return 'Attachment ' + attachmentID + ' for ' + documentID + ' of type ' + documentType +
+										' not found.';
 
-				// Update
-				statementPerformer.queueUpdate(documentInfo.attachmentTable,
-						[
-							{tableColumn: documentInfo.attachmentTable.revisionTableColumn,
-									value: attachmentRevision},
-							{tableColumn: documentInfo.attachmentTable.infoTableColumn, value: info},
-							{tableColumn: documentInfo.attachmentTable.contentTableColumn, value: content},
-						],
-						statementPerformer.where(documentInfo.attachmentTable.attachmentIDTableColumn, attachmentID));
-				statementPerformer.queueUpdate(documentInfo.infoTable,
-						[{tableColumn: documentInfo.infoTable.revisionTableColumn, value: documentRevision}],
-						statementPerformer.where(documentInfo.infoTable.idTableColumn, id));
-				this.queueUpdateLastRevision(documentType, documentRevision);
+							// Update
+							statementPerformer.queueUpdate(documentInfo.attachmentTable,
+									[
+										{tableColumn: documentInfo.attachmentTable.revisionTableColumn,
+												value: attachmentRevision},
+										{tableColumn: documentInfo.attachmentTable.infoTableColumn, value: info},
+										{tableColumn: documentInfo.attachmentTable.contentTableColumn, value: content},
+									],
+									statementPerformer.where(documentInfo.attachmentTable.attachmentIDTableColumn, attachmentID));
+							statementPerformer.queueUpdate(documentInfo.infoTable,
+									[{tableColumn: documentInfo.infoTable.revisionTableColumn, value: documentRevision}],
+									statementPerformer.where(documentInfo.infoTable.idTableColumn, id));
+							this.queueUpdateLastRevision(statementPerformer, documentType, documentRevision);
 
-				return null;
-			} catch (error) {
-				// Check error
-				if (error.message.startsWith('ER_NO_SUCH_TABLE'))
-					// No such table
-					return 'Attachment ' + attachmentID + ' for ' + documentID + ' of type ' + documentType +
-							' not found.';
-				else
-					// Other error
-					throw error;
-			}
-		})()});
+							return null;
+						} catch (error) {
+							// Check error
+							if (error.message.startsWith('ER_NO_SUCH_TABLE'))
+								// No such table
+								return 'Attachment ' + attachmentID + ' for ' + documentID + ' of type ' + documentType +
+										' not found.';
+							else
+								// Other error
+								throw error;
+						}
+					})()});
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async attachmentRemove(documentType, documentID, attachmentID) {
+	async attachmentRemove(statementPerformer, documentType, documentID, attachmentID) {
 		// Setup
-		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
+		let	documentInfo = this.documentInfo(statementPerformer, documentType);
 
-		let	documentInfo = this.documentInfo(documentType);
-
-		let	id = await this.getIDForDocumentID(documentInfo, documentID);
+		let	[id, error] = await this.getIDForDocumentID(statementPerformer, documentInfo, documentID);
+		if (!id)
+			// Error
+			return error;
 
 		// Perform with tables locked
 		let	tables = [this.documentsTable, documentInfo.infoTable, documentInfo.attachmentTable];
@@ -635,7 +621,7 @@ module.exports = class Documents {
 					// Catch errors
 					try {
 						// Setup
-						let	initialLastRevision = await this.getLastRevision(documentType);
+						let	initialLastRevision = await this.getLastRevision(statementPerformer, documentType);
 
 						// Update
 						let	revision = initialLastRevision + 1;
@@ -645,7 +631,7 @@ module.exports = class Documents {
 						statementPerformer.queueUpdate(documentInfo.infoTable,
 								[{tableColumn: documentInfo.infoTable.revisionTableColumn, value: revision}],
 								statementPerformer.where(documentInfo.infoTable.idTableColumn, id));
-						this.queueUpdateLastRevision(documentType, revision);
+						this.queueUpdateLastRevision(statementPerformer, documentType, revision);
 						
 						return null;
 					} catch (error) {
@@ -663,12 +649,9 @@ module.exports = class Documents {
 
 	// Internal methods
 	//------------------------------------------------------------------------------------------------------------------
-	async getIDsForDocumentIDs(documentType, documentIDs) {
+	async getIDsForDocumentIDs(statementPerformer, documentType, documentIDs) {
 		// Setup
-		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
-
-		let	documentInfo = this.documentInfo(documentType);
+		let	documentInfo = this.documentInfo(statementPerformer, documentType);
 
 		// Catch errors
 		try {
@@ -700,20 +683,20 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	getDocumentInfoInnerJoin(documentType, idTableColumn) {
+	getDocumentInfoInnerJoin(statementPerformer, documentType, idTableColumn) {
 		// Setup
-		let	documentInfo = this.documentInfo(documentType);
+		let	documentInfo = this.documentInfo(statementPerformer, documentType);
 
-		return this.internals.statementPerformer.innerJoin(documentInfo.infoTable, documentInfo.infoTable.idTableColumn,
+		return statementPerformer.innerJoin(documentInfo.infoTable, documentInfo.infoTable.idTableColumn,
 				idTableColumn);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	getDocumentInnerJoin(documentType, idTableColumn) {
+	getDocumentInnerJoin(statementPerformer, documentType, idTableColumn) {
 		// Setup
-		let	documentInfo = this.documentInfo(documentType);
+		let	documentInfo = this.documentInfo(statementPerformer, documentType);
 
-		return this.internals.statementPerformer.innerJoin(
+		return statementPerformer.innerJoin(
 				[
 					{
 						table: documentInfo.infoTable,
@@ -729,12 +712,9 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getDocumentInfos(documentType, table, innerJoin, where, limit) {
+	async getDocumentInfos(statementPerformer, documentType, table, innerJoin, where, limit) {
 		// Setup
-		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
-
-		let	documentInfo = this.documentInfo(documentType);
+		let	documentInfo = this.documentInfo(statementPerformer, documentType);
 
 		// Catch errors
 		var	ids = [];
@@ -767,12 +747,9 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getDocuments(documentType, table, innerJoin, where, limit) {
+	async getDocuments(statementPerformer, documentType, table, innerJoin, where, limit) {
 		// Setup
-		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
-
-		let	documentInfo = this.documentInfo(documentType);
+		let	documentInfo = this.documentInfo(statementPerformer, documentType);
 
 		// Catch errors
 		var	ids = [];
@@ -847,9 +824,8 @@ module.exports = class Documents {
 
 	// Private methods
 	//------------------------------------------------------------------------------------------------------------------
-	documentInfo(documentType) {
+	documentInfo(statementPerformer, documentType) {
 		// Setup
-		let	statementPerformer = this.internals.statementPerformer;
 		let	TableColumn = statementPerformer.tableColumn();
 
 		// Setup document
@@ -912,10 +888,7 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getLastRevision(documentType) {
-		// Setup
-		let	statementPerformer = this.internals.statementPerformer;
-
+	async getLastRevision(statementPerformer, documentType) {
 		// Retrieve document type info
 		let	results =
 					await statementPerformer.select(this.documentsTable,
@@ -925,9 +898,9 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	queueUpdateLastRevision(documentType, lastRevision) {
+	queueUpdateLastRevision(statementPerformer, documentType, lastRevision) {
 		// Queue
-		this.internals.statementPerformer.queueReplace(this.documentsTable,
+		statementPerformer.queueReplace(this.documentsTable,
 			[
 				{tableColumn: this.documentsTable.typeTableColumn, value: documentType},
 				{tableColumn: this.documentsTable.lastRevisionTableColumn, value: lastRevision},
@@ -935,10 +908,7 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getIDForDocumentID(documentInfo, documentID) {
-		// Setup
-		let	statementPerformer = this.internals.statementPerformer;
-
+	async getIDForDocumentID(statementPerformer, documentInfo, documentID) {
 		// Catch errors
 		try {
 			// Retrieve document id

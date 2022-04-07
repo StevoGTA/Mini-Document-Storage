@@ -18,13 +18,12 @@ module.exports = class Indexes {
 
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	constructor(internals, keysSelectorInfo) {
+	constructor(internals, statementPerformer, keysSelectorInfo) {
 		// Store
 		this.internals = internals;
 		this.keysSelectorInfo = keysSelectorInfo;
 
 		// Setup
-		let	statementPerformer = internals.statementPerformer;
 		let	TableColumn = statementPerformer.tableColumn();
 		this.indexesTable =
 				statementPerformer.table('Indexes',
@@ -44,7 +43,7 @@ module.exports = class Indexes {
 
 	// Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	async register(info) {
+	async register(statementPerformer, info) {
 		// Validate
 		if (!info || (typeof info != 'object'))
 			return 'Missing info';
@@ -75,10 +74,9 @@ module.exports = class Indexes {
 
 		// Setup
 		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
 
 		// Check if need to create Indexes table
-		await internals.createTableIfNeeded(this.indexesTable);
+		await internals.createTableIfNeeded(statementPerformer, this.indexesTable);
 
 		// Try to retrieve current entry
 		var	results =
@@ -158,10 +156,7 @@ module.exports = class Indexes {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getForDocumentType(documentType) {
-		// Setup
-		let	statementPerformer = this.internals.statementPerformer;
-
+	async getForDocumentType(statementPerformer, documentType) {
 		// Catch errors
 		try {
 			// Select all Indexes for this document type
@@ -193,10 +188,7 @@ module.exports = class Indexes {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getForName(name) {
-		// Setup
-		let	statementPerformer = this.internals.statementPerformer;
-		
+	async getForName(statementPerformer, name) {
 		// Check if already have
 		var	index = this.indexInfo[name];
 		if (index)
@@ -236,16 +228,16 @@ module.exports = class Indexes {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	update(indexes, initialLastRevision, updateDocumentInfos) {
+	update(statementPerformer, indexes, initialLastRevision, updateDocumentInfos) {
 		// Iterate indexes
 		for (let index of indexes) {
 			// Update
 			if (index.queueUpdates(initialLastRevision, updateDocumentInfos)) {
 				// Update table
-				internals.statementPerformer.queueUpdate(this.indexesTable,
+				statementPerformer.queueUpdate(this.indexesTable,
 						[{tableColumn: this.indexesTable.lastDocumentRevisionTableColumn,
 									value: index.lastDocumentRevision}],
-						internals.statementPerformer.where(this.indexesTable.nameTableColumn, index.name));
+									statementPerformer.where(this.indexesTable.nameTableColumn, index.name));
 			}
 		}
 	}

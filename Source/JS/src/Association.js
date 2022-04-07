@@ -13,7 +13,6 @@ module.exports = class Association {
 	//------------------------------------------------------------------------------------------------------------------
 	constructor(statementPerformer, name, fromType, toType) {
 		// Store
-		this.statementPerformer = statementPerformer;
 		this.fromType = fromType;
 		this.toType = toType;
 
@@ -30,22 +29,22 @@ module.exports = class Association {
 
 	// Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	create(internals) { internals.statementPerformer.queueCreateTable(this.table); }
+	create(statementPerformer) { statementPerformer.queueCreateTable(this.table); }
 
 	//------------------------------------------------------------------------------------------------------------------
-	update(action, fromID, toID) {
+	update(statementPerformer, action, fromID, toID) {
 		// Check action
 		if (action == "add")
 			// Add
-			this.statementPerformer.queueInsertInto(this.table,
+			statementPerformer.queueInsertInto(this.table,
 					[
 						{tableColumn: this.table.fromIDTableColumn, value: fromID},
 						{tableColumn: this.table.toIDTableColumn, value: toID},
 					]);
 		else
 			// Remove
-			this.statementPerformer.queueDelete(this.table,
-					this.statementPerformer.where(
+			statementPerformer.queueDelete(this.table,
+					statementPerformer.where(
 							[
 								{tableColumn: this.table.fromIDTableColumn, value: fromID},
 								{tableColumn: this.table.toIDTableColumn, value: toID},

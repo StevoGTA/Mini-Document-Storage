@@ -17,12 +17,11 @@ module.exports = class Associations {
 
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	constructor(internals) {
+	constructor(internals, statementPerformer) {
 		// Store
 		this.internals = internals;
 
 		// Setup
-		let	statementPerformer = internals.statementPerformer;
 		let	TableColumn = statementPerformer.tableColumn();
 		this.associationsTable =
 				statementPerformer.table('Associations',
@@ -37,7 +36,7 @@ module.exports = class Associations {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async register(info) {
+	async register(statementPerformer, info) {
 		// Validate
 		if (!info || (typeof info != 'object'))
 			return 'Missing info';
@@ -56,10 +55,9 @@ module.exports = class Associations {
 
 		// Setup
 		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
 
 		// Check if need to create Associations table
-		await internals.createTableIfNeeded(this.associationsTable);
+		await internals.createTableIfNeeded(statementPerformer, this.associationsTable);
 
 		// Try to retrieve current entry
 		var	results =
@@ -81,7 +79,7 @@ module.exports = class Associations {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async update(name, infos) {
+	async update(statementPerformer, name, infos) {
 		// Validate
 		let	fromDocumentIDs = new Set();
 		let	toDocumentIDs = new Set();
@@ -112,7 +110,6 @@ module.exports = class Associations {
 
 		// Setup
 		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
 
 		// Get association
 		let	[association, associationError] = await this.getAssociation(name);
@@ -152,14 +149,14 @@ module.exports = class Associations {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getDocumentInfos(name, fromDocumentID, toDocumentID, startIndex, documentCount, fullInfo) {
+	async getDocumentInfos(statementPerformer, name, fromDocumentID, toDocumentID, startIndex, documentCount,
+			fullInfo) {
 		// Validate
 		if ((!fromDocumentID && !toDocumentID) || (fromDocumentID && toDocumentID))
 			return [null, null, 'Must specify one of fromDocumentID or toDocumentID'];
 
 		// Setup
 		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
 
 		// Get association
 		let	[association, associationError] = await this.getAssociation(name);
@@ -203,10 +200,7 @@ module.exports = class Associations {
 
 	// Private methods
 	//------------------------------------------------------------------------------------------------------------------
-	async getAssociation(name) {
-		// Setup
-		let	statementPerformer = this.internals.statementPerformer;
-
+	async getAssociation(statementPerformer, name) {
 		// Catch errors
 		try {
 			// Retrieve association

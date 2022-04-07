@@ -701,14 +701,14 @@ extension HTTPEndpointClient {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func infoGet(documentStorageID :String, keys :[String], authorization :String? = nil) ->
-			(response :HTTPURLResponse?, info :[String : String]?, error :Error?) {
+			(info :[String : String]?, error :Error?) {
 		// Perform
 		return DispatchQueue.performBlocking() { completionProc in
 			// Queue
 			self.queue(
 					MDSHTTPServices.httpEndpointRequestForGetInfo(documentStorageID: documentStorageID, keys: keys,
 							authorization: authorization))
-					{ completionProc(($0, $1, $2)) }
+					{ completionProc(($0, $1)) }
 		}
 	}
 

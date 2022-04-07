@@ -22,7 +22,7 @@ class DocumentUpdateTracker {
 		this.cachesToUpdate = cachesToUpdate;
 
 		this.collections = collections;
-		this.collectionsToUpdate = cachesToUpdate;
+		this.collectionsToUpdate = collectionsToUpdate;
 
 		this.indexes = indexes;
 		this.indexesToUpdate = indexesToUpdate;
@@ -42,11 +42,11 @@ class DocumentUpdateTracker {
 	addDocumentInfo(documentInfo) { this.documentInfos.push(documentInfo); }
 
 	//------------------------------------------------------------------------------------------------------------------
-	finalize(initialLastRevision) {
+	finalize(statementPerformer, initialLastRevision) {
 		// Update
-		this.caches.update(this.cachesToUpdate, initialLastRevision, this.documentInfos);
-		this.collections.update(this.collectionsToUpdate, initialLastRevision, this.documentInfos);
-		this.indexes.update(this.indexesToUpdate, initialLastRevision, this.documentInfos);
+		this.caches.update(statementPerformer, this.cachesToUpdate, initialLastRevision, this.documentInfos);
+		this.collections.update(statementPerformer, this.collectionsToUpdate, initialLastRevision, this.documentInfos);
+		this.indexes.update(statementPerformer, this.indexesToUpdate, initialLastRevision, this.documentInfos);
 	}
 };
 
@@ -62,9 +62,6 @@ module.exports = class Internals {
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
 	constructor(statementPerformer) {
-		// Store
-		this.statementPerformer = statementPerformer;
-
 		// Setup
 		let	TableColumn = statementPerformer.tableColumn();
 		this.table =
@@ -80,7 +77,35 @@ module.exports = class Internals {
 
 	// Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	async getInfo(keys) {
+	async createTableIfNeeded(statementPerformer, table) {
+		// Create table if needed
+		let	tableVersionKey = table.name + 'TableVersion';
+		let	tableVersion = (await this.getInfo(statementPerformer, [tableVersionKey]))[tableVersionKey];
+		if (!tableVersion) {
+			// Create table
+			statementPerformer.queueCreateTable(table);
+
+			// Set version
+			let	info = {};
+			info[tableVersionKey] = 1;
+			this.queueUpdateInfo(statementPerformer, info);
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async getDocumentUpdateTracker(documentType) {
+		// Setup
+		let	cachesToUpdate = await this.caches.getForDocumentType(documentType);
+		let	collectionsToUpdate = await this.collections.getForDocumentType(documentType);
+		let	indexesToUpdate = await this.indexes.getForDocumentType(documentType);
+
+		return new DocumentUpdateTracker(this.caches, cachesToUpdate, this.collections, collectionsToUpdate,
+				this.indexes, indexesToUpdate);
+	}
+
+	// Private methods
+	//------------------------------------------------------------------------------------------------------------------
+	async getInfo(statementPerformer, keys) {
 		// Check cache
 		var	info = {};
 		var	keysToRetrieve = [];
@@ -100,9 +125,9 @@ module.exports = class Internals {
 			try {
 				// Perform
 				let	results =
-							await this.statementPerformer.select(this.table,
+							await statementPerformer.select(this.table,
 									[this.table.keyTableColumn, this.table.valueTableColumn],
-									this.statementPerformer.where(this.table.keyTableColumn, keysToRetrieve));
+									statementPerformer.where(this.table.keyTableColumn, keysToRetrieve));
 
 				// Iterate results
 				for (let result of results) {
@@ -124,16 +149,16 @@ module.exports = class Internals {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	queueUpdateInfo(info) {
+	queueUpdateInfo(statementPerformer, info) {
 		// Check if need to create table
 		if (!this.haveTable)
 			// Create table
-			this.statementPerformer.queueCreateTable(this.table);
+			statementPerformer.queueCreateTable(this.table);
 
 		// Iterate info
 		for (let [key, value] of Object.entries(info))
 			// Add statement for this entry
-			this.statementPerformer.queueReplace(this.table,
+			statementPerformer.queueReplace(this.table,
 					[
 						{tableColumn: this.table.keyTableColumn, value: key},
 						{tableColumn: this.table.valueTableColumn, value: value},
@@ -146,32 +171,5 @@ module.exports = class Internals {
 		
 		// Update
 		this.haveTable = true;
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	async createTableIfNeeded(table) {
-		// Create table if needed
-		let	tableVersionKey = table.name + 'TableVersion';
-		let	tableVersion = (await this.getInfo([tableVersionKey]))[tableVersionKey];
-		if (!tableVersion) {
-			// Create table
-			this.statementPerformer.queueCreateTable(table);
-
-			// Set version
-			let	info = {};
-			info[tableVersionKey] = 1;
-			this.queueUpdateInfo(info);
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	async getDocumentUpdateTracker(documentType) {
-		// Setup
-		let	cachesToUpdate = await this.caches.getForDocumentType(documentType);
-		let	collectionsToUpdate = await this.collections.getForDocumentType(documentType);
-		let	indexesToUpdate = await this.indexes.getForDocumentType(documentType);
-
-		return new DocumentUpdateTracker(this.caches, cachesToUpdate, this.collections, collectionsToUpdate,
-				this.indexes, indexesToUpdate);
 	}
 };

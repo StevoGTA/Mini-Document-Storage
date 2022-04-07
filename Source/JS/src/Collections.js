@@ -18,13 +18,12 @@ module.exports = class Collections {
 
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	constructor(internals, isIncludedSelectorInfo) {
+	constructor(internals, statementPerformer, isIncludedSelectorInfo) {
 		// Store
 		this.internals = internals;
 		this.isIncludedSelectorInfo = isIncludedSelectorInfo;
 
 		// Setup
-		let	statementPerformer = internals.statementPerformer;
 		let	TableColumn = statementPerformer.tableColumn();
 		this.collectionsTable =
 				statementPerformer.table('Collections',
@@ -44,7 +43,7 @@ module.exports = class Collections {
 
 	// Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	async register(info) {
+	async register(statementPerformer, info) {
 		// Validate
 		if (!info || (typeof info != 'object'))
 			return 'Missing info';
@@ -75,10 +74,9 @@ module.exports = class Collections {
 
 		// Setup
 		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
 
 		// Check if need to create Collections table
-		await internals.createTableIfNeeded(this.collectionsTable);
+		await internals.createTableIfNeeded(statementPerformer, this.collectionsTable);
 
 		// Try to retrieve current entry
 		var	results =
@@ -164,10 +162,7 @@ module.exports = class Collections {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getForDocumentType(documentType) {
-		// Setup
-		let	statementPerformer = this.internals.statementPerformer;
-
+	async getForDocumentType(statementPerformer, documentType) {
 		// Catch errors
 		try {
 			// Select all Collections for this document type
@@ -200,10 +195,7 @@ module.exports = class Collections {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getForName(name) {
-		// Setup
-		let	statementPerformer = this.internals.statementPerformer;
-		
+	async getForName(statementPerformer, name) {
 		// Check if already have
 		var	collection = this.collectionInfo[name];
 		if (collection)
@@ -243,10 +235,7 @@ module.exports = class Collections {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	update(collections, initialLastRevision, updateDocumentInfos) {
-		// Setup
-		let	statementPerformer = this.internals.statementPerformer;
-		
+	update(statementPerformer, collections, initialLastRevision, updateDocumentInfos) {
 		// Iterate collections
 		for (let collection of collections) {
 			// Update

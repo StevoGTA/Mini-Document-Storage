@@ -95,10 +95,165 @@ extension MDSDocument.UpdateInfo {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSError
+enum MDSError : Error {
+	case invalidRequest(message :String)
+	case responseWasEmpty
+	case internalError
+}
+
+extension MDSError : CustomStringConvertible, LocalizedError {
+
+	// MARK: Properties
+	public 	var	description :String { self.localizedDescription }
+	public	var	errorDescription :String? {
+						// What are we
+						switch self {
+							case .invalidRequest(let message):	return message
+							case .responseWasEmpty:	return "Server response was empty"
+							case .internalError:	return "Server internal error"
+						}
+					}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSHTTPServices
 class MDSHTTPServices {
 
-	// MARK: Association Register
+	// MARK: MDSHTTPEndpointRequest
+	class MDSHTTPEndpointRequest : HTTPEndpointRequest {
+
+		// MARK: Fileprivate methods
+		//--------------------------------------------------------------------------------------------------------------
+		fileprivate func mdsError(for responseData :Data?) -> Error? {
+			// Check situation
+			if responseData != nil {
+				// Catch errors
+				do {
+					// Try to compose info from data
+					let	info = try JSONSerialization.jsonObject(with: responseData!, options: []) as? [String : String]
+					if let message = info?["error"] {
+						// Received error message
+						return MDSError.invalidRequest(message: message)
+					} else {
+						// Nope
+						return HTTPEndpointRequestError.unableToProcessResponseData
+					}
+				} catch {
+					// Error
+					return error
+				}
+			} else {
+				// No response data
+				return MDSError.responseWasEmpty
+			}
+		}
+	}
+
+	// MARK: - MDSJSONHTTPEndpointRequest
+	class MDSJSONHTTPEndpointRequest<T> : MDSHTTPEndpointRequest, HTTPEndpointRequestProcessMultiResults {
+
+		// MARK: Types
+		public typealias SingleResponseCompletionProc = (_ info :T?, _ error :Error?) -> Void
+		public typealias MultiResponsePartialResultsProc = (_ info :T?, _ error :Error?) -> Void
+		public typealias MultiResponseCompletionProc = (_ errors :[Error]) -> Void
+
+		// MARK: Properties
+		public	var	completionProc :SingleResponseCompletionProc?
+		public	var	multiResponsePartialResultsProc :MultiResponsePartialResultsProc?
+		public	var	multiResponseCompletionProc :MultiResponseCompletionProc?
+
+		private	let	completedRequestsCount = LockingNumeric<Int>()
+
+		private	var	errors = [Error]()
+
+		// MARK: Lifecycle methods
+		//--------------------------------------------------------------------------------------------------------------
+		override init(method :HTTPEndpointMethod, path :String, queryComponents :[String : Any]? = nil,
+				multiValueQueryComponent :MultiValueQueryComponent? = nil, headers :[String : String]? = nil,
+				timeoutInterval :TimeInterval = defaultTimeoutInterval) {
+			// Update
+			var	headersUse = headers ?? [:]
+			headersUse["Accept"] = "application/json"
+
+			// Do super
+			super.init(method: method, path: path, queryComponents: queryComponents,
+					multiValueQueryComponent: multiValueQueryComponent, headers: headersUse,
+					timeoutInterval: timeoutInterval)
+		}
+
+		// MARK: HTTPEndpointRequestProcessResults methods
+		//------------------------------------------------------------------------------------------------------------------
+		func processResults(response :HTTPURLResponse?, data :Data?, error :Error?, totalRequests :Int) {
+			// Check cancelled
+			if !self.isCancelled {
+				// Handle results
+				var	info :T? = nil
+				var	localError :Error? = nil
+
+				if (response != nil) {
+					// Have response
+					let	statusCode = response!.statusCode
+					if (statusCode >= 200) && (statusCode < 300) {
+						// Success
+						if data != nil {
+							// Catch errors
+							do {
+								// Try to compose info from data
+								info = try JSONSerialization.jsonObject(with: data!, options: []) as? T
+
+								// Check if got response data
+								if info == nil {
+									// Nope
+									localError = HTTPEndpointRequestError.unableToProcessResponseData
+								}
+							} catch {
+								// Error
+								localError = error
+							}
+						} else {
+							// No payload
+							localError = MDSError.responseWasEmpty
+						}
+					} else if (statusCode >= 400) && (statusCode < 500) {
+						// Error
+						localError = mdsError(for: data)
+					} else if statusCode >= 500 {
+						// Internal error
+						localError = MDSError.internalError
+					}
+				} else {
+					// No response
+					localError = error
+				}
+
+				// Check error
+				if localError != nil { self.errors.append(localError!) }
+
+				// Call proc
+				if totalRequests == 1 {
+					// Single request (but could have been multiple
+					if self.completionProc != nil {
+						// Single response expected
+						self.completionProc!(info, localError)
+					} else {
+						// Multi-responses possible
+						self.multiResponsePartialResultsProc!(info, localError)
+						self.multiResponseCompletionProc!(self.errors)
+					}
+				} else {
+					// Multiple requests
+					self.multiResponsePartialResultsProc!(info, localError)
+					if self.completedRequestsCount.add(1) == totalRequests {
+						// All done
+						self.multiResponseCompletionProc!(self.errors)
+					}
+				}
+			}
+		}
+	}
+
+	// MARK: - Association Register
 	//	=> documentStorageID (path)
 	//	=> json (body)
 	//		{
@@ -1038,12 +1193,12 @@ class MDSHTTPServices {
 									return (documentStorageID, keys, headers["Authorization"])
 								}
 	static func httpEndpointRequestForGetInfo(documentStorageID :String, keys :[String], authorization :String? = nil)
-			-> JSONHTTPEndpointRequest<[String : String]> {
+			-> MDSJSONHTTPEndpointRequest<[String : String]> {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return JSONHTTPEndpointRequest(method: .get, path: "/v1/info/\(documentStorageIDUse)",
+		return MDSJSONHTTPEndpointRequest(method: .get, path: "/v1/info/\(documentStorageIDUse)",
 				multiValueQueryComponent: ("key", keys), headers: headers)
 	}
 

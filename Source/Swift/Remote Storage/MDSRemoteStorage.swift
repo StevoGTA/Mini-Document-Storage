@@ -121,7 +121,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		guard !keys.isEmpty else { return [:] }
 
 		// Retrieve info
-		let	(_, info, error) =
+		let	(info, error) =
 					self.httpEndpointClient.infoGet(documentStorageID: self.documentStorageID, keys: keys,
 							authorization: self.authorization)
 		guard error == nil else {

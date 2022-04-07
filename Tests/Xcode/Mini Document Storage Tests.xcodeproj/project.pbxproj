@@ -156,6 +156,7 @@
 		0A5E188B27C71FB90089E550 /* LockingArray.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55525B27C5DA60003E497B /* LockingArray.swift */; };
 		0A5E188C27C71FBA0089E550 /* LockingArray.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55525B27C5DA60003E497B /* LockingArray.swift */; };
 		0A5EAB6C27F52F04003E0034 /* DocumentTransactionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5EAB6B27F52F04003E0034 /* DocumentTransactionTests.swift */; };
+		0A8A9B7027FD375B00B2139A /* AssociationUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A8A9B6F27FD375B00B2139A /* AssociationUnitTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -267,6 +268,7 @@
 		0A5E182C27C70D500089E550 /* Performance Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Performance Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A5E182E27C70D500089E550 /* Performance_Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Performance_Tests.swift; sourceTree = "<group>"; };
 		0A5EAB6B27F52F04003E0034 /* DocumentTransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentTransactionTests.swift; sourceTree = "<group>"; };
+		0A8A9B6F27FD375B00B2139A /* AssociationUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssociationUnitTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -322,6 +324,7 @@
 			children = (
 				0A1F7FDC27E40244007F8920 /* DocumentUnitTests.swift */,
 				0A55527327C5DF6E003E497B /* InfoUnitTests.swift */,
+				0A8A9B6F27FD375B00B2139A /* AssociationUnitTests.swift */,
 			);
 			path = "Unit Tests";
 			sourceTree = "<group>";
@@ -740,6 +743,7 @@
 				0A5551FF27C5D949003E497B /* MDSDocument.swift in Sources */,
 				0A1F7FEB27E40523007F8920 /* MDSSQLiteDatabaseManager.swift in Sources */,
 				0A55527127C5DC3E003E497B /* Int+Extensions.swift in Sources */,
+				0A8A9B7027FD375B00B2139A /* AssociationUnitTests.swift in Sources */,
 				0A1F802327E40577007F8920 /* UUID+Extensions.swift in Sources */,
 				0A1F7FF427E40527007F8920 /* MDSDocumentBackingCache.swift in Sources */,
 				0A1F800827E40543007F8920 /* SQLiteTableColumn.swift in Sources */,

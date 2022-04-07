@@ -23,10 +23,14 @@ app.listen(port, () => console.log(`listening on ${port}`));
 // Setup DocumentStorage
 app.locals.documentStorage =
 		new DocumentStorage(
-				new MySQLToolbox.StatementPerformer(
-						{
-							host: process.env.MYSQL_HOST,
-							user: process.env.MYSQL_USER,
-							password: process.env.MYSQL_PASSWORD,
-							multipleStatements: true,
-						}));
+				() =>
+						{ return new MySQLToolbox.StatementPerformer(
+								{
+									host: process.env.MYSQL_HOST,
+									user: process.env.MYSQL_USER,
+									password: process.env.MYSQL_PASSWORD,
+									multipleStatements: true,
+								},
+								{},
+								{},
+								{})});

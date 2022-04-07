@@ -11,12 +11,11 @@ module.exports = class Info {
 
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	constructor(internals) {
+	constructor(internals, statementPerformer) {
 		// Store
 		this.internals = internals;
 
 		// Setup
-		let	statementPerformer = internals.statementPerformer;
 		let	TableColumn = statementPerformer.tableColumn();
 		this.table =
 				statementPerformer.table('Info',
@@ -31,7 +30,7 @@ module.exports = class Info {
 
 	// Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	async get(keys) {
+	async get(statementPerformer, keys) {
 		// Validate
 		if (!keys)
 			return [null, 'Missing key(s)'];
@@ -40,9 +39,6 @@ module.exports = class Info {
 			keys = [keys];
 		else if (!Array.isArray(keys))
 			return [null, 'Missing key(s)'];
-
-		// Setup
-		let	statementPerformer = this.internals.statementPerformer;
 
 		// Catch errors
 		try {
@@ -71,17 +67,16 @@ module.exports = class Info {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async set(info) {
+	async set(statementPerformer, info) {
 		// Validate
 		if (!info || (Object.keys(info).length == 0))
 			return 'Missing info';
 
 		// Setup
 		let	internals = this.internals;
-		let	statementPerformer = this.internals.statementPerformer;
 
 		// Check if need to create table
-		await internals.createTableIfNeeded(this.table);
+		await internals.createTableIfNeeded(statementPerformer, this.table);
 
 		// Iterate info
 		for (let [key, value] of Object.entries(info))

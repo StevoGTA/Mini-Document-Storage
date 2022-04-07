@@ -18,13 +18,12 @@ module.exports = class Caches {
 
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	constructor(internals, valueSelectorInfo) {
+	constructor(internals, statementPerformer, valueSelectorInfo) {
 		// Store
 		this.internals = internals;
 		this.valueSelectorInfo = valueSelectorInfo;
 
 		// Setup
-		let	statementPerformer = internals.statementPerformer;
 		let	TableColumn = statementPerformer.tableColumn();
 		this.cachesTable =
 				statementPerformer.table('Caches',
@@ -43,7 +42,7 @@ module.exports = class Caches {
 
 	// Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	async register(info) {
+	async register(statementPerformer, info) {
 		// Validate
 		if (!info || (typeof info != 'object'))
 			return 'Missing info';
@@ -83,10 +82,9 @@ module.exports = class Caches {
 
 		// Setup
 		let	internals = this.internals;
-		let	statementPerformer = internals.statementPerformer;
 
 		// Check if need to create Caches table
-		await internals.createTableIfNeeded(this.cachesTable);
+		await internals.createTableIfNeeded(statementPerformer, this.cachesTable);
 
 		// Try to retrieve current entry
 		var	results =
@@ -130,10 +128,7 @@ module.exports = class Caches {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getForDocumentType(documentType) {
-		// Setup
-		let	statementPerformer = this.internals.statementPerformer;
-
+	async getForDocumentType(statementPerformer, documentType) {
 		// Catch errors
 		try {
 			// Select all Caches for this document type
@@ -164,10 +159,7 @@ module.exports = class Caches {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getForName(name) {
-		// Setup
-		let	statementPerformer = this.internals.statementPerformer;
-
+	async getForName(statementPerformer, name) {
 		// Check if already have
 		var	cache = this.cacheInfo[name];
 		if (cache)
@@ -206,23 +198,27 @@ module.exports = class Caches {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	update(caches, initialLastRevision, updateDocumentInfos) {
+	update(statementPerformer, caches, initialLastRevision, updateDocumentInfos) {
 		// Iterate caches
 		for (let cache of caches) {
 			// Update
 			if (cache.queueUpdates(initialLastRevision, updateDocumentInfos)) {
 				// Update table
-				internals.statementPerformer.queueUpdate(this.cachesTable,
-						[{tableColumn: this.cachesTable.lastDocumentRevisionTableColumn,
-									value: cache.lastDocumentRevision}],
-						internals.statementPerformer.where(this.cachesTable.nameTableColumn, cache.name));
+				statementPerformer.queueUpdate(this.cachesTable,
+						[
+							{
+								tableColumn: this.cachesTable.lastDocumentRevisionTableColumn,
+								value: cache.lastDocumentRevision
+							}
+						],
+						statementPerformer.where(this.cachesTable.nameTableColumn, cache.name));
 			}
 		}
 	}
 
 	// Private methods
 	//------------------------------------------------------------------------------------------------------------------
-	createCache(name, relevantProperties, valuesInfos, lastDocumentRevision) {
+	createCache(statementPerformer, name, relevantProperties, valuesInfos, lastDocumentRevision) {
 		// Setup
 		let	valuesInfosUse =
 					valuesInfos.map(info => {
@@ -234,7 +230,6 @@ module.exports = class Caches {
 					})
 
 		// Create cache
-		return new Cache(this.internals.statementPerformer, name, relevantProperties, valuesInfosUse,
-				lastDocumentRevision);
+		return new Cache(statementPerformer, name, relevantProperties, valuesInfosUse, lastDocumentRevision);
 	}
 }
