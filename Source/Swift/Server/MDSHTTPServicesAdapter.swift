@@ -195,9 +195,8 @@ class MDSHTTPServicesAdapter {
 			// Register collection
 			let	(documentLastRevision, collectionLastDocumentRevision) =
 						documentStorageServerHandler.registerCollection(named: info.name,
-								documentType: info.documentType, version: info.version,
-								relevantProperties: info.relevantProperties, isUpToDate: info.isUpToDate,
-								isIncludedSelector: info.isIncludedSelector,
+								documentType: info.documentType, relevantProperties: info.relevantProperties,
+								isUpToDate: info.isUpToDate, isIncludedSelector: info.isIncludedSelector,
 								isIncludedSelectorInfo: info.isIncludedSelectorInfo)
 			let	info :[String : Any] = [
 										"documentLastRevision": documentLastRevision,
@@ -285,9 +284,8 @@ class MDSHTTPServicesAdapter {
 			// Register index
 			let	(documentLastRevision, collectionLastDocumentRevision) =
 						documentStorageServerHandler.registerIndex(named: info.name, documentType: info.documentType,
-								version: info.version, relevantProperties: info.relevantProperties,
-								isUpToDate: info.isUpToDate, keysSelector: info.keysSelector,
-								keysSelectorInfo: info.keysSelectorInfo)
+								relevantProperties: info.relevantProperties, isUpToDate: info.isUpToDate,
+								keysSelector: info.keysSelector, keysSelectorInfo: info.keysSelectorInfo)
 			let	info :[String : Any] = [
 										"documentLastRevision": documentLastRevision,
 										"collectionLastDocumentRevision": collectionLastDocumentRevision,

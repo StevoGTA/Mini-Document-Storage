@@ -630,8 +630,8 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerCollection(named name :String, documentType :String, version :Int, relevantProperties :[String],
-			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any]) ->
+	func registerCollection(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+			isIncludedSelector :String, isIncludedSelectorInfo :[String : Any]) ->
 			(documentLastRevision: Int, collectionLastDocumentRevision: Int) {
 		// Not implemented
 		fatalError("Unimplemented")
@@ -653,8 +653,8 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerIndex(named name :String, documentType :String, version :Int, relevantProperties :[String],
-			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any]) ->
+	func registerIndex(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+			keysSelector :String, keysSelectorInfo :[String : Any]) ->
 			(documentLastRevision: Int, collectionLastDocumentRevision: Int) {
 		// Not implemented
 		fatalError("Unimplemented")

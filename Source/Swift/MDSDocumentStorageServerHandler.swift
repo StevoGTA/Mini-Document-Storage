@@ -20,13 +20,13 @@ protocol MDSDocumentStorageServerHandler : MDSDocumentStorage {
 			proc :(_ documentFullInfo :MDSDocument.FullInfo) -> Void)
 	func updateDocuments(documentType :String, documentUpdateInfos :[MDSDocument.UpdateInfo])
 
-	func registerCollection(named name :String, documentType :String, version :Int, relevantProperties :[String],
-			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any]) ->
+	func registerCollection(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+			isIncludedSelector :String, isIncludedSelectorInfo :[String : Any]) ->
 			(documentLastRevision: Int, collectionLastDocumentRevision: Int)
 	func iterateCollection(name :String, proc :@escaping (_ documentRevisionInfo :MDSDocument.RevisionInfo) -> Void)
 
-	func registerIndex(named name :String, documentType :String, version :Int, relevantProperties :[String],
-			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any]) ->
+	func registerIndex(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+			keysSelector :String, keysSelectorInfo :[String : Any]) ->
 			(documentLastRevision: Int, collectionLastDocumentRevision: Int)
 	func iterateIndex(name :String, keys :[String],
 			proc :@escaping (_ key :String, _ documentRevisionInfo :MDSDocument.RevisionInfo) -> Void)
