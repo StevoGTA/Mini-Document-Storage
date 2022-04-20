@@ -68,7 +68,7 @@ exports.setV1 = async (request, response) => {
 			response
 					.status(200)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-					.send({});
+					.send();
 		else
 			// Error
 			response

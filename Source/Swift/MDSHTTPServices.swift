@@ -150,40 +150,69 @@ class MDSHTTPServices {
 		}
 	}
 
+	// MARK: - MDSDataHTTPEndpointRequest
+	class MDSDataHTTPEndpointRequest : MDSHTTPEndpointRequest, HTTPEndpointRequestProcessResults {
+
+		// MARK: Types
+		typealias	CompletionProc = (_ data :Data?, _ error :Error?) -> Void
+
+		// MARK: Properties
+		var	completionProc :CompletionProc = { _,_ in }
+
+		// MARK: HTTPEndpointRequestProcessResults methods
+		//--------------------------------------------------------------------------------------------------------------
+		func processResults(response :HTTPURLResponse?, data :Data?, error :Error?) {
+			// Check cancelled
+			if !self.isCancelled {
+				// Handle results
+				if response != nil {
+					// Have response
+					let	statusCode = response!.statusCode
+					if (statusCode >= 200) && (statusCode < 300) {
+						// Success
+						self.completionProc(data, nil)
+					} else if (statusCode >= 400) && (statusCode < 500) {
+						// Error
+						self.completionProc(nil, mdsError(for: data))
+					} else if statusCode >= 500 {
+						// Internal error
+						self.completionProc(nil, MDSError.internalError)
+					}
+				} else {
+					// No response
+					self.completionProc(nil, error)
+				}
+			}
+		}
+	}
+
 	// MARK: - MDSJSONHTTPEndpointRequest
 	class MDSJSONHTTPEndpointRequest<T> : MDSHTTPEndpointRequest, HTTPEndpointRequestProcessMultiResults {
 
 		// MARK: Types
-		public typealias SingleResponseCompletionProc = (_ info :T?, _ error :Error?) -> Void
-		public typealias MultiResponsePartialResultsProc = (_ info :T?, _ error :Error?) -> Void
-		public typealias MultiResponseCompletionProc = (_ errors :[Error]) -> Void
+		typealias SingleResponseCompletionProc = (_ info :T?, _ error :Error?) -> Void
+		typealias MultiResponsePartialResultsProc = (_ info :T?, _ error :Error?) -> Void
+		typealias MultiResponseCompletionProc = (_ errors :[Error]) -> Void
 
 		// MARK: Properties
-		public	var	completionProc :SingleResponseCompletionProc?
-		public	var	multiResponsePartialResultsProc :MultiResponsePartialResultsProc?
-		public	var	multiResponseCompletionProc :MultiResponseCompletionProc?
+				var	completionProc :SingleResponseCompletionProc?
+				var	multiResponsePartialResultsProc :MultiResponsePartialResultsProc?
+				var	multiResponseCompletionProc :MultiResponseCompletionProc?
 
 		private	let	completedRequestsCount = LockingNumeric<Int>()
 
 		private	var	errors = [Error]()
 
-		// MARK: Lifecycle methods
+		// MARK: HTTPEndpointRequest methods
 		//--------------------------------------------------------------------------------------------------------------
-		override init(method :HTTPEndpointMethod, path :String, queryComponents :[String : Any]? = nil,
-				multiValueQueryComponent :MultiValueQueryComponent? = nil, headers :[String : String]? = nil,
-				timeoutInterval :TimeInterval = defaultTimeoutInterval) {
-			// Update
-			var	headersUse = headers ?? [:]
-			headersUse["Accept"] = "application/json"
-
-			// Do super
-			super.init(method: method, path: path, queryComponents: queryComponents,
-					multiValueQueryComponent: multiValueQueryComponent, headers: headersUse,
-					timeoutInterval: timeoutInterval)
+		override func adjustHeaders() {
+			// Setup
+			self.headers = self.headers ?? [:]
+			self.headers!["Accept"] = "application/json"
 		}
 
 		// MARK: HTTPEndpointRequestProcessResults methods
-		//------------------------------------------------------------------------------------------------------------------
+		//--------------------------------------------------------------------------------------------------------------
 		func processResults(response :HTTPURLResponse?, data :Data?, error :Error?, totalRequests :Int) {
 			// Check cancelled
 			if !self.isCancelled {
@@ -191,7 +220,7 @@ class MDSHTTPServices {
 				var	info :T? = nil
 				var	localError :Error? = nil
 
-				if (response != nil) {
+				if response != nil {
 					// Have response
 					let	statusCode = response!.statusCode
 					if (statusCode >= 200) && (statusCode < 300) {
@@ -233,14 +262,7 @@ class MDSHTTPServices {
 				// Call proc
 				if totalRequests == 1 {
 					// Single request (but could have been multiple
-					if self.completionProc != nil {
-						// Single response expected
-						self.completionProc!(info, localError)
-					} else {
-						// Multi-responses possible
-						self.multiResponsePartialResultsProc!(info, localError)
-						self.multiResponseCompletionProc!(self.errors)
-					}
+					callCompletion(response: response, info: info, error: localError)
 				} else {
 					// Multiple requests
 					self.multiResponsePartialResultsProc!(info, localError)
@@ -248,6 +270,85 @@ class MDSHTTPServices {
 						// All done
 						self.multiResponseCompletionProc!(self.errors)
 					}
+				}
+			}
+		}
+
+		// MARK: Instance methods
+		//--------------------------------------------------------------------------------------------------------------
+		func callCompletion(response :HTTPURLResponse?, info :T?, error :Error?) {
+			// Check desired method
+			if self.completionProc != nil {
+				// Single response expected
+				self.completionProc!(info, error)
+			} else {
+				// Multi-responses possible
+				self.multiResponsePartialResultsProc!(info, error)
+				self.multiResponseCompletionProc!((error != nil) ? [error!] : [])
+			}
+		}
+	}
+
+	// MARK: - MDSJSONWithCountHTTPEndpointRequest
+	class MDSJSONWithCountHTTPEndpointRequest<T> : MDSJSONHTTPEndpointRequest<T> {
+
+		// MARK: Types
+		typealias CompletionWithCountProc = (_ info :(info :T, count :Int)?, _ error :Error?) -> Void
+
+		// MARK: Properties
+		var	completionWithCountProc :CompletionWithCountProc = { _,_ in }
+
+		// MARK: MDSJSONHTTPEndpointRequest methods
+		//--------------------------------------------------------------------------------------------------------------
+		override func callCompletion(response :HTTPURLResponse?, info :T?, error :Error?) {
+			// Check situation
+			if info != nil {
+				// Success
+				if let contentRange = response!.contentRange, let size = contentRange.size {
+					// Got size
+					self.completionWithCountProc((info!, Int(size)), nil)
+				} else {
+					// Did not get size
+					self.completionWithCountProc(nil, MDSError.invalidRequest(message: "Missing content range size"))
+				}
+			} else {
+				// Error
+				self.completionWithCountProc(nil, error)
+			}
+		}
+	}
+
+	// MARK: - MDSSuccessHTTPEndpointRequest
+	class MDSSuccessHTTPEndpointRequest : MDSHTTPEndpointRequest, HTTPEndpointRequestProcessResults {
+
+		// MARK: Types
+		typealias	CompletionProc = (_ error :Error?) -> Void
+
+		// MARK: Properties
+		var	completionProc :CompletionProc = { _ in }
+
+		// MARK: HTTPEndpointRequestProcessResults methods
+		//--------------------------------------------------------------------------------------------------------------
+		func processResults(response :HTTPURLResponse?, data :Data?, error :Error?) {
+			// Check cancelled
+			if !self.isCancelled {
+				// Handle results
+				if response != nil {
+					// Have response
+					let	statusCode = response!.statusCode
+					if (statusCode >= 200) && (statusCode < 300) {
+						// Success
+						self.completionProc(nil)
+					} else if (statusCode >= 400) && (statusCode < 500) {
+						// Error
+						self.completionProc(mdsError(for: data))
+					} else if statusCode >= 500 {
+						// Internal error
+						self.completionProc(MDSError.internalError)
+					}
+				} else {
+					// No response
+					self.completionProc(error)
 				}
 			}
 		}
@@ -280,12 +381,12 @@ class MDSHTTPServices {
 								}
 	static func httpEndpointRequestForRegisterAssociation(documentStorageID :String, name :String,
 			fromDocumentType :String, toDocumentType :String, authorization :String? = nil) ->
-			SuccessHTTPEndpointRequest {
+			MDSSuccessHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return SuccessHTTPEndpointRequest(method: .put, path: "/v1/association/\(documentStorageIDUse)",
+		return MDSSuccessHTTPEndpointRequest(method: .put, path: "/v1/association/\(documentStorageIDUse)",
 				headers: headers,
 				jsonBody: [
 							"name": name,
@@ -338,12 +439,12 @@ class MDSHTTPServices {
 								}
 	static func httpEndpointRequestForUpdateAssocation(documentStorageID :String, name :String,
 			updates :[(action :MDSAssociationAction, fromID :String, toID :String)], authorization :String? = nil) ->
-			SuccessHTTPEndpointRequest {
+			MDSSuccessHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return SuccessHTTPEndpointRequest(method: .put,
+		return MDSSuccessHTTPEndpointRequest(method: .put,
 				path: "/v1/association/\(documentStorageIDUse)/\(name)", headers: headers,
 				jsonBody:
 						updates.map() {
@@ -559,7 +660,7 @@ class MDSHTTPServices {
 								}
 	static func httpEndpointRequestForRegisterCache(documentStorageID :String, name :String, documentType :String,
 			relevantProperties :[String] = [], valueInfos :[RegisterCacheEndpointValueInfo],
-			authorization :String? = nil) -> SuccessHTTPEndpointRequest {
+			authorization :String? = nil) -> MDSSuccessHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
@@ -570,7 +671,7 @@ class MDSHTTPServices {
 										"selector": $0.selector,
 									  ] })
 
-		return SuccessHTTPEndpointRequest(method: .put, path: "/v1/cache/\(documentStorageIDUse)", headers: headers,
+		return MDSSuccessHTTPEndpointRequest(method: .put, path: "/v1/cache/\(documentStorageIDUse)", headers: headers,
 				jsonBody: [
 							"name": name,
 							"documentType": documentType,
@@ -637,12 +738,13 @@ class MDSHTTPServices {
 								}
 	static func httpEndpointRequestForRegisterCollection(documentStorageID :String, name :String, documentType :String,
 			relevantProperties :[String] = [], isUpToDate :Bool = false, isIncludedSelector :String,
-			isIncludedSelectorInfo :[String : Any] = [:], authorization :String? = nil) -> SuccessHTTPEndpointRequest {
+			isIncludedSelectorInfo :[String : Any] = [:], authorization :String? = nil) ->
+			MDSSuccessHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return SuccessHTTPEndpointRequest(method: .put, path: "/v1/collection/\(documentStorageIDUse)",
+		return MDSSuccessHTTPEndpointRequest(method: .put, path: "/v1/collection/\(documentStorageIDUse)",
 				headers: headers,
 				jsonBody: [
 							"name": name,
@@ -779,12 +881,12 @@ class MDSHTTPServices {
 								}
 	static func httpEndpointRequestForCreateDocuments(documentStorageID :String, documentType :String,
 			documentCreateInfos :[MDSDocument.CreateInfo], authorization :String? = nil) ->
-			JSONHTTPEndpointRequest<[[String : Any]]> {
+			MDSJSONHTTPEndpointRequest<[[String : Any]]> {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return JSONHTTPEndpointRequest<[[String : Any]]>(method: .post,
+		return MDSJSONHTTPEndpointRequest<[[String : Any]]>(method: .post,
 				path: "/v1/document/\(documentStorageIDUse)/\(documentType)", headers: headers,
 				jsonBody: documentCreateInfos.map({ $0.httpServicesInfo }))
 	}
@@ -824,8 +926,8 @@ class MDSHTTPServices {
 	//			},
 	//			...
 	//		]
-	class GetDocumentsSinceRevisionHTTPEndpointRequest : JSONHTTPEndpointRequest<[[String : Any]]> {}
-	class GetDocumentsForDocumentIDsHTTPEndpointRequest : JSONHTTPEndpointRequest<[[String : Any]]> {}
+	class GetDocumentsSinceRevisionHTTPEndpointRequest : MDSJSONWithCountHTTPEndpointRequest<[[String : Any]]> {}
+	class GetDocumentsForDocumentIDsHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : Any]]> {}
 	typealias GetDocumentsEndpointInfo =
 				(documentStorageID :String, documentType :String, documentIDs :[String]?, sinceRevision :Int?,
 						authorization :String?)
@@ -950,12 +1052,12 @@ class MDSHTTPServices {
 								}
 	static func httpEndpointRequestForUpdateDocuments(documentStorageID :String, documentType :String,
 			documentUpdateInfos :[MDSDocument.UpdateInfo], authorization :String? = nil) ->
-			JSONHTTPEndpointRequest<[[String : Any]]> {
+			MDSJSONHTTPEndpointRequest<[[String : Any]]> {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return JSONHTTPEndpointRequest<[[String : Any]]>(method: .patch,
+		return MDSJSONHTTPEndpointRequest<[[String : Any]]>(method: .patch,
 				path: "/v1/document/\(documentStorageIDUse)/\(documentType)", headers: headers,
 				jsonBody: documentUpdateInfos.map({ $0.httpServicesInfo }))
 	}
@@ -974,13 +1076,13 @@ class MDSHTTPServices {
 	//		}
 	static func httpEndpointRequestForAddDocumentAttachment(documentStorageID :String, documentType :String,
 			documentID :String, info :[String : Any], content :Data, authorization :String? = nil) ->
-			JSONHTTPEndpointRequest<[String : Any]> {
+			MDSJSONHTTPEndpointRequest<[String : Any]> {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	documentIDUse = documentID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return JSONHTTPEndpointRequest<[String : Any]>(method: .post,
+		return MDSJSONHTTPEndpointRequest<[String : Any]>(method: .post,
 				path: "/v1/document/\(documentStorageIDUse)/\(documentType)/\(documentIDUse)/attachment",
 				headers: headers, jsonBody: ["info": info, "content": content.base64EncodedString()])
 	}
@@ -994,14 +1096,14 @@ class MDSHTTPServices {
 	//
 	//	<= data
 	static func httpEndpointRequestForGetDocumentAttachment(documentStorageID :String, documentType :String,
-			documentID :String, attachmentID :String, authorization :String? = nil) -> DataHTTPEndpointRequest {
+			documentID :String, attachmentID :String, authorization :String? = nil) -> MDSDataHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	documentIDUse = documentID.replacingOccurrences(of: "/", with: "_")
 		let	attachmentIDUse = attachmentID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return DataHTTPEndpointRequest(method: .get,
+		return MDSDataHTTPEndpointRequest(method: .get,
 				path: "/v1/document/\(documentStorageIDUse)/\(documentType)/\(documentIDUse)/attachment/\(attachmentIDUse)",
 				headers: headers)
 	}
@@ -1016,14 +1118,14 @@ class MDSHTTPServices {
 	//	=> authorization (header) (optional)
 	static func httpEndpointRequestForUpdateDocumentAttachment(documentStorageID :String, documentType :String,
 			documentID :String, attachmentID :String, info :[String : Any], content :Data,
-			authorization :String? = nil) -> SuccessHTTPEndpointRequest {
+			authorization :String? = nil) -> MDSSuccessHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	documentIDUse = documentID.replacingOccurrences(of: "/", with: "_")
 		let	attachmentIDUse = attachmentID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return SuccessHTTPEndpointRequest(method: .patch,
+		return MDSSuccessHTTPEndpointRequest(method: .patch,
 				path: "/v1/document/\(documentStorageIDUse)/\(documentType)/\(documentIDUse)/attachment/\(attachmentIDUse)",
 				headers: headers, jsonBody: ["info": info, "content": content.base64EncodedString()])
 	}
@@ -1035,14 +1137,14 @@ class MDSHTTPServices {
 	//	=> attachmentID (path)
 	//	=> authorization (header) (optional)
 	static func httpEndpointRequestForRemoveDocumentAttachment(documentStorageID :String, documentType :String,
-			documentID :String, attachmentID :String, authorization :String? = nil) -> SuccessHTTPEndpointRequest {
+			documentID :String, attachmentID :String, authorization :String? = nil) -> MDSSuccessHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	documentIDUse = documentID.replacingOccurrences(of: "/", with: "_")
 		let	attachmentIDUse = attachmentID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return SuccessHTTPEndpointRequest(method: .delete,
+		return MDSSuccessHTTPEndpointRequest(method: .delete,
 				path: "/v1/document/\(documentStorageIDUse)/\(documentType)/\(documentIDUse)/attachment/\(attachmentIDUse)",
 				headers: headers)
 	}
@@ -1222,12 +1324,12 @@ class MDSHTTPServices {
 									return (documentStorageID, info, headers["Authorization"])
 								}
 	static func httpEndpointRequestForSetInfo(documentStorageID :String, info :[String : String],
-			authorization :String? = nil) -> JSONHTTPEndpointRequest<[String : String]> {
+			authorization :String? = nil) -> MDSSuccessHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return JSONHTTPEndpointRequest(method: .post, path: "/v1/info/\(documentStorageIDUse)", headers: headers,
+		return MDSSuccessHTTPEndpointRequest(method: .post, path: "/v1/info/\(documentStorageIDUse)", headers: headers,
 				jsonBody: info)
 	}
 }

@@ -14,7 +14,13 @@ class Config {
 	// MARK: Properties
 	static	let	shared = Config()
 
-			let	httpEndpointClient = HTTPEndpointClient(scheme: "http", hostName: "localhost", port: 1138)
+			let	httpEndpointClient :HTTPEndpointClient = {
+						// Setup
+						let	httpEndpointClient = HTTPEndpointClient(scheme: "http", hostName: "localhost", port: 1138)
+						httpEndpointClient.logOptions = [.requestAndResponse]
+
+						return httpEndpointClient
+					}()
 			let	documentStorageID = "Sandbox"
 
 			let	documentType = "test"

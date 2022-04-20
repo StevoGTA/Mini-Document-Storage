@@ -18,19 +18,25 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, documentInfos, error) =
+		let	(documentInfos, error) =
 					config.httpEndpointClient.documentCreate(documentStorageID: "ABC",
 							documentType: config.documentType, documentCreateInfos:[])
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 400, "unexpected response status")
-		}
-
-		XCTAssertNil(documentInfos, "did not receive documentInfos")
+		XCTAssertNil(documentInfos, "received documentInfos")
 
 		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Missing infos", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -39,19 +45,25 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, documentInfos, error) =
+		let	(documentInfos, error) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
 							documentType: config.documentType, documentCreateInfos:[])
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 400, "unexpected response status")
-		}
-
-		XCTAssertNil(documentInfos, "did not receive documentInfos")
+		XCTAssertNil(documentInfos, "received documentInfos")
 
 		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Missing infos", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -60,17 +72,12 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, documentInfos, error) =
+		let	(documentInfos, error) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
 							documentType: config.documentType,
 							documentCreateInfos:[MDSDocument.CreateInfo(propertyMap: ["key": "value"])])
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 200, "unexpected response status")
-		}
-
 		XCTAssertNotNil(documentInfos, "did not receive documentInfos")
 		if documentInfos != nil {
 			XCTAssertEqual(documentInfos!.count, 1, "did not receive 1 documentInfo")
@@ -105,19 +112,25 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, documentInfos, error) =
+		let	(info, error) =
 					config.httpEndpointClient.documentGet(documentStorageID: "ABC", documentType: config.documentType,
 							sinceRevision: 0)
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 400, "unexpected response status")
-		}
-
-		XCTAssertNil(documentInfos, "did not receive documentInfos")
+		XCTAssertNil(info, "received info")
 
 		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -126,19 +139,18 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, documentInfos, error) =
+		let	(info, error) =
 					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
 							documentType: "ABC", sinceRevision: 0)
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 200, "unexpected response status")
+		XCTAssertNotNil(info, "did not receive info")
+		if info != nil {
+			XCTAssertEqual(info!.documentInfos.count, 0, "documentInfos was not empty")
+			XCTAssertEqual(info!.count, 0, "count was not 0")
 		}
 
-		XCTAssertNotNil(documentInfos, "did not receive documentInfos")
-
-		XCTAssertNil(error, "received error")
+		XCTAssertNil(error, "received error: \(error!)")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -147,19 +159,25 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, documentInfos, error) =
+		let	(documentInfos, error) =
 					config.httpEndpointClient.documentGet(documentStorageID: "ABC",
 							documentType: config.documentType, documentIDs: ["ABC"])
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 400, "unexpected response status")
-		}
-
 		XCTAssertNil(documentInfos, "received documentInfos")
 
 		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -168,19 +186,25 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, documentInfos, error) =
+		let	(documentInfos, error) =
 					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
 							documentType: "ABC", documentIDs: ["ABC"])
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 400, "unexpected response status")
-		}
-
 		XCTAssertNil(documentInfos, "received documentInfos")
 
 		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "No Documents", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -189,19 +213,25 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, documentInfos, error) =
+		let	(documentInfos, error) =
 					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
 							documentType: config.documentType, documentIDs: [])
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 400, "unexpected response status")
-		}
-
 		XCTAssertNil(documentInfos, "received documentInfos")
 
 		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Missing id(s)", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -210,7 +240,7 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, documentInfos, error) =
+		let	(documentInfos, error) =
 					config.httpEndpointClient.documentUpdate(documentStorageID: "ABC", documentType: "ABC",
 							documentUpdateInfos:
 									[
@@ -219,14 +249,20 @@ class DocumentUnitTests : XCTestCase {
 									])
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 400, "unexpected response status")
-		}
-
-		XCTAssertNil(documentInfos, "did not receive documentInfos")
+		XCTAssertNil(documentInfos, "received documentInfos")
 
 		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -235,19 +271,25 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, documentInfos, error) =
+		let	(documentInfos, error) =
 					config.httpEndpointClient.documentUpdate(documentStorageID: config.documentStorageID,
 							documentType: "ABC", documentUpdateInfos: [])
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 400, "unexpected response status")
-		}
-
 		XCTAssertNil(documentInfos, "received documentInfos")
 
 		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Missing infos", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -256,19 +298,25 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, info, error) =
+		let	(info, error) =
 					config.httpEndpointClient.documentAddAttachment(documentStorageID: "ABC",
 							documentType: config.documentType, documentID: "ABC", info: [:], content: Data(capacity: 0))
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 400, "unexpected response status")
-		}
-
-		XCTAssertNotNil(info, "did not receive info")
+		XCTAssertNil(info, "received info")
 
 		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -277,19 +325,25 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, info, error) =
+		let	(info, error) =
 					config.httpEndpointClient.documentAddAttachment(documentStorageID: config.documentStorageID,
 							documentType: "ABC", documentID: "ABC", info: [:], content: Data(capacity: 0))
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 400, "unexpected response status")
-		}
-
-		XCTAssertNotNil(info, "did not receive info")
+		XCTAssertNil(info, "received info")
 
 		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "No Documents", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -298,19 +352,25 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, content, error) =
+		let	(content, error) =
 					config.httpEndpointClient.documentGetAttachment(documentStorageID: "ABC",
 							documentType: config.documentType, documentID: "ABC", attachmentID: "ABC")
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 400, "unexpected response status")
-		}
-
-		XCTAssertNotNil(content, "did not receive content")
+		XCTAssertNil(content, "received content")
 
 		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -319,19 +379,25 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, content, error) =
+		let	(content, error) =
 					config.httpEndpointClient.documentGetAttachment(documentStorageID: config.documentStorageID,
 							documentType: "ABC", documentID: "ABC", attachmentID: "ABC")
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 400, "unexpected response status")
-		}
-
-		XCTAssertNotNil(content, "did not receive content")
+		XCTAssertNil(content, "received content")
 
 		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Attachment ABC for ABC of type ABC not found.", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -340,18 +406,24 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, error) =
+		let	error =
 					config.httpEndpointClient.documentUpdateAttachment(documentStorageID: "ABC",
 							documentType: config.documentType, documentID: "ABC", attachmentID: "ABC", info: [:],
 							content: Data(capacity: 0))
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 400, "unexpected response status")
-		}
-
 		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -360,18 +432,24 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, error) =
+		let	error =
 					config.httpEndpointClient.documentUpdateAttachment(documentStorageID: config.documentStorageID,
 							documentType: "ABC", documentID: "ABC", attachmentID: "ABC", info: [:],
 							content: Data(capacity: 0))
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 400, "unexpected response status")
-		}
-
 		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "No Documents", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -380,17 +458,23 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, error) =
+		let	error =
 					config.httpEndpointClient.documentRemoveAttachment(documentStorageID: "ABC",
 							documentType: config.documentType, documentID: "ABC", attachmentID: "ABC")
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 400, "unexpected response status")
-		}
-
 		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -399,16 +483,22 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, error) =
+		let	error =
 					config.httpEndpointClient.documentRemoveAttachment(documentStorageID: config.documentStorageID,
 							documentType: "ABC", documentID: "ABC", attachmentID: "ABC")
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 400, "unexpected response status")
-		}
-
 		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "No Documents", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
 	}
 }

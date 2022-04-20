@@ -140,7 +140,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		guard !info.isEmpty else { return }
 
 		// Set info
-		let	(_, _, error) =
+		let	error =
 					self.httpEndpointClient.infoSet(documentStorageID: self.documentStorageID, info: info,
 							authorization: self.authorization)
 		if error != nil {
@@ -496,7 +496,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerAssociation(named name :String, fromDocumentType :String, toDocumentType :String) {
 		// Register assocation
-		let	(_, error) =
+		let	error =
 					self.httpEndpointClient.associationRegister(documentStorageID: self.documentStorageID, name: name,
 							fromDocumentType: fromDocumentType, toDocumentType: toDocumentType,
 							authorization: self.authorization)
@@ -654,7 +654,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		let	documentType = type(of: document).documentType
 
 		// Get attachment
-		let	(_, data, error) =
+		let	(data, error) =
 					self.httpEndpointClient.documentGetAttachment(documentStorageID: self.documentStorageID,
 							documentType: documentType, documentID: document.id, attachmentID: attachmentInfo.id,
 							authorization: self.authorization)
@@ -735,7 +735,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	public func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)]) {
 		// Register cache
-		let	(_, error) =
+		let	error =
 					self.httpEndpointClient.cacheRegister(documentStorageID: self.documentStorageID, name: name,
 							documentType: T.documentType, relevantProperties: relevantProperties,
 							valueInfos:
@@ -756,7 +756,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
 			isIncludedProc :@escaping (_ document :T) -> Bool) {
 		// Register collection
-		let	(_, error) =
+		let	error =
 					self.httpEndpointClient.collectionRegister(documentStorageID: self.documentStorageID, name: name,
 							documentType: T.documentType, relevantProperties: relevantProperties,
 							isUpToDate: isUpToDate, isIncludedSelector: isIncludedSelector,
@@ -1321,7 +1321,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	private func addAttachment(documentType :String, documentID :String, info :[String : Any], content :Data) {
 		// Perform
-		let	(_, info, error) =
+		let	(info, error) =
 					self.httpEndpointClient.documentAddAttachment(documentStorageID: self.documentStorageID,
 							documentType: documentType, documentID: documentID, info: info, content: content,
 							authorization: self.authorization)
@@ -1346,7 +1346,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	private func updateAttachment(documentType :String, documentID :String, attachmentID :String, info :[String : Any],
 			content :Data) {
 		// Perform
-		let	(_, error) =
+		let	error =
 					self.httpEndpointClient.documentUpdateAttachment(documentStorageID: self.documentStorageID,
 							documentType: documentType, documentID: documentID, attachmentID: attachmentID, info: info,
 							content: content, authorization: self.authorization)
@@ -1362,7 +1362,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	private func removeAttachment(documentType :String, documentID :String, attachmentID :String) {
 		// Perform
-		let	(_, error) =
+		let	error =
 					self.httpEndpointClient.documentRemoveAttachment(documentStorageID: self.documentStorageID,
 							documentType: documentType, documentID: documentID, attachmentID: attachmentID,
 							authorization: self.authorization)

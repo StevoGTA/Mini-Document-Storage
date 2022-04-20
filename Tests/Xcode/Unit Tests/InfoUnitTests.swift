@@ -67,23 +67,21 @@ class InfoUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, info, error) = config.httpEndpointClient.infoSet(documentStorageID: "ABC", info: ["abc": "abc"])
+		let	error = config.httpEndpointClient.infoSet(documentStorageID: "ABC", info: ["abc": "abc"])
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 400, "unexpected response status")
-		}
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
 
-		XCTAssertNotNil(info, "did not receive info")
-		if info != nil {
-			XCTAssertNotNil(info!["error"], "did not receive error in info")
-			if info!["error"] != nil {
-				XCTAssertEqual(info!["error"], "Invalid documentStorageID", "did not receive expected error message")
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
 			}
 		}
-
-		XCTAssertNotNil(error, "did not receive error")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -92,24 +90,21 @@ class InfoUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, info, error) =
-					config.httpEndpointClient.infoSet(documentStorageID: config.documentStorageID, info: [:])
+		let	error = config.httpEndpointClient.infoSet(documentStorageID: config.documentStorageID, info: [:])
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 400, "unexpected response status")
-		}
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Missing info", "did not receive expected error message")
 
-		XCTAssertNotNil(info, "did not receive info")
-		if info != nil {
-			XCTAssertNotNil(info!["error"], "did not receive error in info")
-			if info!["error"] != nil {
-				XCTAssertEqual(info!["error"], "Missing info", "did not receive expected error message")
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
 			}
 		}
-
-		XCTAssertNotNil(error, "did not receive error")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -118,7 +113,7 @@ class InfoUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	(response, info, error) =
+		let	error =
 					config.httpEndpointClient.infoSet(documentStorageID: config.documentStorageID,
 							info: [
 									"abc": "abc",
@@ -127,16 +122,6 @@ class InfoUnitTests : XCTestCase {
 								  ])
 
 		// Evaluate results
-		XCTAssertNotNil(response, "did not receive response")
-		if response != nil {
-			XCTAssertEqual(response!.statusCode, 200, "unexpected response status")
-		}
-
-		XCTAssertNotNil(info, "did not receive info")
-		if info != nil {
-			XCTAssert(info!.isEmpty, "did not receive empty info")
-		}
-
 		XCTAssertNil(error, "received error \(error!)")
 	}
 }

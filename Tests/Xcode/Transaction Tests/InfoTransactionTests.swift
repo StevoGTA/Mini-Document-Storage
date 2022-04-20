@@ -18,21 +18,11 @@ class InfoTransactionTests : XCTestCase {
 		let	config = Config.shared
 
 		// Set some info
-		let	(infoSetResponse, infoSetInfo, infoSetError) =
+		let	infoSetError =
 					config.httpEndpointClient.infoSet(documentStorageID: config.documentStorageID,
 							info: ["abc": "abc" ])
 
 		// Evaluate results
-		XCTAssertNotNil(infoSetResponse, "set did not receive response")
-		if infoSetResponse != nil {
-			XCTAssertEqual(infoSetResponse!.statusCode, 200, "set unexpected response status")
-		}
-
-		XCTAssertNotNil(infoSetInfo, "set did not receive info")
-		if infoSetInfo != nil {
-			XCTAssert(infoSetInfo!.isEmpty, "set did not receive empty info")
-		}
-
 		XCTAssertNil(infoSetError, "set received error \(infoSetError!)")
 
 		// Get some info
@@ -59,7 +49,7 @@ class InfoTransactionTests : XCTestCase {
 		let	config = Config.shared
 
 		// Set some info
-		let	(infoSetResponse, infoSetInfo, infoSetError) =
+		let	infoSetError =
 					config.httpEndpointClient.infoSet(documentStorageID: config.documentStorageID,
 							info: [
 									"abc": "abc",
@@ -67,16 +57,6 @@ class InfoTransactionTests : XCTestCase {
 								  ])
 
 		// Evaluate results
-		XCTAssertNotNil(infoSetResponse, "set did not receive response")
-		if infoSetResponse != nil {
-			XCTAssertEqual(infoSetResponse!.statusCode, 200, "set unexpected response status")
-		}
-
-		XCTAssertNotNil(infoSetInfo, "set did not receive info")
-		if infoSetInfo != nil {
-			XCTAssert(infoSetInfo!.isEmpty, "set did not receive empty info")
-		}
-
 		XCTAssertNil(infoSetError, "set received error \(infoSetError!)")
 
 		// Get some info
