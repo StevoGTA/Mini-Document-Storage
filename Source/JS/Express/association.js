@@ -96,12 +96,40 @@ exports.updateV1 = async (request, response) => {
 //	=> startIndex (query) (optional, default 0)
 //	=> fullInfo (query) (optional, default false)
 //
-//	<= json
+//
+//	<= json (fullInfo == 0)
 //		{
 //			String (documentID) : Int (revision),
 //			...
 //		}
-exports.getDocumentInfosV1 = async (request, response) => {
+//	<= json (fullInfo == 1)
+//		[
+//			{
+//				"documentID" :String,
+//				"revision" :Int,
+//				"active" :0/1,
+//				"creationDate" :String,
+//				"modificationDate" :String,
+//				"json" :{
+//							"key" :Any,
+//							...
+//						},
+//				"attachments":
+//						{
+//							id :
+//								{
+//									"revision" :Int,
+//									"info" :{
+//												"key" :Any,
+//												...
+//											},
+//								},
+//								..
+//						}
+//			},
+//			...
+//		]
+	exports.getDocumentInfosV1 = async (request, response) => {
 	// Setup
 	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	name = request.params.name;
