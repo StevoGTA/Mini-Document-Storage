@@ -108,7 +108,7 @@ exports.getDocumentInfosV1 = async (request, response) => {
 	let	fromDocumentID = request.query.fromID;
 	let	toDocumentID = request.query.toID;
 	let	startIndex = request.query.startIndex || 0;
-	let	fullInfo = request.query.fullInfo || 0;
+	let	fullInfo = request.query.fullInfo || false;
 
 	// Catch errors
 	try {

@@ -687,8 +687,8 @@ module.exports = class Documents {
 		// Setup
 		let	documentInfo = this.documentInfo(statementPerformer, documentType);
 
-		return statementPerformer.innerJoin(documentInfo.infoTable, documentInfo.infoTable.idTableColumn,
-				idTableColumn);
+		return statementPerformer.innerJoin(documentInfo.infoTable, idTableColumn,
+				documentInfo.infoTable.idTableColumn);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -697,18 +697,8 @@ module.exports = class Documents {
 		let	documentInfo = this.documentInfo(statementPerformer, documentType);
 
 		return statementPerformer.innerJoin(
-				[
-					{
-						table: documentInfo.infoTable,
-						tableColumn: documentInfo.infoTable.idTableColumn,
-						joinTableColumn: idTableColumn,
-					},
-					{
-						table: documentInfo.contentTable,
-						tableColumn: documentInfo.contentTable.idTableColumn,
-						joinTableColumn: idTableColumn,
-					},
-				]);
+				[documentInfo.infoTable, idTableColumn, documentInfo.infoTable.idTableColumn],
+				[documentInfo.contentTable, idTableColumn, documentInfo.contentTable.idTableColumn]);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

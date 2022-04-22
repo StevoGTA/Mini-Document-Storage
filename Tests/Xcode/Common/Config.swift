@@ -24,6 +24,4 @@ class Config {
 			let	documentStorageID = "Sandbox"
 
 			let	documentType = "test"
-			let	parentDocumentType = "parent"
-			let	childDocumentType = "child"
 }

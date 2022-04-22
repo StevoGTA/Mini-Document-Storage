@@ -21,15 +21,11 @@ class InfoTransactionTests : XCTestCase {
 		let	infoSetError =
 					config.httpEndpointClient.infoSet(documentStorageID: config.documentStorageID,
 							info: ["abc": "abc" ])
-
-		// Evaluate results
 		XCTAssertNil(infoSetError, "set received error \(infoSetError!)")
 
 		// Get some info
 		let	(infoGetInfo, infoGetError) =
 					config.httpEndpointClient.infoGet(documentStorageID: config.documentStorageID, keys: ["abc", "def"])
-
-		// Evaluate results
 		XCTAssertNotNil(infoGetInfo, "get did not receive info")
 		if infoGetInfo != nil {
 			XCTAssertNotNil(infoGetInfo!["abc"], "get did not receive abc in info")
@@ -39,7 +35,6 @@ class InfoTransactionTests : XCTestCase {
 
 			XCTAssertNil(infoGetInfo!["123"], "did receive 123 in info")
 		}
-
 		XCTAssertNil(infoGetError, "get received error \(infoGetError!)")
 	}
 
@@ -55,15 +50,11 @@ class InfoTransactionTests : XCTestCase {
 									"abc": "abc",
 									"def": "def",
 								  ])
-
-		// Evaluate results
 		XCTAssertNil(infoSetError, "set received error \(infoSetError!)")
 
 		// Get some info
 		let	(infoGetInfo, infoGetError) =
 					config.httpEndpointClient.infoGet(documentStorageID: config.documentStorageID, keys: ["abc", "def"])
-
-		// Evaluate results
 		XCTAssertNotNil(infoGetInfo, "get did not receive info")
 		if infoGetInfo != nil {
 			XCTAssertNotNil(infoGetInfo!["abc"], "get did not receive abc in info")
@@ -78,7 +69,6 @@ class InfoTransactionTests : XCTestCase {
 
 			XCTAssertNil(infoGetInfo!["123"], "did receive 123 in info")
 		}
-
 		XCTAssertNil(infoGetError, "get received error \(infoGetError!)")
 	}
 }

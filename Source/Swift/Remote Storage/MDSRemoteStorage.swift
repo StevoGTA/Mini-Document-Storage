@@ -525,7 +525,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		var	startIndex = 0
 		while true {
 			// Retrieve info
-			let	(documentRevisionInfos, isComplete, error)  =
+			let	(info, error) =
 						DispatchQueue.performBlocking() { completionProc in
 							// Queue
 							self.httpEndpointClient.queue(
@@ -533,24 +533,20 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 											documentStorageID: self.documentStorageID, name: name,
 											fromDocumentID: document.id, startIndex: startIndex,
 											authorization: self.authorization))
-									{ (documentRevisionInfos :[MDSDocument.RevisionInfo]?, isComplete :Bool?,
-											error :Error?) in
-										// Call completion proc
-										completionProc((documentRevisionInfos, isComplete, error))
-									}
+									{ completionProc(($0, $1)) }
 						}
 
 			// Handle results
-			if documentRevisionInfos != nil {
+			if let (documentRevisionInfos, isComplete) = info {
 				// Success
-				iterateDocumentIDs(documentType: U.documentType, activeDocumentRevisionInfos: documentRevisionInfos!)
+				iterateDocumentIDs(documentType: U.documentType, activeDocumentRevisionInfos: documentRevisionInfos)
 					{ proc(U(id: $0, documentStorage: self)) }
 
 				// Update
-				startIndex += documentRevisionInfos!.count
+				startIndex += documentRevisionInfos.count
 
 				// Check if is complete
-				if isComplete! {
+				if isComplete {
 					// Complete
 					return
 				}
@@ -570,7 +566,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		var	startIndex = 0
 		while true {
 			// Retrieve info
-			let	(documentRevisionInfos, isComplete, error)  =
+			let	(info, error) =
 						DispatchQueue.performBlocking() { completionProc in
 							// Queue
 							self.httpEndpointClient.queue(
@@ -578,24 +574,20 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 											documentStorageID: self.documentStorageID, name: name,
 											toDocumentID: document.id, startIndex: startIndex,
 											authorization: self.authorization))
-									{ (documentRevisionInfos :[MDSDocument.RevisionInfo]?, isComplete :Bool?,
-											error :Error?) in
-										// Call completion proc
-										completionProc((documentRevisionInfos, isComplete, error))
-									}
+									{ completionProc(($0, $1)) }
 						}
 
 			// Handle results
-			if documentRevisionInfos != nil {
+			if let (documentRevisionInfos, isComplete) = info {
 				// Success
-				iterateDocumentIDs(documentType: T.documentType, activeDocumentRevisionInfos: documentRevisionInfos!)
+				iterateDocumentIDs(documentType: T.documentType, activeDocumentRevisionInfos: documentRevisionInfos)
 					{ proc(T(id: $0, documentStorage: self)) }
 
 				// Update
-				startIndex += documentRevisionInfos!.count
+				startIndex += documentRevisionInfos.count
 
 				// Check if is complete
-				if isComplete! {
+				if isComplete {
 					// Complete
 					return
 				}

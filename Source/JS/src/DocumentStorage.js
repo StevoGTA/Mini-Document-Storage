@@ -80,7 +80,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return [null, 'Invalid documentStorageID'];
+				return 'Invalid documentStorageID';
 			else
 				// Other
 				throw error;
@@ -103,7 +103,7 @@ module.exports = class DocumentStorage {
 						await statementPerformer.batch(
 								() =>
 										{ return internals.associations.getDocumentInfos(statementPerformer, name,
-												fromDocumentID, toDocumentID, startIndex, fullInfo); });
+												fromDocumentID, toDocumentID, startIndex, documentCount, fullInfo); });
 			
 			return results;
 		} catch (error) {

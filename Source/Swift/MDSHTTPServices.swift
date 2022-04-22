@@ -464,18 +464,46 @@ class MDSHTTPServices {
 	//	=> fullInfo (query) (optional, default is false)
 	//	=> authorization (header) (optional)
 	//
-	//	<= json
+	//	<= json (fullInfo == 0)
 	//		{
 	//			String (documentID) : Int (revision),
 	//			...
 	//		}
-	typealias GetAssociationDocumentInfosHTTPEndpointRequest = JSONHTTPEndpointRequest<[String : Int]>
-	typealias GetAssociationDocumentInfosEndpointInfo =
+	//	<= json (fullInfo == 1)
+	//		[
+	//			{
+	//				"documentID" :String,
+	//				"revision" :Int,
+	//				"active" :0/1,
+	//				"creationDate" :String,
+	//				"modificationDate" :String,
+	//				"json" :{
+	//							"key" :Any,
+	//							...
+	//						},
+	//				"attachments":
+	//						{
+	//							id :
+	//								{
+	//									"revision" :Int,
+	//									"info" :{
+	//												"key" :Any,
+	//												...
+	//											},
+	//								},
+	//								..
+	//						}
+	//			},
+	//			...
+	//		]
+	typealias GetAssociationDocumentInfosHTTPEndpointRequest = MDSJSONWithCountHTTPEndpointRequest<[String : Int]>
+	typealias GetAssociationDocumentsHTTPEndpointRequest = MDSJSONWithCountHTTPEndpointRequest<[[String : Any]]>
+	typealias GetAssociationDocumentInfoEndpointInfo =
 				(documentStorageID :String, name :String, fromDocumentID :String?, toDocumentID :String?,
 						startIndex :Int, fullInfo :Bool, authorization :String?)
 	static	let	getAssociationDocumentInfosEndpoint =
 						BasicHTTPEndpoint(method: .get, path: "/v1/assocation/:documentStorageID/:name")
-								{ (urlComponents, headers) -> GetAssociationDocumentInfosEndpointInfo in
+								{ (urlComponents, headers) -> GetAssociationDocumentInfoEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
@@ -495,7 +523,7 @@ class MDSHTTPServices {
 											(fullInfo ?? 0) == 1, headers["Authorization"])
 								}
 	static func httpEndpointRequestForGetAssociationDocumentInfos(documentStorageID :String, name :String,
-			fromDocumentID :String, startIndex :Int = 0, fullInfo :Bool = false, authorization :String? = nil) ->
+			fromDocumentID :String, startIndex :Int = 0, authorization :String? = nil) ->
 			GetAssociationDocumentInfosHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
@@ -507,12 +535,29 @@ class MDSHTTPServices {
 				queryComponents: [
 									"fromID": fromDocumentID,
 									"startIndex": startIndex,
-									"fullInfo": fullInfo ? 1 : 0,
+									"fullInfo": 0,
+								 ],
+				headers: headers)
+	}
+	static func httpEndpointRequestForGetAssociationDocuments(documentStorageID :String, name :String,
+			fromDocumentID :String, startIndex :Int = 0, authorization :String? = nil) ->
+			GetAssociationDocumentsHTTPEndpointRequest {
+		// Setup
+		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
+		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
+
+		// Return endpoint request
+		return GetAssociationDocumentsHTTPEndpointRequest(method: .get,
+				path: "/v1/association/\(documentStorageIDUse)/\(name)",
+				queryComponents: [
+									"fromID": fromDocumentID,
+									"startIndex": startIndex,
+									"fullInfo": 1,
 								 ],
 				headers: headers)
 	}
 	static func httpEndpointRequestForGetAssociationDocumentInfos(documentStorageID :String, name :String,
-			toDocumentID :String, startIndex :Int, authorization :String? = nil) ->
+			toDocumentID :String, startIndex :Int = 0, authorization :String? = nil) ->
 			GetAssociationDocumentInfosHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
@@ -524,6 +569,24 @@ class MDSHTTPServices {
 				queryComponents: [
 									"toID": toDocumentID,
 									"startIndex": startIndex,
+									"fullInfo": 0,
+								 ],
+				headers: headers)
+	}
+	static func httpEndpointRequestForGetAssociationDocuments(documentStorageID :String, name :String,
+			toDocumentID :String, startIndex :Int = 0, authorization :String? = nil) ->
+			GetAssociationDocumentsHTTPEndpointRequest {
+		// Setup
+		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
+		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
+
+		// Return endpoint request
+		return GetAssociationDocumentsHTTPEndpointRequest(method: .get,
+				path: "/v1/association/\(documentStorageIDUse)/\(name)",
+				queryComponents: [
+									"toID": toDocumentID,
+									"startIndex": startIndex,
+									"fullInfo": 1,
 								 ],
 				headers: headers)
 	}

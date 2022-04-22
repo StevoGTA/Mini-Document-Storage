@@ -157,6 +157,13 @@
 		0A5E188C27C71FBA0089E550 /* LockingArray.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55525B27C5DA60003E497B /* LockingArray.swift */; };
 		0A5EAB6C27F52F04003E0034 /* DocumentTransactionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5EAB6B27F52F04003E0034 /* DocumentTransactionTests.swift */; };
 		0A8A9B7027FD375B00B2139A /* AssociationUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A8A9B6F27FD375B00B2139A /* AssociationUnitTests.swift */; };
+		0A91AB7528127F6600FE1549 /* Parent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A91AB7428127F6600FE1549 /* Parent.swift */; };
+		0A91AB7628127F6600FE1549 /* Parent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A91AB7428127F6600FE1549 /* Parent.swift */; };
+		0A91AB7728127F6600FE1549 /* Parent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A91AB7428127F6600FE1549 /* Parent.swift */; };
+		0A91AB7928127F7000FE1549 /* Child.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A91AB7828127F7000FE1549 /* Child.swift */; };
+		0A91AB7A28127F7000FE1549 /* Child.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A91AB7828127F7000FE1549 /* Child.swift */; };
+		0A91AB7B28127F7000FE1549 /* Child.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A91AB7828127F7000FE1549 /* Child.swift */; };
+		0A91AB7D2812831700FE1549 /* AssociationTransactionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A91AB7C2812831700FE1549 /* AssociationTransactionTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -269,6 +276,9 @@
 		0A5E182E27C70D500089E550 /* Performance_Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Performance_Tests.swift; sourceTree = "<group>"; };
 		0A5EAB6B27F52F04003E0034 /* DocumentTransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentTransactionTests.swift; sourceTree = "<group>"; };
 		0A8A9B6F27FD375B00B2139A /* AssociationUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssociationUnitTests.swift; sourceTree = "<group>"; };
+		0A91AB7428127F6600FE1549 /* Parent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Parent.swift; sourceTree = "<group>"; };
+		0A91AB7828127F7000FE1549 /* Child.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Child.swift; sourceTree = "<group>"; };
+		0A91AB7C2812831700FE1549 /* AssociationTransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssociationTransactionTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -322,9 +332,9 @@
 		0A5551E127C5CD13003E497B /* Unit Tests */ = {
 			isa = PBXGroup;
 			children = (
+				0A8A9B6F27FD375B00B2139A /* AssociationUnitTests.swift */,
 				0A1F7FDC27E40244007F8920 /* DocumentUnitTests.swift */,
 				0A55527327C5DF6E003E497B /* InfoUnitTests.swift */,
-				0A8A9B6F27FD375B00B2139A /* AssociationUnitTests.swift */,
 			);
 			path = "Unit Tests";
 			sourceTree = "<group>";
@@ -332,7 +342,9 @@
 		0A5551E727C5CD35003E497B /* Common */ = {
 			isa = PBXGroup;
 			children = (
+				0A91AB7828127F7000FE1549 /* Child.swift */,
 				0A55527527C5E1A2003E497B /* Config.swift */,
+				0A91AB7428127F6600FE1549 /* Parent.swift */,
 			);
 			path = Common;
 			sourceTree = "<group>";
@@ -575,6 +587,7 @@
 		0A5E182227C70D3F0089E550 /* Transaction Tests */ = {
 			isa = PBXGroup;
 			children = (
+				0A91AB7C2812831700FE1549 /* AssociationTransactionTests.swift */,
 				0A5EAB6B27F52F04003E0034 /* DocumentTransactionTests.swift */,
 				0A5E182327C70D3F0089E550 /* InfoTransactionTests.swift */,
 			);
@@ -742,6 +755,7 @@
 				0A55526227C5DB5B003E497B /* HTTPEndpoint.swift in Sources */,
 				0A5551FF27C5D949003E497B /* MDSDocument.swift in Sources */,
 				0A1F7FEB27E40523007F8920 /* MDSSQLiteDatabaseManager.swift in Sources */,
+				0A91AB7528127F6600FE1549 /* Parent.swift in Sources */,
 				0A55527127C5DC3E003E497B /* Int+Extensions.swift in Sources */,
 				0A8A9B7027FD375B00B2139A /* AssociationUnitTests.swift in Sources */,
 				0A1F802327E40577007F8920 /* UUID+Extensions.swift in Sources */,
@@ -749,6 +763,7 @@
 				0A1F800827E40543007F8920 /* SQLiteTableColumn.swift in Sources */,
 				0A55526B27C5DBF1003E497B /* FileManager+Extensions.swift in Sources */,
 				0A55526827C5DBD8003E497B /* Folder.swift in Sources */,
+				0A91AB7928127F7000FE1549 /* Child.swift in Sources */,
 				0A55526F27C5DC18003E497B /* Dictionary+Extensions.swift in Sources */,
 				0A5E184927C716CA0089E550 /* HTTPEndpointClient+MDSExtensions.swift in Sources */,
 				0A1F800A27E40543007F8920 /* SQLiteTrigger.swift in Sources */,
@@ -793,6 +808,7 @@
 				0A1F800F27E40544007F8920 /* SQLiteResultsRow.swift in Sources */,
 				0A1F7FF827E40528007F8920 /* MDSIndex.swift in Sources */,
 				0A5E187E27C71F860089E550 /* FileManager+Extensions.swift in Sources */,
+				0A91AB7A28127F7000FE1549 /* Child.swift in Sources */,
 				0A1F7FE227E404FA007F8920 /* MDSEphemeral.swift in Sources */,
 				0A5E187A27C71F7F0089E550 /* Dictionary+Extensions.swift in Sources */,
 				0A1F7FE527E40515007F8920 /* MDSRemoteStorage.swift in Sources */,
@@ -804,6 +820,7 @@
 				0A1F801327E40544007F8920 /* SQLiteTrigger.swift in Sources */,
 				0A1F801227E40544007F8920 /* SQLiteInnerJoin.swift in Sources */,
 				0A1F800D27E40544007F8920 /* SQLiteStatementPerformer.swift in Sources */,
+				0A91AB7D2812831700FE1549 /* AssociationTransactionTests.swift in Sources */,
 				0A5E188227C71F8F0089E550 /* RangeReplaceableCollection+Extensions.swift in Sources */,
 				0A5E186827C71F3C0089E550 /* LockingDictionary.swift in Sources */,
 				0A5E188827C71F9F0089E550 /* URL+Extensions.swift in Sources */,
@@ -815,6 +832,7 @@
 				0A5E184D27C716E30089E550 /* Array+Extensions.swift in Sources */,
 				0A5E186A27C71F400089E550 /* LockingPrimitives.swift in Sources */,
 				0A5E187627C71F650089E550 /* HTTPEndpointRequest.swift in Sources */,
+				0A91AB7628127F6600FE1549 /* Parent.swift in Sources */,
 				0A1F7FE827E40519007F8920 /* MDSRemoteStorageCache.swift in Sources */,
 				0A5E186427C71F2A0089E550 /* MDSDocument.swift in Sources */,
 				0A5E187C27C71F830089E550 /* Dispatch+Extensions.swift in Sources */,
@@ -837,6 +855,7 @@
 				0A5E187527C71F610089E550 /* HTTPEndpointHandler.swift in Sources */,
 				0A5E188527C71F950089E550 /* String+Extensions.swift in Sources */,
 				0A5E182F27C70D500089E550 /* Performance_Tests.swift in Sources */,
+				0A91AB7728127F6600FE1549 /* Parent.swift in Sources */,
 				0A5E186327C71F1F0089E550 /* MDSHTTPServices.swift in Sources */,
 				0A1F7FF027E40524007F8920 /* MDSSQLiteDocumentBacking.swift in Sources */,
 				0A1F7FFF27E40528007F8920 /* MDSDocumentStorageServerHandler.swift in Sources */,
@@ -871,6 +890,7 @@
 				0A5E184E27C716E30089E550 /* Array+Extensions.swift in Sources */,
 				0A5E186B27C71F400089E550 /* LockingPrimitives.swift in Sources */,
 				0A5E187727C71F660089E550 /* HTTPEndpointRequest.swift in Sources */,
+				0A91AB7B28127F7000FE1549 /* Child.swift in Sources */,
 				0A1F7FE927E4051A007F8920 /* MDSRemoteStorageCache.swift in Sources */,
 				0A5E186527C71F2A0089E550 /* MDSDocument.swift in Sources */,
 				0A5E187D27C71F830089E550 /* Dispatch+Extensions.swift in Sources */,

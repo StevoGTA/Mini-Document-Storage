@@ -74,7 +74,7 @@ module.exports = class Associations {
 						{tableColumn: this.associationsTable.fromTypeTableColumn, value: fromDocumentType},
 						{tableColumn: this.associationsTable.toTypeTableColumn, value: toDocumentType},
 					]);
-			association.create(internals);
+			association.create(statementPerformer);
 		}
 	}
 
@@ -112,21 +112,23 @@ module.exports = class Associations {
 		let	internals = this.internals;
 
 		// Get association
-		let	[association, associationError] = await this.getAssociation(name);
+		let	[association, associationError] = await this.getAssociation(statementPerformer, name);
 		if (associationError)
 			// Error
 			return associationError;
 		
 		// Get from document info
 		let	[fromDocumentInfo, fromDocumentInfoError] =
-					await internals.documents.getIDsForDocumentIDs(association.fromType, [...fromDocumentIDs]);
+					await internals.documents.getIDsForDocumentIDs(statementPerformer, association.fromType,
+							[...fromDocumentIDs]);
 		if (fromDocumentInfoError)
 			// Error
 			return fromDocumentInfoError;
 		
 		// Get to document info
 		let	[toDocumentInfo, toDocumentInfoError] =
-					await internals.documents.getIDsForDocumentIDs(association.toType, [...toDocumentIDs]);
+					await internals.documents.getIDsForDocumentIDs(statementPerformer, association.toType,
+							[...toDocumentIDs]);
 		if (toDocumentInfoError)
 			// Error
 			return toDocumentInfoError;
@@ -143,7 +145,7 @@ module.exports = class Associations {
 								let	toID = toDocumentInfo[info.toID];
 
 								// Update
-								association.update(action, fromID, toID);
+								association.update(statementPerformer, action, fromID, toID);
 							}
 						});
 	}
@@ -159,38 +161,46 @@ module.exports = class Associations {
 		let	internals = this.internals;
 
 		// Get association
-		let	[association, associationError] = await this.getAssociation(name);
+		let	[association, associationError] = await this.getAssociation(statementPerformer, name);
 		if (associationError)
 			// Error
 			return [null, null, associationError];
 		
-
 		// Compose where
-		let	documentType = fromDocumentID ? association.fromType : association.toType;
-		let	idTableColumn = fromDocumentID ? association.table.fromIDTableColumn : association.table.toIDTableColumn;
+		let	sourceDocumentType = fromDocumentID ? association.fromType : association.toType;
+		let	returnDocumentType = fromDocumentID ? association.toType : association.fromType;
+		let	innerJoinIDTableColumn =
+					fromDocumentID ? association.table.toIDTableColumn : association.table.fromIDTableColumn;
+		let	whereIDTableColumn =
+					fromDocumentID ? association.table.fromIDTableColumn : association.table.toIDTableColumn;
 		let	documentID = fromDocumentID ? fromDocumentID : toDocumentID;
-		let	[documentInfo, documentInfoError] = await internals.getIDsForDocumentIDs(documentType, [documentID]);
+		let	[documentInfo, documentInfoError] =
+					await internals.documents.getIDsForDocumentIDs(statementPerformer, sourceDocumentType,
+							[documentID]);
 		if (documentInfoError)
 			return [null, null, documentInfoError];
 		
-		let	where = statementPerformer.where(idTableColumn, documentInfo[documentID]);
+		let	where = statementPerformer.where(whereIDTableColumn, documentInfo[documentID]);
 
 		// Query count
 		let	totalCount = await statementPerformer.count(association.table, where);
 
 		// Check for full info
 		var	results, resultsError;
-		if (fullInfo == 0) {
-			// Document info
-			[results, resultsError] =
-					await internals.documents.getDocumentInfos(documentType, association.table,
-							internals.documents.getDocumentInfoInnerJoin(documentType, idTableColumn),
-							where, statementPerformer.limit(startIndex + ',' + documentCount));
-		} else
+		if (fullInfo)
 			// Documents
 			[results, resultsError] =
-					await internals.documents.getDocuments(documentType, association.table,
-							internals.documents.getDocumentInnerJoin(documentType, idTableColumn),
+					await internals.documents.getDocuments(statementPerformer, returnDocumentType, association.table,
+							internals.documents.getDocumentInnerJoin(statementPerformer, returnDocumentType,
+									innerJoinIDTableColumn),
+							where, statementPerformer.limit(startIndex + ',' + documentCount));
+		else
+			// Document info
+			[results, resultsError] =
+					await internals.documents.getDocumentInfos(statementPerformer, returnDocumentType,
+							association.table,
+							internals.documents.getDocumentInfoInnerJoin(statementPerformer, returnDocumentType,
+									innerJoinIDTableColumn),
 							where, statementPerformer.limit(startIndex + ',' + documentCount));
 		if (resultsError)
 			return [null, null, resultsError];
