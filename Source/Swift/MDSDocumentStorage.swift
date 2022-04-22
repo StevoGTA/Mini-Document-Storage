@@ -137,7 +137,7 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func updateAssociation<T : MDSDocument, U : MDSDocument>(
+	public func updateAssociation<T : MDSDocument, U : MDSDocument>(
 			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)]) {
 		// Update association
 		updateAssociation(for: associationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
