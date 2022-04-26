@@ -1174,6 +1174,9 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	private func updateAssociation(for name :String,
 			updates :[(action :MDSAssociationAction, fromDocumentID :String, toDocumentID :String)]) {
+		// Check if have updates
+		guard !updates.isEmpty else { return }
+		
 		// Update assocation
 		let	errors =
 					DispatchQueue.performBlocking() { completionProc in
