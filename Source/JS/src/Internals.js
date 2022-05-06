@@ -5,8 +5,6 @@
 //  Copyright © 2022 Stevo Brock. All rights reserved.
 //
 
-// Imports
-
 //----------------------------------------------------------------------------------------------------------------------
 // DocumentUpdateTracker
 class DocumentUpdateTracker {
@@ -31,8 +29,13 @@ class DocumentUpdateTracker {
 	// Instance methods
 	//------------------------------------------------------------------------------------------------------------------
 	tables() {
-		// Return tables
-		return [this.caches.cachesTable, this.collections.collectionsTable, this.indexes.indexesTable]
+		// Setup
+		var	tables = [];
+		if (this.caches)		tables.push(this.caches.cachesTable);
+		if (this.collections)	tables.push(this.collections.collectionsTable);
+		if (this.indexes)		tables.push(this.indexes.indexesTable);
+
+		return tables
 				.concat(this.cachesToUpdate.map(cache => cache.table))
 				.concat(this.collectionsToUpdate.map(collection => collection.table))
 				.concat(this.indexesToUpdate.map(index => index.table));
@@ -42,11 +45,23 @@ class DocumentUpdateTracker {
 	addDocumentInfo(documentInfo) { this.documentInfos.push(documentInfo); }
 
 	//------------------------------------------------------------------------------------------------------------------
+	addDocumentInfos(documentInfos) { this.documentInfos = this.documentInfos.concat(documentInfos); }
+
+	//------------------------------------------------------------------------------------------------------------------
 	finalize(statementPerformer, initialLastRevision) {
 		// Update
-		this.caches.update(statementPerformer, this.cachesToUpdate, initialLastRevision, this.documentInfos);
-		this.collections.update(statementPerformer, this.collectionsToUpdate, initialLastRevision, this.documentInfos);
-		this.indexes.update(statementPerformer, this.indexesToUpdate, initialLastRevision, this.documentInfos);
+		if (this.caches)
+			// Update caches
+			this.caches.update(statementPerformer, this.cachesToUpdate, initialLastRevision, this.documentInfos);
+
+		if (this.collections)
+			// Update collections
+			this.collections.update(statementPerformer, this.collectionsToUpdate, initialLastRevision,
+					this.documentInfos);
+
+		if (this.indexes)
+			// Update indexes
+			this.indexes.update(statementPerformer, this.indexesToUpdate, initialLastRevision, this.documentInfos);
 	}
 };
 
@@ -55,8 +70,6 @@ class DocumentUpdateTracker {
 module.exports = class Internals {
 
 	// Properties
-	// statementPerformer = null;
-
 	cache = {};
 
 	// Lifecycle methods
@@ -93,14 +106,26 @@ module.exports = class Internals {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getDocumentUpdateTracker(documentType) {
+	async getDocumentUpdateTracker(statementPerformer, documentType) {
 		// Setup
-		let	cachesToUpdate = await this.caches.getForDocumentType(documentType);
-		let	collectionsToUpdate = await this.collections.getForDocumentType(documentType);
-		let	indexesToUpdate = await this.indexes.getForDocumentType(documentType);
+		let	cachesToUpdate = await this.caches.getForDocumentType(statementPerformer, documentType);
+		let	collectionsToUpdate = await this.collections.getForDocumentType(statementPerformer, documentType);
+		let	indexesToUpdate = await this.indexes.getForDocumentType(statementPerformer, documentType);
 
 		return new DocumentUpdateTracker(this.caches, cachesToUpdate, this.collections, collectionsToUpdate,
 				this.indexes, indexesToUpdate);
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	getDocumentUpdateTrackerForCollection(collection) {
+		// Return DocumentUpdateTracker
+		return new DocumentUpdateTracker(null, [], this.collections, [collection], null, []);
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	getDocumentUpdateTrackerForIndex(index) {
+		// Return DocumentUpdateTracker
+		return new DocumentUpdateTracker(null, [], null, [], this.indexes, [index]);
 	}
 
 	// Private methods

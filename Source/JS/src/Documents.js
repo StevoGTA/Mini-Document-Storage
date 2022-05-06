@@ -133,14 +133,13 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getSinceRevision(statementPerformer, documentType, sinceRevision, maxDocumentCount) {
+	async getSinceRevision(statementPerformer, documentType, sinceRevision, count) {
 		// Validate
 		if (!sinceRevision)
 			return [null, null, 'Missing sinceRevision'];
 
 		// Setup
 		let	documentInfo = this.documentInfo(statementPerformer, documentType);
-
 		let	where = statementPerformer.where(documentInfo.infoTable.revisionTableColumn, '>', sinceRevision);
 
 		// Count relevant documents
@@ -183,7 +182,7 @@ module.exports = class Documents {
 										documentInfo.contentTable.idTableColumn),
 								where,
 								statementPerformer.orderBy(documentInfo.infoTable.revisionTableColumn),
-								maxDocumentCount ? statementPerformer.limit(maxDocumentCount) : null);
+								count ? statementPerformer.limit(null, count) : null);
 
 			// Handle results
 			for (let result of results) {
@@ -707,24 +706,36 @@ module.exports = class Documents {
 		let	documentInfo = this.documentInfo(statementPerformer, documentType);
 
 		// Catch errors
-		var	ids = [];
-		var	documentsByID = {};
 		try {
-			// Retrieve relevant documents
-			let	results =
-						await statementPerformer.select(table,
-								[
-									documentInfo.infoTable.documentIDTableColumn,
-									documentInfo.infoTable.revisionTableColumn,
-								],
-								innerJoin, where, limit);
-			
-			var	infos = {};
-			for (let result of results)
-				// Update infos
-				infos[result.documentID] = result.revision;
-			
-			return [infos, null];
+			// Check where
+			if (Array.isArray(where)) {
+				// Multi-select
+				let	results =
+							await statementPerformer.multiSelect(table, where,
+									[
+										documentInfo.infoTable.documentIDTableColumn,
+										documentInfo.infoTable.revisionTableColumn,
+									],
+									innerJoin);
+
+				return [results, null];
+			} else {
+				// Select
+				let	results =
+							await statementPerformer.select(table,
+									[
+										documentInfo.infoTable.documentIDTableColumn,
+										documentInfo.infoTable.revisionTableColumn,
+									],
+									innerJoin, where, limit);
+				
+				var	infos = {};
+				for (let result of results)
+					// Update infos
+					infos[result.documentID] = result.revision;
+				
+				return [infos, null];
+			}
 		} catch (error) {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
@@ -742,11 +753,48 @@ module.exports = class Documents {
 		let	documentInfo = this.documentInfo(statementPerformer, documentType);
 
 		// Catch errors
+		var	selectResults = null;
 		var	ids = [];
 		var	documentsByID = {};
 		try {
-			// Retrieve relevant documents
-			let	results =
+			// Check where
+			if (Array.isArray(where)) {
+				// Multi-select
+				selectResults =
+						await statementPerformer.multiSelect(table, where,
+								[
+									documentInfo.infoTable.idTableColumn,
+									documentInfo.infoTable.documentIDTableColumn,
+									documentInfo.infoTable.revisionTableColumn,
+									documentInfo.infoTable.activeTableColumn,
+									documentInfo.contentTable.creationDateTableColumn,
+									documentInfo.contentTable.modificationDateTableColumn,
+									documentInfo.contentTable.jsonTableColumn,
+								],
+								innerJoin);
+
+				// Handle results
+				if (selectResults.length == 0)
+					// No results
+					return [[], [], null];
+					
+				for (let result of selectResults) {
+					// Update info
+					ids.push(result.id);
+					documentsByID[result.id] =
+							{
+								documentID: result.documentID,
+								revision: result.revision,
+								active: result.active,
+								creationDate: result.creationDate,
+								modificationDate: result.modificationDate,
+								json: JSON.parse(result.json.toString()),
+								attachments: {},
+							};
+				}
+			} else {
+				// Select
+				selectResults =
 						await statementPerformer.select(table,
 								[
 									documentInfo.infoTable.idTableColumn,
@@ -759,26 +807,31 @@ module.exports = class Documents {
 								],
 								innerJoin, where, limit);
 
-			// Handle results
-			for (let result of results) {
-				// Update info
-				ids.push(result.id);
-				documentsByID[result.id] =
-						{
-							documentID: result.documentID,
-							revision: result.revision,
-							active: result.active,
-							creationDate: result.creationDate,
-							modificationDate: result.modificationDate,
-							json: JSON.parse(result.json.toString()),
-							attachments: {},
-						};
+				// Handle results
+				if (selectResults.length == 0)
+					// No results
+					return [[], [], null];
+					
+				for (let result of selectResults) {
+					// Update info
+					ids.push(result.id);
+					documentsByID[result.id] =
+							{
+								documentID: result.documentID,
+								revision: result.revision,
+								active: result.active,
+								creationDate: result.creationDate,
+								modificationDate: result.modificationDate,
+								json: JSON.parse(result.json.toString()),
+								attachments: {},
+							};
+				}
 			}
 		} catch (error) {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
 				// No such table
-				return [null, 'No Documents'];
+				return [null, null, 'No Documents'];
 			else
 				// Other error
 				throw error;
@@ -809,7 +862,50 @@ module.exports = class Documents {
 				throw error;
 		}
 
-		return [Object.values(documentsByID), null];
+		return [selectResults, documentsByID, null];
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async getUpdateDocumentInfos(statementPerformer, documentType, sinceRevision, count) {
+		// Setup
+		let	documentInfo = this.documentInfo(statementPerformer, documentType);
+
+		// Catch errors
+		try {
+			// Perform
+			let	results =
+						await statementPerformer.select(documentInfo.infoTable,
+								[
+									documentInfo.infoTable.idTableColumn,
+									documentInfo.infoTable.revisionTableColumn,
+									documentInfo.infoTable.activeTableColumn,
+									documentInfo.contentTable.jsonTableColumn,
+								],
+								statementPerformer.innerJoin(documentInfo.contentTable,
+										documentInfo.contentTable.idTableColumn),
+								statementPerformer.where(documentInfo.infoTable.revisionTableColumn, '>',
+										sinceRevision),
+								statementPerformer.orderBy(documentInfo.infoTable.revisionTableColumn),
+								statementPerformer.limit(null, count));
+
+			return results.map(result =>
+					{
+						return {
+							id: result.id,
+							revision: result.revision,
+							active: result.active,
+							json: JSON.parse(result.json.toString()),
+						};
+					});
+		} catch (error) {
+			// Check error
+			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
+				// No such table
+				return [];
+			else
+				// Other error
+				throw error;
+		}
 	}
 
 	// Private methods

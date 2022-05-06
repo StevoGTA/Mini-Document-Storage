@@ -206,7 +206,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			// Query collection document count
 			let	(isComplete, error) =
 						DispatchQueue.performBlocking() { completionProc in
-							// Call network client
+							// Call HTTP Endpoint Client
 							self.httpEndpointClient.queue(
 									MDSHTTPServices.httpEndpointRequestForGetDocuments(
 											documentStorageID: self.documentStorageID, documentType: documentType,
@@ -608,7 +608,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			// Query collection document count
 			let	(isUpToDate, count, error) =
 						DispatchQueue.performBlocking() { completionProc in
-							// Call network client
+							// Call HTTP Endpoint Client
 							self.httpEndpointClient.queue(
 									MDSHTTPServices.httpEndpointRequestForGetAssocationValue(
 											documentStorageID: self.documentStorageID, name: name, toID: document.id,
@@ -772,31 +772,30 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		// May need to try this more than once
 		while true {
 			// Query collection document count
-			let	(isUpToDate, count, error) =
+			let	(info, error) =
 						DispatchQueue.performBlocking() { completionProc in
-							// Call network client
+							// Call HTTP Endpoint Client
 							self.httpEndpointClient.queue(
 									MDSHTTPServices.httpEndpointRequestForGetCollectionDocumentCount(
 											documentStorageID: self.documentStorageID, name: name,
 											authorization: self.authorization))
-									{ (isUpToDate :Bool?, count :Int?, error :Error?) in
-										// Call completion proc
-										completionProc((isUpToDate, count, error))
-									}
+									{ completionProc(($0, $1)) }
 						}
-
-			// Handle results
-			if !(isUpToDate ?? true) {
-				// Not up to date
-				continue
-			} else if count != nil {
-				// Success
-				return count!
-			} else {
+			if error != nil {
 				// Error
 				self.recentErrors.append(error!)
 
 				return 0
+			}
+
+			// Handle results
+			let	(isUpToDate, count) = info!
+			if !isUpToDate {
+				// Not up to date
+				continue
+			} else {
+				// Success
+				return count!
 			}
 		}
 	}
@@ -807,34 +806,30 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		var	startIndex = 0
 		while true {
 			// Retrieve info
-			let	(isUpToDate, documentRevisionInfos, isComplete, error)  =
+			let	(isUpToDate, info, error)  =
 						DispatchQueue.performBlocking() { completionProc in
 							// Queue
 							self.httpEndpointClient.queue(
 									MDSHTTPServices.httpEndpointRequestForGetCollectionDocumentInfos(
 											documentStorageID: self.documentStorageID, name: name,
 											startIndex: startIndex, authorization: self.authorization))
-									{ (isUpToDate :Bool?, documentRevisionInfos :[MDSDocument.RevisionInfo]?,
-											isComplete :Bool?, error :Error?) in
-										// Call completion proc
-										completionProc((isUpToDate, documentRevisionInfos, isComplete, error))
-									}
+									{ completionProc(($0, $1, $2)) }
 						}
 
 			// Handle results
 			if !(isUpToDate ?? true) {
 				// Not up to date
 				continue
-			} else if documentRevisionInfos != nil {
+			} else if let (documentRevisionInfos, isComplete) = info {
 				// Success
-				iterateDocumentIDs(documentType: T.documentType, activeDocumentRevisionInfos: documentRevisionInfos!)
+				iterateDocumentIDs(documentType: T.documentType, activeDocumentRevisionInfos: documentRevisionInfos)
 					{ proc(T(id: $0, documentStorage: self)) }
 
 				// Update
-				startIndex += documentRevisionInfos!.count
+				startIndex += documentRevisionInfos.count
 
 				// Check if is complete
-				if isComplete! {
+				if isComplete {
 					// Complete
 					return
 				}
@@ -852,7 +847,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any],
 			keysProc :@escaping (_ document :T) -> [String]) {
 		// Register index
-		let	(_, error) =
+		let	error =
 					self.httpEndpointClient.indexRegister(documentStorageID: self.documentStorageID, name: name,
 							documentType: T.documentType, relevantProperties: relevantProperties,
 							isUpToDate: isUpToDate, keysSelector: keysSelector, keysSelectorInfo: keysSelectorInfo,
@@ -875,54 +870,10 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	public func iterateIndex<T : MDSDocument>(name :String, keys :[String],
 			proc :(_ key :String, _ document :T) -> Void) {
 		// Setup
-		var	keysUse = keys.filter({ !$0.isEmpty })
+		var	keysRemaining = Set<String>(keys.filter({ !$0.isEmpty }))
 
-		// Preflight
-		guard !keysUse.isEmpty else { return }
-
-		// Process first key to ensure index is up to date
-		let	firstKey = keysUse.removeFirst()
-		while true {
-			// Retrieve info
-			let	(isUpToDate, documentRevisionInfoMap, error) =
-						DispatchQueue.performBlocking() { completionProc in
-							// Call network client
-							self.httpEndpointClient.queue(
-									MDSHTTPServices.httpEndpointRequestForGetIndexDocumentInfos(
-											documentStorageID: self.documentStorageID, name: name, keys: [firstKey],
-											authorization: self.authorization),
-									partialResultsProc: { (isUpToDate :Bool?,
-											documentRevisionInfoMap :[String : MDSDocument.RevisionInfo]?,
-											error :Error?) in
-										// Call completion
-										completionProc((isUpToDate, documentRevisionInfoMap, error))
-									}, completionProc: { _ in })
-						}
-
-			// Handle results
-			if !(isUpToDate ?? true) {
-				// Not up to date
-				continue
-			} else if documentRevisionInfoMap != nil {
-				// Success
-				if !documentRevisionInfoMap!.isEmpty {
-					// Process results
-					iterateDocumentIDs(documentType: T.documentType,
-							activeDocumentRevisionInfos: [documentRevisionInfoMap!.first!.value])
-							{ proc(firstKey, T(id: $0, documentStorage: self)) }
-				}
-
-				break
-			} else {
-				// Error
-				self.recentErrors.append(error!)
-
-				return
-			}
-		}
-
-		// Check if have more keys
-		if !keysUse.isEmpty {
+		// Keep going until all keys are processed
+		while !keysRemaining.isEmpty {
 			// Retrieve the rest of the info
 			let	documentRevisionInfoMap = LockingDictionary<String, MDSDocument.RevisionInfo>()
 			let	semaphore = DispatchSemaphore(value: 0)
@@ -931,23 +882,23 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			// Queue info retrieval
 			self.httpEndpointClient.queue(
 					MDSHTTPServices.httpEndpointRequestForGetIndexDocumentInfos(
-							documentStorageID: self.documentStorageID, name: name, keys: keysUse,
+							documentStorageID: self.documentStorageID, name: name, keys: Array(keysRemaining),
 							authorization: self.authorization),
 					partialResultsProc: {
 						// Handle results
-						if $1 != nil {
+						if $0 != nil {
 							// Add to dictionary
-							documentRevisionInfoMap.merge($1!)
+							documentRevisionInfoMap.merge($0!)
 
 							// Signal
 							semaphore.signal()
 						}
 
 						// Ignore error (will collect below)
-						_ = $2
+						_ = $1
 					}, completionProc: {
 						// Add errors
-						self.recentErrors += $0
+						self.recentErrors += $1
 
 						// All done
 						allDone = true
@@ -970,6 +921,8 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 					let	documentRevisionInfoMapToProcess = documentRevisionInfoMap.removeAll()
 
 					// Process
+					keysRemaining.formSymmetricDifference(documentRevisionInfoMapToProcess.keys)
+
 					let	map = Dictionary(documentRevisionInfoMapToProcess.map({ ($0.value.documentID, $0.key )}))
 					self.iterateDocumentIDs(documentType: T.documentType,
 							activeDocumentRevisionInfos: Array(documentRevisionInfoMapToProcess.values))

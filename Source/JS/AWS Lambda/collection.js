@@ -111,7 +111,7 @@ exports.getDocumentCountV1 = async (event) => {
 //			String (documentID) : Int (revision),
 //			...
 //		}
-exports.getDocumentInfosV1 = async (event) => {
+exports.getDocumentsV1 = async (event) => {
 	// Setup
 	let	documentStorageID = event.pathParameters.projectID;
 	let	name = event.pathParameters.name.replace(/%2B/g, '+').replace(/_/g, '/');
@@ -124,7 +124,7 @@ exports.getDocumentInfosV1 = async (event) => {
 		// Get info
 		let	documentStorage = new DocumentStorage();
 		let	[totalCount, results, upToDate] =
-					await documentStorage.collectionGetDocumentInfos(documentStorageID, name, startIndex);
+					await documentStorage.collectionGetDocuments(documentStorageID, name, startIndex);
 		if (upToDate) {
 			// Success
 			let	endIndex = startIndex + Object.keys(results).length - 1;

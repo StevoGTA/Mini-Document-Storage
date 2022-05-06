@@ -28,8 +28,18 @@ module.exports = class DocumentStorage {
 		// Store
 		this.statementPerformerProc = statementPerformerProc;
 		this.cacheValueSelectorInfo = cacheValueSelectorInfo || {};
-		this.collectionIsIncludedSelectorInfo = collectionIsIncludedSelectorInfo || {};
-		this.indexKeysSelectorInfo = indexKeysSelectorInfo || {};
+		this.collectionIsIncludedSelectorInfo =
+				Object.assign(
+						{
+							"documentPropertyIsValue()": documentPropertyIsValue,
+						},
+						collectionIsIncludedSelectorInfo || {});
+		this.indexKeysSelectorInfo =
+				Object.assign(
+						{
+							"keysForDocumentProperty()": keysForDocumentProperty,
+						},
+						indexKeysSelectorInfo || {});
 	}
 
 	// Instance methods
@@ -88,7 +98,7 @@ module.exports = class DocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async associationGetDocumentInfos(documentStorageID, name, fromDocumentID, toDocumentID, startIndex, documentCount,
+	async associationGetDocumentInfos(documentStorageID, name, fromDocumentID, toDocumentID, startIndex, count,
 			fullInfo) {
 		// Setup
 		let	statementPerformer = this.statementPerformerProc();
@@ -102,8 +112,8 @@ module.exports = class DocumentStorage {
 			let	{mySQLResults, results} =
 						await statementPerformer.batch(
 								() =>
-										{ return internals.associations.getDocumentInfos(statementPerformer, name,
-												fromDocumentID, toDocumentID, startIndex, documentCount, fullInfo); });
+										{ return internals.associations.getDocuments(statementPerformer, name,
+												fromDocumentID, toDocumentID, startIndex, count, fullInfo); });
 			
 			return results;
 		} catch (error) {
@@ -178,13 +188,60 @@ module.exports = class DocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async collectionGetDocumentCount(documentStorageID, name) {
-// TODO: collectionGetDocumentCount
+		// Setup
+		let	statementPerformer = this.statementPerformerProc();
+		statementPerformer.use(documentStorageID);
+
+		let	internals = this.internals(statementPerformer, documentStorageID);
+
+		// Catch errors
+		try {
+			// Do it
+			let	{mySQLResults, results} =
+						await statementPerformer.batch(
+								() =>
+										{ return internals.collections.getDocumentCount(statementPerformer,
+												name); });
+			
+			return results;
+		} catch (error) {
+			// Error
+			if (statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return [null, null, 'Invalid documentStorageID'];
+			else
+				// Other
+				throw error;
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async collectionGetDocumentInfos(documentStorageID, name, startIndex) {
-// TODO: collectionGetDocumentInfos(documentStorageID, name, startIndex) {
+	async collectionGetDocuments(documentStorageID, name, startIndex, count, fullInfo) {
+		// Setup
+		let	statementPerformer = this.statementPerformerProc();
+		statementPerformer.use(documentStorageID);
 
+		let	internals = this.internals(statementPerformer, documentStorageID);
+
+		// Catch errors
+		try {
+			// Do it
+			let	{mySQLResults, results} =
+						await statementPerformer.batch(
+								() =>
+										{ return internals.collections.getDocuments(statementPerformer, name,
+												startIndex, count, fullInfo); });
+			
+			return results;
+		} catch (error) {
+			// Error
+			if (statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return [null, null, null, 'Invalid documentStorageID'];
+			else
+				// Other
+				throw error;
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -215,7 +272,7 @@ module.exports = class DocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentGetSinceRevision(documentStorageID, documentType, sinceRevision, maxDocumentCount) {
+	async documentGetSinceRevision(documentStorageID, documentType, sinceRevision, count) {
 		// Setup
 		let	statementPerformer = this.statementPerformerProc();
 		statementPerformer.use(documentStorageID);
@@ -229,7 +286,7 @@ module.exports = class DocumentStorage {
 						await statementPerformer.batch(
 								() =>
 										{ return internals.documents.getSinceRevision(statementPerformer, documentType,
-												sinceRevision, maxDocumentCount); }
+												sinceRevision, count); }
 						);
 			
 			return results;
@@ -436,7 +493,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return [null, 'Invalid documentStorageID'];
+				return 'Invalid documentStorageID';
 			else
 				// Other
 				throw error;
@@ -444,8 +501,32 @@ module.exports = class DocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async indexGetDocumentInfos(documentStorageID, name, keys) {
-// TODO: indexGetDocumentInfos
+	async indexGetDocuments(documentStorageID, name, keys, fullInfo) {
+		// Setup
+		let	statementPerformer = this.statementPerformerProc();
+		statementPerformer.use(documentStorageID);
+
+		let	internals = this.internals(statementPerformer, documentStorageID);
+
+		// Catch errors
+		try {
+			// Do it
+			let	{mySQLResults, results} =
+						await statementPerformer.batch(
+								() =>
+										{ return internals.indexes.getDocuments(statementPerformer, name, keys,
+												fullInfo); });
+			
+			return results;
+		} catch (error) {
+			// Error
+			if (statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return [null, null, 'Invalid documentStorageID'];
+			else
+				// Other
+				throw error;
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -528,4 +609,27 @@ module.exports = class DocumentStorage {
 
 		return internals;
 	}
+}
+
+// Built-in Collection functions
+//----------------------------------------------------------------------------------------------------------------------
+function documentPropertyIsValue(info, selectorInfo) {
+	// Setup
+	let	property = selectorInfo.property;
+	let	value = selectorInfo.value;
+	
+	return property && value && (info[property] == value);
+}
+
+// Built-in Index functions
+//----------------------------------------------------------------------------------------------------------------------
+function keysForDocumentProperty(info, selectorInfo) {
+	// Retrieve and check property
+	let	property = selectorInfo.property;
+	if (!property)	return [];
+
+	// Retrieve value
+	let	value = info[property];
+
+	return value ? [value] : [];
 }

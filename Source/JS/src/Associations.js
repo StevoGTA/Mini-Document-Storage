@@ -112,7 +112,7 @@ module.exports = class Associations {
 		let	internals = this.internals;
 
 		// Get association
-		let	[association, associationError] = await this.getAssociation(statementPerformer, name);
+		let	[association, associationError] = await this.getForName(statementPerformer, name);
 		if (associationError)
 			// Error
 			return associationError;
@@ -151,8 +151,7 @@ module.exports = class Associations {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getDocumentInfos(statementPerformer, name, fromDocumentID, toDocumentID, startIndex, documentCount,
-			fullInfo) {
+	async getDocuments(statementPerformer, name, fromDocumentID, toDocumentID, startIndex, count, fullInfo) {
 		// Validate
 		if ((!fromDocumentID && !toDocumentID) || (fromDocumentID && toDocumentID))
 			return [null, null, 'Must specify one of fromDocumentID or toDocumentID'];
@@ -161,7 +160,7 @@ module.exports = class Associations {
 		let	internals = this.internals;
 
 		// Get association
-		let	[association, associationError] = await this.getAssociation(statementPerformer, name);
+		let	[association, associationError] = await this.getForName(statementPerformer, name);
 		if (associationError)
 			// Error
 			return [null, null, associationError];
@@ -186,43 +185,62 @@ module.exports = class Associations {
 		let	totalCount = await statementPerformer.count(association.table, where);
 
 		// Check for full info
-		var	results, resultsError;
-		if (fullInfo)
+		if (fullInfo) {
 			// Documents
-			[results, resultsError] =
-					await internals.documents.getDocuments(statementPerformer, returnDocumentType, association.table,
-							internals.documents.getDocumentInnerJoin(statementPerformer, returnDocumentType,
-									innerJoinIDTableColumn),
-							where, statementPerformer.limit(startIndex + ',' + documentCount));
-		else
+			let	[selectResults, documentsByID, resultsError] =
+						await internals.documents.getDocuments(statementPerformer, returnDocumentType,
+								association.table,
+								internals.documents.getDocumentInnerJoin(statementPerformer, returnDocumentType,
+										innerJoinIDTableColumn),
+								where, statementPerformer.limit(startIndex, count));
+			if (documentsByID)
+				// Success
+				return [totalCount, Object.values(documentsByID), null];
+			else
+				// Error
+				return [null, null, resultsError];
+		} else {
 			// Document info
-			[results, resultsError] =
-					await internals.documents.getDocumentInfos(statementPerformer, returnDocumentType,
-							association.table,
-							internals.documents.getDocumentInfoInnerJoin(statementPerformer, returnDocumentType,
-									innerJoinIDTableColumn),
-							where, statementPerformer.limit(startIndex + ',' + documentCount));
-		if (resultsError)
-			return [null, null, resultsError];
-		
-		return [totalCount, results, null];
+			let	[results, resultsError] =
+						await internals.documents.getDocumentInfos(statementPerformer, returnDocumentType,
+								association.table,
+								internals.documents.getDocumentInfoInnerJoin(statementPerformer, returnDocumentType,
+										innerJoinIDTableColumn),
+								where, statementPerformer.limit(startIndex, count));
+			if (results)
+				// Success
+				return [totalCount, results, null];
+			else
+				// Error
+				return [null, null, resultsError];
+		}
 	}
 
 	// Private methods
 	//------------------------------------------------------------------------------------------------------------------
-	async getAssociation(statementPerformer, name) {
+	async getForName(statementPerformer, name) {
+		// Check if already have
+		var	association = this.associationInfo[name];
+		if (association)
+			// Have
+			return [association, null];
+
 		// Catch errors
 		try {
 			// Retrieve association
 			let	results =
 						await statementPerformer.select(this.associationsTable,
 								statementPerformer.where(this.associationsTable.nameTableColumn, name));
-			if (results.length > 0)
+			if (results.length > 0) {
 				// Success
-				return [new Association(statementPerformer, name, results[0].fromType, results[0].toType), null];
-			else
+				let	result = results[0];
+				association = new Association(statementPerformer, name, result.fromType, result.toType);
+				this.associationInfo[name] = association;
+
+				return [association, null];
+			} else
 				// Error
-				return [null, 'No association found with name ' + name];
+				return [null, 'No Association found with name ' + name];
 		} catch (error) {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))

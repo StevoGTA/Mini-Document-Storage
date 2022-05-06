@@ -13,8 +13,6 @@ module.exports = class Cache {
 	//------------------------------------------------------------------------------------------------------------------
 	constructor(statementPerformer, name, relevantProperties, valuesInfos, lastDocumentRevision) {
 		// Store
-		this.statementPerformer = statementPerformer;
-
 		this.name = name;
 		this.relevantProperties = new Set(relevantProperties);
 		this.valuesInfos = valuesInfos;
@@ -40,13 +38,13 @@ module.exports = class Cache {
 
 	// Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	queueCreate() { this.statementPerformer.queueCreateTable(this.table); }
+	queueCreate(statementPerformer) { statementPerformer.queueCreateTable(this.table); }
 
 	//------------------------------------------------------------------------------------------------------------------
-	queueTruncate() { this.statementPerformer.queueTruncateTable(this.table); }
+	queueTruncate(statementPerformer) { statementPerformer.queueTruncateTable(this.table); }
 
 	//------------------------------------------------------------------------------------------------------------------
-	queueUpdates(initialLastRevision, updateDocumentInfos) {
+	queueUpdates(statementPerformer, initialLastRevision, updateDocumentInfos) {
 		// Check last revision
 		if (initialLastRevision == this.lastDocumentRevision) {
 			// Iterate update document infos
@@ -75,10 +73,10 @@ module.exports = class Cache {
 						}
 
 						// Queue
-						this.statementPerformer.queueReplace(this.table, tableColumns);
+						statementPerformer.queueReplace(this.table, tableColumns);
 					} else
 						// Not active
-						this.statementPerformer.queueDelete(this.table,
+						statementPerformer.queueDelete(this.table,
 								[{tableColumn: this.table.idTableColumn, value: updateDocumentInfo.id}]);
 				}
 

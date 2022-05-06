@@ -20,7 +20,7 @@ let	router = express.Router();
 // Setup Association routes
 router.put('/v1/association/:documentStorageID', association.registerV1);
 router.put('/v1/association/:documentStorageID/:name', association.updateV1);
-router.get('/v1/association/:documentStorageID/:name', association.getDocumentInfosV1);
+router.get('/v1/association/:documentStorageID/:name', association.getDocumentsV1);
 router.get('/v1/association/:documentStorageID/:name/value', association.getValueV1);
 
 // Setup Cache routes
@@ -29,7 +29,7 @@ router.put('/v1/cache/:documentStorageID', cache.registerV1);
 // Setup Collection routes
 router.put('/v1/collection/:documentStorageID', collection.registerV1);
 router.head('/v1/collection/:documentStorageID/:name', collection.getDocumentCountV1);
-router.get('/v1/collection/:documentStorageID/:name', collection.getDocumentInfosV1);
+router.get('/v1/collection/:documentStorageID/:name', collection.getDocumentsV1);
 
 // Setup Document routes
 router.post('/v1/document/:documentStorageID/:documentType', document.createV1);
@@ -45,7 +45,7 @@ router.delete('/v1/document/:documentStorageID/:documentType/:documentID/attachm
 
 // Setup Index routes
 router.put('/v1/index/:documentStorageID', index.registerV1);
-router.get('/v1/index/:documentStorageID/:name', index.getDocumentInfosV1);
+router.get('/v1/index/:documentStorageID/:name', index.getDocumentsV1);
 
 // Setup Info routes
 router.get('/v1/info/:documentStorageID', info.getV1);

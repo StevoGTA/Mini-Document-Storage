@@ -112,7 +112,7 @@ exports.updateV1 = async (event) => {
 //			String (documentID) : Int (revision),
 //			...
 //		}
-exports.getDocumentInfosV1 = async (event) => {
+exports.getDocumentsV1 = async (event) => {
 	// Setup
 	let	documentStorageID = event.pathParameters.documentStorageID;
 	let	name = event.pathParameters.name;

@@ -11,11 +11,11 @@ module.exports = class Index {
 
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	constructor(statementPerformer, name, relevantProperties, keysSelector, keysSelectorInfo, lastDocumentRevision) {
+	constructor(statementPerformer, name, type, relevantProperties, keysSelector, keysSelectorInfo,
+			lastDocumentRevision) {
 		// Store
-		this.statementPerformer = statementPerformer;
-
 		this.name = name;
+		this.type = type;
 		this.relevantProperties = relevantProperties;
 		this.keysSelector = keysSelector;
 		this.keysSelectorInfo = keysSelectorInfo;
@@ -27,6 +27,10 @@ module.exports = class Index {
 		this.table =
 				statementPerformer.table(tableName,
 						[
+							new TableColumn.VARCHAR('key',
+									TableColumn.options.primaryKey | TableColumn.options.nonNull |
+											TableColumn.options.unique,
+									767),
 							new TableColumn.INT('id',
 									TableColumn.options.primaryKey | TableColumn.options.nonNull |
 											TableColumn.options.unsigned,
@@ -36,24 +40,24 @@ module.exports = class Index {
 
 	// Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	queueCreate() { this.statementPerformer.queueCreateTable(this.table); }
+	queueCreate(statementPerformer) { statementPerformer.queueCreateTable(this.table); }
 
 	//------------------------------------------------------------------------------------------------------------------
-	queueTruncate() { this.statementPerformer.queueTruncateTable(this.table); }
+	queueTruncate(statementPerformer) { statementPerformer.queueTruncateTable(this.table); }
 
 	//------------------------------------------------------------------------------------------------------------------
-	queueUpdates(initialLastRevision, updateDocumentInfos) {
+	queueUpdates(statementPerformer, initialLastRevision, updateDocumentInfos) {
 		// Check last revision
 		if (initialLastRevision == this.lastDocumentRevision) {
 			// Iterate update document infos
 			for (let updateDocumentInfo of updateDocumentInfos) {
 				// Check if json overlaps with the relevant properties
-				if (Object.keys(updateDocumentInfos.json).find(property => this.relevantProperties.has(property))) {
+				if (Object.keys(updateDocumentInfo.json).find(property => this.relevantProperties.includes(property))) {
 					// Check if have existing id
-					if (updateDocumentInfos.id)
+					if (updateDocumentInfo.id)
 						// Delete existing entries
-						this.statementPerformer.queueDelete(this.table,
-								this.statementPerformer.where(this.table.idTableColumn, updateDocumentInfos.id));
+						statementPerformer.queueDelete(this.table,
+								statementPerformer.where(this.table.idTableColumn, updateDocumentInfo.id));
 
 					// Check if active
 					if (updateDocumentInfo.active) {
@@ -65,14 +69,14 @@ module.exports = class Index {
 							// Queue this change
 							if (updateDocumentInfo.id)
 								// Use id
-								this.statementPerformer.queueInsertInto(this.table,
+								statementPerformer.queueInsertInto(this.table,
 										[
 											{tableColumn: this.table.keyTableColumn, value: key},
 											{tableColumn: this.table.idTableColumn, value: updateDocumentInfo.id},
 										]);
 							else
 								// Use idVariable
-								this.statementPerformer.queueInsertInto(this.table,
+								statementPerformer.queueInsertInto(this.table,
 										[
 											{tableColumn: this.table.keyTableColumn, value: key},
 											{tableColumn: this.table.idTableColumn,

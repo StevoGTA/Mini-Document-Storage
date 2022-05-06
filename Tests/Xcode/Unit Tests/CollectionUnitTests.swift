@@ -1,127 +1,148 @@
 //
-//  InfoUnitTests.swift
+//  CollectionUnitTests.swift
 //  Unit Tests
 //
-//  Created by Stevo on 2/22/22.
+//  Created by Stevo on 4/23/22.
 //
 
 import XCTest
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: InfoUnitTests
-class InfoUnitTests : XCTestCase {
+// MARK: CollectionUnitTests
+class CollectionUnitTests : XCTestCase {
 
 	// MARK: Test methods
 	//------------------------------------------------------------------------------------------------------------------
-	func testGetFailInvalidDocumentStorageID() throws {
-		// Setup
-		let	config = Config.shared
-
-		// Perform
-		let	(info, error) = config.httpEndpointClient.infoGet(documentStorageID: "ABC", keys: ["abc"])
-
-		// Evaluate results
-		XCTAssertNil(info, "received info")
-
-		XCTAssertNotNil(error, "did not receive error")
-		if error != nil {
-			switch error! {
-				case MDSError.invalidRequest(let message):
-					// Expected error
-					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
-
-				default:
-					// Other error
-					XCTFail("received unexpected error: \(error!)")
-			}
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func testFailGet0() throws {
-		// Setup
-		let	config = Config.shared
-
-		// Perform
-		let	(info, error) = config.httpEndpointClient.infoGet(documentStorageID: config.documentStorageID, keys: [])
-
-		XCTAssertNil(info, "received info")
-
-		XCTAssertNotNil(error, "did not receive error")
-		if error != nil {
-			switch error! {
-				case MDSError.invalidRequest(let message):
-					// Expected error
-					XCTAssertEqual(message, "Missing key(s)", "did not receive expected error message")
-
-				default:
-					// Other error
-					XCTFail("received unexpected error: \(error!)")
-			}
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func testSetFailInvalidDocumentStorageID() throws {
-		// Setup
-		let	config = Config.shared
-
-		// Perform
-		let	error = config.httpEndpointClient.infoSet(documentStorageID: "ABC", info: ["abc": "abc"])
-
-		// Evaluate results
-		XCTAssertNotNil(error, "did not receive error")
-		if error != nil {
-			switch error! {
-				case MDSError.invalidRequest(let message):
-					// Expected error
-					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
-
-				default:
-					// Other error
-					XCTFail("received unexpected error: \(error!)")
-			}
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func testSet0() throws {
-		// Setup
-		let	config = Config.shared
-
-		// Perform
-		let	error = config.httpEndpointClient.infoSet(documentStorageID: config.documentStorageID, info: [:])
-
-		// Evaluate results
-		XCTAssertNotNil(error, "did not receive error")
-		if error != nil {
-			switch error! {
-				case MDSError.invalidRequest(let message):
-					// Expected error
-					XCTAssertEqual(message, "Missing info", "did not receive expected error message")
-
-				default:
-					// Other error
-					XCTFail("received unexpected error: \(error!)")
-			}
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func testSet3() throws {
+	func testRegisterFailInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.shared
 
 		// Perform
 		let	error =
-					config.httpEndpointClient.infoSet(documentStorageID: config.documentStorageID,
-							info: [
-									"abc": "abc",
-									"def": "def",
-									"xyz": "xyz",
-								  ])
+					config.httpEndpointClient.collectionRegister(documentStorageID: "ABC", name: "ABC",
+							documentType: "ABC", isIncludedSelector: "ABC")
 
 		// Evaluate results
-		XCTAssertNil(error, "received error \(error!)")
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testGetDocumentCountInvalidDocumentStorageID() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	(info, error) = config.httpEndpointClient.collectionGetDocumentCount(documentStorageID: "ABC", name: "ABC")
+
+		// Evaluate results
+		XCTAssertNil(info, "received info")
+
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.failed(let status):
+					// Expected error
+					XCTAssertEqual(status, HTTPEndpointStatus.badRequest, "did not receive expected error")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testGetDocumentCountInvalidName() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	(info, error) =
+					config.httpEndpointClient.collectionGetDocumentCount(documentStorageID: config.documentStorageID,
+							name: "ABC")
+
+		// Evaluate results
+		XCTAssertNil(info, "received info")
+
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.failed(let status):
+					// Expected error
+					XCTAssertEqual(status, HTTPEndpointStatus.badRequest, "did not receive expected error")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testGetDocumentInfosInvalidDocumentStorageID() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	(isUpToDate, info, error) =
+					config.httpEndpointClient.collectionGetDocumentInfos(documentStorageID: "ABC", name: "ABC")
+
+		// Evaluate results
+		XCTAssertNil(isUpToDate, "received isUpToDate")
+
+		XCTAssertNil(info, "received info")
+
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testGetDocumentInfosInvalidName() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	(isUpToDate, info, error) =
+					config.httpEndpointClient.collectionGetDocumentInfos(documentStorageID: config.documentStorageID,
+							name: "ABC")
+
+		// Evaluate results
+		XCTAssertNil(isUpToDate, "received isUpToDate")
+
+		XCTAssertNil(info, "received info")
+
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "No Collection found with name ABC", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
 	}
 }

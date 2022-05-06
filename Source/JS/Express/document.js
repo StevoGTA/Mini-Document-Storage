@@ -72,7 +72,7 @@ exports.createV1 = async (request, response) => {
 //	=> type (path)
 //
 //	=> sinceRevision (query)
-//	=> maxDocumentCount (query, optional)
+//	=> count (query, optional)
 //		-or-
 //	=> id (query) (can specify multiple)
 //
@@ -109,7 +109,7 @@ exports.getV1 = async (request, response) => {
 	let	documentType = request.params.documentType;
 
 	let	sinceRevision = request.query.sinceRevision;
-	let	maxDocumentCount = request.query.maxDocumentCount;
+	let	count = request.query.count;
 	
 	var	documentIDs = request.query.id || [];
 	if (typeof documentIDs == 'string')
@@ -124,7 +124,7 @@ exports.getV1 = async (request, response) => {
 			// Since revision
 			let	[totalCount, results, error] =
 						await request.app.locals.documentStorage.documentGetSinceRevision(documentStorageID,
-								documentType, sinceRevision, maxDocumentCount);
+								documentType, sinceRevision, count);
 			if (!error)
 				// Success
 				response

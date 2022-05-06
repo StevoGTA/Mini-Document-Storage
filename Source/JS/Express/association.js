@@ -94,8 +94,8 @@ exports.updateV1 = async (request, response) => {
 //	=> name (path)
 //	=> fromID -or- toID (query)
 //	=> startIndex (query) (optional, default 0)
+//	=> count (query) (optional, default is all)
 //	=> fullInfo (query) (optional, default false)
-//
 //
 //	<= json (fullInfo == 0)
 //		{
@@ -129,13 +129,14 @@ exports.updateV1 = async (request, response) => {
 //			},
 //			...
 //		]
-	exports.getDocumentInfosV1 = async (request, response) => {
+exports.getDocumentsV1 = async (request, response) => {
 	// Setup
 	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	name = request.params.name;
 	let	fromDocumentID = request.query.fromID;
 	let	toDocumentID = request.query.toID;
 	let	startIndex = request.query.startIndex || 0;
+	let	count = request.query.count;
 	let	fullInfo = request.query.fullInfo || false;
 
 	// Catch errors
@@ -143,7 +144,7 @@ exports.updateV1 = async (request, response) => {
 		// Get info
 		let	[totalCount, results, error] =
 					await request.app.locals.documentStorage.associationGetDocumentInfos(documentStorageID, name,
-							fromDocumentID, toDocumentID, startIndex, 150000, fullInfo == 1);
+							fromDocumentID, toDocumentID, startIndex, count, fullInfo == 1);
 		if (!error) {
 			// Success
 			let	endIndex = startIndex + Object.keys(results).length - 1;

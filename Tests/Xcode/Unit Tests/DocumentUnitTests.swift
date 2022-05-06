@@ -13,7 +13,7 @@ class DocumentUnitTests : XCTestCase {
 
 	// MARK: Test methods
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentCreateFailInvalidDocumentStorageID() throws {
+	func testCreateFailInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -40,7 +40,7 @@ class DocumentUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentCreate0() throws {
+	func testCreate0() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -67,7 +67,7 @@ class DocumentUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentCreate1() throws {
+	func testCreate1() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -107,7 +107,7 @@ class DocumentUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentGetSinceRevisionFailInvalidDocumentStorageID() throws {
+	func testGetSinceRevisionFailInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -134,7 +134,7 @@ class DocumentUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentGetSinceRevisionFailInvalidDocumentType() throws {
+	func testGetSinceRevisionFailInvalidDocumentType() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -146,15 +146,15 @@ class DocumentUnitTests : XCTestCase {
 		// Evaluate results
 		XCTAssertNotNil(info, "did not receive info")
 		if info != nil {
-			XCTAssertEqual(info!.documentInfos.count, 0, "documentInfos was not empty")
-			XCTAssertEqual(info!.count, 0, "count was not 0")
+			XCTAssertEqual(info!.documentFullInfos.count, 0, "documentFullInfos was not empty")
+			XCTAssertTrue(info!.isComplete, "isComplete was not true")
 		}
 
 		XCTAssertNil(error, "received error: \(error!)")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentGetIDsFailInvalidDocumentStorageID() throws {
+	func testGetIDsFailInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -181,7 +181,7 @@ class DocumentUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentGetIDsFailInvalidDocumentType() throws {
+	func testGetIDsFailInvalidDocumentType() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -208,7 +208,7 @@ class DocumentUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentGetIDsFailNoIDs() throws {
+	func testGetIDsFailNoIDs() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -235,7 +235,7 @@ class DocumentUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentUpdateFailInvalidDocumentStorageID() throws {
+	func testUpdateFailInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -266,7 +266,7 @@ class DocumentUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentUpdateFailInvalidDocumentType() throws {
+	func testUpdateFailInvalidDocumentType() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -293,7 +293,7 @@ class DocumentUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentAddAttachmentFailInvalidDocumentStorageID() throws {
+	func testAddAttachmentFailInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -320,7 +320,7 @@ class DocumentUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentAddAttachmentFailInvalidDocumentType() throws {
+	func testAddAttachmentFailInvalidDocumentType() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -347,7 +347,7 @@ class DocumentUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentGetAttachmentFailInvalidDocumentStorageID() throws {
+	func testGetAttachmentFailInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -374,7 +374,7 @@ class DocumentUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentGetAttachmentFailInvalidDocumentType() throws {
+	func testGetAttachmentFailInvalidDocumentType() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -401,7 +401,7 @@ class DocumentUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentUpdateAttachmentFailInvalidDocumentStorageID() throws {
+	func testUpdateAttachmentFailInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -427,7 +427,7 @@ class DocumentUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentUpdateAttachmentFailInvalidDocumentType() throws {
+	func testUpdateAttachmentFailInvalidDocumentType() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -453,7 +453,7 @@ class DocumentUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentRemoveAttachmentFailInvalidDocumentStorageID() throws {
+	func testRemoveAttachmentFailInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -478,7 +478,7 @@ class DocumentUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentRemoveAttachmentFailInvalidDocumentType() throws {
+	func testRemoveAttachmentFailInvalidDocumentType() throws {
 		// Setup
 		let	config = Config.shared
 

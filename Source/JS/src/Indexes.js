@@ -60,9 +60,9 @@ module.exports = class Indexes {
 		if (!relevantProperties)
 			return 'Missing relevantProperties';
 
-		let	isUpToDate = info.isUpToDate;
-		if (!isUpToDate)
+		if (!('isUpToDate' in info))
 			return 'Missing isUpToDate';
+		let	isUpToDate = info.isUpToDate;
 
 		let	keysSelector = info.keysSelector;
 		if (!keysSelector)
@@ -89,9 +89,11 @@ module.exports = class Indexes {
 							statementPerformer.where(this.indexesTable.nameTableColumn, name));
 		if (results.length == 0) {
 			// Add
+			let	lastDocumentRevision =
+						isUpToDate ? (await internals.documents.getLastRevision(statementPerformer, documentType)) : 0;
 			let	index =
-						new Index(statementPerformer, name, relevantProperties, this.keysSelectorInfo[keysSelector],
-								keysSelectorInfo, 0);
+						new Index(statementPerformer, name, documentType, relevantProperties,
+								this.keysSelectorInfo[keysSelector], keysSelectorInfo, lastDocumentRevision);
 			this.indexInfo[name] = index;
 
 			statementPerformer.queueInsertInto(this.indexesTable,
@@ -102,14 +104,15 @@ module.exports = class Indexes {
 								value: relevantProperties.toString()},
 						{tableColumn: this.indexesTable.keysSelectorTableColumn, value: keysSelector},
 						{tableColumn: this.indexesTable.keysSelectorInfoTableColumn, value: keysSelectorInfo},
-						{tableColumn: this.indexesTable.lastDocumentRevisionTableColumn, value: 0},
+						{tableColumn: this.indexesTable.lastDocumentRevisionTableColumn, value: lastDocumentRevision},
 				]);
-			index.queueCreate();
+			index.queueCreate(statementPerformer);
 		} else if (keysSelector != results[0].keysSelector) {
 			// Update to new keysSelector
+			let	lastDocumentRevision = isUpToDate ? results[0].lastDocumentRevision : 0;
 			let	index =
-						new Index(statementPerformer, name, relevantProperties, this.keysSelectorInfo[keysSelector],
-								keysSelectorInfo, 0);
+						new Index(statementPerformer, name, documentType, relevantProperties,
+								this.keysSelectorInfo[keysSelector], keysSelectorInfo, lastDocumentRevision);
 			this.indexInfo[name] = index;
 
 			statementPerformer.queueUpdate(this.indexesTable,
@@ -118,17 +121,17 @@ module.exports = class Indexes {
 								value: relevantProperties.toString()},
 						{tableColumn: this.indexesTable.keysSelectorTableColumn, value: keysSelector},
 						{tableColumn: this.indexesTable.keysSelectorInfoTableColumn, value: keysSelectorInfo},
-						{tableColumn: this.indexesTable.lastDocumentRevisionTableColumn, value: 0},
+						{tableColumn: this.indexesTable.lastDocumentRevisionTableColumn, value: lastDocumentRevision},
 					],
 					statementPerformer.where(this.indexesTable.nameTableColumn, name));
-			index.queueTruncate();
+			index.queueTruncate(statementPerformer);
 		} else if (!util.isDeepStrictEqual(keysSelectorInfo, JSON.parse(results[0].keysSelectorInfo))) {
 			// keysSelectorInfo has changed
 			if (isUpToDate) {
 				// Updated info needed for future document changes
 				let	index =
-							new Index(statementPerformer, name, relevantProperties, keysSelector, keysSelectorInfo,
-									results[0].lastDocumentRevision);
+							new Index(statementPerformer, name, documentType, relevantProperties, keysSelector,
+									keysSelectorInfo, results[0].lastDocumentRevision);
 				this.indexInfo[name] = index;
 
 				statementPerformer.queueUpdate(this.indexesTable,
@@ -137,8 +140,8 @@ module.exports = class Indexes {
 			} else {
 				// Need to rebuild this index
 				let	index =
-						new Index(statementPerformer, name, relevantProperties, this.keysSelectorInfo[keysSelector],
-								keysSelectorInfo, 0);
+						new Index(statementPerformer, name, documentType, relevantProperties,
+								this.keysSelectorInfo[keysSelector], keysSelectorInfo, 0);
 				this.indexInfo[name] = index;
 
 				statementPerformer.queueUpdate(this.indexesTable,
@@ -150,8 +153,89 @@ module.exports = class Indexes {
 							{tableColumn: this.indexesTable.lastDocumentRevisionTableColumn, value: 0},
 						],
 						statementPerformer.where(this.indexesTable.nameTableColumn, name));
-				index.queueTruncate();
+				index.queueTruncate(statementPerformer);
 			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async getDocuments(statementPerformer, name, keys, fullInfo) {
+		// Setup
+		let	internals = this.internals;
+
+		// Get index
+		let	[index, indexError] = await this.getForName(statementPerformer, name);
+		if (indexError)
+			// Error
+			return [null, null, indexError];
+
+		// Get document type last revision
+		let	documentTypeLastRevision = await internals.documents.getLastRevision(statementPerformer, index.type);
+
+		// Check if up to date
+		if (index.lastDocumentRevision == documentTypeLastRevision) {
+			// Setup
+			let	wheres = keys.map(key => statementPerformer.where(index.table.keyTableColumn, key));
+
+			// Check for full info
+			if (fullInfo == 1) {
+				// Documents
+				let	[selectResults, documentsByID, resultsError] =
+							await internals.documents.getDocuments(statementPerformer, index.type, index.table,
+									internals.documents.getDocumentInnerJoin(statementPerformer, index.type,
+											index.table.idTableColumn),
+									wheres, null);
+				
+				// Handle results
+				if (selectResults) {
+					// Transmogrify results
+					var	transmogrifiedResults = {};
+					for (let i = 0; i < keys.length; i++) {
+						// Massage results
+						let	result = selectResults[i];
+
+						if (result["count(*)"] == 1)
+							// Key was found
+							transmogrifiedResults[keys[i]] = documentsByID[result.id];
+					}
+
+					return [true, transmogrifiedResults, null];
+				} else
+					// Error
+					return [null, null, resultsError];
+			} else {
+				// Document info
+				let	[results, resultsError] =
+						await internals.documents.getDocumentInfos(statementPerformer, index.type, index.table,
+								internals.documents.getDocumentInfoInnerJoin(statementPerformer, index.type,
+										index.table.idTableColumn),
+								wheres, null);
+				
+				// Handle results
+				if (results) {
+					// Transmogrify results
+					var	transmogrifiedResults = {};
+					for (let i = 0; i < keys.length; i++) {
+						// Massage results
+						let	result = results[i];
+						if (result["count(*)"] == 1) {
+							// Key was found
+							let	info = {};
+							info[result.documentID] = result.revision;
+							transmogrifiedResults[keys[i]] = info;
+						}
+					}
+
+					return [true, transmogrifiedResults, null];
+				} else
+					// Error
+					return [null, null, resultsError];
+			}
+		} else {
+			// Update
+			this.updateIndex(statementPerformer, index);
+
+			return [false, null, null];
 		}
 	}
 
@@ -168,9 +252,9 @@ module.exports = class Indexes {
 			for (let result of results) {
 				// Create Index and update stuffs
 				let	index =
-							new Index(statementPerformer, result.name, result.relevantProperties,
-									this.keysSelectorInfo[result.keysSelector], result.keysSelectorInfo,
-									result.lastDocumentRevision);
+							new Index(statementPerformer, result.name, result.type,
+									result.relevantProperties.split(','), this.keysSelectorInfo[result.keysSelector],
+									JSON.parse(result.keysSelectorInfo.toString()), result.lastDocumentRevision);
 				indexes.push(index);
 				this.indexInfo[result.name] = index;
 			}
@@ -193,11 +277,11 @@ module.exports = class Indexes {
 		var	index = this.indexInfo[name];
 		if (index)
 			// Have
-			return index;
+			return [index, null];
 
 		// Catch errors
 		try {
-			// Select all Indexes for this document type
+			// Select all Indexes for this name
 			let	results =
 						await statementPerformer.select(this.indexesTable,
 								statementPerformer.where(this.indexesTable.nameTableColumn, name));
@@ -207,20 +291,20 @@ module.exports = class Indexes {
 				// Have Index
 				let	result = results[0];
 				index =
-						new Index(statementPerformer, result.name, result.relevantProperties,
-								this.keysSelectorInfo[result.keysSelector], result.keysSelectorInfo,
-								result.lastDocumentRevision);
+						new Index(statementPerformer, result.name, result.type, result.relevantProperties.split(','),
+								this.keysSelectorInfo[result.keysSelector],
+								JSON.parse(result.keysSelectorInfo.toString()), result.lastDocumentRevision);
 				this.indexInfo[name] = index;
 
-				return index;
+				return [index, null];
 			} else
 				// Don't have
-				return null;
+				return [null, 'No Index found with name ' + name];
 		} catch(error) {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
 				// No such table
-				return null;
+				return [null, 'No Indexes'];
 			else
 				// Other error
 				throw error;
@@ -232,7 +316,7 @@ module.exports = class Indexes {
 		// Iterate indexes
 		for (let index of indexes) {
 			// Update
-			if (index.queueUpdates(initialLastRevision, updateDocumentInfos)) {
+			if (index.queueUpdates(statementPerformer, initialLastRevision, updateDocumentInfos)) {
 				// Update table
 				statementPerformer.queueUpdate(this.indexesTable,
 						[{tableColumn: this.indexesTable.lastDocumentRevisionTableColumn,
@@ -240,5 +324,26 @@ module.exports = class Indexes {
 									statementPerformer.where(this.indexesTable.nameTableColumn, index.name));
 			}
 		}
+	}
+
+	// Private methods
+	//------------------------------------------------------------------------------------------------------------------
+	async updateIndex(statementPerformer, index) {
+		// Setup
+		let	internals = this.internals;
+		let	documentUpdateTracker = internals.getDocumentUpdateTrackerForIndex(index);
+
+		// Get update document infos
+		let	updateDocumentInfos =
+					await internals.documents.getUpdateDocumentInfos(statementPerformer, index.type,
+							index.lastDocumentRevision, 500);
+		documentUpdateTracker.addDocumentInfos(updateDocumentInfos);
+		
+		// Perform updates
+		await statementPerformer.batchLockedForWrite(documentUpdateTracker.tables(),
+				() => { return (async() => {
+					// Finalize DocumentUpdateTracker
+					documentUpdateTracker.finalize(statementPerformer, index.lastDocumentRevision);
+				})()});
 	}
 }

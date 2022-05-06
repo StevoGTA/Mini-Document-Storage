@@ -60,9 +60,9 @@ module.exports = class Collections {
 		if (!relevantProperties)
 			return 'Missing relevantProperties';
 
-		let	isUpToDate = info.isUpToDate;
-		if (!isUpToDate)
+		if (!('isUpToDate' in info))
 			return 'Missing isUpToDate';
+		let	isUpToDate = info.isUpToDate;
 
 		let	isIncludedSelector = info.isIncludedSelector;
 		if (!isIncludedSelector)
@@ -89,9 +89,12 @@ module.exports = class Collections {
 							statementPerformer.where(this.collectionsTable.nameTableColumn, name));
 		if (results.length == 0) {
 			// Add
+			let	lastDocumentRevision =
+						isUpToDate ? (await internals.documents.getLastRevision(statementPerformer, documentType)) : 0;
 			let	collection =
-						new Collection(statementPerformer, name, relevantProperties,
-								this.isIncludedSelectorInfo[isIncludedSelector], isIncludedSelectorInfo, 0);
+						new Collection(statementPerformer, name, documentType, relevantProperties,
+								this.isIncludedSelectorInfo[isIncludedSelector], isIncludedSelectorInfo,
+								lastDocumentRevision);
 			this.collectionInfo[name] = collection;
 
 			statementPerformer.queueInsertInto(this.collectionsTable,
@@ -103,14 +106,17 @@ module.exports = class Collections {
 						{tableColumn: this.collectionsTable.isIncludedSelectorTableColumn, value: isIncludedSelector},
 						{tableColumn: this.collectionsTable.isIncludedSelectorInfoTableColumn,
 								value: isIncludedSelectorInfo},
-						{tableColumn: this.collectionsTable.lastDocumentRevisionTableColumn, value: 0},
+						{tableColumn: this.collectionsTable.lastDocumentRevisionTableColumn,
+								value: lastDocumentRevision},
 				]);
-			collection.queueCreate();
+			collection.queueCreate(statementPerformer);
 		} else if (isIncludedSelector != results[0].isIncludedSelector) {
 			// Update to new isIncludedSelector
+			let	lastDocumentRevision = isUpToDate ? results[0].lastDocumentRevision : 0;
 			let	collection =
-						new Collection(statementPerformer, name, relevantProperties,
-								this.isIncludedSelectorInfo[isIncludedSelector], isIncludedSelectorInfo, 0);
+						new Collection(statementPerformer, name, documentType, relevantProperties,
+								this.isIncludedSelectorInfo[isIncludedSelector], isIncludedSelectorInfo,
+								lastDocumentRevision);
 			this.collectionInfo[name] = collection;
 
 			statementPerformer.queueUpdate(this.collectionsTable,
@@ -120,16 +126,17 @@ module.exports = class Collections {
 						{tableColumn: this.collectionsTable.isIncludedSelectorTableColumn, value: isIncludedSelector},
 						{tableColumn: this.collectionsTable.isIncludedSelectorInfoTableColumn,
 								value: isIncludedSelectorInfo},
-						{tableColumn: this.collectionsTable.lastDocumentRevisionTableColumn, value: 0},
+						{tableColumn: this.collectionsTable.lastDocumentRevisionTableColumn,
+								value: lastDocumentRevision},
 					],
 					statementPerformer.where(this.collectionsTable.nameTableColumn, name));
-			collection.queueTruncate();
+			collection.queueTruncate(statementPerformer);
 		} else if (!util.isDeepStrictEqual(isIncludedSelectorInfo, JSON.parse(results[0].isIncludedSelectorInfo))) {
 			// isIncludedSelectorInfo has changed
 			if (isUpToDate) {
 				// Updated info needed for future document changes
 				let	collection =
-							new Collection(statementPerformer, name, relevantProperties,
+							new Collection(statementPerformer, name, documentType, relevantProperties,
 									this.isIncludedSelectorInfo[isIncludedSelector], isIncludedSelectorInfo,
 									results[0].lastDocumentRevision);
 				this.collectionInfo[name] = collection;
@@ -141,7 +148,7 @@ module.exports = class Collections {
 			} else {
 				// Need to rebuild this collection
 				let	collection =
-							new Collection(statementPerformer, name, relevantProperties,
+							new Collection(statementPerformer, name, documentType, relevantProperties,
 									this.isIncludedSelectorInfo[isIncludedSelector], isIncludedSelectorInfo, 0);
 				this.collectionInfo[name] = collection;
 
@@ -156,8 +163,93 @@ module.exports = class Collections {
 							{tableColumn: this.collectionsTable.lastDocumentRevisionTableColumn, value: 0},
 						],
 						statementPerformer.where(this.collectionsTable.nameTableColumn, name));
-				collection.queueTruncate();
+				collection.queueTruncate(statementPerformer);
 			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async getDocumentCount(statementPerformer, name) {
+		// Setup
+		let	internals = this.internals;
+
+		// Get collection
+		let	[collection, collectionError] = await this.getForName(statementPerformer, name);
+		if (collectionError)
+			// Error
+			return [null, null, collectionError];
+		
+		// Get document type last revision
+		let	documentTypeLastRevision = await internals.documents.getLastRevision(statementPerformer, collection.type);
+
+		// Check if up to date
+		if (collection.lastDocumentRevision == documentTypeLastRevision) {
+			// Setup
+			let	count = await statementPerformer.count(collection.table);
+
+			return [true, count, null];
+		} else {
+			// Update
+			this.updateCollection(statementPerformer, collection);
+
+			return [false, null, null];
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async getDocuments(statementPerformer, name, startIndex, count, fullInfo) {
+		// Setup
+		let	internals = this.internals;
+
+		// Get collection
+		let	[collection, collectionError] = await this.getForName(statementPerformer, name);
+		if (collectionError)
+			// Error
+			return [null, null, null, collectionError];
+		
+		// Get document type last revision
+		let	documentTypeLastRevision = await internals.documents.getLastRevision(statementPerformer, collection.type);
+
+		// Check if up to date
+		if (collection.lastDocumentRevision == documentTypeLastRevision) {
+			// Setup
+			let	count = await statementPerformer.count(collection.table);
+
+			// Check for full info
+			if (fullInfo == 1) {
+				// Documents
+				let	[selectResults, documentsByID, resultsError] =
+							await internals.documents.getDocuments(statementPerformer, collection.type,
+									collection.table,
+									internals.documents.getDocumentInnerJoin(statementPerformer, collection.type,
+											collection.table.idTableColumn),
+									null, statementPerformer.limit(startIndex, count));
+				if (documentsByID)
+					// Success
+					return [true, count, Object.values(documentsByID), null];
+				else
+					// Error
+					return [null, null, null, resultsError];
+			} else {
+				// Document info
+				let	[results, resultsError] =
+							await internals.documents.getDocumentInfos(statementPerformer, collection.type,
+									collection.table,
+									internals.documents.getDocumentInfoInnerJoin(statementPerformer, collection.type,
+											collection.table.idTableColumn),
+									null, statementPerformer.limit(startIndex, count));
+				if (results)
+					// Success
+					return [true, count, results, null];
+				else
+					// Error
+					return [null, null, null, resultsError];
+			}
+		} else {
+			// Update
+			this.updateCollection(statementPerformer, collection);
+
+			return [false, null, null, null];
 		}
 	}
 
@@ -174,10 +266,10 @@ module.exports = class Collections {
 			for (let result of results) {
 				// Create Collection and update stuffs
 				let	collection = 
-							new Collection(statementPerformer, result.name, result.relevantProperties,
+							new Collection(statementPerformer, result.name, result.type,
+									result.relevantProperties.split(','),
 									this.isIncludedSelectorInfo[result.isIncludedSelector],
-									result.isIncludedSelectorInfo,
-									result.lastDocumentRevision);
+									JSON.parse(result.isIncludedSelectorInfo.toString()), result.lastDocumentRevision);
 				collections.push(collection);
 				this.collectionInfo[result.name] = collection;
 			}
@@ -200,11 +292,11 @@ module.exports = class Collections {
 		var	collection = this.collectionInfo[name];
 		if (collection)
 			// Have
-			return collection;
+			return [collection, null];
 
 		// Catch errors
 		try {
-			// Select all Collections for this document type
+			// Select all Collections with matching name
 			let	results =
 						await statementPerformer.select(this.collectionsTable,
 								statementPerformer.where(this.collectionsTable.nameTableColumn, name));
@@ -214,20 +306,21 @@ module.exports = class Collections {
 				// Have Collection
 				let	result = results[0];
 				collection =
-						new Collection(statementPerformer, result.name, result.relevantProperties,
-								this.isIncludedSelectorInfo[result.isIncludedSelector], result.isIncludedSelectorInfo,
-								result.lastDocumentRevision);
+						new Collection(statementPerformer, result.name, result.type,
+								result.relevantProperties.split(','),
+								this.isIncludedSelectorInfo[result.isIncludedSelector],
+								JSON.parse(result.isIncludedSelectorInfo.toString()), result.lastDocumentRevision);
 				this.collectionInfo[name] = collection;
 
-				return collection;
+				return [collection, null];
 			} else
 				// Don't have
-				return null;
+				return [null, 'No Collection found with name ' + name];
 		} catch(error) {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
 				// No such table
-				return null;
+				return [null, 'No Collections'];
 			else
 				// Other error
 				throw error;
@@ -239,7 +332,7 @@ module.exports = class Collections {
 		// Iterate collections
 		for (let collection of collections) {
 			// Update
-			if (collection.queueUpdates(initialLastRevision, updateDocumentInfos)) {
+			if (collection.queueUpdates(statementPerformer, initialLastRevision, updateDocumentInfos)) {
 				// Update table
 				statementPerformer.queueUpdate(this.collectionsTable,
 						[{tableColumn: this.collectionsTable.lastDocumentRevisionTableColumn,
@@ -247,5 +340,26 @@ module.exports = class Collections {
 						statementPerformer.where(this.collectionsTable.nameTableColumn, collection.name));
 			}
 		}
+	}
+
+	// Private methods
+	//------------------------------------------------------------------------------------------------------------------
+	async updateCollection(statementPerformer, collection) {
+		// Setup
+		let	internals = this.internals;
+		let	documentUpdateTracker = internals.getDocumentUpdateTrackerForCollection(collection);
+
+		// Get update document infos
+		let	updateDocumentInfos =
+					await internals.documents.getUpdateDocumentInfos(statementPerformer, collection.type,
+							collection.lastDocumentRevision, 500);
+		documentUpdateTracker.addDocumentInfos(updateDocumentInfos);
+		
+		// Perform updates
+		await statementPerformer.batchLockedForWrite(documentUpdateTracker.tables(),
+				() => { return (async() => {
+					// Finalize DocumentUpdateTracker
+					documentUpdateTracker.finalize(statementPerformer, collection.lastDocumentRevision);
+				})()});
 	}
 }

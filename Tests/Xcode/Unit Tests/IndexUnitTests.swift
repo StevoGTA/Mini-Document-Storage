@@ -1,15 +1,15 @@
 //
-//  AssociationUnitTests.swift
+//  IndexUnitTests.swift
 //  Unit Tests
 //
-//  Created by Stevo on 4/5/22.
+//  Created by Stevo on 4/22/22.
 //
 
 import XCTest
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: AssociationUnitTests
-class AssociationUnitTests : XCTestCase {
+// MARK: IndexUnitTests
+class IndexUnitTests : XCTestCase {
 
 	// MARK: Test methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -19,8 +19,8 @@ class AssociationUnitTests : XCTestCase {
 
 		// Perform
 		let	error =
-					config.httpEndpointClient.associationRegister(documentStorageID: "ABC", name: "ABC",
-							fromDocumentType: Parent.documentType, toDocumentType: Child.documentType)
+					config.httpEndpointClient.indexRegister(documentStorageID: "ABC", name: "ABC", documentType: "ABC",
+							keysSelector: "ABC")
 
 		// Evaluate results
 		XCTAssertNotNil(error, "did not receive error")
@@ -38,42 +38,60 @@ class AssociationUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testUpdateFailInvalidDocumentStorageID() throws {
+	func testGetDocumentInfosInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.shared
 
 		// Perform
-		let	documentStorage = MDSEphemeral()
-		let	parent = Parent(id: "ABC", documentStorage: documentStorage)
-		let	child = Child(id: "ABC", documentStorage: documentStorage)
-		let	errors =
-					config.httpEndpointClient.associationUpdate(documentStorageID: "ABC", name: "ABC",
-							updates: [(action: .add, fromDocument: parent, toDocument: child)])
+		let	(isUpToDate, info, error) =
+					config.httpEndpointClient.indexGetDocumentInfos(documentStorageID: "ABC", name: "ABC",
+							keys: ["ABC"])
 
 		// Evaluate results
-		XCTAssertEqual(errors.count, 1, "did not receive 1 error")
-		if errors.count == 1 {
-			switch errors.first! {
+		XCTAssertNil(isUpToDate, "received isUpToDate")
+
+		XCTAssertNil(info, "received info")
+
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
 
 				default:
 					// Other error
-					XCTFail("received unexpected error: \(errors.first!)")
+					XCTFail("received unexpected error: \(error!)")
 			}
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testUpdateNoUpdates() throws {
+	func testGetDocumentInfosInvalidName() throws {
 		// Setup
 		let	config = Config.shared
 
 		// Perform
-		let	errors = config.httpEndpointClient.associationUpdate(documentStorageID: "ABC", name: "ABC", updates: [])
+		let	(isUpToDate, info, error) =
+					config.httpEndpointClient.indexGetDocumentInfos(documentStorageID: config.documentStorageID,
+							name: "ABC", keys: ["ABC"])
 
 		// Evaluate results
-		XCTAssertEqual(errors.count, 0, "received errors: \(errors)")
+		XCTAssertNil(isUpToDate, "received isUpToDate")
+
+		XCTAssertNil(info, "received info")
+
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "No Index found with name ABC", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
 	}
 }

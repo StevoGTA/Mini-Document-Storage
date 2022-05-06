@@ -105,7 +105,7 @@ module.exports = class Caches {
 						{tableColumn: this.cachesTable.infoTableColumn, value: valuesInfos},
 						{tableColumn: this.cachesTable.lastDocumentRevisionTableColumn, value: 0},
 					]);
-			cache.queueCreate();
+			cache.queueCreate(statementPerformer);
 		} else {
 			// Have existing
 			if (!util.isDeepStrictEqual(valuesInfos, JSON.parse(results[0].info.toString()))) {
@@ -122,7 +122,7 @@ module.exports = class Caches {
 							{tableColumn: this.cachesTable.infoTableColumn, value: valuesInfos},
 							{tableColumn: this.cachesTable.lastDocumentRevisionTableColumn, value: 0},
 						]);
-				cache.queueTruncate();
+				cache.queueTruncate(statementPerformer);
 			}
 		}
 	}
@@ -164,7 +164,7 @@ module.exports = class Caches {
 		var	cache = this.cacheInfo[name];
 		if (cache)
 			// Have
-			return cache;
+			return [cache, null];
 
 		// Catch errors
 		try {
@@ -182,15 +182,15 @@ module.exports = class Caches {
 								result.lastDocumentRevision);
 				this.cacheInfo[name] = cache;
 
-				return cache;
+				return [cache, null];
 			} else
 				// Don't have
-				return null;
+				return [null, 'No Cache found with name ' + name];
 		} catch(error) {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
 				// No such table
-				return null;
+				return [null, 'No Caches'];
 			else
 				// Other error
 				throw error;
@@ -202,7 +202,7 @@ module.exports = class Caches {
 		// Iterate caches
 		for (let cache of caches) {
 			// Update
-			if (cache.queueUpdates(initialLastRevision, updateDocumentInfos)) {
+			if (cache.queueUpdates(statementPerformer, initialLastRevision, updateDocumentInfos)) {
 				// Update table
 				statementPerformer.queueUpdate(this.cachesTable,
 						[

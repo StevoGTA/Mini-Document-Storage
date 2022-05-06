@@ -65,18 +65,29 @@ exports.getDocumentCountV1 = async (request, response) => {
 	// Catch errors
 	try {
 		// Get info
-		let	[count, upToDate, error] =
+		let	[upToDate, count, error] =
 					await request.app.locals.documentStorage.collectionGetDocumentCount(documentStorageID, name);
 		if (upToDate)
 			// Success
 			response
 					.status(200)
-					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-					.send(count);
-		else
+					.set(
+							{
+								'Access-Control-Allow-Origin': '*',
+								'Access-Control-Allow-Credentials': true,
+								'Content-Range': 'documents */' + count,
+							})
+					.send();
+		else if (!error)
 			// Not up to date
 			response
 					.status(409)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send();
+		else
+			// Error
+			response
+					.status(400)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 					.send();
 	} catch (error) {
@@ -85,7 +96,7 @@ exports.getDocumentCountV1 = async (request, response) => {
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send({error: 'Internal error'});
+				.send();
 	}
 };
 
@@ -94,26 +105,57 @@ exports.getDocumentCountV1 = async (request, response) => {
 //	=> documentStorageID (path)
 //	=> name (path)
 //	=> startIndex (query) (optional, default is 0)
+//	=> count (query) (optional, default is all)
+//	=> fullInfo (query) (optional, default is false)
 //
 //	<= HTTP Status 409 if collection is out of date => call endpoint again
-//	<= json
+//	<= json (fullInfo == 0)
 //		{
 //			String (documentID) : Int (revision),
 //			...
 //		}
-exports.getDocumentInfosV1 = async (request, response) => {
+//	<= json (fullInfo == 1)
+//		[
+//			{
+//				"documentID" :String,
+//				"revision" :Int,
+//				"active" :0/1,
+//				"creationDate" :String,
+//				"modificationDate" :String,
+//				"json" :{
+//							"key" :Any,
+//							...
+//						},
+//				"attachments":
+//						{
+//							id :
+//								{
+//									"revision" :Int,
+//									"info" :{
+//												"key" :Any,
+//												...
+//											},
+//								},
+//								..
+//						}
+//			},
+//			...
+//		]
+exports.getDocumentsV1 = async (request, response) => {
 	// Setup
 	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	name = request.params.name.replace(/%2B/g, '+').replace(/_/g, '/');
 
 	let	startIndex = request.query.startIndex || 0;
+	let	count = request.query.count;
+	let	fullInfo = request.query.fullInfo || false;
 
 	// Catch errors
 	try {
 		// Get info
-		let	[totalCount, results, upToDate, error] =
-					await request.app.locals.documentStorage.collectionGetDocumentInfos(documentStorageID, name,
-							startIndex);
+		let	[upToDate, totalCount, results, error] =
+					await request.app.locals.documentStorage.collectionGetDocuments(documentStorageID, name, startIndex,
+							count, fullInfo);
 		if (upToDate) {
 			// Success
 			let	endIndex = startIndex + Object.keys(results).length - 1;
@@ -129,13 +171,19 @@ exports.getDocumentInfosV1 = async (request, response) => {
 						'Content-Range': contentRange,
 					})
 					.send(results);
-		} else
+		} else if (!error)
 			// Not up to date
 			response
 					.status(409)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 					.send();
-		} catch (error) {
+		else
+			// Error
+			response
+					.status(400)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send({error: error});
+	} catch (error) {
 		// Error
 		console.log(error.stack);
 		response

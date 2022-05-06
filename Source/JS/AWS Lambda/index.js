@@ -73,7 +73,7 @@ exports.registerV1 = async (event) => {
 //				}
 //			...
 //		}
-exports.getDocumentInfosV1 = async (event) => {
+exports.getDocumentsV1 = async (event) => {
 	// Setup
 	let	documentStorageID = event.pathParameters.projectID;
 	let	name = event.pathParameters.name.replace(/%2B/g, '+').replace(/_/g, '/');
@@ -94,7 +94,7 @@ exports.getDocumentInfosV1 = async (event) => {
 	try {
 		// Get info
 		let	documentStorage = new DocumentStorage();
-		let	[results, upToDate] = await documentStorage.indexGetDocumentInfos(documentStorageID, name, keys);
+		let	[results, upToDate] = await documentStorage.indexGetDocuments(documentStorageID, name, keys);
 		if (upToDate)
 			// Success
 			return {

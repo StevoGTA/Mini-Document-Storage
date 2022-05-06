@@ -13,7 +13,7 @@ class DocumentTransactionTests : XCTestCase {
 
 	// MARK: Test methods
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentCreateRetrieveUpdate() throws {
+	func testCreateRetrieveUpdate() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -57,11 +57,8 @@ class DocumentTransactionTests : XCTestCase {
 				}
 			}
 		}
-		guard createError == nil else {
-			XCTFail("create received error \(createError!)")
-
-			return
-		}
+		XCTAssertNil(createError, "create received error \(createError!)")
+		guard createError == nil else { return }
 
 		// Get documents since revision 0
 		let	(getSinceRevisionDocumentInfo, getSinceRevisionError) =
@@ -69,12 +66,11 @@ class DocumentTransactionTests : XCTestCase {
 							documentType: config.documentType, sinceRevision: 0)
 		XCTAssertNotNil(getSinceRevisionDocumentInfo, "get since revision did not receive info")
 		if getSinceRevisionDocumentInfo != nil {
-			XCTAssert(getSinceRevisionDocumentInfo!.documentInfos.count > 0,
+			XCTAssert(getSinceRevisionDocumentInfo!.documentFullInfos.count > 0,
 					"get since revision did not receive any documentInfos")
 
 			let	document =
-						getSinceRevisionDocumentInfo!.documentInfos
-								.first(where: { ($0["documentID"] as? String) == documentID! })
+						getSinceRevisionDocumentInfo!.documentFullInfos.first(where: { $0.documentID == documentID! })
 			XCTAssertNotNil(document, "get since revision did not receive expected document")
 		}
 		XCTAssertNil(getSinceRevisionError, "get since revision received error \(getSinceRevisionError!)")
@@ -177,7 +173,7 @@ class DocumentTransactionTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testDocumentCreateRetrieveUpdateRemoveAttachment() throws {
+	func testCreateRetrieveUpdateRemoveAttachment() throws {
 		// Setup
 		let	config = Config.shared
 

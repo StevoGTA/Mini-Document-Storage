@@ -55,51 +55,76 @@ exports.registerV1 = async (request, response) => {
 //	=> documentStorageID (path)
 //	=> name (path)
 //	=> key (query) (can specify multiple)
+//	=> fullInfo (query) (optional, default false)
 //
 //	<= HTTP Status 409 if collection is out of date => call endpoint again
-//	<= json
+//	<= json (fullInfo == 0)
 //		{
-//			String (key) :
-//				{
-//					String (documentID) : Int (revision)
-//				}
+//			key: {String (documentID) : Int (revision)},
 //			...
 //		}
-exports.getDocumentInfosV1 = async (request, response) => {
+//	<= json (fullInfo == 1)
+//		{
+//			key:
+//				{
+//					"documentID" :String,
+//					"revision" :Int,
+//					"active" :0/1,
+//					"creationDate" :String,
+//					"modificationDate" :String,
+//					"json" :{
+//								"key" :Any,
+//								...
+//							},
+//					"attachments":
+//							{
+//								id :
+//									{
+//										"revision" :Int,
+//										"info" :{
+//													"key" :Any,
+//													...
+//												},
+//									},
+//									..
+//							}
+//				},
+//			...
+//		}
+exports.getDocumentsV1 = async (request, response) => {
 	// Setup
 	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	name = request.params.name.replace(/%2B/g, '+').replace(/_/g, '/');
 
 	let	keys = request.query.key;
+	if (typeof keys == 'string')
+		keys = [keys];
 
-	// Validate input
-	if (!keys) {
-		// Must specify projectID
-		response
-				.status(400)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send({error: 'missing key(s)'});
-
-		return;
-	}
+		let	fullInfo = request.query.fullInfo || false;
 
 	// Catch errors
 	try {
 		// Get info
-		let	documentStorage = new DocumentStorage();
-		let	[results, upToDate] = await documentStorage.indexGetDocumentInfos(documentStorageID, name, keys);
+		let	[upToDate, results, error] =
+					await request.app.locals.documentStorage.indexGetDocuments(documentStorageID, name, keys, fullInfo);
 		if (upToDate)
 			// Success
 			response
 					.status(200)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 					.send(results);
-		else
+		else if (!error)
 			// Not up to date
 			response
 					.status(409)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 					.send();
+		else
+			// Error
+			response
+					.status(400)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send({error: error});
 	} catch (error) {
 		// Error
 		console.log(error.stack);

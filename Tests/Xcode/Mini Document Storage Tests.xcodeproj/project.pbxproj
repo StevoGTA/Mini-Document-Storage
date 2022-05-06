@@ -164,6 +164,10 @@
 		0A91AB7A28127F7000FE1549 /* Child.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A91AB7828127F7000FE1549 /* Child.swift */; };
 		0A91AB7B28127F7000FE1549 /* Child.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A91AB7828127F7000FE1549 /* Child.swift */; };
 		0A91AB7D2812831700FE1549 /* AssociationTransactionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A91AB7C2812831700FE1549 /* AssociationTransactionTests.swift */; };
+		0A9668142818CA3C001CBC7B /* CollectionTransactionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9668132818CA3C001CBC7B /* CollectionTransactionTests.swift */; };
+		0A9668162818CA45001CBC7B /* IndexTransactionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9668152818CA45001CBC7B /* IndexTransactionTests.swift */; };
+		0ACCD91428137C6B001D52CB /* IndexUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACCD91328137C6B001D52CB /* IndexUnitTests.swift */; };
+		0ACCD9162814EBBC001D52CB /* CollectionUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACCD9152814EBBC001D52CB /* CollectionUnitTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -279,6 +283,10 @@
 		0A91AB7428127F6600FE1549 /* Parent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Parent.swift; sourceTree = "<group>"; };
 		0A91AB7828127F7000FE1549 /* Child.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Child.swift; sourceTree = "<group>"; };
 		0A91AB7C2812831700FE1549 /* AssociationTransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssociationTransactionTests.swift; sourceTree = "<group>"; };
+		0A9668132818CA3C001CBC7B /* CollectionTransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionTransactionTests.swift; sourceTree = "<group>"; };
+		0A9668152818CA45001CBC7B /* IndexTransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexTransactionTests.swift; sourceTree = "<group>"; };
+		0ACCD91328137C6B001D52CB /* IndexUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexUnitTests.swift; sourceTree = "<group>"; };
+		0ACCD9152814EBBC001D52CB /* CollectionUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionUnitTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -333,7 +341,9 @@
 			isa = PBXGroup;
 			children = (
 				0A8A9B6F27FD375B00B2139A /* AssociationUnitTests.swift */,
+				0ACCD9152814EBBC001D52CB /* CollectionUnitTests.swift */,
 				0A1F7FDC27E40244007F8920 /* DocumentUnitTests.swift */,
+				0ACCD91328137C6B001D52CB /* IndexUnitTests.swift */,
 				0A55527327C5DF6E003E497B /* InfoUnitTests.swift */,
 			);
 			path = "Unit Tests";
@@ -588,7 +598,9 @@
 			isa = PBXGroup;
 			children = (
 				0A91AB7C2812831700FE1549 /* AssociationTransactionTests.swift */,
+				0A9668132818CA3C001CBC7B /* CollectionTransactionTests.swift */,
 				0A5EAB6B27F52F04003E0034 /* DocumentTransactionTests.swift */,
+				0A9668152818CA45001CBC7B /* IndexTransactionTests.swift */,
 				0A5E182327C70D3F0089E550 /* InfoTransactionTests.swift */,
 			);
 			path = "Transaction Tests";
@@ -730,6 +742,7 @@
 				0A1F800227E40543007F8920 /* SQLiteWhere.swift in Sources */,
 				0A1F7FF327E40527007F8920 /* MDSIndex.swift in Sources */,
 				0A55520027C5D955003E497B /* MDSDocumentStorage.swift in Sources */,
+				0ACCD91428137C6B001D52CB /* IndexUnitTests.swift in Sources */,
 				0A55526927C5DBDF003E497B /* Lock.swift in Sources */,
 				0A5E184F27C716FA0089E550 /* HTTPURLResponse+Extensions.swift in Sources */,
 				0A1F7FF627E40527007F8920 /* MDSBatchInfo.swift in Sources */,
@@ -769,6 +782,7 @@
 				0A1F800A27E40543007F8920 /* SQLiteTrigger.swift in Sources */,
 				0A1F7FE127E404F7007F8920 /* MDSEphemeral.swift in Sources */,
 				0A1F7FEC27E40523007F8920 /* MDSSQLite.swift in Sources */,
+				0ACCD9162814EBBC001D52CB /* CollectionUnitTests.swift in Sources */,
 				0A1F7FE427E40514007F8920 /* MDSRemoteStorage.swift in Sources */,
 				0A55527027C5DC2D003E497B /* RangeReplaceableCollection+Extensions.swift in Sources */,
 				0A1F7FDD27E40244007F8920 /* DocumentUnitTests.swift in Sources */,
@@ -809,9 +823,11 @@
 				0A1F7FF827E40528007F8920 /* MDSIndex.swift in Sources */,
 				0A5E187E27C71F860089E550 /* FileManager+Extensions.swift in Sources */,
 				0A91AB7A28127F7000FE1549 /* Child.swift in Sources */,
+				0A9668162818CA45001CBC7B /* IndexTransactionTests.swift in Sources */,
 				0A1F7FE227E404FA007F8920 /* MDSEphemeral.swift in Sources */,
 				0A5E187A27C71F7F0089E550 /* Dictionary+Extensions.swift in Sources */,
 				0A1F7FE527E40515007F8920 /* MDSRemoteStorage.swift in Sources */,
+				0A9668142818CA3C001CBC7B /* CollectionTransactionTests.swift in Sources */,
 				0A1F801027E40544007F8920 /* SQLiteTable.swift in Sources */,
 				0A5E187227C71F5D0089E550 /* HTTPEndpointClient.swift in Sources */,
 				0A5E185027C716FB0089E550 /* HTTPURLResponse+Extensions.swift in Sources */,
