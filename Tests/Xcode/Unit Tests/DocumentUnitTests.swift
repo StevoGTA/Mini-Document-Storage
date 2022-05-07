@@ -107,6 +107,60 @@ class DocumentUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func testGetCountFailInvalidDocumentStorageID() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	(count, error) =
+					config.httpEndpointClient.documentGetCount(documentStorageID: "ABC",
+							documentType: config.documentType)
+
+		// Evaluate results
+		XCTAssertNil(count, "received count")
+
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.failed(let status):
+					// Expected error
+					XCTAssertEqual(status, HTTPEndpointStatus.badRequest, "did not receive expected error")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testGetCountFailInvalidDocumentType() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	(count, error) =
+					config.httpEndpointClient.documentGetCount(documentStorageID: config.documentStorageID,
+							documentType: "ABC")
+
+		// Evaluate results
+		XCTAssertNil(count, "received count")
+
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.failed(let status):
+					// Expected error
+					XCTAssertEqual(status, HTTPEndpointStatus.badRequest, "did not receive expected error")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func testGetSinceRevisionFailInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.shared

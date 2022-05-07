@@ -67,6 +67,49 @@ exports.createV1 = async (request, response) => {
 };
 
 //----------------------------------------------------------------------------------------------------------------------
+// MARK: Get Count
+//	=> documentStorageID (path)
+//	=> type (path)
+//
+//	<= count in header
+exports.getCountV1 = async (request, response) => {
+	// Setup
+	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
+	let	documentType = request.params.documentType;
+
+	// Catch errors
+	try {
+		// Get document count
+		let	[count, error] =
+					await request.app.locals.documentStorage.documentGetCount(documentStorageID, documentType);
+		if (!error)
+			// Success
+			response
+					.status(200)
+					.set(
+							{
+								'Access-Control-Allow-Origin': '*',
+								'Access-Control-Allow-Credentials': true,
+								'Content-Range': 'documents */' + count,
+							})
+					.send();
+		else
+			// Error
+			response
+					.status(400)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send();
+	} catch (error) {
+		// Error
+		console.log(error.stack);
+		response
+				.status(500)
+				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+				.send({error: 'Internal error'});
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 // MARK: Get
 //	=> documentStorageID (path)
 //	=> type (path)

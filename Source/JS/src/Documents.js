@@ -701,6 +701,28 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	async getCount(statementPerformer, documentType) {
+		// Setup
+		let	documentInfo = this.documentInfo(statementPerformer, documentType);
+
+		// Catch errors
+		try {
+			// Get count
+			let	count = await statementPerformer.count(documentInfo.infoTable);
+
+			return [count, null];
+		} catch (error) {
+			// Check error
+			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
+				// No such table
+				return [null, 'No Documents'];
+			else
+				// Other error
+				throw error;
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	async getDocumentInfos(statementPerformer, documentType, table, innerJoin, where, limit) {
 		// Setup
 		let	documentInfo = this.documentInfo(statementPerformer, documentType);

@@ -33,6 +33,7 @@ router.get('/v1/collection/:documentStorageID/:name', collection.getDocumentsV1)
 
 // Setup Document routes
 router.post('/v1/document/:documentStorageID/:documentType', document.createV1);
+router.head('/v1/document/:documentStorageID/:documentType', document.getCountV1);
 router.get('/v1/document/:documentStorageID/:documentType', document.getV1);
 router.patch('/v1/document/:documentStorageID/:documentType', document.updateV1);
 router.post('/v1/document/:documentStorageID/:documentType/:documentID/attachment', document.addAttachmentV1);

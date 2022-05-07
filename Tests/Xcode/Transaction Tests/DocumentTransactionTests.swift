@@ -60,6 +60,16 @@ class DocumentTransactionTests : XCTestCase {
 		XCTAssertNil(createError, "create received error \(createError!)")
 		guard createError == nil else { return }
 
+		// Get document count
+		let	(getDocumentCount, getDocumentCountError) =
+					config.httpEndpointClient.documentGetCount(documentStorageID: config.documentStorageID,
+							documentType: config.documentType)
+		XCTAssertNotNil(getDocumentCount, "get document count did not receive count")
+		if getDocumentCount != nil {
+			XCTAssertGreaterThan(getDocumentCount!, 0, "get document count returned count of 0")
+		}
+		XCTAssertNil(getDocumentCountError, "get document count returned error: \(getDocumentCountError!)")
+
 		// Get documents since revision 0
 		let	(getSinceRevisionDocumentInfo, getSinceRevisionError) =
 					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,

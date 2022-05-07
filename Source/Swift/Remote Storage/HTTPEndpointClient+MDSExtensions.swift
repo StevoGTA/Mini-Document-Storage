@@ -101,6 +101,18 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func queue(_ headHTTPEndpointRequest :MDSHTTPServices.MDSHeadWithUpToDateHTTPEndpointRequest,
+			identifier :String = "", priority :Priority = .normal,
+			completionWithUpToDateProc
+					:@escaping MDSHTTPServices.MDSHeadWithUpToDateHTTPEndpointRequest.CompletionWithUpToDateProc) {
+		// Setup
+		headHTTPEndpointRequest.completionWithUpToDateProc = completionWithUpToDateProc
+
+		// Queue
+		queue(headHTTPEndpointRequest, identifier: identifier, priority: priority)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func queue<T>(_ jsonHTTPEndpointRequest :MDSHTTPServices.MDSJSONHTTPEndpointRequest<T>, identifier :String = "",
 			priority :Priority = .normal,
 			completionProc :@escaping MDSHTTPServices.MDSJSONHTTPEndpointRequest<T>.SingleResponseCompletionProc) {
@@ -777,6 +789,19 @@ extension HTTPEndpointClient {
 					MDSHTTPServices.httpEndpointRequestForCreateDocuments(documentStorageID: documentStorageID,
 							documentType: documentType, documentCreateInfos: documentCreateInfos,
 							authorization: authorization))
+					{ completionProc(($0, $1)) }
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentGetCount(documentStorageID :String, documentType :String, authorization :String? = nil) ->
+			(count :Int?, error :Error?) {
+		// Perform
+		return DispatchQueue.performBlocking() { completionProc in
+			// Queue
+			self.queue(
+					MDSHTTPServices.httpEndpointRequestForGetDocumentCount(documentStorageID: documentStorageID,
+							documentType: documentType, authorization: authorization))
 					{ completionProc(($0, $1)) }
 		}
 	}

@@ -272,6 +272,33 @@ module.exports = class DocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	async documentGetCount(documentStorageID, documentType) {
+		// Setup
+		let	statementPerformer = this.statementPerformerProc();
+		statementPerformer.use(documentStorageID);
+
+		let	internals = this.internals(statementPerformer, documentStorageID);
+
+		// Catch errors
+		try {
+			// Do it
+			let	{mySQLResults, results} =
+						await statementPerformer.batch(
+								() => { return internals.documents.getCount(statementPerformer, documentType); });
+			
+			return results;
+		} catch (error) {
+			// Error
+			if (statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return [null, 'Invalid documentStorageID'];
+			else
+				// Other
+				throw error;
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	async documentGetSinceRevision(documentStorageID, documentType, sinceRevision, count) {
 		// Setup
 		let	statementPerformer = this.statementPerformerProc();

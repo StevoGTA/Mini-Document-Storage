@@ -200,7 +200,7 @@ class MDSHTTPServices {
 	class MDSHeadHTTPEndpointRequest : MDSHTTPEndpointRequest, HTTPEndpointRequestProcessResults {
 
 		// MARK: Types
-		typealias	CompletionProc = (_ info :(isUpToDate :Bool, count :Int?)?, _ error :Error?) -> Void
+		typealias	CompletionProc = (_ count :Int?, _ error :Error?) -> Void
 
 		// MARK: Properties
 		var	completionProc :CompletionProc = { _,_ in }
@@ -218,14 +218,14 @@ class MDSHTTPServices {
 						// Success
 						if let contentRange = response?.contentRange, let size = contentRange.size {
 							// Success
-							completionProc((true, Int(size)), nil)
+							completionProc(Int(size), nil)
 						} else {
 							// Bad server
 							completionProc(nil, HTTPEndpointClientMDSExtensionsError.didNotReceiveSizeInHeader)
 						}
 					} else if statusCode == 409 {
 						// Not up to date
-						completionProc((false, nil), nil)
+						completionProc(nil, nil)
 					} else if (statusCode >= 400) && (statusCode < 500) {
 						// Error
 						self.completionProc(nil, MDSError.failed(status: HTTPEndpointStatus(rawValue: statusCode)!))
@@ -240,6 +240,57 @@ class MDSHTTPServices {
 				} else {
 					// Error
 					completionProc(nil, error)
+				}
+			}
+		}
+	}
+
+	// MARK: - MDSHeadHTTPEndpointRequest
+	class MDSHeadWithUpToDateHTTPEndpointRequest : MDSHTTPEndpointRequest, HTTPEndpointRequestProcessResults {
+
+		// MARK: Types
+		typealias	CompletionWithUpToDateProc = (_ info :(isUpToDate :Bool, count :Int?)?, _ error :Error?) -> Void
+
+		// MARK: Properties
+		var	completionWithUpToDateProc :CompletionWithUpToDateProc = { _,_ in }
+
+		// MARK: HTTPEndpointRequestProcessResults methods
+		//--------------------------------------------------------------------------------------------------------------
+		func processResults(response :HTTPURLResponse?, data :Data?, error :Error?) {
+			// Check cancelled
+			if !self.isCancelled {
+				// Handle results
+				if response != nil {
+					// Have response
+					let	statusCode = response!.statusCode
+					if (statusCode >= 200) && (statusCode < 300) {
+						// Success
+						if let contentRange = response?.contentRange, let size = contentRange.size {
+							// Success
+							completionWithUpToDateProc((true, Int(size)), nil)
+						} else {
+							// Bad server
+							completionWithUpToDateProc(nil,
+									HTTPEndpointClientMDSExtensionsError.didNotReceiveSizeInHeader)
+						}
+					} else if statusCode == 409 {
+						// Not up to date
+						completionWithUpToDateProc((false, nil), nil)
+					} else if (statusCode >= 400) && (statusCode < 500) {
+						// Error
+						self.completionWithUpToDateProc(nil,
+								MDSError.failed(status: HTTPEndpointStatus(rawValue: statusCode)!))
+					} else if statusCode >= 500 {
+						// Internal error
+						self.completionWithUpToDateProc(nil, MDSError.internalError)
+					} else {
+						// Unknown response status
+						self.completionWithUpToDateProc(nil,
+								MDSError.unknownResponseStatus(status: HTTPEndpointStatus(rawValue: statusCode)!))
+					}
+				} else {
+					// Error
+					completionWithUpToDateProc(nil, error)
 				}
 			}
 		}
@@ -985,14 +1036,14 @@ class MDSHTTPServices {
 									return (documentStorageID, name, headers["Authorization"])
 								}
 	static func httpEndpointRequestForGetCollectionDocumentCount(documentStorageID :String, name :String,
-			authorization :String? = nil) -> MDSHeadHTTPEndpointRequest {
+			authorization :String? = nil) -> MDSHeadWithUpToDateHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	nameUse = name.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return MDSHeadHTTPEndpointRequest(method: .head, path: "/v1/collection/\(documentStorageIDUse)/\(nameUse)",
-				headers: headers)
+		return MDSHeadWithUpToDateHTTPEndpointRequest(method: .head,
+				path: "/v1/collection/\(documentStorageIDUse)/\(nameUse)", headers: headers)
 	}
 
 	// MARK: - Collection Get Document Infos
@@ -1162,6 +1213,22 @@ class MDSHTTPServices {
 		return MDSJSONHTTPEndpointRequest<[[String : Any]]>(method: .post,
 				path: "/v1/document/\(documentStorageIDUse)/\(documentType)", headers: headers,
 				jsonBody: documentCreateInfos.map({ $0.httpServicesInfo }))
+	}
+
+	// MARK: - Document Get Count
+	//	=> documentStorageID (path)
+	//	=> documentType (path)
+	//	=> authorization (header) (optional)
+	//
+	//	<= count in header
+	static func httpEndpointRequestForGetDocumentCount(documentStorageID :String, documentType :String,
+			authorization :String? = nil) -> MDSHeadHTTPEndpointRequest {
+		// Setup
+		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
+		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
+
+		return MDSHeadHTTPEndpointRequest(method: .head, path: "/v1/document/\(documentStorageIDUse)/\(documentType)",
+				headers: headers)
 	}
 
 	// MARK: - Document Get
