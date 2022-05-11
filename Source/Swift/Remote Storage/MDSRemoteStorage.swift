@@ -601,32 +601,32 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func retrieveAssociationValue<T : MDSDocument, U>(for name :String, to document :T,
+	public func retrieveAssociationValue<T : MDSDocument, U>(for name :String, from document :T,
 			summedFromCachedValueWithName cachedValueName :String) -> U {
 		// May need to try this more than once
 		while true {
 			// Query collection document count
-			let	(isUpToDate, count, error) =
+			let	(info, error) =
 						DispatchQueue.performBlocking() { completionProc in
 							// Call HTTP Endpoint Client
 							self.httpEndpointClient.queue(
-									MDSHTTPServices.httpEndpointRequestForGetAssocationValue(
-											documentStorageID: self.documentStorageID, name: name, toID: document.id,
-											action: .sum, cacheName: T.documentType, cacheNameValue: cachedValueName,
+									MDSHTTPServices.httpEndpointRequestForGetAssocationIntegerValue(
+											documentStorageID: self.documentStorageID, name: name, fromID: document.id,
+											action: .sum, cacheName: T.documentType, cacheValueName: cachedValueName,
 											authorization: self.authorization))
-									{ (isUpToDate :Bool?, count :Int?, error :Error?) in
-										// Call completion proc
-										completionProc((isUpToDate, count, error))
-									}
+									{ completionProc(($0, $1)) }
 						}
 
 			// Handle results
-			if !(isUpToDate ?? true) {
-				// Not up to date
-				continue
-			} else if count != nil {
-				// Success
-				return count as! U
+			if info != nil {
+				// Received info
+				if !info!.isUpToDate {
+					// Not up to date
+					continue
+				} else {
+					// Success
+					return info!.value as! U
+				}
 			} else {
 				// Error
 				self.recentErrors.append(error!)

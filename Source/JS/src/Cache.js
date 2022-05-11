@@ -11,10 +11,11 @@ module.exports = class Cache {
 
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	constructor(statementPerformer, name, relevantProperties, valuesInfos, lastDocumentRevision) {
+	constructor(statementPerformer, name, type, relevantProperties, valuesInfos, lastDocumentRevision) {
 		// Store
 		this.name = name;
-		this.relevantProperties = new Set(relevantProperties);
+		this.type = type;
+		this.relevantProperties = relevantProperties;
 		this.valuesInfos = valuesInfos;
 		this.lastDocumentRevision = lastDocumentRevision;
 
@@ -26,17 +27,20 @@ module.exports = class Cache {
 							TableColumn.options.primaryKey | TableColumn.options.nonNull | TableColumn.options.unsigned,
 							tableName)]
 							.concat(
-									valuesInfos.map(valuesInfo => {
+									valuesInfos.map(valueInfo => {
 											// // Check value type
-											// if (valuesInfo.valueType == 'integer')
+											// if (valueInfo.valueType == 'integer')
 												// Integer
-												return new TableColumn.INT(valuesInfo.name,
+												return new TableColumn.INT(valueInfo.name,
 														TableColumn.options.nonNull | TableColumn.options.unsigned);
 											}));
 		this.table = statementPerformer.table(tableName, tableColumns);
 	}
 
 	// Instance methods
+	//------------------------------------------------------------------------------------------------------------------
+	tableColumn(name) { return this.table.tableColumn(name); }
+
 	//------------------------------------------------------------------------------------------------------------------
 	queueCreate(statementPerformer) { statementPerformer.queueCreateTable(this.table); }
 
@@ -50,7 +54,7 @@ module.exports = class Cache {
 			// Iterate update document infos
 			for (let updateDocumentInfo of updateDocumentInfos) {
 				// Check if json overlaps with the relevant properties
-				if (Object.keys(updateDocumentInfos.json).find(property => this.relevantProperties.has(property))) {
+				if (Object.keys(updateDocumentInfo.json).find(property => this.relevantProperties.includes(property))) {
 					// Check active
 					if (updateDocumentInfo.active) {
 						// Active
@@ -64,12 +68,12 @@ module.exports = class Cache {
 									{tableColumn: this.table.idTableColumn, variable: updateDocumentInfo.idVariable});
 
 						// Iterate infos
-						for (let info of cache.info) {
+						for (let valueInfo of this.valuesInfos) {
 							// Query value
-							let	value = info.selector(updateDocumentInfo.json, info);
+							let	value = valueInfo.selector(updateDocumentInfo.json, valueInfo.name);
 
 							// Add info
-							tableColumns.push({tableColumn: this.table.tableColumn(info.name), value: value});
+							tableColumns.push({tableColumn: this.table.tableColumn(valueInfo.name), value: value});
 						}
 
 						// Queue

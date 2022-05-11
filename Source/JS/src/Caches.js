@@ -93,7 +93,7 @@ module.exports = class Caches {
 							statementPerformer.where(this.cachesTable.nameTableColumn, name));
 		if (results.length == 0) {
 			// Add
-			let	cache = this.createCache(statementPerformer, name, relevantProperties, valuesInfos, 0);
+			let	cache = this.createCache(statementPerformer, name, documentType, relevantProperties, valuesInfos, 0);
 			this.cacheInfo[name] = cache;
 
 			statementPerformer.queueInsertInto(this.cachesTable,
@@ -110,7 +110,9 @@ module.exports = class Caches {
 			// Have existing
 			if (!util.isDeepStrictEqual(valuesInfos, JSON.parse(results[0].info.toString()))) {
 				// Update
-				let	cache = this.createCache(statementPerformer, name, relevantProperties, valuesInfos, 0);
+				let	cache =
+							this.createCache(statementPerformer, name, documentType, relevantProperties, valuesInfos,
+									0);
 				this.cacheInfo[name] = cache;
 
 				statementPerformer.queueReplace(this.cachesTable,
@@ -140,8 +142,8 @@ module.exports = class Caches {
 			for (let result of results) {
 				// Create Cache and update stuffs
 				let	cache = 
-							this.createCache(statementPerformer, result.name, result.relevantProperties, result.info,
-									result.lastDocumentRevision);
+							this.createCache(statementPerformer, result.name, result.type, result.relevantProperties,
+									JSON.parse(result.info.toString()), result.lastDocumentRevision);
 				caches.push(cache);
 				this.cacheInfo[result.name] = cache;
 			}
@@ -178,8 +180,8 @@ module.exports = class Caches {
 				// Have Cache
 				let	result = results[0];
 				cache =
-						this.createCache(statementPerformer, result.name, result.relevantProperties, result.info,
-								result.lastDocumentRevision);
+						this.createCache(statementPerformer, result.name, result.type, result.relevantProperties,
+								JSON.parse(result.info.toString()), result.lastDocumentRevision);
 				this.cacheInfo[name] = cache;
 
 				return [cache, null];
@@ -216,20 +218,41 @@ module.exports = class Caches {
 		}
 	}
 
+	// Internal methods
+	//------------------------------------------------------------------------------------------------------------------
+	async updateCache(statementPerformer, cache) {
+		// Setup
+		let	internals = this.internals;
+		let	documentUpdateTracker = internals.getDocumentUpdateTrackerForCache(cache);
+
+		// Get update document infos
+		let	updateDocumentInfos =
+					await internals.documents.getUpdateDocumentInfos(statementPerformer, cache.type,
+							cache.lastDocumentRevision, 500);
+		documentUpdateTracker.addDocumentInfos(updateDocumentInfos);
+		
+		// Perform updates
+		await statementPerformer.batchLockedForWrite(documentUpdateTracker.tables(),
+				() => { return (async() => {
+					// Finalize DocumentUpdateTracker
+					documentUpdateTracker.finalize(statementPerformer, cache.lastDocumentRevision);
+				})()});
+	}
+
 	// Private methods
 	//------------------------------------------------------------------------------------------------------------------
-	createCache(statementPerformer, name, relevantProperties, valuesInfos, lastDocumentRevision) {
+	createCache(statementPerformer, name, type, relevantProperties, valuesInfos, lastDocumentRevision) {
 		// Setup
 		let	valuesInfosUse =
-					valuesInfos.map(info => {
+					valuesInfos.map(valueInfo => {
 							return {
-								name: info.name,
-								valueType: info.valueType,
-								selector: this.valueSelectorInfo[info.selector],
+								name: valueInfo.name,
+								valueType: valueInfo.valueType,
+								selector: this.valueSelectorInfo[valueInfo.selector],
 							};
 					})
 
 		// Create cache
-		return new Cache(statementPerformer, name, relevantProperties, valuesInfosUse, lastDocumentRevision);
+		return new Cache(statementPerformer, name, type, relevantProperties, valuesInfosUse, lastDocumentRevision);
 	}
 }

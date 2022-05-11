@@ -27,7 +27,12 @@ module.exports = class DocumentStorage {
 			indexKeysSelectorInfo) {
 		// Store
 		this.statementPerformerProc = statementPerformerProc;
-		this.cacheValueSelectorInfo = cacheValueSelectorInfo || {};
+		this.cacheValueSelectorInfo =
+				Object.assign(
+						{
+							"integerValueForProperty()": integerValueForProperty,
+						},
+						cacheValueSelectorInfo || {});
 		this.collectionIsIncludedSelectorInfo =
 				Object.assign(
 						{
@@ -128,8 +133,32 @@ module.exports = class DocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async associationGetValue(documentStorageID, name, toDocumentID, action, cacheName, cacheValueName) {
-// TODO: associationGetValue
+	async associationGetValue(documentStorageID, name, fromDocumentID, action, cacheName, cacheValueName) {
+		// Setup
+		let	statementPerformer = this.statementPerformerProc();
+		statementPerformer.use(documentStorageID);
+
+		let	internals = this.internals(statementPerformer, documentStorageID);
+
+		// Catch errors
+		try {
+			// Do it
+			let	{mySQLResults, results} =
+						await statementPerformer.batch(
+								() =>
+										{ return internals.associations.getValue(statementPerformer, name,
+												fromDocumentID, action, cacheName, cacheValueName); });
+			
+			return results;
+		} catch (error) {
+			// Error
+			if (statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return [null, 'Invalid documentStorageID'];
+			else
+				// Other
+				throw error;
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -637,6 +666,10 @@ module.exports = class DocumentStorage {
 		return internals;
 	}
 }
+
+// Built-in Cache functions
+//----------------------------------------------------------------------------------------------------------------------
+function integerValueForProperty(info, property) { return info[property] || 0; }
 
 // Built-in Collection functions
 //----------------------------------------------------------------------------------------------------------------------

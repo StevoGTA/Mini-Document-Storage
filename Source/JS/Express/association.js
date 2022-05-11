@@ -180,7 +180,7 @@ exports.getDocumentsV1 = async (request, response) => {
 // MARK: Get Association Value
 //	=> documentStorageID (path)
 //	=> name (path)
-//	=> toID (query)
+//	=> fromID (query)
 //	=> action (query)
 //	=> cacheName (query)
 //	=> cacheValueName (query)
@@ -191,40 +191,35 @@ exports.getValueV1 = async (request, response) => {
 	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
 	let	name = request.params.name;
 
-	let	toDocumentID = request.query.toID;
+	let	fromDocumentID = request.query.fromID;
 	let	action = request.query.action;
 	let	cacheName = request.query.cacheName;
 	let	cacheValueName = request.query.cacheValueName;
 
-	// Validate input
-	if (!toDocumentID || !action || !cacheName || !cacheValueName) {
-		// Must specify fromDocumentID or toDocumentID
-		response
-				.status(400)
-				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-				.send({error: 'must specify toID, action, cacheName, and cacheValueName'});
-
-		return;
-	}
-
 	// Catch errors
 	try {
 		// Get info
-		let	[value, upToDate, error] =
-					await request.app.locals.documentStorage.associationGetValue(documentStorageID, name, toDocumentID,
-							action, cacheName, cacheValueName);
+		let	[upToDate, value, error] =
+					await request.app.locals.documentStorage.associationGetValue(documentStorageID, name,
+							fromDocumentID, action, cacheName, cacheValueName);
 		if (upToDate)
 			// Success
 			response
 					.status(200)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-					.send(value);
-		else
+					.send("" + value);
+		else if (!error)
 			// Not up to date
 			response
 					.status(409)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 					.send();
+		else
+			// Error
+			response
+					.status(400)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send({error: error});
 	} catch (error) {
 		// Error
 		console.log(error.stack);

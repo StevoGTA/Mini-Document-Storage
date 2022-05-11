@@ -117,6 +117,12 @@ module.exports = class Internals {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	getDocumentUpdateTrackerForCache(cache) {
+		// Return DocumentUpdateTracker
+		return new DocumentUpdateTracker(this.caches, [cache], null, [], null, []);
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	getDocumentUpdateTrackerForCollection(collection) {
 		// Return DocumentUpdateTracker
 		return new DocumentUpdateTracker(null, [], this.collections, [collection], null, []);

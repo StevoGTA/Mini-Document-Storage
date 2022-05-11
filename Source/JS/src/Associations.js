@@ -7,6 +7,7 @@
 
 // Imports
 let	Association = require('./Association');
+let	Caches = require('./Caches');
 
 //----------------------------------------------------------------------------------------------------------------------
 // Associations
@@ -173,13 +174,13 @@ module.exports = class Associations {
 		let	whereIDTableColumn =
 					fromDocumentID ? association.table.fromIDTableColumn : association.table.toIDTableColumn;
 		let	documentID = fromDocumentID ? fromDocumentID : toDocumentID;
-		let	[documentInfo, documentInfoError] =
+		let	[ids, idsError] =
 					await internals.documents.getIDsForDocumentIDs(statementPerformer, sourceDocumentType,
 							[documentID]);
-		if (documentInfoError)
-			return [null, null, documentInfoError];
+		if (idsError)
+			return [null, null, idsError];
 		
-		let	where = statementPerformer.where(whereIDTableColumn, documentInfo[documentID]);
+		let	where = statementPerformer.where(whereIDTableColumn, ids[documentID]);
 
 		// Query count
 		let	totalCount = await statementPerformer.count(association.table, where);
@@ -213,6 +214,68 @@ module.exports = class Associations {
 			else
 				// Error
 				return [null, null, resultsError];
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async getValue(statementPerformer, name, fromDocumentID, action, cacheName, cacheValueName) {
+		// Validate
+		if (!name)
+			return [null, null, 'Must specify name'];
+		if (!fromDocumentID)
+			return [null, null, 'Must specify fromDocumentID'];
+		if (!action)
+			return [null, null, 'Must specify action'];
+		if (action != 'sum')
+			return [null, null, 'Action ' + action + ' not supported.'];
+		if (!cacheName)
+			return [null, null, 'Must specify cacheName'];
+		if (!cacheValueName)
+			return [null, null, 'Must specify cacheValueName'];
+
+		// Setup
+		let	internals = this.internals;
+		
+		// Get cache
+		let	[cache, cacheError] = await internals.caches.getForName(statementPerformer, cacheName);
+		if (cacheError)
+			// Error
+			return [null, null, cacheError];
+		
+		// Get document type last revision
+		let	documentTypeLastRevision = await internals.documents.getLastRevision(statementPerformer, cache.type);
+
+		// Check if up to date
+		if (cache.lastDocumentRevision == documentTypeLastRevision) {
+			// Get association
+			let	[association, associationError] = await this.getForName(statementPerformer, name);
+			if (associationError)
+				// Error
+				return [null, null, associationError];
+			
+			// Get from document info
+			let	[ids, idsError] =
+						await internals.documents.getIDsForDocumentIDs(statementPerformer, association.fromType,
+								[fromDocumentID]);
+			if (idsError)
+				return [null, null, idsError];
+			if (ids.length == 0)
+				return [null, null, 'Document ' + fromDocumentID + ' not found.'];
+			let	fromID = ids[fromDocumentID];
+
+			// Perform
+			let	value =
+						await statementPerformer.sum(association.table, cache.tableColumn(cacheValueName),
+								statementPerformer.innerJoin(cache.table, association.table.toIDTableColumn,
+										cache.table.idTableColumn),
+								statementPerformer.where(association.table.fromIDTableColumn, fromID));
+
+			return [true, value, null];
+		} else {
+			// Update
+			internals.caches.updateCache(statementPerformer, cache);
+
+			return [false, null, null];
 		}
 	}
 

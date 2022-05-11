@@ -101,15 +101,27 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func queue(_ headHTTPEndpointRequest :MDSHTTPServices.MDSHeadWithUpToDateHTTPEndpointRequest,
+	func queue(_ headWithUpToDateHTTPEndpointRequest :MDSHTTPServices.MDSHeadWithUpToDateHTTPEndpointRequest,
 			identifier :String = "", priority :Priority = .normal,
 			completionWithUpToDateProc
 					:@escaping MDSHTTPServices.MDSHeadWithUpToDateHTTPEndpointRequest.CompletionWithUpToDateProc) {
 		// Setup
-		headHTTPEndpointRequest.completionWithUpToDateProc = completionWithUpToDateProc
+		headWithUpToDateHTTPEndpointRequest.completionWithUpToDateProc = completionWithUpToDateProc
 
 		// Queue
-		queue(headHTTPEndpointRequest, identifier: identifier, priority: priority)
+		queue(headWithUpToDateHTTPEndpointRequest, identifier: identifier, priority: priority)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func queue(_ integerWithUpToDateHTTPEndpointRequest :MDSHTTPServices.MDSIntegerWithUpToDateHTTPEndpointRequest,
+			identifier :String = "", priority :Priority = .normal,
+			completionWithUpToDateProc
+					:@escaping MDSHTTPServices.MDSIntegerWithUpToDateHTTPEndpointRequest.CompletionWithUpToDateProc) {
+		// Setup
+		integerWithUpToDateHTTPEndpointRequest.completionWithUpToDateProc = completionWithUpToDateProc
+
+		// Queue
+		queue(integerWithUpToDateHTTPEndpointRequest, identifier: identifier, priority: priority)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -371,29 +383,6 @@ extension HTTPEndpointClient {
 		}
 	}
 
-	//------------------------------------------------------------------------------------------------------------------
-	func queue(_ getAssociationValueHTTPEndpointRequest :MDSHTTPServices.GetAssociationValueHTTPEndpointRequest,
-			identifier :String = "", priority :Priority = .normal,
-			completionProc :@escaping (_ isUpToDate :Bool?, _ count :Int?, _ error :Error?) -> Void) {
-		// Setup
-		getAssociationValueHTTPEndpointRequest.completionProc = {
-			// Handle results
-			if $0?.statusCode == 200 {
-				// Success
-				completionProc(true, $1!, nil)
-			} else if $0?.statusCode == 409 {
-				// Not up to date
-				completionProc(false, nil, nil)
-			} else {
-				// Error
-				completionProc(nil, nil,
-						$2 ?? HTTPEndpointStatusError(status: HTTPEndpointStatus(rawValue: $0!.statusCode)!))
-			}
-		}
-
-		// Queue
-		queue(getAssociationValueHTTPEndpointRequest, identifier: identifier, priority: priority)
-	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func queue(documentStorageID :String, type :String, documentCreateInfos :[MDSDocument.CreateInfo],
@@ -691,17 +680,17 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func associationGetValue(documentStorageID :String, name :String, toID :String,
-			action :MDSHTTPServices.GetAssociationValueAction, cacheName :String, cacheNameValue :String,
-			authorization :String? = nil) -> (response :HTTPURLResponse?, value :Int?, error :Error?) {
+	func associationGetIntegerValue(documentStorageID :String, name :String, fromID :String,
+			action :MDSHTTPServices.GetAssociationValueAction, cacheName :String, cacheValueName :String,
+			authorization :String? = nil) -> (info :(isUpToDate :Bool, value :Int?)?, error :Error?) {
 		// Perform
 		return DispatchQueue.performBlocking() { completionProc in
 			// Queue
 			self.queue(
-					MDSHTTPServices.httpEndpointRequestForGetAssocationValue(documentStorageID: documentStorageID,
-							name: name, toID: toID, action: action, cacheName: cacheName,
-							cacheNameValue: cacheNameValue, authorization: authorization))
-					{ completionProc(($0, $1, $2)) }
+					MDSHTTPServices.httpEndpointRequestForGetAssocationIntegerValue(
+							documentStorageID: documentStorageID, name: name, fromID: fromID, action: action,
+							cacheName: cacheName, cacheValueName: cacheValueName, authorization: authorization))
+					{ completionProc(($0, $1)) }
 		}
 	}
 
