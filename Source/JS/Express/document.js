@@ -58,7 +58,7 @@ exports.createV1 = async (request, response) => {
 					.send({error: error});
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
@@ -90,6 +90,7 @@ exports.getCountV1 = async (request, response) => {
 							{
 								'Access-Control-Allow-Origin': '*',
 								'Access-Control-Allow-Credentials': true,
+								'Access-Control-Expose-Headers': 'Content-Range',
 								'Content-Range': 'documents */' + count,
 							})
 					.send();
@@ -101,7 +102,7 @@ exports.getCountV1 = async (request, response) => {
 					.send();
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
@@ -175,6 +176,7 @@ exports.getV1 = async (request, response) => {
 						.set({
 							'Access-Control-Allow-Origin': '*',
 							'Access-Control-Allow-Credentials': true,
+							'Access-Control-Expose-Headers': 'Content-Range',
 							'Content-Range':
 									(totalCount > 0) ?
 											'documents 0-' + (results.length - 1) + '/' + totalCount : 'documents */0',
@@ -206,7 +208,7 @@ exports.getV1 = async (request, response) => {
 		}
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
@@ -274,7 +276,7 @@ exports.updateV1 = async (request, response) => {
 					.send({error: error});
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
@@ -317,7 +319,7 @@ exports.addAttachmentV1 = async (request, response) => {
 					.send({error: error});
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
@@ -360,7 +362,7 @@ exports.getAttachmentV1 = async (request, response) => {
 					.send({error: error});
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
@@ -405,7 +407,7 @@ exports.updateAttachmentV1 = async (request, response) => {
 					.send({error: error});
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
@@ -446,7 +448,7 @@ exports.removeAttachmentV1 = async (request, response) => {
 					.send({error: error});
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})

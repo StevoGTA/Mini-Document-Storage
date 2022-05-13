@@ -5,7 +5,7 @@
 //  Copyright © 2022 Stevo Brock. All rights reserved.
 //
 
-let	{DocumentStorage} = require('mini-document-storage');
+let	{documentStorage} = require('globals');
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Register
@@ -14,7 +14,6 @@ let	{DocumentStorage} = require('mini-document-storage');
 //		{
 //			"documentType" :String,
 //			"name" :String,
-//			"version" :Int,
 //			"relevantProperties" :[String]
 //			"isUpToDate" :Int (0 or 1)
 //			"keysSelector" :String,
@@ -25,35 +24,34 @@ let	{DocumentStorage} = require('mini-document-storage');
 //		}
 exports.registerV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.projectID;
-
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
 	let	info = (event.body) ? JSON.parse(event.body) : null;
-
-	// Validate input
-	if (!info)
-		// Must specify keys
-		return {
-				statusCode: 400,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify({message: 'missing info'}),
-		};
 
 	// Catch errors
 	try {
 		// Get info
-		let	documentStorage = new DocumentStorage();
-		await documentStorage.indexRegister(documentStorageID, info);
-
-		return {
-				statusCode: 200,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-		};
+		let	error = await documentStorage.indexRegister(documentStorageID, info);
+		if (!error)
+			// Success
+			return {
+					statusCode: 200,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+			};
+		else
+			// Error
+			return {
+					statusCode: 400,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify({error: error})
+			};
 	} catch (error) {
 		// Error
+		console.error(error.stack);
+
 		return {
 				statusCode: 500,
 				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: 'Error: ' + error,
+				body: '{"error": "Internal error"}',
 		};
 	}
 };
@@ -63,38 +61,55 @@ exports.registerV1 = async (event) => {
 //	=> documentStorageID (path)
 //	=> name (path)
 //	=> key (query) (can specify multiple)
+//	=> fullInfo (query) (optional, default false)
 //
 //	<= HTTP Status 409 if collection is out of date => call endpoint again
-//	<= json
+//	<= json (fullInfo == 0)
 //		{
-//			String (key) :
+//			key: {String (documentID) : Int (revision)},
+//			...
+//		}
+//	<= json (fullInfo == 1)
+//		{
+//			key:
 //				{
-//					String (documentID) : Int (revision)
-//				}
+//					"documentID" :String,
+//					"revision" :Int,
+//					"active" :0/1,
+//					"creationDate" :String,
+//					"modificationDate" :String,
+//					"json" :{
+//								"key" :Any,
+//								...
+//							},
+//					"attachments":
+//							{
+//								id :
+//									{
+//										"revision" :Int,
+//										"info" :{
+//													"key" :Any,
+//													...
+//												},
+//									},
+//									..
+//							}
+//				},
 //			...
 //		}
 exports.getDocumentsV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.projectID;
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
 	let	name = event.pathParameters.name.replace(/%2B/g, '+').replace(/_/g, '/');
 
 	let	multiValueQueryStringParameters = event.multiValueQueryStringParameters || {};
 	let	keys = multiValueQueryStringParameters.key;
 
-	// Validate input
-	if (!keys)
-		// Must specify projectID
-		return {
-				statusCode: 400,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify({message: 'missing key(s)'}),
-		};
-
 	// Catch errors
 	try {
 		// Get info
-		let	documentStorage = new DocumentStorage();
-		let	[results, upToDate] = await documentStorage.indexGetDocuments(documentStorageID, name, keys);
+		let	[upToDate, results, error] =
+					await documentStorage.indexGetDocuments(documentStorageID, name, keys, fullInfo == 1);
 		if (upToDate)
 			// Success
 			return {
@@ -102,18 +117,27 @@ exports.getDocumentsV1 = async (event) => {
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
 					body: JSON.stringify(results),
 			};
-		else
+		else if (!error)
 			// Not up to date
 			return {
 					statusCode: 409,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
 			};
+		else
+			// Error
+			return {
+					statusCode: 400,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify({error: error})
+			};
 	} catch (error) {
 		// Error
+		console.error(error.stack);
+
 		return {
 				statusCode: 500,
 				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: 'Error: ' + error,
+				body: '{"error": "Internal error"}',
 		};
 	}
 };

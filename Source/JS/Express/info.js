@@ -37,7 +37,7 @@ exports.getV1 = async (request, response) => {
 					.send({error: error});
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 
 		response
 				.status(500)
@@ -77,7 +77,7 @@ exports.setV1 = async (request, response) => {
 					.send({error: error});
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})

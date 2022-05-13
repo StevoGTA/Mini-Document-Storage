@@ -5,7 +5,7 @@
 //  Copyright © 2022 Stevo Brock. All rights reserved.
 //
 
-let	{DocumentStorage} = require('mini-document-storage');
+let	{documentStorage} = require('globals');
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get
@@ -23,32 +23,32 @@ exports.getV1 = async (event) => {
 	let	multiValueQueryStringParameters = event.multiValueQueryStringParameters || {};
 	let	keys = multiValueQueryStringParameters.key;
 
-	// Validate input
-	if (!keys)
-		// Must specify keys
-		return {
-				statusCode: 400,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify({message: 'missing key(s)'}),
-		};
-
 	// Catch errors
 	try {
 		// Get info
-		let	documentStorage = new DocumentStorage();
-		let	results = await documentStorage.infoGet(documentStorageID, keys);
-
-		return {
-				statusCode: 200,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify(results),
-		};
+		let	[results, error] = await documentStorage.infoGet(documentStorageID, keys);
+		if (!error)
+			// Success
+			return {
+					statusCode: 200,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify(results),
+			};
+		else
+			// Error
+			return {
+					statusCode: 400,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify({error: error})
+			};
 	} catch (error) {
 		// Error
+		console.error(error.stack);
+
 		return {
 				statusCode: 500,
 				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: 'Error: ' + error,
+				body: '{"error": "Internal error"}',
 		};
 	}
 };
@@ -64,34 +64,33 @@ exports.getV1 = async (event) => {
 exports.setV1 = async (event) => {
 	// Setup
 	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
-
 	let	info = (event.body) ? JSON.parse(event.body) : null;
-
-	// Validate input
-	if (!info)
-		// Must specify info
-		return {
-				statusCode: 400,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify({message: 'missing info'}),
-		};
 
 	// Catch errors
 	try {
-		// Get info
-		let	documentStorage = new DocumentStorage();
-		await documentStorage.infoSet(documentStorageID, info);
-
-		return {
-				statusCode: 200,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-		};
+		// Set info
+		let	error = await documentStorage.infoSet(documentStorageID, info);
+		if (!error)
+			// Success
+			return {
+					statusCode: 200,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+			};
+		else
+			// Error
+			return {
+					statusCode: 400,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify({error: error})
+			};
 	} catch (error) {
 		// Error
+		console.error(error.stack);
+
 		return {
 				statusCode: 500,
 				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: 'Error: ' + error,
+				body: '{"error": "Internal error"}',
 		};
 	}
 };

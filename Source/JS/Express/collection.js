@@ -23,7 +23,7 @@
 exports.registerV1 = async (request, response) => {
 	// Setup
 	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
-	let	info = request.body;
+	let	info = request.body || {};
 
 	// Catch errors
 	try {
@@ -36,13 +36,14 @@ exports.registerV1 = async (request, response) => {
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 					.send();
 		else
+			// Error
 			response
 					.status(400)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 					.send({error: error});
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
@@ -75,6 +76,7 @@ exports.getDocumentCountV1 = async (request, response) => {
 							{
 								'Access-Control-Allow-Origin': '*',
 								'Access-Control-Allow-Credentials': true,
+								'Access-Control-Expose-Headers': 'Content-Range',
 								'Content-Range': 'documents */' + count,
 							})
 					.send();
@@ -92,7 +94,7 @@ exports.getDocumentCountV1 = async (request, response) => {
 					.send();
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
@@ -148,14 +150,14 @@ exports.getDocumentsV1 = async (request, response) => {
 
 	let	startIndex = request.query.startIndex || 0;
 	let	count = request.query.count;
-	let	fullInfo = request.query.fullInfo || false;
+	let	fullInfo = request.query.fullInfo || 0;
 
 	// Catch errors
 	try {
 		// Get info
 		let	[upToDate, totalCount, results, error] =
 					await request.app.locals.documentStorage.collectionGetDocuments(documentStorageID, name, startIndex,
-							count, fullInfo);
+							count, fullInfo == 1);
 		if (upToDate) {
 			// Success
 			let	endIndex = startIndex + Object.keys(results).length - 1;
@@ -168,6 +170,7 @@ exports.getDocumentsV1 = async (request, response) => {
 					.set({
 						'Access-Control-Allow-Origin': '*',
 						'Access-Control-Allow-Credentials': true,
+						'Access-Control-Expose-Headers': 'Content-Range',
 						'Content-Range': contentRange,
 					})
 					.send(results);
@@ -185,7 +188,7 @@ exports.getDocumentsV1 = async (request, response) => {
 					.send({error: error});
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})

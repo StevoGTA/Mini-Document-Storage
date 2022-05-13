@@ -5,16 +5,15 @@
 //  Copyright © 2022 Stevo Brock. All rights reserved.
 //
 
-let	{DocumentStorage} = require('mini-document-storage');
+let	{documentStorage} = require('globals');
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Register
 //	=> documentStorageID (path)
 //	=> json (body)
 //		{
-//			"documentType" :String,
 //			"name" :String,
-//			"version" :Int,
+//			"documentType" :String,
 //			"relevantProperties" :[String],
 //			"isUpToDate" :Int (0 or 1)
 //			"isIncludedSelector" :String,
@@ -25,35 +24,34 @@ let	{DocumentStorage} = require('mini-document-storage');
 //		}
 exports.registerV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.projectID;
-
-	let	info = (event.body) ? JSON.parse(event.body) : null;
-
-	// Validate input
-	if (!info)
-		// Must specify keys
-		return {
-				statusCode: 400,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify({message: 'missing info'}),
-		};
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	info = (event.body) ? JSON.parse(event.body) : {};
 
 	// Catch errors
 	try {
 		// Get info
-		let	documentStorage = new DocumentStorage();
-		await documentStorage.collectionRegister(documentStorageID, info);
-
-		return {
-				statusCode: 200,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-		};
+		let	error = await documentStorage.collectionRegister(documentStorageID, info);
+		if (!error)
+			// Success
+			return {
+					statusCode: 200,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+			};
+		else
+			// Error
+			return {
+					statusCode: 400,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify({error: error})
+			};
 	} catch (error) {
 		// Error
+		console.error(error.stack);
+
 		return {
 				statusCode: 500,
 				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: 'Error: ' + error,
+				body: '{"error": "Internal error"}',
 		};
 	}
 };
@@ -67,15 +65,14 @@ exports.registerV1 = async (event) => {
 //	<= count in header
 exports.getDocumentCountV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.projectID;
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
 	let	name = event.pathParameters.name.replace(/%2B/g, '+').replace(/_/g, '/');
 
 	// Catch errors
 	try {
 		// Get info
 		let	documentStorage = new DocumentStorage();
-		let	[count, upToDate] =
-					await documentStorage.collectionGetDocumentCount(documentStorageID, name);
+		let	[count, upToDate] = await documentStorage.collectionGetDocumentCount(documentStorageID, name);
 		if (upToDate)
 			// Success
 			return {
@@ -104,16 +101,45 @@ exports.getDocumentCountV1 = async (event) => {
 //	=> documentStorageID (path)
 //	=> name (path)
 //	=> startIndex (query) (optional, default is 0)
+//	=> count (query) (optional, default is all)
+//	=> fullInfo (query) (optional, default is false)
 //
 //	<= HTTP Status 409 if collection is out of date => call endpoint again
-//	<= json
+//	<= json (fullInfo == 0)
 //		{
 //			String (documentID) : Int (revision),
 //			...
 //		}
+//	<= json (fullInfo == 1)
+//		[
+//			{
+//				"documentID" :String,
+//				"revision" :Int,
+//				"active" :0/1,
+//				"creationDate" :String,
+//				"modificationDate" :String,
+//				"json" :{
+//							"key" :Any,
+//							...
+//						},
+//				"attachments":
+//						{
+//							id :
+//								{
+//									"revision" :Int,
+//									"info" :{
+//												"key" :Any,
+//												...
+//											},
+//								},
+//								..
+//						}
+//			},
+//			...
+//		]
 exports.getDocumentsV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.projectID;
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
 	let	name = event.pathParameters.name.replace(/%2B/g, '+').replace(/_/g, '/');
 
 	let	queryStringParameters = event.queryStringParameters || {};
@@ -122,9 +148,9 @@ exports.getDocumentsV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		let	documentStorage = new DocumentStorage();
-		let	[totalCount, results, upToDate] =
-					await documentStorage.collectionGetDocuments(documentStorageID, name, startIndex);
+		let	[upToDate, totalCount, results, error] =
+					await documentStorage.collectionGetDocuments(documentStorageID, name, startIndex, count,
+							fullInfo == 1);
 		if (upToDate) {
 			// Success
 			let	endIndex = startIndex + Object.keys(results).length - 1;
@@ -138,22 +164,32 @@ exports.getDocumentsV1 = async (event) => {
 							{
 								'Access-Control-Allow-Origin': '*',
 								'Access-Control-Allow-Credentials': true,
+								'Access-Control-Expose-Headers': 'Content-Range',
 								'Content-Range': contentRange,
 							},
 					body: JSON.stringify(results),
 			};
-		} else
+		} else if (!error)
 			// Not up to date
 			return {
 					statusCode: 409,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
 			};
+		else
+			// Error
+			return {
+					statusCode: 400,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify({error: error})
+			};
 	} catch (error) {
 		// Error
+		console.error(error.stack);
+
 		return {
 				statusCode: 500,
 				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: 'Error: ' + error,
+				body: '{"error": "Internal error"}',
 		};
 	}
 };

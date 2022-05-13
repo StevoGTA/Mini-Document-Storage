@@ -5,7 +5,7 @@
 //  Copyright © 2022 Stevo Brock. All rights reserved.
 //
 
-let	{DocumentStorage} = require('mini-document-storage');
+let	{documentStorage} = require('globals');
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Create
@@ -39,44 +39,93 @@ exports.createV1 = async (event) => {
 	// Setup
 	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
 	let	documentType = event.pathParameters.documentType;
-
 	let	infos = (event.body) ? JSON.parse(event.body) : null;
-
-	// Validate input
-	if (!infos)
-		// Must specify keys
-		return {
-				statusCode: 400,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify({message: 'missing info(s)'}),
-		};
 
 	// Catch errors
 	try {
-		// Get info
-		let	documentStorage = new DocumentStorage();
-		let	results = await documentStorage.documentCreate(documentStorageID, documentType, infos);
-
-		return {
-				statusCode: 200,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify(results),
-		};
+		// Create documents
+		let	[results, error] = await documentStorage.documentCreate(documentStorageID, documentType, infos);
+		if (!error)
+			// Success
+			return {
+					statusCode: 200,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify(results),
+			};
+		else
+			// Error
+			return {
+					statusCode: 400,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify({error: error})
+			};
 	} catch (error) {
 		// Error
+		console.error(error.stack);
+
+		// Error
 		return {
-				statusCode: 500,
+				statusCode: 400,
 				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: 'Error: ' + error,
+				body: JSON.stringify({error: error})
 		};
 	}
 };
 
 //----------------------------------------------------------------------------------------------------------------------
+// MARK: Get Count
+//	=> documentStorageID (path)
+//	=> type (path)
+//
+//	<= count in header
+exports.getCountV1 = async (event) => {
+	// Setup
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	documentType = event.pathParameters.documentType;
+
+	// Catch errors
+	try {
+		// Get document count
+		let	[count, error] = await documentStorage.documentGetCount(documentStorageID, documentType);
+		if (!error)
+			// Success
+			return {
+					statusCode: 200,
+					headers:
+							{
+								'Access-Control-Allow-Origin': '*',
+								'Access-Control-Allow-Credentials': true,
+								'Access-Control-Expose-Headers': 'Content-Range',
+								'Content-Range': 'documents */' + count,
+							},
+			};
+		else
+			// Error
+			return {
+					statusCode: 400,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify({error: error})
+			};
+	} catch (error) {
+		// Error
+		console.error(error.stack);
+
+		// Error
+		return {
+				statusCode: 400,
+				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+				body: JSON.stringify({error: error})
+		};
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 // MARK: Get
 //	=> documentStorageID (path)
 //	=> type (path)
+//
 //	=> sinceRevision (query)
+//	=> count (query, optional)
 //		-or-
 //	=> id (query) (can specify multiple)
 //
@@ -92,6 +141,18 @@ exports.createV1 = async (event) => {
 //							"key" :Any,
 //							...
 //						},
+//				"attachments":
+//						{
+//							id :
+//								{
+//									"revision" :Int,
+//									"info" :{
+//												"key" :Any,
+//												...
+//											},
+//								},
+//								..
+//						}
 //			},
 //			...
 //		]
@@ -102,63 +163,69 @@ exports.getV1 = async (event) => {
 
 	let	queryStringParameters = event.queryStringParameters || {};
 	let	sinceRevision = queryStringParameters.sinceRevision;
-
-	let	infos = (event.body) ? JSON.parse(event.body) : null;
+	let	count = queryStringParameters.count;
 
 	let	multiValueQueryStringParameters = event.multiValueQueryStringParameters || {};
-	var	ids = multiValueQueryStringParameters.id || [];
-	for (var i = 0; i < ids.length; i++)
-		ids[i] = ids[i].replace(/%2B/g, '+');	// Convert back to +
-
-	// Validate input
-	if ((ids.length == 0) && !sinceRevision)
-		// Must specify documentIDs or sinceRevision
-		return {
-				statusCode: 400,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify({message: 'must specify id(s) or sinceRevision'}),
-		};
+	var	documentIDs = (multiValueQueryStringParameters.id || []).map(documentID => documentID.replace(/%2B/g, '+'));	// Convert back to +);
 
 	// Catch errors
 	try {
 		// Check request type
 		if (sinceRevision) {
 			// Since revision
-			let	documentStorage = new DocumentStorage();
-			let	[totalCount, results] =
-						await documentStorage.documentGetSinceRevision(documentStorageID, documentType,
-								sinceRevision);
-
-			return {
-					statusCode: 200,
-					headers:
-							{
-								'Access-Control-Allow-Origin': '*',
-								'Access-Control-Allow-Credentials': true,
-								'Content-Range':
-										(totalCount > 0) ?
-												'documents 0-' + (results.length - 1) + '/' + totalCount :
-												'documents */0',
-							},
-					body: JSON.stringify(results),
-			};
+			let	[totalCount, results, error] =
+						await documentStorage.documentGetSinceRevision(documentStorageID, documentType, sinceRevision,
+								count);
+			if (!error)
+				// Success
+				return {
+						statusCode: 200,
+						headers:
+								{
+									'Access-Control-Allow-Origin': '*',
+									'Access-Control-Allow-Credentials': true,
+									'Access-Control-Expose-Headers': 'Content-Range',
+									'Content-Range':
+											(totalCount > 0) ?
+													'documents 0-' + (results.length - 1) + '/' + totalCount :
+													'documents */0',
+						},
+						body: JSON.stringify(results),
+				};
+			else
+				// Error
+				return {
+						statusCode: 400,
+						headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+						body: JSON.stringify({error: error})
+				};
 		} else {
-			// IDs
-			let	documentStorage = new DocumentStorage();
-			let	results = await documentStorage.documentGetForIDs(documentStorageID, documentType, ids);
-
-			return {
-					statusCode: 200,
-					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: JSON.stringify(results),
-			};
+			// DocumentIDs
+			let	[results, error] =
+						await documentStorage.documentGetForDocumentIDs(documentStorageID, documentType, documentIDs);
+			if (results)
+				// Success
+				return {
+						statusCode: 200,
+						headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+						body: JSON.stringify(results),
+				};
+			else
+				// Error
+				return {
+						statusCode: 400,
+						headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+						body: JSON.stringify({error: error})
+				};
 		}
 	} catch (error) {
 		// Error
+		console.error(error.stack);
+
 		return {
 				statusCode: 500,
 				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: 'Error: ' + error,
+				body: '{"error": "Internal error"}',
 		};
 	}
 };
@@ -171,10 +238,10 @@ exports.getV1 = async (event) => {
 //		[
 //			{
 //				"documentID" :String
-//				"updated" :[
+//				"updated" :{
 //								"key" :Any,
 //								...
-//						   ]
+//						   }
 //				"removed" :[
 //								"key",
 //								...
@@ -183,85 +250,53 @@ exports.getV1 = async (event) => {
 //			},
 //			...
 //		]
+//
+//	<= json
+//		[
+//			{
+//				"documentID" :String,
+//				"revision" :Int,
+//				"active" :0/1,
+//				"modificationDate" :String,
+//				"json" :{
+//							"key" :Any,
+//							...
+//						},
+//			},
+//			...
+//		]
 exports.updateV1 = async (event) => {
 	// Setup
 	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
 	let	documentType = event.pathParameters.documentType;
-
 	let	infos = (event.body) ? JSON.parse(event.body) : null;
 
-	// Validate input
-	if (!infos)
-		// Must specify keys
-		return {
-				statusCode: 400,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify({message: 'missing info(s)'}),
-		};
-
 	// Catch errors
 	try {
 		// Get info
-		let	documentStorage = new DocumentStorage();
-		await documentStorage.documentUpdate(documentStorageID, documentType, infos);
-
-		return {
-				statusCode: 200,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-		};
+		let	[results, error] = await documentStorage.documentUpdate(documentStorageID, documentType, infos);
+		if (results)
+			// Success
+			return {
+					statusCode: 200,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify(results),
+			};
+		else
+			// Error
+			return {
+					statusCode: 400,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify({error: error})
+			};
 	} catch (error) {
 		// Error
+		console.error(error.stack);
+
 		return {
 				statusCode: 500,
 				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: 'Error: ' + error,
-		};
-	}
-};
-
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: Get Attachment
-//	=> documentStorageID (path)
-//	=> documentType (path)
-//	=> documentID (path)
-//	=> attachmentID (path)
-//
-//	<= string
-exports.getAttachmentV1 = async (event) => {
-	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
-	let	documentType = event.pathParameters.documentType;
-	let	documentID = event.pathParameters.documentID.replace(/%2B/g, '+');
-	let	attachmentID = event.pathParameters.attachmentID.replace(/%2B/g, '+');
-
-	// Validate input
-	if (!infos)
-		// Must specify keys
-		return {
-				statusCode: 400,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify({message: 'missing info(s)'}),
-		};
-
-	// Catch errors
-	try {
-		// Get info
-		let	documentStorage = new DocumentStorage();
-		let	results =
-					await documentStorage.documentAttachmentGet(documentStorageID, documentType, documentID,
-							attachmentID);
-
-		return {
-				statusCode: 200,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: results,
-		};
-	} catch (error) {
-		// Error
-		return {
-				statusCode: 500,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: 'Error: ' + error,
+				body: '{"error": "Internal error"}',
 		};
 	}
 };
@@ -282,32 +317,82 @@ exports.addAttachmentV1 = async (event) => {
 	let	body = JSON.parse(event.body || {});
 	let info = body.info;
 	let	content = body.content;
-	
-	// Validate input
-	if (!info || !content)
-		// Must specify keys
-		return {
-				statusCode: 400,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify({message: 'missing info and/or content'}),
-		};
 
 	// Catch errors
 	try {
 		// Get info
-		let	documentStorage = new DocumentStorage();
-		await documentStorage.documentAttachmentAdd(documentStorageID, documentType, documentID, info, content);
-
-		return {
-				statusCode: 200,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-		};
+		let	[results, error] =
+					await documentStorage.documentAttachmentAdd(documentStorageID, documentType, documentID, info,
+							Buffer.from(content, 'base64'));
+		if (results)
+			// Success
+			return {
+					statusCode: 200,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify(results),
+			};
+		else
+			// Error
+			return {
+					statusCode: 400,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify({error: error})
+			};
 	} catch (error) {
 		// Error
+		console.error(error.stack);
+
 		return {
 				statusCode: 500,
 				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: 'Error: ' + error,
+				body: '{"error": "Internal error"}',
+		};
+	}
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: Get Attachment
+//	=> documentStorageID (path)
+//	=> documentType (path)
+//	=> documentID (path)
+//	=> attachmentID (path)
+//
+//	<= data
+exports.getAttachmentV1 = async (event) => {
+	// Setup
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	documentType = event.pathParameters.documentType;
+	let	documentID = event.pathParameters.documentID.replace(/%2B/g, '+');
+	let	attachmentID = event.pathParameters.attachmentID.replace(/%2B/g, '+');
+
+	// Catch errors
+	try {
+		// Get info
+		let	[results, error] =
+					await request.app.locals.documentStorage.documentAttachmentGet(documentStorageID, documentType,
+							documentID, attachmentID);
+		if (results)
+			// Success
+			return {
+					statusCode: 200,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: results,
+			};
+		else
+			// Error
+			return {
+					statusCode: 400,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify({error: error})
+			};
+	} catch (error) {
+		// Error
+		console.error(error.stack);
+
+		return {
+				statusCode: 500,
+				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+				body: '{"error": "Internal error"}',
 		};
 	}
 };
@@ -330,33 +415,34 @@ exports.updateAttachmentV1 = async (event) => {
 	let	body = JSON.parse(event.body || {});
 	let info = body.info;
 	let	content = body.content;
-	
-	// Validate input
-	if (!info || !content)
-		// Must specify keys
-		return {
-				statusCode: 400,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify({message: 'missing info and/or content'}),
-		};
 
 	// Catch errors
 	try {
 		// Get info
-		let	documentStorage = new DocumentStorage();
-		await documentStorage.documentAttachmentUpdate(documentStorageID, documentType, documentID, attachmentID,
-				info, content);
-
-		return {
-				statusCode: 200,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-		};
+		let	error =
+					await documentStorage.documentAttachmentUpdate(documentStorageID, documentType, documentID,
+							attachmentID, info, Buffer.from(content, 'base64'));
+		if (!error)
+			// Success
+			return {
+					statusCode: 200,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+			};
+		else
+			// Error
+			return {
+					statusCode: 400,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify({error: error})
+			};
 	} catch (error) {
 		// Error
+		console.error(error.stack);
+
 		return {
 				statusCode: 500,
 				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: 'Error: ' + error,
+				body: '{"error": "Internal error"}',
 		};
 	}
 };
@@ -377,19 +463,30 @@ exports.removeAttachmentV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		let	documentStorage = new DocumentStorage();
-		await documentStorage.documentAttachmentRemove(documentStorageID, documentType, documentID, attachmentID);
-
-		return {
-				statusCode: 200,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-		};
+		let	error =
+					await request.app.locals.documentStorage.documentAttachmentRemove(documentStorageID, documentType,
+							documentID, attachmentID);
+		if (!error)
+			// Success
+			return {
+					statusCode: 200,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+			};
+		else
+			// Error
+			return {
+					statusCode: 400,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify({error: error})
+			};
 	} catch (error) {
 		// Error
+		console.error(error.stack);
+
 		return {
 				statusCode: 500,
 				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: 'Error: ' + error,
+				body: '{"error": "Internal error"}',
 		};
 	}
 };

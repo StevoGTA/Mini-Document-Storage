@@ -42,7 +42,7 @@ exports.registerV1 = async (request, response) => {
 					.send({error: error});
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
@@ -100,13 +100,14 @@ exports.getDocumentsV1 = async (request, response) => {
 	if (typeof keys == 'string')
 		keys = [keys];
 
-		let	fullInfo = request.query.fullInfo || false;
+	let	fullInfo = request.query.fullInfo || 0;
 
 	// Catch errors
 	try {
 		// Get info
 		let	[upToDate, results, error] =
-					await request.app.locals.documentStorage.indexGetDocuments(documentStorageID, name, keys, fullInfo);
+					await request.app.locals.documentStorage.indexGetDocuments(documentStorageID, name, keys,
+							fullInfo == 1);
 		if (upToDate)
 			// Success
 			response
@@ -127,7 +128,7 @@ exports.getDocumentsV1 = async (request, response) => {
 					.send({error: error});
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})

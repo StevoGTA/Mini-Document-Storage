@@ -37,13 +37,14 @@ exports.registerV1 = async (request, response) => {
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 					.send();
 		else
+			// Error
 			response
 					.status(400)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 					.send({error: error});
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 
 		response
 				.status(500)

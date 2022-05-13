@@ -5,16 +5,15 @@
 //  Copyright © 2022 Stevo Brock. All rights reserved.
 //
 
-let	{DocumentStorage} = require('mini-document-storage');
+let	{documentStorage} = require('globals');
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Register
 //	=> documentStorageID (path)
 //	=> json (body)
 //		{
-//			"documentType" :String,
 //			"name" :String,
-//			"version" :Int,
+//			"documentType" :String,
 //			"relevantProperties" :[String]
 //			"valuesInfos" :[
 //							{
@@ -26,38 +25,34 @@ let	{DocumentStorage} = require('mini-document-storage');
 //				 		   ]
 exports.registerV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.projectID;
-
-	let	info = (event.body) ? JSON.parse(event.body) : null;
-
-	// Validate input
-	if (!info)
-		// Must specify keys
-		return {
-				statusCode: 400,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify({message: 'missing info'}),
-		};
-
-	// Prevent timeout from waiting on event loop
-	context.callbackWaitsForEmptyEventLoop = false;
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	info = (event.body) ? JSON.parse(event.body) : {};
 
 	// Catch errors
 	try {
 		// Get info
-		let	documentStorage = new DocumentStorage();
-		await documentStorage.cacheRegister(documentStorageID, info);
-
-		return {
-				statusCode: 200,
-				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-		};
+		let	error = await documentStorage.cacheRegister(documentStorageID, info);
+		if (!error)
+			// Success
+			return {
+					statusCode: 200,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+			};
+		else
+			// Error
+			return {
+					statusCode: 400,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify({error: error})
+			};
 	} catch (error) {
 		// Error
+		console.error(error.stack);
+
 		return {
 				statusCode: 500,
 				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: 'Error: ' + error,
+				body: '{"error": "Internal error"}',
 		};
 	}
 };

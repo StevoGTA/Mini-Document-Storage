@@ -30,13 +30,14 @@ exports.registerV1 = async (request, response) => {
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 					.send();
 		else
+			// Error
 			response
 					.status(400)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 					.send({error: error});
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
@@ -80,7 +81,7 @@ exports.updateV1 = async (request, response) => {
 					.send({error: error});
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
@@ -137,7 +138,7 @@ exports.getDocumentsV1 = async (request, response) => {
 	let	toDocumentID = request.query.toID;
 	let	startIndex = request.query.startIndex || 0;
 	let	count = request.query.count;
-	let	fullInfo = request.query.fullInfo || false;
+	let	fullInfo = request.query.fullInfo || 0;
 
 	// Catch errors
 	try {
@@ -157,6 +158,7 @@ exports.getDocumentsV1 = async (request, response) => {
 					.set({
 						'Access-Control-Allow-Origin': '*',
 						'Access-Control-Allow-Credentials': true,
+						'Access-Control-Expose-Headers': 'Content-Range',
 						'Content-Range': contentRange,
 					})
 					.send(results);
@@ -168,7 +170,7 @@ exports.getDocumentsV1 = async (request, response) => {
 					.send({error: error});
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
@@ -222,7 +224,7 @@ exports.getValueV1 = async (request, response) => {
 					.send({error: error});
 	} catch (error) {
 		// Error
-		console.log(error.stack);
+		console.error(error.stack);
 		response
 				.status(500)
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
