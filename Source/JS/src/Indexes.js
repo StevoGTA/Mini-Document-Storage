@@ -80,7 +80,7 @@ module.exports = class Indexes {
 
 		// Try to retrieve current entry
 		var	results =
-					await statementPerformer.select(this.indexesTable,
+					await statementPerformer.select(true, this.indexesTable,
 							[
 								this.indexesTable.keysSelectorTableColumn,
 								this.indexesTable.keysSelectorInfoTableColumn,
@@ -103,7 +103,8 @@ module.exports = class Indexes {
 						{tableColumn: this.indexesTable.relevantPropertiesTableColumn,
 								value: relevantProperties.toString()},
 						{tableColumn: this.indexesTable.keysSelectorTableColumn, value: keysSelector},
-						{tableColumn: this.indexesTable.keysSelectorInfoTableColumn, value: keysSelectorInfo},
+						{tableColumn: this.indexesTable.keysSelectorInfoTableColumn,
+								value: JSON.stringify(keysSelectorInfo)},
 						{tableColumn: this.indexesTable.lastDocumentRevisionTableColumn, value: lastDocumentRevision},
 				]);
 			index.queueCreate(statementPerformer);
@@ -120,7 +121,8 @@ module.exports = class Indexes {
 						{tableColumn: this.indexesTable.relevantPropertiesTableColumn,
 								value: relevantProperties.toString()},
 						{tableColumn: this.indexesTable.keysSelectorTableColumn, value: keysSelector},
-						{tableColumn: this.indexesTable.keysSelectorInfoTableColumn, value: keysSelectorInfo},
+						{tableColumn: this.indexesTable.keysSelectorInfoTableColumn,
+								value: JSON.stringify(keysSelectorInfo)},
 						{tableColumn: this.indexesTable.lastDocumentRevisionTableColumn, value: lastDocumentRevision},
 					],
 					statementPerformer.where(this.indexesTable.nameTableColumn, name));
@@ -135,7 +137,8 @@ module.exports = class Indexes {
 				this.indexInfo[name] = index;
 
 				statementPerformer.queueUpdate(this.indexesTable,
-						[{tableColumn: this.indexesTable.keysSelectorInfoTableColumn, value: keysSelectorInfo}],
+						[{tableColumn: this.indexesTable.keysSelectorInfoTableColumn,
+								value: JSON.stringify(keysSelectorInfo)}],
 						statementPerformer.where(this.indexesTable.nameTableColumn, name));
 			} else {
 				// Need to rebuild this index
@@ -149,7 +152,8 @@ module.exports = class Indexes {
 							{tableColumn: this.indexesTable.relevantPropertiesTableColumn,
 									value: relevantProperties.toString()},
 							{tableColumn: this.indexesTable.keysSelectorTableColumn, value: keysSelector},
-							{tableColumn: this.indexesTable.keysSelectorInfoTableColumn, value: keysSelectorInfo},
+							{tableColumn: this.indexesTable.keysSelectorInfoTableColumn,
+									value: JSON.stringify(keysSelectorInfo)},
 							{tableColumn: this.indexesTable.lastDocumentRevisionTableColumn, value: 0},
 						],
 						statementPerformer.where(this.indexesTable.nameTableColumn, name));
@@ -245,7 +249,7 @@ module.exports = class Indexes {
 		try {
 			// Select all Indexes for this document type
 			let	results =
-						await statementPerformer.select(this.indexesTable,
+						await statementPerformer.select(true, this.indexesTable,
 								statementPerformer.where(this.indexesTable.typeTableColumn, documentType));
 			
 			var	indexes = [];
@@ -283,7 +287,7 @@ module.exports = class Indexes {
 		try {
 			// Select all Indexes for this name
 			let	results =
-						await statementPerformer.select(this.indexesTable,
+						await statementPerformer.select(true, this.indexesTable,
 								statementPerformer.where(this.indexesTable.nameTableColumn, name));
 			
 			// Handle results

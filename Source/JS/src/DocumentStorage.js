@@ -60,7 +60,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() => { return internals.associations.register(statementPerformer, info); });
 			
 			return results;
@@ -87,7 +87,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() => { return internals.associations.update(statementPerformer, name, infos); });
 			
 			return results;
@@ -115,7 +115,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() =>
 										{ return internals.associations.getDocuments(statementPerformer, name,
 												fromDocumentID, toDocumentID, startIndex, count, fullInfo); });
@@ -144,7 +144,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() =>
 										{ return internals.associations.getValue(statementPerformer, name,
 												fromDocumentID, action, cacheName, cacheValueName); });
@@ -173,7 +173,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() => { return internals.caches.register(statementPerformer, info); });
 			
 			return results;
@@ -200,7 +200,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() => { return internals.collections.register(statementPerformer, info); });
 			
 			return results;
@@ -227,7 +227,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() =>
 										{ return internals.collections.getDocumentCount(statementPerformer,
 												name); });
@@ -256,7 +256,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() =>
 										{ return internals.collections.getDocuments(statementPerformer, name,
 												startIndex, count, fullInfo); });
@@ -285,7 +285,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() => { return internals.documents.create(statementPerformer, documentType, infos); });
 			
 			return results;
@@ -312,7 +312,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() => { return internals.documents.getCount(statementPerformer, documentType); });
 			
 			return results;
@@ -339,7 +339,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() =>
 										{ return internals.documents.getSinceRevision(statementPerformer, documentType,
 												sinceRevision, count); }
@@ -369,7 +369,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() =>
 										{ return internals.documents.getForDocumentIDs(statementPerformer, documentType,
 												documentIDs); });
@@ -398,7 +398,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() => { return internals.documents.update(statementPerformer, documentType, infos); });
 			
 			return results;
@@ -425,7 +425,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() =>
 										{ return internals.documents.attachmentAdd(statementPerformer, documentType,
 												documentID, info, content); });
@@ -454,7 +454,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() =>
 										{ return internals.documents.attachmentGet(statementPerformer, documentType,
 												documentID, attachmentID); });
@@ -483,7 +483,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() =>
 										{ return internals.documents.attachmentUpdate(statementPerformer, documentType,
 												documentID, attachmentID, info, content); });
@@ -512,7 +512,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() =>
 										{ return internals.documents.attachmentRemove(statementPerformer, documentType,
 												documentID, attachmentID); });
@@ -541,7 +541,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() => { return internals.indexes.register(statementPerformer, info); });
 			
 			return results;
@@ -568,7 +568,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() =>
 										{ return internals.indexes.getDocuments(statementPerformer, name, keys,
 												fullInfo); });
@@ -597,7 +597,8 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(() => { return internals.info.get(statementPerformer, keys); });
+						await statementPerformer.batch(true,
+								() => { return internals.info.get(statementPerformer, keys); });
 
 			return results;
 		} catch (error) {
@@ -623,7 +624,7 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	{mySQLResults, results} =
-						await statementPerformer.batch(
+						await statementPerformer.batch(true,
 								() => internals.info.set(statementPerformer, keysAndValues));
 			
 			return results;

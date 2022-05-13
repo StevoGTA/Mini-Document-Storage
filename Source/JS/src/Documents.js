@@ -117,7 +117,8 @@ module.exports = class Documents {
 												value: creationDate},
 										{tableColumn: documentInfo.contentTable.modificationDateTableColumn,
 												value: modificationDate},
-										{tableColumn: documentInfo.contentTable.jsonTableColumn, value: json},
+										{tableColumn: documentInfo.contentTable.jsonTableColumn,
+												value: JSON.stringify(json)},
 									]);
 									
 									// Update
@@ -168,7 +169,7 @@ module.exports = class Documents {
 		try {
 			// Perform
 			let	results =
-						await statementPerformer.select(documentInfo.infoTable,
+						await statementPerformer.select(true, documentInfo.infoTable,
 								[
 									documentInfo.infoTable.idTableColumn,
 									documentInfo.infoTable.documentIDTableColumn,
@@ -213,7 +214,7 @@ module.exports = class Documents {
 		try {
 			// Perform
 			let	results =
-						await statementPerformer.select(documentInfo.attachmentTable,
+						await statementPerformer.select(true, documentInfo.attachmentTable,
 								[
 									documentInfo.attachmentTable.idTableColumn,
 									documentInfo.attachmentTable.attachmentIDTableColumn,
@@ -252,7 +253,7 @@ module.exports = class Documents {
 		try {
 			// Retrieve relevant documents
 			let	results =
-						await statementPerformer.select(documentInfo.infoTable,
+						await statementPerformer.select(true, documentInfo.infoTable,
 								[
 									documentInfo.infoTable.idTableColumn,
 									documentInfo.infoTable.documentIDTableColumn,
@@ -298,7 +299,7 @@ module.exports = class Documents {
 		try {
 			// Perform
 			let	results =
-						await statementPerformer.select(documentInfo.attachmentTable,
+						await statementPerformer.select(true, documentInfo.attachmentTable,
 								[
 									documentInfo.attachmentTable.idTableColumn,
 									documentInfo.attachmentTable.attachmentIDTableColumn,
@@ -351,7 +352,7 @@ module.exports = class Documents {
 
 									// Retrieve current document info
 									let	results =
-												await statementPerformer.select(documentInfo.infoTable,
+												await statementPerformer.select(true, documentInfo.infoTable,
 														[
 															documentInfo.infoTable.idTableColumn,
 															documentInfo.infoTable.documentIDTableColumn,
@@ -507,7 +508,7 @@ module.exports = class Documents {
 		try {
 			// Perform
 			let	results =
-						await statementPerformer.select(documentInfo.attachmentTable,
+						await statementPerformer.select(true, documentInfo.attachmentTable,
 								[documentInfo.attachmentTable.contentTableColumn],
 								statementPerformer.where(documentInfo.attachmentTable.attachmentIDTableColumn,
 										attachmentID));
@@ -561,9 +562,10 @@ module.exports = class Documents {
 
 							// Retrieve attachment info
 							let	results =
-										await statementPerformer.select(documentInfo.attachmentTable,
+										await statementPerformer.select(true, documentInfo.attachmentTable,
 												[documentInfo.attachmentTable.revisionTableColumn],
-												statementPerformer.where(documentInfo.attachmentTable.attachmentIDTableColumn,
+												statementPerformer.where(
+														documentInfo.attachmentTable.attachmentIDTableColumn,
 														attachmentID));
 							var	attachmentRevision;
 							if (results.length > 0)
@@ -582,9 +584,11 @@ module.exports = class Documents {
 										{tableColumn: documentInfo.attachmentTable.infoTableColumn, value: info},
 										{tableColumn: documentInfo.attachmentTable.contentTableColumn, value: content},
 									],
-									statementPerformer.where(documentInfo.attachmentTable.attachmentIDTableColumn, attachmentID));
+									statementPerformer.where(documentInfo.attachmentTable.attachmentIDTableColumn,
+											attachmentID));
 							statementPerformer.queueUpdate(documentInfo.infoTable,
-									[{tableColumn: documentInfo.infoTable.revisionTableColumn, value: documentRevision}],
+									[{tableColumn: documentInfo.infoTable.revisionTableColumn,
+											value: documentRevision}],
 									statementPerformer.where(documentInfo.infoTable.idTableColumn, id));
 							this.queueUpdateLastRevision(statementPerformer, documentType, documentRevision);
 
@@ -593,8 +597,8 @@ module.exports = class Documents {
 							// Check error
 							if (error.message.startsWith('ER_NO_SUCH_TABLE'))
 								// No such table
-								return 'Attachment ' + attachmentID + ' for ' + documentID + ' of type ' + documentType +
-										' not found.';
+								return 'Attachment ' + attachmentID + ' for ' + documentID + ' of type ' +
+										documentType + ' not found.';
 							else
 								// Other error
 								throw error;
@@ -656,7 +660,7 @@ module.exports = class Documents {
 		try {
 			// Retrieve document ids
 			let	results =
-						await statementPerformer.select(documentInfo.infoTable,
+						await statementPerformer.select(true, documentInfo.infoTable,
 								[documentInfo.infoTable.idTableColumn, documentInfo.infoTable.documentIDTableColumn],
 								statementPerformer.where(documentInfo.infoTable.documentIDTableColumn, documentIDs));
 			if (results.length == documentIDs.length) {
@@ -733,7 +737,7 @@ module.exports = class Documents {
 			if (Array.isArray(where)) {
 				// Multi-select
 				let	results =
-							await statementPerformer.multiSelect(table, where,
+							await statementPerformer.multiSelect(true, table, where,
 									[
 										documentInfo.infoTable.documentIDTableColumn,
 										documentInfo.infoTable.revisionTableColumn,
@@ -744,7 +748,7 @@ module.exports = class Documents {
 			} else {
 				// Select
 				let	results =
-							await statementPerformer.select(table,
+							await statementPerformer.select(true, table,
 									[
 										documentInfo.infoTable.documentIDTableColumn,
 										documentInfo.infoTable.revisionTableColumn,
@@ -783,7 +787,7 @@ module.exports = class Documents {
 			if (Array.isArray(where)) {
 				// Multi-select
 				selectResults =
-						await statementPerformer.multiSelect(table, where,
+						await statementPerformer.multiSelect(true, table, where,
 								[
 									documentInfo.infoTable.idTableColumn,
 									documentInfo.infoTable.documentIDTableColumn,
@@ -817,7 +821,7 @@ module.exports = class Documents {
 			} else {
 				// Select
 				selectResults =
-						await statementPerformer.select(table,
+						await statementPerformer.select(true, table,
 								[
 									documentInfo.infoTable.idTableColumn,
 									documentInfo.infoTable.documentIDTableColumn,
@@ -863,7 +867,7 @@ module.exports = class Documents {
 		try {
 			// Perform
 			let	results =
-						await statementPerformer.select(documentInfo.attachmentTable,
+						await statementPerformer.select(true, documentInfo.attachmentTable,
 								[
 									documentInfo.attachmentTable.idTableColumn,
 									documentInfo.attachmentTable.attachmentIDTableColumn,
@@ -896,7 +900,7 @@ module.exports = class Documents {
 		try {
 			// Perform
 			let	results =
-						await statementPerformer.select(documentInfo.infoTable,
+						await statementPerformer.select(true, documentInfo.infoTable,
 								[
 									documentInfo.infoTable.idTableColumn,
 									documentInfo.infoTable.revisionTableColumn,
@@ -997,12 +1001,23 @@ module.exports = class Documents {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async getLastRevision(statementPerformer, documentType) {
-		// Retrieve document type info
-		let	results =
-					await statementPerformer.select(this.documentsTable,
-							statementPerformer.where(this.documentsTable.typeTableColumn, documentType));
-		
-		return (results.length > 0) ? results[0].lastRevision : 0;
+		// Catch errors
+		try {
+			// Retrieve document type info
+			let	results =
+						await statementPerformer.select(false, this.documentsTable,
+								statementPerformer.where(this.documentsTable.typeTableColumn, documentType));
+			
+			return (results.length > 0) ? results[0].lastRevision : 0;
+		} catch (error) {
+			// Check error
+			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
+				// No such table
+				return 0;
+			else
+				// Other error
+				throw error;
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1021,7 +1036,8 @@ module.exports = class Documents {
 		try {
 			// Retrieve document id
 			let	results =
-						await statementPerformer.select(documentInfo.infoTable, [documentInfo.infoTable.idTableColumn],
+						await statementPerformer.select(false, documentInfo.infoTable,
+								[documentInfo.infoTable.idTableColumn],
 								statementPerformer.where(documentInfo.infoTable.documentIDTableColumn, documentID));
 			if (results.length > 0)
 				// documentID found!

@@ -112,8 +112,11 @@ module.exports = class Internals {
 		let	collectionsToUpdate = await this.collections.getForDocumentType(statementPerformer, documentType);
 		let	indexesToUpdate = await this.indexes.getForDocumentType(statementPerformer, documentType);
 
-		return new DocumentUpdateTracker(this.caches, cachesToUpdate, this.collections, collectionsToUpdate,
-				this.indexes, indexesToUpdate);
+		return new DocumentUpdateTracker(
+				(cachesToUpdate.length > 0) ? this.caches : null, cachesToUpdate,
+				(collectionsToUpdate.length > 0) ? this.collections : null, collectionsToUpdate,
+				(indexesToUpdate.length > 0) ? this.indexes : null, indexesToUpdate,
+		);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -156,7 +159,7 @@ module.exports = class Internals {
 			try {
 				// Perform
 				let	results =
-							await statementPerformer.select(this.table,
+							await statementPerformer.select(false, this.table,
 									[this.table.keyTableColumn, this.table.valueTableColumn],
 									statementPerformer.where(this.table.keyTableColumn, keysToRetrieve));
 

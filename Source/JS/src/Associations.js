@@ -62,7 +62,7 @@ module.exports = class Associations {
 
 		// Try to retrieve current entry
 		var	results =
-					await statementPerformer.select(this.associationsTable,
+					await statementPerformer.select(true, this.associationsTable,
 							statementPerformer.where(this.associationsTable.nameTableColumn, name));
 		if (results.length == 0) {
 			// Add
@@ -135,7 +135,7 @@ module.exports = class Associations {
 			return toDocumentInfoError;
 		
 		// Update
-		await statementPerformer.batch(
+		await statementPerformer.batch(true,
 				() =>
 						{
 							// Iterate infos
@@ -292,7 +292,7 @@ module.exports = class Associations {
 		try {
 			// Retrieve association
 			let	results =
-						await statementPerformer.select(this.associationsTable,
+						await statementPerformer.select(true, this.associationsTable,
 								statementPerformer.where(this.associationsTable.nameTableColumn, name));
 			if (results.length > 0) {
 				// Success

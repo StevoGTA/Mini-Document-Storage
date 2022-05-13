@@ -88,7 +88,7 @@ module.exports = class Caches {
 
 		// Try to retrieve current entry
 		var	results =
-					await statementPerformer.select(this.cachesTable,
+					await statementPerformer.select(true, this.cachesTable,
 							[this.cachesTable.infoTableColumn],
 							statementPerformer.where(this.cachesTable.nameTableColumn, name));
 		if (results.length == 0) {
@@ -102,7 +102,7 @@ module.exports = class Caches {
 						{tableColumn: this.cachesTable.typeTableColumn, value: documentType},
 						{tableColumn: this.cachesTable.relevantPropertiesTableColumn,
 								value: relevantProperties.toString()},
-						{tableColumn: this.cachesTable.infoTableColumn, value: valuesInfos},
+						{tableColumn: this.cachesTable.infoTableColumn, value: JSON.stringify(valuesInfos)},
 						{tableColumn: this.cachesTable.lastDocumentRevisionTableColumn, value: 0},
 					]);
 			cache.queueCreate(statementPerformer);
@@ -121,7 +121,7 @@ module.exports = class Caches {
 							{tableColumn: this.cachesTable.typeTableColumn, value: documentType},
 							{tableColumn: this.cachesTable.relevantPropertiesTableColumn,
 									value: relevantProperties.toString()},
-							{tableColumn: this.cachesTable.infoTableColumn, value: valuesInfos},
+							{tableColumn: this.cachesTable.infoTableColumn, value: JSON.stringify(valuesInfos)},
 							{tableColumn: this.cachesTable.lastDocumentRevisionTableColumn, value: 0},
 						]);
 				cache.queueTruncate(statementPerformer);
@@ -135,7 +135,7 @@ module.exports = class Caches {
 		try {
 			// Select all Caches for this document type
 			let	results =
-						await statementPerformer.select(this.cachesTable,
+						await statementPerformer.select(true, this.cachesTable,
 								statementPerformer.where(this.cachesTable.typeTableColumn, documentType));
 			
 			var	caches = [];
@@ -172,7 +172,7 @@ module.exports = class Caches {
 		try {
 			// Select all Caches for this document type
 			let	results =
-						await statementPerformer.select(this.cachesTable,
+						await statementPerformer.select(true, this.cachesTable,
 								statementPerformer.where(this.cachesTable.nameTableColumn, name));
 			
 			// Handle results

@@ -44,7 +44,7 @@ module.exports = class Info {
 		try {
 			// Select
 			let	results =
-						await statementPerformer.select(this.table,
+						await statementPerformer.select(true, this.table,
 								[this.table.keyTableColumn, this.table.valueTableColumn],
 								statementPerformer.where(this.table.keyTableColumn, keys));
 

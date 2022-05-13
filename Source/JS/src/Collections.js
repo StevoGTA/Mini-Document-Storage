@@ -80,7 +80,7 @@ module.exports = class Collections {
 
 		// Try to retrieve current entry
 		var	results =
-					await statementPerformer.select(this.collectionsTable,
+					await statementPerformer.select(true, this.collectionsTable,
 							[
 								this.collectionsTable.isIncludedSelectorTableColumn,
 								this.collectionsTable.isIncludedSelectorInfoTableColumn,
@@ -105,7 +105,7 @@ module.exports = class Collections {
 								value: relevantProperties.toString()},
 						{tableColumn: this.collectionsTable.isIncludedSelectorTableColumn, value: isIncludedSelector},
 						{tableColumn: this.collectionsTable.isIncludedSelectorInfoTableColumn,
-								value: isIncludedSelectorInfo},
+								value: JSON.stringify(isIncludedSelectorInfo)},
 						{tableColumn: this.collectionsTable.lastDocumentRevisionTableColumn,
 								value: lastDocumentRevision},
 				]);
@@ -125,7 +125,7 @@ module.exports = class Collections {
 								value: relevantProperties.toString()},
 						{tableColumn: this.collectionsTable.isIncludedSelectorTableColumn, value: isIncludedSelector},
 						{tableColumn: this.collectionsTable.isIncludedSelectorInfoTableColumn,
-								value: isIncludedSelectorInfo},
+								value: JSON.stringify(isIncludedSelectorInfo)},
 						{tableColumn: this.collectionsTable.lastDocumentRevisionTableColumn,
 								value: lastDocumentRevision},
 					],
@@ -143,7 +143,7 @@ module.exports = class Collections {
 
 				statementPerformer.queueUpdate(this.collectionsTable,
 						[{tableColumn: this.collectionsTable.isIncludedSelectorInfoTableColumn,
-								value: isIncludedSelectorInfo}],
+								value: JSON.stringify(isIncludedSelectorInfo)}],
 								statementPerformer.where(this.collectionsTable.nameTableColumn, name));
 			} else {
 				// Need to rebuild this collection
@@ -159,7 +159,7 @@ module.exports = class Collections {
 							{tableColumn: this.collectionsTable.isIncludedSelectorTableColumn,
 									value: isIncludedSelector},
 							{tableColumn: this.collectionsTable.isIncludedSelectorInfoTableColumn,
-									value: isIncludedSelectorInfo},
+									value: JSON.stringify(isIncludedSelectorInfo)},
 							{tableColumn: this.collectionsTable.lastDocumentRevisionTableColumn, value: 0},
 						],
 						statementPerformer.where(this.collectionsTable.nameTableColumn, name));
@@ -259,7 +259,7 @@ module.exports = class Collections {
 		try {
 			// Select all Collections for this document type
 			let	results =
-						await statementPerformer.select(this.collectionsTable,
+						await statementPerformer.select(true, this.collectionsTable,
 								statementPerformer.where(this.collectionsTable.typeTableColumn, documentType));
 			
 			var	collections = [];
@@ -298,7 +298,7 @@ module.exports = class Collections {
 		try {
 			// Select all Collections with matching name
 			let	results =
-						await statementPerformer.select(this.collectionsTable,
+						await statementPerformer.select(true, this.collectionsTable,
 								statementPerformer.where(this.collectionsTable.nameTableColumn, name));
 			
 			// Handle results

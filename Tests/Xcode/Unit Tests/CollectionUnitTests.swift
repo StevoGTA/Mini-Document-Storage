@@ -137,7 +137,9 @@ class CollectionUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "No Collection found with name ABC", "did not receive expected error message")
+					if (message != "No Collections") && (message != "No Collection found with name ABC") {
+						XCTFail("did not receive expected error message")
+					}
 
 				default:
 					// Other error

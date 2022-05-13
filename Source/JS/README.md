@@ -1,2 +1,2 @@
-# MySQL-Toolbox-JS
-Object-oriented assistance when interacting with MySQL
+# Mini Document Storage
+Fast, inexpensive document storage backed by a common database connector.

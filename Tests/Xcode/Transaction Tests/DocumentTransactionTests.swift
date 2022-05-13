@@ -19,8 +19,8 @@ class DocumentTransactionTests : XCTestCase {
 
 		var	documentID :String?
 		var	revision :Int?
-		var	creationDate :Date?
-		var	modificationDate :Date?
+		var	creationDate :String?
+		var	modificationDate :String?
 
 		// Create document
 		let	(createDocumentInfos, createError) =
@@ -45,7 +45,7 @@ class DocumentTransactionTests : XCTestCase {
 				if let string = createDocumentInfo["creationDate"] as? String {
 					XCTAssertNotNil(Date(fromRFC3339Extended: string),
 							"create creationDate could not be decoded to a Date")
-					creationDate = Date(fromRFC3339Extended: string)
+					creationDate = string
 				}
 
 				XCTAssertNotNil(createDocumentInfo["modificationDate"], "create did not receive modificationDate")
@@ -53,7 +53,7 @@ class DocumentTransactionTests : XCTestCase {
 				if let string = createDocumentInfo["modificationDate"] as? String {
 					XCTAssertNotNil(Date(fromRFC3339Extended: string),
 							"create modificationDate could not be decoded to a Date")
-					modificationDate = Date(fromRFC3339Extended: string)
+					modificationDate = string
 				}
 			}
 		}
@@ -115,8 +115,7 @@ class DocumentTransactionTests : XCTestCase {
 				if let string = updateDocumentInfo["modificationDate"] as? String {
 					XCTAssertNotNil(Date(fromRFC3339Extended: string),
 							"update modificationDate could not be decoded to a Date")
-					XCTAssertNotEqual(modificationDate, Date(fromRFC3339Extended: string),
-							"update modificationDate did not change")
+					XCTAssertNotEqual(modificationDate, string, "update modificationDate did not change")
 				}
 
 				XCTAssertNotNil(updateDocumentInfo["json"], "update did not receive json")
@@ -163,8 +162,7 @@ class DocumentTransactionTests : XCTestCase {
 				XCTAssertNotNil(Date(fromRFC3339Extended: getDocumentByIDDocumentInfo["creationDate"] as? String),
 						"get documents by ID creationDate could not be decoded to a Date")
 				if creationDate != nil, let string = getDocumentByIDDocumentInfo["creationDate"] as? String {
-					XCTAssertEqual(creationDate!, Date(fromRFC3339Extended: string)!,
-							"get documents by ID creationDate changed")
+					XCTAssertEqual(creationDate!, string, "get documents by ID creationDate changed")
 				}
 
 				XCTAssertNotNil(getDocumentByIDDocumentInfo["modificationDate"],
@@ -174,8 +172,7 @@ class DocumentTransactionTests : XCTestCase {
 				XCTAssertNotNil(Date(fromRFC3339Extended: getDocumentByIDDocumentInfo["modificationDate"] as? String),
 						"get documents by ID modificationDate could not be decoded to a Date")
 				if modificationDate != nil, let string = getDocumentByIDDocumentInfo["modificationDate"] as? String {
-					XCTAssertNotEqual(modificationDate, Date(fromRFC3339Extended: string),
-							"get documents by ID modificationDate did not change")
+					XCTAssertNotEqual(modificationDate!, string, "get documents by ID modificationDate did not change")
 				}
 			}
 		}

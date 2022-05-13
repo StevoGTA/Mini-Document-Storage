@@ -5,7 +5,7 @@
 //  Copyright © 2022 Stevo Brock. All rights reserved.
 //
 
-let	{documentStorage} = require('globals');
+let	{documentStorage} = require('./globals');
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Create
