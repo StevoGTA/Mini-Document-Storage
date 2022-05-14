@@ -5,6 +5,7 @@
 //  Copyright © 2022 Stevo Brock. All rights reserved.
 //
 
+// Imports
 let	{documentStorage} = require('./globals');
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -71,19 +72,29 @@ exports.getDocumentCountV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		let	documentStorage = new DocumentStorage();
-		let	[count, upToDate] = await documentStorage.collectionGetDocumentCount(documentStorageID, name);
+		let	[upToDate, count, error] = await documentStorage.collectionGetDocumentCount(documentStorageID, name);
 		if (upToDate)
 			// Success
 			return {
 					statusCode: 200,
-					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: count,
+					headers:
+							{
+								'Access-Control-Allow-Origin': '*',
+								'Access-Control-Allow-Credentials': true,
+								'Access-Control-Expose-Headers': 'Content-Range',
+								'Content-Range': 'documents */' + count,
+							},
 			};
-		else
+		else if (!error)
 			// Not up to date
 			return {
 					statusCode: 409,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+			};
+		else
+			// Error
+			return {
+					statusCode: 400,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
 			};
 	} catch (error) {
@@ -144,6 +155,8 @@ exports.getDocumentsV1 = async (event) => {
 
 	let	queryStringParameters = event.queryStringParameters || {};
 	let	startIndex = queryStringParameters.startIndex || 0;
+	let	count = queryStringParameters.count;
+	let	fullInfo = queryStringParameters.fullInfo || 0;
 
 	// Catch errors
 	try {

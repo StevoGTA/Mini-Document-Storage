@@ -5,6 +5,7 @@
 //  Copyright © 2022 Stevo Brock. All rights reserved.
 //
 
+// Imports
 let	{documentStorage} = require('./globals');
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -101,6 +102,9 @@ exports.getDocumentsV1 = async (event) => {
 	// Setup
 	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
 	let	name = event.pathParameters.name.replace(/%2B/g, '+').replace(/_/g, '/');
+
+	let	queryStringParameters = event.queryStringParameters || {};
+	let	fullInfo = queryStringParameters.fullInfo || 0;
 
 	let	multiValueQueryStringParameters = event.multiValueQueryStringParameters || {};
 	let	keys = multiValueQueryStringParameters.key;

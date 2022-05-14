@@ -486,7 +486,8 @@ module.exports = class Documents {
 								{tableColumn: documentInfo.attachmentTable.attachmentIDTableColumn,
 										value: attachmentID},
 								{tableColumn: documentInfo.attachmentTable.revisionTableColumn, value: 1},
-								{tableColumn: documentInfo.attachmentTable.infoTableColumn, value: info},
+								{tableColumn: documentInfo.attachmentTable.infoTableColumn,
+										value: JSON.stringify(info)},
 								{tableColumn: documentInfo.attachmentTable.contentTableColumn,
 										value: content},
 							]);
@@ -514,7 +515,7 @@ module.exports = class Documents {
 										attachmentID));
 			if (results.length > 0)
 				// Success
-				return [results[0].content, null];
+				return [results[0].content.toString(), null];
 			else
 				// Error
 				return [null,
@@ -1008,12 +1009,12 @@ module.exports = class Documents {
 						await statementPerformer.select(false, this.documentsTable,
 								statementPerformer.where(this.documentsTable.typeTableColumn, documentType));
 			
-			return (results.length > 0) ? results[0].lastRevision : 0;
+			return (results.length > 0) ? results[0].lastRevision : null;
 		} catch (error) {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
 				// No such table
-				return 0;
+				return null;
 			else
 				// Other error
 				throw error;

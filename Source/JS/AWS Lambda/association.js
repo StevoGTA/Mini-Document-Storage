@@ -5,6 +5,7 @@
 //  Copyright © 2022 Stevo Brock. All rights reserved.
 //
 
+// Imports
 let	{documentStorage} = require('./globals');
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -147,6 +148,7 @@ exports.getDocumentsV1 = async (event) => {
 	let	fromDocumentID = queryStringParameters.fromID;
 	let	toDocumentID = queryStringParameters.toID;
 	let	startIndex = queryStringParameters.startIndex || 0;
+	let	count = queryStringParameters.count;
 	let	fullInfo = queryStringParameters.fullInfo || 0;
 
 	// Catch errors

@@ -1,6 +1,6 @@
 {
   "name": "mini-document-storage",
-  "version": "1.1.0",
+  "version": "1.1.5",
   "description": "Fast, inexpensive document storage backed by a common database connector.",
   "main": "src/DocumentStorage.js",
   "repository": {

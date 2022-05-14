@@ -13,9 +13,6 @@ let	util = require('util');
 // Collections
 module.exports = class Collections {
 
-	// Properties
-	collectionInfo = {};
-
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
 	constructor(internals, statementPerformer, isIncludedSelectorInfo) {
@@ -95,7 +92,6 @@ module.exports = class Collections {
 						new Collection(statementPerformer, name, documentType, relevantProperties,
 								this.isIncludedSelectorInfo[isIncludedSelector], isIncludedSelectorInfo,
 								lastDocumentRevision);
-			this.collectionInfo[name] = collection;
 
 			statementPerformer.queueInsertInto(this.collectionsTable,
 					[
@@ -117,7 +113,6 @@ module.exports = class Collections {
 						new Collection(statementPerformer, name, documentType, relevantProperties,
 								this.isIncludedSelectorInfo[isIncludedSelector], isIncludedSelectorInfo,
 								lastDocumentRevision);
-			this.collectionInfo[name] = collection;
 
 			statementPerformer.queueUpdate(this.collectionsTable,
 					[
@@ -133,25 +128,17 @@ module.exports = class Collections {
 			collection.queueTruncate(statementPerformer);
 		} else if (!util.isDeepStrictEqual(isIncludedSelectorInfo, JSON.parse(results[0].isIncludedSelectorInfo))) {
 			// isIncludedSelectorInfo has changed
-			if (isUpToDate) {
+			if (isUpToDate)
 				// Updated info needed for future document changes
-				let	collection =
-							new Collection(statementPerformer, name, documentType, relevantProperties,
-									this.isIncludedSelectorInfo[isIncludedSelector], isIncludedSelectorInfo,
-									results[0].lastDocumentRevision);
-				this.collectionInfo[name] = collection;
-
 				statementPerformer.queueUpdate(this.collectionsTable,
 						[{tableColumn: this.collectionsTable.isIncludedSelectorInfoTableColumn,
 								value: JSON.stringify(isIncludedSelectorInfo)}],
 								statementPerformer.where(this.collectionsTable.nameTableColumn, name));
-			} else {
+			else {
 				// Need to rebuild this collection
 				let	collection =
 							new Collection(statementPerformer, name, documentType, relevantProperties,
 									this.isIncludedSelectorInfo[isIncludedSelector], isIncludedSelectorInfo, 0);
-				this.collectionInfo[name] = collection;
-
 				statementPerformer.queueUpdate(this.collectionsTable,
 						[
 							{tableColumn: this.collectionsTable.relevantPropertiesTableColumn,
@@ -190,7 +177,7 @@ module.exports = class Collections {
 			return [true, count, null];
 		} else {
 			// Update
-			this.updateCollection(statementPerformer, collection);
+			await this.updateCollection(statementPerformer, collection);
 
 			return [false, null, null];
 		}
@@ -247,7 +234,7 @@ module.exports = class Collections {
 			}
 		} else {
 			// Update
-			this.updateCollection(statementPerformer, collection);
+			await this.updateCollection(statementPerformer, collection);
 
 			return [false, null, null, null];
 		}
@@ -271,7 +258,6 @@ module.exports = class Collections {
 									this.isIncludedSelectorInfo[result.isIncludedSelector],
 									JSON.parse(result.isIncludedSelectorInfo.toString()), result.lastDocumentRevision);
 				collections.push(collection);
-				this.collectionInfo[result.name] = collection;
 			}
 
 			return collections;
@@ -288,12 +274,6 @@ module.exports = class Collections {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async getForName(statementPerformer, name) {
-		// Check if already have
-		var	collection = this.collectionInfo[name];
-		if (collection)
-			// Have
-			return [collection, null];
-
 		// Catch errors
 		try {
 			// Select all Collections with matching name
@@ -305,12 +285,11 @@ module.exports = class Collections {
 			if (results.length > 0) {
 				// Have Collection
 				let	result = results[0];
-				collection =
-						new Collection(statementPerformer, result.name, result.type,
-								result.relevantProperties.split(','),
-								this.isIncludedSelectorInfo[result.isIncludedSelector],
-								JSON.parse(result.isIncludedSelectorInfo.toString()), result.lastDocumentRevision);
-				this.collectionInfo[name] = collection;
+				let	collection =
+							new Collection(statementPerformer, result.name, result.type,
+									result.relevantProperties.split(','),
+									this.isIncludedSelectorInfo[result.isIncludedSelector],
+									JSON.parse(result.isIncludedSelectorInfo.toString()), result.lastDocumentRevision);
 
 				return [collection, null];
 			} else

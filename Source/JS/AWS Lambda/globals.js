@@ -9,6 +9,9 @@
 let DocumentStorage = require('mini-document-storage');
 let	MySQLToolbox = require('mysql-toolbox');
 
+// Must reference here as the auto-system doesn't figure to pull them in
+let	uuid = require('uuid');
+
 // Setup DocumentStorage
 exports.documentStorage =
 		new DocumentStorage(

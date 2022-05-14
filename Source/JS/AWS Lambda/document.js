@@ -5,6 +5,7 @@
 //  Copyright © 2022 Stevo Brock. All rights reserved.
 //
 
+// Imports
 let	{documentStorage} = require('./globals');
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -369,8 +370,8 @@ exports.getAttachmentV1 = async (event) => {
 	try {
 		// Get info
 		let	[results, error] =
-					await request.app.locals.documentStorage.documentAttachmentGet(documentStorageID, documentType,
-							documentID, attachmentID);
+					await documentStorage.documentAttachmentGet(documentStorageID, documentType, documentID,
+							attachmentID);
 		if (results)
 			// Success
 			return {
@@ -464,8 +465,8 @@ exports.removeAttachmentV1 = async (event) => {
 	try {
 		// Get info
 		let	error =
-					await request.app.locals.documentStorage.documentAttachmentRemove(documentStorageID, documentType,
-							documentID, attachmentID);
+					await documentStorage.documentAttachmentRemove(documentStorageID, documentType, documentID,
+							attachmentID);
 		if (!error)
 			// Success
 			return {

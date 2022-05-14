@@ -13,9 +13,6 @@ let	util = require('util');
 // Indexes
 module.exports = class Indexes {
 
-	// Properties
-	indexInfo = {};
-
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
 	constructor(internals, statementPerformer, keysSelectorInfo) {
@@ -94,7 +91,6 @@ module.exports = class Indexes {
 			let	index =
 						new Index(statementPerformer, name, documentType, relevantProperties,
 								this.keysSelectorInfo[keysSelector], keysSelectorInfo, lastDocumentRevision);
-			this.indexInfo[name] = index;
 
 			statementPerformer.queueInsertInto(this.indexesTable,
 					[
@@ -114,7 +110,6 @@ module.exports = class Indexes {
 			let	index =
 						new Index(statementPerformer, name, documentType, relevantProperties,
 								this.keysSelectorInfo[keysSelector], keysSelectorInfo, lastDocumentRevision);
-			this.indexInfo[name] = index;
 
 			statementPerformer.queueUpdate(this.indexesTable,
 					[
@@ -129,23 +124,17 @@ module.exports = class Indexes {
 			index.queueTruncate(statementPerformer);
 		} else if (!util.isDeepStrictEqual(keysSelectorInfo, JSON.parse(results[0].keysSelectorInfo))) {
 			// keysSelectorInfo has changed
-			if (isUpToDate) {
+			if (isUpToDate)
 				// Updated info needed for future document changes
-				let	index =
-							new Index(statementPerformer, name, documentType, relevantProperties, keysSelector,
-									keysSelectorInfo, results[0].lastDocumentRevision);
-				this.indexInfo[name] = index;
-
 				statementPerformer.queueUpdate(this.indexesTable,
 						[{tableColumn: this.indexesTable.keysSelectorInfoTableColumn,
 								value: JSON.stringify(keysSelectorInfo)}],
 						statementPerformer.where(this.indexesTable.nameTableColumn, name));
-			} else {
+			else {
 				// Need to rebuild this index
 				let	index =
 						new Index(statementPerformer, name, documentType, relevantProperties,
 								this.keysSelectorInfo[keysSelector], keysSelectorInfo, 0);
-				this.indexInfo[name] = index;
 
 				statementPerformer.queueUpdate(this.indexesTable,
 						[
@@ -237,7 +226,7 @@ module.exports = class Indexes {
 			}
 		} else {
 			// Update
-			this.updateIndex(statementPerformer, index);
+			await this.updateIndex(statementPerformer, index);
 
 			return [false, null, null];
 		}
@@ -260,7 +249,6 @@ module.exports = class Indexes {
 									result.relevantProperties.split(','), this.keysSelectorInfo[result.keysSelector],
 									JSON.parse(result.keysSelectorInfo.toString()), result.lastDocumentRevision);
 				indexes.push(index);
-				this.indexInfo[result.name] = index;
 			}
 
 			return indexes;
@@ -277,12 +265,6 @@ module.exports = class Indexes {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async getForName(statementPerformer, name) {
-		// Check if already have
-		var	index = this.indexInfo[name];
-		if (index)
-			// Have
-			return [index, null];
-
 		// Catch errors
 		try {
 			// Select all Indexes for this name
@@ -294,11 +276,10 @@ module.exports = class Indexes {
 			if (results.length > 0) {
 				// Have Index
 				let	result = results[0];
-				index =
-						new Index(statementPerformer, result.name, result.type, result.relevantProperties.split(','),
-								this.keysSelectorInfo[result.keysSelector],
-								JSON.parse(result.keysSelectorInfo.toString()), result.lastDocumentRevision);
-				this.indexInfo[name] = index;
+				let	index =
+							new Index(statementPerformer, result.name, result.type,
+									result.relevantProperties.split(','), this.keysSelectorInfo[result.keysSelector],
+									JSON.parse(result.keysSelectorInfo.toString()), result.lastDocumentRevision);
 
 				return [index, null];
 			} else

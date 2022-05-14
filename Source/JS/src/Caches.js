@@ -13,9 +13,6 @@ let	util = require('util');
 // Caches
 module.exports = class Caches {
 
-	// Properties
-	cacheInfo = {};
-
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
 	constructor(internals, statementPerformer, valueSelectorInfo) {
@@ -94,7 +91,6 @@ module.exports = class Caches {
 		if (results.length == 0) {
 			// Add
 			let	cache = this.createCache(statementPerformer, name, documentType, relevantProperties, valuesInfos, 0);
-			this.cacheInfo[name] = cache;
 
 			statementPerformer.queueInsertInto(this.cachesTable,
 					[
@@ -113,7 +109,6 @@ module.exports = class Caches {
 				let	cache =
 							this.createCache(statementPerformer, name, documentType, relevantProperties, valuesInfos,
 									0);
-				this.cacheInfo[name] = cache;
 
 				statementPerformer.queueReplace(this.cachesTable,
 						[
@@ -145,7 +140,6 @@ module.exports = class Caches {
 							this.createCache(statementPerformer, result.name, result.type, result.relevantProperties,
 									JSON.parse(result.info.toString()), result.lastDocumentRevision);
 				caches.push(cache);
-				this.cacheInfo[result.name] = cache;
 			}
 
 			return caches;
@@ -162,12 +156,6 @@ module.exports = class Caches {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async getForName(statementPerformer, name) {
-		// Check if already have
-		var	cache = this.cacheInfo[name];
-		if (cache)
-			// Have
-			return [cache, null];
-
 		// Catch errors
 		try {
 			// Select all Caches for this document type
@@ -179,10 +167,9 @@ module.exports = class Caches {
 			if (results.length > 0) {
 				// Have Cache
 				let	result = results[0];
-				cache =
-						this.createCache(statementPerformer, result.name, result.type, result.relevantProperties,
-								JSON.parse(result.info.toString()), result.lastDocumentRevision);
-				this.cacheInfo[name] = cache;
+				let	cache =
+							this.createCache(statementPerformer, result.name, result.type, result.relevantProperties,
+									JSON.parse(result.info.toString()), result.lastDocumentRevision);
 
 				return [cache, null];
 			} else

@@ -273,7 +273,7 @@ module.exports = class Associations {
 			return [true, value, null];
 		} else {
 			// Update
-			internals.caches.updateCache(statementPerformer, cache);
+			await internals.caches.updateCache(statementPerformer, cache);
 
 			return [false, null, null];
 		}
