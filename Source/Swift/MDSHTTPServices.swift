@@ -1555,7 +1555,6 @@ class MDSHTTPServices {
 	//		{
 	//			"name" :String,
 	//			"documentType" :String,
-	//			"version" :Int,
 	//			"relevantProperties" :[String]
 	//			"isUpToDate" :Int (0 or 1)
 	//			"keysSelector" :String,

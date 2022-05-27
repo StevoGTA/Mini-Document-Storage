@@ -87,7 +87,9 @@ module.exports = class Collections {
 		if (results.length == 0) {
 			// Add
 			let	lastDocumentRevision =
-						isUpToDate ? (await internals.documents.getLastRevision(statementPerformer, documentType)) : 0;
+						isUpToDate ?
+								((await internals.documents.getLastRevision(statementPerformer, documentType)) || 0) :
+								0;
 			let	collection =
 						new Collection(statementPerformer, name, documentType, relevantProperties,
 								this.isIncludedSelectorInfo[isIncludedSelector], isIncludedSelectorInfo,
@@ -175,12 +177,14 @@ module.exports = class Collections {
 			let	count = await statementPerformer.count(collection.table);
 
 			return [true, count, null];
-		} else {
+		} else if (documentTypeLastRevision) {
 			// Update
 			await this.updateCollection(statementPerformer, collection);
 
 			return [false, null, null];
-		}
+		} else
+			// No document of this type yet
+			return [false, null, null];
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -232,12 +236,14 @@ module.exports = class Collections {
 					// Error
 					return [null, null, null, resultsError];
 			}
-		} else {
+		} else if (documentTypeLastRevision) {
 			// Update
 			await this.updateCollection(statementPerformer, collection);
 
 			return [false, null, null, null];
-		}
+		} else
+			// No document of this type yet
+			return [false, null, null, null];
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

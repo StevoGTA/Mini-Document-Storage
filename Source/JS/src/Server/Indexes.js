@@ -87,7 +87,9 @@ module.exports = class Indexes {
 		if (results.length == 0) {
 			// Add
 			let	lastDocumentRevision =
-						isUpToDate ? (await internals.documents.getLastRevision(statementPerformer, documentType)) : 0;
+						isUpToDate ?
+								((await internals.documents.getLastRevision(statementPerformer, documentType)) || 0) :
+								0;
 			let	index =
 						new Index(statementPerformer, name, documentType, relevantProperties,
 								this.keysSelectorInfo[keysSelector], keysSelectorInfo, lastDocumentRevision);
@@ -224,12 +226,14 @@ module.exports = class Indexes {
 					// Error
 					return [null, null, resultsError];
 			}
-		} else {
+		} else if (documentTypeLastRevision) {
 			// Update
 			await this.updateIndex(statementPerformer, index);
 
 			return [false, null, null];
-		}
+		} else
+			// No document of this type yet
+			return [false, null, null];
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

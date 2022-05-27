@@ -271,12 +271,14 @@ module.exports = class Associations {
 								statementPerformer.where(association.table.fromIDTableColumn, fromID));
 
 			return [true, value, null];
-		} else {
+		} else if (documentTypeLastRevision) {
 			// Update
 			await internals.caches.updateCache(statementPerformer, cache);
 
 			return [false, null, null];
-		}
+		} else 
+			// No document of this type yet
+			return [false, null, null];
 	}
 
 	// Private methods

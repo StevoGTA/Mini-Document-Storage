@@ -6,9 +6,8 @@
 //
 
 // Imports
-let	util = require('util');
 let	uuid = require('uuid');
-let	uuidBase64 = require('uuid-base64');
+let	{UuidTool} = require('uuid-tool');
 
 //----------------------------------------------------------------------------------------------------------------------
 // Documents
@@ -74,7 +73,11 @@ module.exports = class Documents {
 									// Setup
 									let	now = new Date().toISOString();
 
-									let	documentID = info.documentID || uuidBase64.encode(uuid.v4());
+									let uuidBytes = UuidTool.toBytes(UuidTool.newUuid());
+									let documentID =
+												info.documentID ||
+														btoa(String.fromCharCode(...new Uint8Array(uuidBytes)))
+																.slice(0, 22);
 									let	creationDate = info.creationDate || now;
 									let	modificationDate = info.modificationDate || now;
 									let	revision = lastRevision + 1;

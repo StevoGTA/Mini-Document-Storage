@@ -30,19 +30,19 @@ module.exports = class DocumentStorage {
 		this.cacheValueSelectorInfo =
 				Object.assign(
 						{
-							"integerValueForProperty()": integerValueForProperty,
+							'integerValueForProperty()': integerValueForProperty,
 						},
 						cacheValueSelectorInfo || {});
 		this.collectionIsIncludedSelectorInfo =
 				Object.assign(
 						{
-							"documentPropertyIsValue()": documentPropertyIsValue,
+							'documentPropertyIsValue()': documentPropertyIsValue,
 						},
 						collectionIsIncludedSelectorInfo || {});
 		this.indexKeysSelectorInfo =
 				Object.assign(
 						{
-							"keysForDocumentProperty()": keysForDocumentProperty,
+							'keysForDocumentProperty()': keysForDocumentProperty,
 						},
 						indexKeysSelectorInfo || {});
 	}

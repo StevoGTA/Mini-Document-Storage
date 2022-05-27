@@ -6,7 +6,7 @@
 //
 
 // Imports
-let DocumentStorage = require('mini-document-storage');
+let {DocumentStorage} = require('mini-document-storage');
 let	MySQLToolbox = require('mysql-toolbox');
 
 // Must reference here as the auto-system doesn't figure to pull them in
@@ -22,7 +22,8 @@ exports.documentStorage =
 									user: process.env.MYSQL_USER,
 									password: process.env.MYSQL_PASSWORD,
 									multipleStatements: true,
-								},
-								{},
-								{},
-								{})});
+								})
+						},
+				{},
+				{},
+				{});
