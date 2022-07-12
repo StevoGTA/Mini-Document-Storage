@@ -427,14 +427,14 @@ class MDSHTTPServices {
 	//	=> authorization (header) (optional)
 	static func httpEndpointRequestForUpdateDocumentAttachment(documentStorageID :String, documentType :String,
 			documentID :String, attachmentID :String, info :[String : Any], content :Data,
-			authorization :String? = nil) -> SuccessHTTPEndpointRequest {
+			authorization :String? = nil) -> JSONHTTPEndpointRequest<[String : Any]> {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	documentIDUse = documentID.replacingOccurrences(of: "/", with: "_")
 		let	attachmentIDUse = attachmentID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return SuccessHTTPEndpointRequest(method: .patch,
+		return JSONHTTPEndpointRequest<[String : Any]>(method: .patch,
 				path: "/v1/document/\(documentStorageIDUse)/\(documentType)/\(documentIDUse)/attachment/\(attachmentIDUse)",
 				headers: headers, jsonBody: ["info": info, "content": content.base64EncodedString()])
 	}

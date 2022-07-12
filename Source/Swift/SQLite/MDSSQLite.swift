@@ -300,8 +300,8 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			} else {
 				// Don't have document in batch
 				let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
-				batchInfo.addDocument(documentType: documentType, documentID: documentID, reference: documentBacking,
-								creationDate: documentBacking.creationDate,
+				batchInfo.addDocument(documentType: documentType, documentID: documentID,
+								documentBacking: documentBacking, creationDate: documentBacking.creationDate,
 								modificationDate: documentBacking.modificationDate,
 								valueProc: { documentBacking.value(for: $0) })
 						.set(valueUse, for: property)
@@ -393,7 +393,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 						// Check removed
 						if !batchDocumentInfo.removed {
 							// Add/update document
-							if let documentBacking = batchDocumentInfo.reference {
+							if let documentBacking = batchDocumentInfo.documentBacking {
 								// Update document
 								documentBacking.update(documentType: documentType,
 										updatedPropertyMap: batchDocumentInfo.updatedPropertyMap,
@@ -446,7 +446,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 										{ $0(document, .created) }
 								}
 							}
-						} else if let documentBacking = batchDocumentInfo.reference {
+						} else if let documentBacking = batchDocumentInfo.documentBacking {
 							// Remove document
 							self.databaseManager.remove(documentType: documentType, id: documentBacking.id)
 							self.documentBackingCache.remove([documentID])
@@ -471,13 +471,6 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 					self.removeFromCollections(for: documentType, documentBackingIDs: removedDocumentBackingIDs)
 					self.removeFromIndexes(for: documentType, documentBackingIDs: removedDocumentBackingIDs)
 				}
-				batchInfo.iterateAttachmentChanges(addAttachmentProc: { _ in
-// TODO: MDSSQLite Add Attachment after Batch
-				}, updateAttachmentProc: { _ in
-// TODO: MDSSQLite Update Attachment after Batch
-				}, removeAttachmentProc: { _ in
-// TODO: MDSSQLite Remove Attachment after Batch
-				})
 			}
 		}
 
@@ -501,8 +494,8 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			} else {
 				// Don't have document in batch
 				let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
-				batchInfo.addDocument(documentType: documentType, documentID: documentID, reference: documentBacking,
-						creationDate: Date(), modificationDate: Date())
+				batchInfo.addDocument(documentType: documentType, documentID: documentID,
+						documentBacking: documentBacking, creationDate: Date(), modificationDate: Date())
 					.remove()
 			}
 		} else {

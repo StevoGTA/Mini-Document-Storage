@@ -260,7 +260,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			} else {
 				// Don't have document in batch
 				let	date = Date()
-				batchInfo.addDocument(documentType: documentType, documentID: document.id, reference: [:],
+				batchInfo.addDocument(documentType: documentType, documentID: document.id, documentBacking: [:],
 						creationDate: date, modificationDate: date, valueProc: { property in
 									// Play nice with others
 									self.documentMapsLock.read()
@@ -433,13 +433,6 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 				removeFromIndexes(documentIDs: removedDocumentIDs)
 				updateIndexes(for: documentType, updateInfos: updateInfos)
 			}
-			batchInfo.iterateAttachmentChanges(addAttachmentProc: { _ in
-// TODO: MDSEphemeral Add Attachment after Batch
-			}, updateAttachmentProc: { _ in
-// TODO: MDSEphemeral Update Attachment after Batch
-			}, removeAttachmentProc: { _ in
-// TODO: MDSEphemeral Remove Attachment after Batch
-			})
 		}
 
 		// Remove
@@ -460,7 +453,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			} else {
 				// Don't have document in batch
 				let	date = Date()
-				batchInfo.addDocument(documentType: documentType, documentID: document.id, reference: [:],
+				batchInfo.addDocument(documentType: documentType, documentID: document.id, documentBacking: [:],
 						creationDate: date, modificationDate: date)
 					.remove()
 			}

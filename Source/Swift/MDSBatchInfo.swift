@@ -12,6 +12,31 @@ import Foundation
 // MARK: MDSBatchInfo
 class MDSBatchInfo<T> {
 
+	// MARK: AddAttachmentInfo
+	struct AddAttachmentInfo {
+
+		// MARK: Properties
+		let	info :[String : Any]
+		let	content :Data
+	}
+
+	// MARK: UpdateAttachmentInfo
+	struct UpdateAttachmentInfo {
+
+		// MARK: Properties
+		let	attachmentID :String
+		let	currentRevision :Int
+		let	info :[String : Any]
+		let	content :Data
+	}
+
+	// MARK: RemoveAttachmentInfo
+	struct RemoveAttachmentInfo {
+
+		// MARK: Properties
+		let	attachmentID :String
+	}
+
 	// MARK: DocumentInfo
 	class DocumentInfo<T> {
 
@@ -20,12 +45,15 @@ class MDSBatchInfo<T> {
 
 		// MARK: Properties
 						let	documentType :String
-						let	reference :T?
+						let	documentBacking :T?
 						let	creationDate :Date
 
 		private(set)	var	updatedPropertyMap :[String : Any]?
 		private(set)	var	removedProperties :Set<String>?
 		private(set)	var	modificationDate :Date
+		private(set)	var	addAttachmentInfos = [AddAttachmentInfo]()
+		private(set)	var	updateAttachmentInfos = [UpdateAttachmentInfo]()
+		private(set)	var	removeAttachmentInfos = [RemoveAttachmentInfo]()
 		private(set)	var	removed = false
 
 		private			let	valueProc :ValueProc
@@ -33,11 +61,11 @@ class MDSBatchInfo<T> {
 
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
-		init(documentType :String, reference :T?, creationDate :Date, modificationDate :Date,
+		fileprivate init(documentType :String, documentBacking :T?, creationDate :Date, modificationDate :Date,
 				valueProc :@escaping ValueProc) {
 			// Store
 			self.documentType = documentType
-			self.reference = reference
+			self.documentBacking = documentBacking
 			self.creationDate = creationDate
 
 			self.modificationDate = modificationDate
@@ -109,46 +137,42 @@ class MDSBatchInfo<T> {
 
 		//--------------------------------------------------------------------------------------------------------------
 		func remove() { self.lock.write() { self.removed = true; self.modificationDate = Date() } }
+
+		//--------------------------------------------------------------------------------------------------------------
+		func addAttachment(info :[String : Any], content :Data) {
+			// Add info
+			self.addAttachmentInfos.append(AddAttachmentInfo(info: info, content: content))
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		func updateAttachment(attachmentID :String, currentRevision :Int, info :[String : Any], content :Data) {
+			// Add info
+			self.updateAttachmentInfos.append(
+					UpdateAttachmentInfo(attachmentID: attachmentID, currentRevision: currentRevision, info: info,
+							content: content))
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		func removeAttachment(attachmentID :String) {
+			// Add info
+			self.removeAttachmentInfos.append(RemoveAttachmentInfo(attachmentID: attachmentID))
+		}
 	}
 
-	// MARK: AddAttachmentInfo
-	struct AddAttachmentInfo {
-
-		// MARK: Properties
-		let	documentType :String
-		let	documentID :String
-		let	info :[String : Any]
-		let	content :Data
-	}
-
-	// MARK: UpdateAttachmentInfo
-	struct UpdateAttachmentInfo {
-
-		// MARK: Properties
-		let	documentType :String
-		let	documentID :String
-		let	attachmentID :String
-		let	currentRevision :Int
-		let	info :[String : Any]
-		let	content :Data
-	}
-
-	// MARK: RemoveAttachmentInfo
-	struct RemoveAttachmentInfo {
-
-		// MARK: Properties
-		let	documentType :String
-		let	documentID :String
-		let	attachmentID :String
-	}
+	// MARK: Procs
+	typealias AddAttachmentProc =
+				(_ documentType :String, _ documentID :String, _ documentBacking :T?,
+						_ addAttachmentInfo :AddAttachmentInfo) -> Void
+	typealias UpdateAttachmentProc =
+				(_ documentType :String, _ documentID :String, _ documentBacking :T?,
+						_ updateAttachmentInfo :UpdateAttachmentInfo) -> Void
+	typealias RemoveAttachmentProc =
+				(_ documentType :String, _ documentID :String, _ documentBacking :T?,
+						_ removeAttachmentInfo :RemoveAttachmentInfo) -> Void
 
 	// MARK: Properties
 	private	var	documentInfoMap = [/* Document ID */ String : DocumentInfo<T>]()
 	private	let	documentInfoMapLock = ReadPreferringReadWriteLock()
-
-	private	var	addAttachmentInfos = [AddAttachmentInfo]()
-	private	var	updateAttachmentInfos = [UpdateAttachmentInfo]()
-	private	var	removeAttachmentInfos = [RemoveAttachmentInfo]()
 
 	private	var	assocationUpdatesByAssocationName =
 						[/* Name */ String :
@@ -156,12 +180,12 @@ class MDSBatchInfo<T> {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	func addDocument(documentType :String, documentID :String, reference :T? = nil, creationDate :Date,
+	func addDocument(documentType :String, documentID :String, documentBacking :T? = nil, creationDate :Date,
 			modificationDate :Date, valueProc :@escaping DocumentInfo<T>.ValueProc = { _ in nil }) -> DocumentInfo<T> {
 		// Setup
 		let	documentInfo =
-					DocumentInfo(documentType: documentType, reference: reference, creationDate: creationDate,
-							modificationDate: modificationDate, valueProc: valueProc)
+					DocumentInfo(documentType: documentType, documentBacking: documentBacking,
+							creationDate: creationDate, modificationDate: modificationDate, valueProc: valueProc)
 
 		// Store
 		self.documentInfoMapLock.write() { self.documentInfoMap[documentID] = documentInfo }
@@ -176,15 +200,6 @@ class MDSBatchInfo<T> {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func note(_ addAttachmentInfo :AddAttachmentInfo) { self.addAttachmentInfos.append(addAttachmentInfo) }
-
-	//------------------------------------------------------------------------------------------------------------------
-	func note(_ updateAttachmentInfo :UpdateAttachmentInfo) { self.updateAttachmentInfos.append(updateAttachmentInfo) }
-
-	//------------------------------------------------------------------------------------------------------------------
-	func note(_ removeAttachmentInfo :RemoveAttachmentInfo) { self.removeAttachmentInfos.append(removeAttachmentInfo) }
-
-	//------------------------------------------------------------------------------------------------------------------
 	func noteAssocationUpdated(for name :String,
 			updates :[(action :MDSAssociationAction, fromDocumentID :String, toDocumentID :String)]) {
 		// Add
@@ -197,7 +212,7 @@ class MDSBatchInfo<T> {
 					:(_ documentType :String, _ documentInfoMap :[/* Document ID */ String : DocumentInfo<T>]) throws ->
 							Void) rethrows {
 		// Setup
-		var	map = [/* Documewnt Type */ String : [/* Document ID */ String : DocumentInfo<T>]]()
+		var	map = [/* Document Type */ String : [/* Document ID */ String : DocumentInfo<T>]]()
 		self.documentInfoMapLock.read() {
 			// Collect info
 			self.documentInfoMap.forEach() {
@@ -216,16 +231,6 @@ class MDSBatchInfo<T> {
 
 		// Process all document info
 		try map.forEach() { try proc($0.key, $0.value) }
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func iterateAttachmentChanges(addAttachmentProc :(_ addAttachmentInfo :AddAttachmentInfo) -> Void,
-			updateAttachmentProc :(_ updateAttachmentInfo :UpdateAttachmentInfo) -> Void,
-			removeAttachmentProc :(_ removeAttachmentInfo :RemoveAttachmentInfo) -> Void) {
-		// Process attachment info
-		self.removeAttachmentInfos.forEach() { removeAttachmentProc($0) }
-		self.addAttachmentInfos.forEach() { addAttachmentProc($0) }
-		self.updateAttachmentInfos.forEach() { updateAttachmentProc($0) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
