@@ -297,13 +297,13 @@ class CDocumentTypeInfoTable {
 
 	// Properties
 	public:
-		static	CSQLiteTableColumn	mIDTableColumn;
-		static	CSQLiteTableColumn	mDocumentIDTableColumn;
-		static	CSQLiteTableColumn	mRevisionTableColumn;
-		static	CSQLiteTableColumn	mActiveTableColumn;
+		static	const	CSQLiteTableColumn	mIDTableColumn;
+		static	const	CSQLiteTableColumn	mDocumentIDTableColumn;
+		static	const	CSQLiteTableColumn	mRevisionTableColumn;
+		static	const	CSQLiteTableColumn	mActiveTableColumn;
 
 	private:
-		static	CSQLiteTableColumn	mTableColumns[];
+		static	const	CSQLiteTableColumn	mTableColumns[];
 };
 
 CSQLiteTableColumn	CDocumentTypeInfoTable::mIDTableColumn(CString(OSSTR("id")), CSQLiteTableColumn::kInteger,
@@ -676,11 +676,11 @@ class CIndexContentsTable {
 
 	// Properties
 	public:
-		static	CSQLiteTableColumn	mKeyTableColumn;
+		static	const	CSQLiteTableColumn	mKeyTableColumn;
 
 	private:
-		static	CSQLiteTableColumn	mIDTableColumn;
-		static	CSQLiteTableColumn	mTableColumns[];
+		static	const	CSQLiteTableColumn	mIDTableColumn;
+		static	const	CSQLiteTableColumn	mTableColumns[];
 };
 
 CSQLiteTableColumn	CIndexContentsTable::mKeyTableColumn(CString(OSSTR("key")), CSQLiteTableColumn::kText,
