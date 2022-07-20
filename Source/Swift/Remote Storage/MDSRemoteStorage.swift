@@ -1291,7 +1291,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	private func updateAttachment(documentType :String, documentID :String, attachmentID :String, info :[String : Any],
 			content :Data) {
 		// Perform
-		let	error =
+		let	(_, error) =
 					self.httpEndpointClient.documentUpdateAttachment(documentStorageID: self.documentStorageID,
 							documentType: documentType, documentID: documentID, attachmentID: attachmentID, info: info,
 							content: content, authorization: self.authorization)

@@ -309,6 +309,12 @@ exports.updateV1 = async (event) => {
 //	=> documentID (path)
 //	=> info (body)
 //	=> content (body)
+//
+//	<= json
+//		{
+//			"id" :String,
+//			"revision" :Int
+//		}
 exports.addAttachmentV1 = async (event) => {
 	// Setup
 	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
@@ -406,6 +412,11 @@ exports.getAttachmentV1 = async (event) => {
 //	=> attachmentID (path)
 //	=> info (body)
 //	=> content (body)
+//
+//	<= json
+//		{
+//			"revision" :Int
+//		}
 exports.updateAttachmentV1 = async (event) => {
 	// Setup
 	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
@@ -420,14 +431,15 @@ exports.updateAttachmentV1 = async (event) => {
 	// Catch errors
 	try {
 		// Get info
-		let	error =
+		let	[results, error] =
 					await documentStorage.documentAttachmentUpdate(documentStorageID, documentType, documentID,
 							attachmentID, info, Buffer.from(content, 'base64'));
-		if (!error)
+		if (results)
 			// Success
 			return {
 					statusCode: 200,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify(results),
 			};
 		else
 			// Error

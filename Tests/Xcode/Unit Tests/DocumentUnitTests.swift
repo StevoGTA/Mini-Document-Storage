@@ -460,12 +460,14 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	error =
+		let	(info, error) =
 					config.httpEndpointClient.documentUpdateAttachment(documentStorageID: "ABC",
 							documentType: config.documentType, documentID: "ABC", attachmentID: "ABC", info: [:],
 							content: Data(capacity: 0))
 
 		// Evaluate results
+		XCTAssertNil(info, "received info")
+
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
@@ -486,12 +488,14 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.shared
 
 		// Perform
-		let	error =
+		let	(info, error) =
 					config.httpEndpointClient.documentUpdateAttachment(documentStorageID: config.documentStorageID,
 							documentType: "ABC", documentID: "ABC", attachmentID: "ABC", info: [:],
 							content: Data(capacity: 0))
 
 		// Evaluate results
+		XCTAssertNil(info, "received info")
+
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {

@@ -867,7 +867,8 @@ extension HTTPEndpointClient {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func documentUpdateAttachment(documentStorageID :String, documentType :String, documentID :String,
-			attachmentID :String, info :[String : Any], content :Data, authorization :String? = nil) -> Error? {
+			attachmentID :String, info :[String : Any], content :Data, authorization :String? = nil) ->
+			(info :[String : Any]?, error :Error?) {
 		// Perform
 		return DispatchQueue.performBlocking() { completionProc in
 			// Queue
@@ -875,7 +876,7 @@ extension HTTPEndpointClient {
 					MDSHTTPServices.httpEndpointRequestForUpdateDocumentAttachment(documentStorageID: documentStorageID,
 							documentType: documentType, documentID: documentID, attachmentID: attachmentID,
 							info: info, content: content, authorization: authorization))
-					{ completionProc($0) }
+					{ completionProc(($0, $1)) }
 		}
 	}
 

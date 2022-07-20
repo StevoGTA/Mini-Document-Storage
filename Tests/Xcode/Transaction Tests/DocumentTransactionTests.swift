@@ -223,7 +223,7 @@ class DocumentTransactionTests : XCTestCase {
 		guard attachmentID != nil else { return }
 
 		// Update attachment
-		let	updateAttachmentError =
+		let	(_, updateAttachmentError) =
 					config.httpEndpointClient.documentUpdateAttachment(documentStorageID: config.documentStorageID,
 							documentType: config.documentType, documentID: documentID!, attachmentID: attachmentID!,
 							info: ["key2": "value2"], content: "content2".data(using: .utf8)!)

@@ -291,6 +291,12 @@ exports.updateV1 = async (request, response) => {
 //	=> documentID (path)
 //	=> info (body)
 //	=> content (body)
+//
+//	<= json
+//		{
+//			"id" :String,
+//			"revision" :Int
+//		}
 exports.addAttachmentV1 = async (request, response) => {
 	// Setup
 	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
@@ -378,6 +384,11 @@ exports.getAttachmentV1 = async (request, response) => {
 //	=> attachmentID (path)
 //	=> info (body)
 //	=> content (body)
+//
+//	<= json
+//		{
+//			"revision" :Int
+//		}
 exports.updateAttachmentV1 = async (request, response) => {
 	// Setup
 	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
@@ -390,15 +401,15 @@ exports.updateAttachmentV1 = async (request, response) => {
 	// Catch errors
 	try {
 		// Get info
-		let	error =
+		let	[results, error] =
 					await request.app.locals.documentStorage.documentAttachmentUpdate(documentStorageID, documentType,
 							documentID, attachmentID, info, Buffer.from(content, 'base64'));
-		if (!error)
+		if (results)
 			// Success
 			response
 					.status(200)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-					.send();
+					.send(results);
 		else
 			// Error
 			response

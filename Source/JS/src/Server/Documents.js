@@ -72,12 +72,7 @@ module.exports = class Documents {
 								for (let info of infos) {
 									// Setup
 									let	now = new Date().toISOString();
-
-									let uuidBytes = UuidTool.toBytes(UuidTool.newUuid());
-									let documentID =
-												info.documentID ||
-														btoa(String.fromCharCode(...new Uint8Array(uuidBytes)))
-																.slice(0, 22);
+									let documentID = info.documentID || this.newID();
 									let	creationDate = info.creationDate || now;
 									let	modificationDate = info.modificationDate || now;
 									let	revision = lastRevision + 1;
@@ -481,7 +476,7 @@ module.exports = class Documents {
 
 					// Add attachment
 					let	revision = initialLastRevision + 1;
-					let	attachmentID = uuidBase64.encode(uuid.v4());
+					let attachmentID = this.newID();
 
 					statementPerformer.queueInsertInto(documentInfo.attachmentTable,
 							[
@@ -499,7 +494,7 @@ module.exports = class Documents {
 							statementPerformer.where(documentInfo.infoTable.idTableColumn, id));
 					this.queueUpdateLastRevision(statementPerformer, documentType, revision);
 					
-					return [{id: attachmentID}, null];
+					return [{id: attachmentID, revision: 1}, null];
 				})()});
 	}
 
@@ -541,9 +536,9 @@ module.exports = class Documents {
 	async attachmentUpdate(statementPerformer, documentType, documentID, attachmentID, info, content) {
 		// Validate
 		if (!info)
-			return 'Missing info';
+			return [null, 'Missing info'];
 		if (!content)
-			return 'Missing content';
+			return [null, 'Missing content'];
 
 		// Setup
 		let	documentInfo = this.documentInfo(statementPerformer, documentType);
@@ -552,7 +547,7 @@ module.exports = class Documents {
 		let	[id, error] = await this.getIDForDocumentID(statementPerformer, documentInfo, documentID);
 		if (!id)
 			// Error
-			return error;
+			return [null, error];
 
 		// Perform with tables locked
 		let	tables = [this.documentsTable, documentInfo.infoTable, documentInfo.attachmentTable];
@@ -577,8 +572,9 @@ module.exports = class Documents {
 								attachmentRevision = results[0].revision + 1;
 							else
 								// Error
-								return 'Attachment ' + attachmentID + ' for ' + documentID + ' of type ' + documentType +
-										' not found.';
+								return [null,
+										'Attachment ' + attachmentID + ' for ' + documentID + ' of type ' +
+												documentType + ' not found.'];
 
 							// Update
 							statementPerformer.queueUpdate(documentInfo.attachmentTable,
@@ -596,13 +592,14 @@ module.exports = class Documents {
 									statementPerformer.where(documentInfo.infoTable.idTableColumn, id));
 							this.queueUpdateLastRevision(statementPerformer, documentType, documentRevision);
 
-							return null;
+							return [{revision: attachmentRevision}, null];
 						} catch (error) {
 							// Check error
 							if (error.message.startsWith('ER_NO_SUCH_TABLE'))
 								// No such table
-								return 'Attachment ' + attachmentID + ' for ' + documentID + ' of type ' +
-										documentType + ' not found.';
+								return [null,
+										'Attachment ' + attachmentID + ' for ' + documentID + ' of type ' +
+												documentType + ' not found.'];
 							else
 								// Other error
 								throw error;
@@ -939,6 +936,15 @@ module.exports = class Documents {
 	}
 
 	// Private methods
+	//------------------------------------------------------------------------------------------------------------------
+	newID() {
+		// Return new UUID converted to Base64 and replacing characters that cause URL issues
+		return Buffer.from(UuidTool.toBytes(UuidTool.newUuid())).toString('base64')
+				.slice(0, 22)
+				.replace(/\+/g, '_')
+				.replace(/\//g, '-');
+	}
+
 	//------------------------------------------------------------------------------------------------------------------
 	documentInfo(statementPerformer, documentType) {
 		// Setup
