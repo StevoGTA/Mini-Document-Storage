@@ -40,6 +40,9 @@ public protocol MDSDocumentStorage : AnyObject {
 	func set(_ info :[String : String])
 	func remove(keys :[String])
 
+	func ephemeralValue<T>(for key :String) -> T?
+	func store<T>(ephemeralValue :T?, for key :String)
+
 	func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T) -> T
 
 	func document<T : MDSDocument>(for documentID :String) -> T?
@@ -55,6 +58,11 @@ public protocol MDSDocumentStorage : AnyObject {
 	func set<T : MDSDocument>(_ value :Any?, for property :String, in document :T)
 
 	func attachmentInfoMap(for document :MDSDocument) -> MDSDocument.AttachmentInfoMap
+	func attachmentContent<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) -> Data?
+	func addAttachment<T : MDSDocument>(for document :T, type :String, info :[String : Any], content :Data)
+	func updateAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
+			updatedInfo :[String : Any], updatedContent :Data)
+	func removeAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo)
 
 	func batch(_ proc :() throws -> MDSBatchResult) rethrows
 
@@ -70,12 +78,6 @@ public protocol MDSDocumentStorage : AnyObject {
 
 //	func retrieveAssociationValue<T : MDSDocument, U>(for name :String, to document :T,
 //			summedFromCachedValueWithName cachedValueName :String) -> U
-
-	func attachmentContent<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) -> Data?
-	func addAttachment<T : MDSDocument>(for document :T, type :String, info :[String : Any], content :Data)
-	func updateAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
-			updatedInfo :[String : Any], updatedContent :Data)
-	func removeAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo)
 
 	func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)])
@@ -135,7 +137,7 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func updateAssociation<T : MDSDocument, U : MDSDocument>(
+	public func updateAssociation<T : MDSDocument, U : MDSDocument>(
 			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)]) {
 		// Update association
 		updateAssociation(for: associationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),

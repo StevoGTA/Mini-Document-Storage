@@ -55,7 +55,7 @@ class AssociationTransactionTests : XCTestCase {
 		// Add
 		let	addErrors =
 					config.httpEndpointClient.associationUpdate(documentStorageID: config.documentStorageID,
-							name: associationName, updates: [(.add, parent, child)])
+							name: associationName, updates: [(.add, parent.id, child.id)])
 		XCTAssertEqual(addErrors.count, 0, "update (add) received errors: \(addErrors)")
 		guard addErrors.isEmpty else { return }
 
@@ -90,7 +90,7 @@ class AssociationTransactionTests : XCTestCase {
 		// Remove
 		let	removeErrors =
 					config.httpEndpointClient.associationUpdate(documentStorageID: config.documentStorageID,
-							name: associationName, updates: [(.remove, parent, child)])
+							name: associationName, updates: [(.remove, parent.id, child.id)])
 		XCTAssertEqual(removeErrors.count, 0, "update (remove) received errors: \(removeErrors)")
 		guard removeErrors.isEmpty else { return }
 
@@ -158,7 +158,7 @@ class AssociationTransactionTests : XCTestCase {
 		// Add
 		let	addErrors =
 					config.httpEndpointClient.associationUpdate(documentStorageID: config.documentStorageID,
-							name: associationName, updates: [(.add, parent, child)])
+							name: associationName, updates: [(.add, parent.id, child.id)])
 		XCTAssertEqual(addErrors.count, 0, "update (add) received errors: \(addErrors)")
 		guard addErrors.isEmpty else { return }
 
@@ -193,7 +193,7 @@ class AssociationTransactionTests : XCTestCase {
 		// Remove
 		let	removeErrors =
 					config.httpEndpointClient.associationUpdate(documentStorageID: config.documentStorageID,
-							name: associationName, updates: [(.remove, parent, child)])
+							name: associationName, updates: [(.remove, parent.id, child.id)])
 		XCTAssertEqual(removeErrors.count, 0, "update (remove) received errors: \(removeErrors)")
 		guard removeErrors.isEmpty else { return }
 
@@ -264,8 +264,8 @@ class AssociationTransactionTests : XCTestCase {
 							name: associationName,
 							updates:
 									[
-										(.add, parent, child1),
-										(.add, parent, child2),
+										(.add, parent.id, child1.id),
+										(.add, parent.id, child2.id),
 									])
 		XCTAssertEqual(addErrors1.count, 0, "update (add) (1) received errors: \(addErrors1)")
 		guard addErrors1.isEmpty else { return }
@@ -320,7 +320,7 @@ class AssociationTransactionTests : XCTestCase {
 							name: associationName,
 							updates:
 									[
-										(.add, parent, child3),
+										(.add, parent.id, child3.id),
 									])
 		XCTAssertEqual(addErrors2.count, 0, "update (add) (2) received errors: \(addErrors2)")
 		guard addErrors2.isEmpty else { return }

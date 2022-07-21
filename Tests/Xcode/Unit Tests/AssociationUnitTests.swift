@@ -48,7 +48,7 @@ class AssociationUnitTests : XCTestCase {
 		let	child = Child(id: "ABC", documentStorage: documentStorage)
 		let	errors =
 					config.httpEndpointClient.associationUpdate(documentStorageID: "ABC", name: "ABC",
-							updates: [(action: .add, fromDocument: parent, toDocument: child)])
+							updates: [(action: .add, fromDocumentID: parent.id, toDocumentID: child.id)])
 
 		// Evaluate results
 		XCTAssertEqual(errors.count, 1, "did not receive 1 error")

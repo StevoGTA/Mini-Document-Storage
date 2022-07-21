@@ -60,6 +60,8 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 
 	private	let	databaseManager :MDSSQLiteDatabaseManager
 
+	private	var	ephemeralValues :[/* Key */ String : Any]?
+
 	private	let	batchInfoMap = LockingDictionary<Thread, MDSBatchInfo<MDSSQLiteDocumentBacking>>()
 
 	private	let	documentBackingCache = MDSDocumentBackingCache<MDSSQLiteDocumentBacking>()
@@ -95,6 +97,27 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func remove(keys :[String]) { keys.forEach() { self.databaseManager.set(nil, for: $0) } }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func ephemeralValue<T>(for key :String) -> T? { self.ephemeralValues?[key] as? T }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func store<T>(ephemeralValue value :T?, for key :String) {
+		// Store
+		if (self.ephemeralValues == nil) && (value != nil) {
+			// First one
+			self.ephemeralValues = [key : value!]
+		} else {
+			// Update
+			self.ephemeralValues?[key] = value
+
+			// Check for empty
+			if self.ephemeralValues?.isEmpty ?? false {
+				// No more values
+				self.ephemeralValues = nil
+			}
+		}
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
@@ -277,8 +300,8 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			} else {
 				// Don't have document in batch
 				let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
-				batchInfo.addDocument(documentType: documentType, documentID: documentID, reference: documentBacking,
-								creationDate: documentBacking.creationDate,
+				batchInfo.addDocument(documentType: documentType, documentID: documentID,
+								documentBacking: documentBacking, creationDate: documentBacking.creationDate,
 								modificationDate: documentBacking.modificationDate,
 								valueProc: { documentBacking.value(for: $0) })
 						.set(valueUse, for: property)
@@ -306,6 +329,31 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func attachmentInfoMap(for document :MDSDocument) -> MDSDocument.AttachmentInfoMap {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func attachmentContent<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) -> Data? {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func addAttachment<T : MDSDocument>(for document :T, type :String, info :[String : Any], content :Data) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func updateAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
+			updatedInfo :[String : Any], updatedContent :Data) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func removeAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) {
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
@@ -345,7 +393,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 						// Check removed
 						if !batchDocumentInfo.removed {
 							// Add/update document
-							if let documentBacking = batchDocumentInfo.reference {
+							if let documentBacking = batchDocumentInfo.documentBacking {
 								// Update document
 								documentBacking.update(documentType: documentType,
 										updatedPropertyMap: batchDocumentInfo.updatedPropertyMap,
@@ -398,7 +446,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 										{ $0(document, .created) }
 								}
 							}
-						} else if let documentBacking = batchDocumentInfo.reference {
+						} else if let documentBacking = batchDocumentInfo.documentBacking {
 							// Remove document
 							self.databaseManager.remove(documentType: documentType, id: documentBacking.id)
 							self.documentBackingCache.remove([documentID])
@@ -423,13 +471,6 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 					self.removeFromCollections(for: documentType, documentBackingIDs: removedDocumentBackingIDs)
 					self.removeFromIndexes(for: documentType, documentBackingIDs: removedDocumentBackingIDs)
 				}
-				batchInfo.iterateAttachmentChanges(addAttachmentProc: { _ in
-// TODO: MDSSQLite Add Attachment after Batch
-				}, updateAttachmentProc: { _ in
-// TODO: MDSSQLite Update Attachment after Batch
-				}, removeAttachmentProc: { _ in
-// TODO: MDSSQLite Remove Attachment after Batch
-				})
 			}
 		}
 
@@ -453,8 +494,8 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			} else {
 				// Don't have document in batch
 				let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
-				batchInfo.addDocument(documentType: documentType, documentID: documentID, reference: documentBacking,
-						creationDate: Date(), modificationDate: Date())
+				batchInfo.addDocument(documentType: documentType, documentID: documentID,
+						documentBacking: documentBacking, creationDate: Date(), modificationDate: Date())
 					.remove()
 			}
 		} else {
@@ -509,31 +550,6 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 //		// Unimplemented
 //		fatalError("Unimplemented")
 //	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func attachmentContent<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) -> Data? {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func addAttachment<T : MDSDocument>(for document :T, type :String, info :[String : Any], content :Data) {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func updateAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
-			updatedInfo :[String : Any], updatedContent :Data) {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func removeAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
@@ -756,8 +772,8 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerCollection(named name :String, documentType :String, version :Int, relevantProperties :[String],
-			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any]) ->
+	func registerCollection(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+			isIncludedSelector :String, isIncludedSelectorInfo :[String : Any]) ->
 			(documentLastRevision: Int, collectionLastDocumentRevision: Int) {
 		// Not implemented
 		fatalError("Unimplemented")
@@ -774,8 +790,8 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerIndex(named name :String, documentType :String, version :Int, relevantProperties :[String],
-			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any]) ->
+	func registerIndex(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+			keysSelector :String, keysSelectorInfo :[String : Any]) ->
 			(documentLastRevision: Int, collectionLastDocumentRevision: Int) {
 		// Not implemented
 		fatalError("Unimplemented")

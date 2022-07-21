@@ -652,7 +652,8 @@ class MDSHTTPServices {
 	//	=> authorization (header) (optional)
 	typealias UpdateAssociationEndpointInfo =
 				(documentStorageID :String, name :String,
-						updates :[(action :MDSAssociationAction, fromID :String, toID :String)], authorization :String?)
+						updates :[(action :MDSAssociationAction, fromDocumentID :String, toDocumentID :String)],
+						authorization :String?)
 	static	let	updateAssocationEndpoint =
 						JSONHTTPEndpoint<[[String : Any]], UpdateAssociationEndpointInfo>(method: .patch,
 								path: "/v1/association/:documentStorageID/:name")
@@ -662,16 +663,18 @@ class MDSHTTPServices {
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
 									let	name = pathComponents[3]
 
-									let	updates :[(action :MDSAssociationAction, fromID :String, toID :String)] =
+									let	updates
+												:[(action :MDSAssociationAction, fromDocumentID :String,
+														toDocumentID :String)] =
 												infos.compactMap() {
 													// Get info
 													guard let action =
 															MDSAssociationAction(
 																	rawValue: ($0["action"] as? String) ?? ""),
-															let fromID = $0["fromID"] as? String,
-															let toID = $0["toID"] as? String else { return nil }
+															let fromDocumentID = $0["fromID"] as? String,
+															let toDocumentID = $0["toID"] as? String else { return nil }
 
-													return (action, fromID, toID)
+													return (action, fromDocumentID, toDocumentID)
 												}
 									guard updates.count == infos.count else {
 										// Missing/invalid action
@@ -681,8 +684,8 @@ class MDSHTTPServices {
 									return (documentStorageID, name, updates, headers["Authorization"])
 								}
 	static func httpEndpointRequestForUpdateAssocation(documentStorageID :String, name :String,
-			updates :[(action :MDSAssociationAction, fromID :String, toID :String)], authorization :String? = nil) ->
-			MDSSuccessHTTPEndpointRequest {
+			updates :[(action :MDSAssociationAction, fromDocumentID :String, toDocumentID :String)],
+			authorization :String? = nil) -> MDSSuccessHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
@@ -693,8 +696,8 @@ class MDSHTTPServices {
 						updates.map() {
 							[
 								"action": $0.action.rawValue,
-								"fromID": $0.fromID,
-								"toID": $0.toID,
+								"fromID": $0.fromDocumentID,
+								"toID": $0.toDocumentID,
 							]
 						})
 	}

@@ -59,6 +59,8 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 
 	private	var	info = [String : String]()
 
+	private	var	ephemeralValues :[/* Key */ String : Any]?
+
 	private	let	batchInfoMap = LockingDictionary<Thread, MDSBatchInfo<[String : Any]>>()
 
 	private	var	documentBackingByIDMap = [/* Document ID */ String : DocumentBacking]()
@@ -90,6 +92,27 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func remove(keys :[String]) { keys.forEach() { self.info[$0] = nil } }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func ephemeralValue<T>(for key :String) -> T? { self.ephemeralValues?[key] as? T }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func store<T>(ephemeralValue value :T?, for key :String) {
+		// Store
+		if (self.ephemeralValues == nil) && (value != nil) {
+			// First one
+			self.ephemeralValues = [key : value!]
+		} else {
+			// Update
+			self.ephemeralValues?[key] = value
+
+			// Check for empty
+			if self.ephemeralValues?.isEmpty ?? false {
+				// No more values
+				self.ephemeralValues = nil
+			}
+		}
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
@@ -237,7 +260,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			} else {
 				// Don't have document in batch
 				let	date = Date()
-				batchInfo.addDocument(documentType: documentType, documentID: document.id, reference: [:],
+				batchInfo.addDocument(documentType: documentType, documentID: document.id, documentBacking: [:],
 						creationDate: date, modificationDate: date, valueProc: { property in
 									// Play nice with others
 									self.documentMapsLock.read()
@@ -276,6 +299,31 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func attachmentInfoMap(for document :MDSDocument) -> MDSDocument.AttachmentInfoMap {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func attachmentContent<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) -> Data? {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func addAttachment<T : MDSDocument>(for document :T, type :String, info :[String : Any], content :Data) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func updateAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
+			updatedInfo :[String : Any], updatedContent :Data) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func removeAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) {
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
@@ -385,13 +433,6 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 				removeFromIndexes(documentIDs: removedDocumentIDs)
 				updateIndexes(for: documentType, updateInfos: updateInfos)
 			}
-			batchInfo.iterateAttachmentChanges(addAttachmentProc: { _ in
-// TODO: MDSEphemeral Add Attachment after Batch
-			}, updateAttachmentProc: { _ in
-// TODO: MDSEphemeral Update Attachment after Batch
-			}, removeAttachmentProc: { _ in
-// TODO: MDSEphemeral Remove Attachment after Batch
-			})
 		}
 
 		// Remove
@@ -412,7 +453,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			} else {
 				// Don't have document in batch
 				let	date = Date()
-				batchInfo.addDocument(documentType: documentType, documentID: document.id, reference: [:],
+				batchInfo.addDocument(documentType: documentType, documentID: document.id, documentBacking: [:],
 						creationDate: date, modificationDate: date)
 					.remove()
 			}
@@ -462,31 +503,6 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 //		// Unimplemented
 //		fatalError("Unimplemented")
 //	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func attachmentContent<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) -> Data? {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func addAttachment<T : MDSDocument>(for document :T, type :String, info :[String : Any], content :Data) {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func updateAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
-			updatedInfo :[String : Any], updatedContent :Data) {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func removeAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
@@ -607,8 +623,8 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerCollection(named name :String, documentType :String, version :Int, relevantProperties :[String],
-			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any]) ->
+	func registerCollection(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+			isIncludedSelector :String, isIncludedSelectorInfo :[String : Any]) ->
 			(documentLastRevision: Int, collectionLastDocumentRevision: Int) {
 		// Not implemented
 		fatalError("Unimplemented")
@@ -630,8 +646,8 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerIndex(named name :String, documentType :String, version :Int, relevantProperties :[String],
-			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any]) ->
+	func registerIndex(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+			keysSelector :String, keysSelectorInfo :[String : Any]) ->
 			(documentLastRevision: Int, collectionLastDocumentRevision: Int) {
 		// Not implemented
 		fatalError("Unimplemented")

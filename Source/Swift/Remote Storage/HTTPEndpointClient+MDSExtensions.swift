@@ -345,9 +345,9 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func queue<T : MDSDocument, U : MDSDocument>(documentStorageID :String, name :String,
-			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)], authorization :String? = nil,
-			completionProc :@escaping(_ errors :[Error]) -> Void) {
+	func queue(documentStorageID :String, name :String,
+			updates :[(action :MDSAssociationAction, fromDocumentID :String, toDocumentID :String)],
+			authorization :String? = nil, completionProc :@escaping(_ errors :[Error]) -> Void) {
 		// Setup
 		guard !updates.isEmpty else {
 			// No updates
@@ -365,8 +365,7 @@ extension HTTPEndpointClient {
 			// Queue this chunk
 			queue(
 					MDSHTTPServices.httpEndpointRequestForUpdateAssocation(documentStorageID: documentStorageID,
-							name: name, updates: $0.map({ ($0.action, $0.fromDocument.id, $0.toDocument.id) }),
-							authorization: authorization))
+							name: name, updates: $0, authorization: authorization))
 					{ error in
 						// Handle results
 						if error != nil {
@@ -608,9 +607,9 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func associationUpdate<T : MDSDocument, U : MDSDocument>(documentStorageID :String, name :String,
-			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)], authorization :String? = nil) ->
-			[Error] {
+	func associationUpdate(documentStorageID :String, name :String,
+			updates :[(action :MDSAssociationAction, fromDocumentID :String, toDocumentID :String)],
+			authorization :String? = nil) -> [Error] {
 		// Perform
 		return DispatchQueue.performBlocking() { completionProc in
 			// Queue
