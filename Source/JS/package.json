@@ -1,8 +1,13 @@
 {
   "name": "mini-document-storage",
-  "version": "2.0.10",
+  "version": "2.0.21",
   "description": "Fast, inexpensive document storage backed by a common database connector.",
   "main": "src/package.js",
+  "exports": {
+    ".": "./src/package.js",
+    "./Client": "./src/Client/package.js",
+    "./Server": "./src/Server/package.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/StevoGTA/Mini-Document-Storage.git"
@@ -17,7 +22,8 @@
   },
   "homepage": "https://github.com/StevoGTA/Mini-Document-Storage#readme",
   "dependencies": {
-	"uuid": "^8.3.2",
+    "p-queue": "^7.2.0",
+    "uuid": "^8.3.2",
     "uuid-tool": "^2.0.3"
   }
 }

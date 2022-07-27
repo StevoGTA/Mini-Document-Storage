@@ -24,9 +24,6 @@ module.exports = class MDSDocument {
 	get creationDate() { return Date.parse(this.info.creationDate); }			// Date
 	get	modificationDate() { return Date.parse(this.info.modificationDate); }	// Date
 
-	updated = {};
-	removed = new Set();
-
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
 	constructor(info) {
@@ -43,6 +40,10 @@ module.exports = class MDSDocument {
 		else 
 			// Store
 			this.info = info;
+		
+		// Setup
+		this.updated = {};
+		this.removed = new Set();
 	}
 
 	// Instance methods

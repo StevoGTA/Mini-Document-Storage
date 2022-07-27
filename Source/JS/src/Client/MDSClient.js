@@ -7,21 +7,80 @@
 
 // Imports
 // let fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+let	PQueue = require('p-queue').default;
 
 //----------------------------------------------------------------------------------------------------------------------
 // MDSClient
-module.exports = class MDSClient {
+class MDSClient {
 
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	constructor(urlBase, documentStorageID, headers) {
+	constructor(urlBase, documentStorageID, headers, concurrentRequestLimit = 4) {
 		// Store
 		this.urlBase = urlBase;
 		this.documentStorageID = documentStorageID;
 		this.headers = headers || {};
+
+		// Setup
+		this.queue = new PQueue({concurrency: concurrentRequestLimit});
 	}
 
 	// Instance methods
+	//------------------------------------------------------------------------------------------------------------------
+	setDocumentStorageID(documentStorageID) { this.documentStorageID = documentStorageID; }
+
+	//------------------------------------------------------------------------------------------------------------------
+	setHeaders(headers) { this.headers = headers || {}; }
+
+	//------------------------------------------------------------------------------------------------------------------
+	async queueGET(subPath) {
+		// Setup
+		let	url = this.urlBase + subPath;
+		let	options = {headers: this.headers};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
+		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+
+		return response;
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async queuePATCH(subPath, bodyObject) {
+		// Setup
+		let	url = this.urlBase + subPath;
+
+		let	headers = {...this.headers};
+		headers['Content-Type'] = 'application/json';
+
+		let	options = {method: 'PATCH', headers: headers};
+		if (bodyObject)
+			options.body = JSON.stringify(bodyObject);
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
+		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+
+		return response;
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async queuePOST(subPath, bodyObject) {
+		// Setup
+		let	url = this.urlBase + subPath;
+
+		let	headers = {...this.headers};
+		headers['Content-Type'] = 'application/json';
+
+		let	options = {method: 'POST', headers: headers, body: JSON.stringify(bodyObject)};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
+		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+
+		return response;
+	}
+
 	//------------------------------------------------------------------------------------------------------------------
 	async associationRegister(name, fromDocumentType, toDocumentType, documentStorageID) {
 		// Setup
@@ -32,20 +91,21 @@ module.exports = class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
-		// Make the call
-		let	response =
-					await fetch(url,
-							{
-								method: 'PUT',
-								headers: headers,
-								body:
-										JSON.stringify(
-												{
-													'name': name,
-													'fromDocumentType': fromDocumentType,
-													'toDocumentType': toDocumentType,
-												}),
-							});
+		let	options =
+					{
+						method: 'PUT',
+						headers: headers,
+						body:
+								JSON.stringify(
+										{
+											'name': name,
+											'fromDocumentType': fromDocumentType,
+											'toDocumentType': toDocumentType,
+										}),
+					};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 	}
 
@@ -59,14 +119,10 @@ module.exports = class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
-		// Make the call
-		let	response =
-					await fetch(url,
-							{
-								method: 'PUT',
-								headers: headers,
-								body: JSON.stringify(updates),
-							});
+		let	options = {method: 'PUT', headers: headers, body: JSON.stringify(updates)};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 	}
 
@@ -82,8 +138,10 @@ module.exports = class MDSClient {
 		if (startIndex) url += '&startIndex=' + startIndex;
 		if (count) url += '&count=' + count;
 
-		// Make the call
-		let	response = await fetch(url, {headers: this.headers});
+		let	options = {headers: this.headers};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 	
 		return await response.json();
@@ -101,8 +159,10 @@ module.exports = class MDSClient {
 		if (startIndex) url += '&startIndex=' + startIndex;
 		if (count) url += '&count=' + count;
 
-		// Make the call
-		let	response = await fetch(url, {headers: this.headers});
+		let	options = {headers: this.headers};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 	
 		// Decode
@@ -123,8 +183,10 @@ module.exports = class MDSClient {
 		if (startIndex) url += '&startIndex=' + startIndex;
 		if (count) url += '&count=' + count;
 
-		// Make the call
-		let	response = await fetch(url, {headers: this.headers});
+		let	options = {headers: this.headers};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 	
 		return await response.json();
@@ -142,8 +204,10 @@ module.exports = class MDSClient {
 		if (startIndex) url += '&startIndex=' + startIndex;
 		if (count) url += '&count=' + count;
 
-		// Make the call
-		let	response = await fetch(url, {headers: this.headers});
+		let	options = {headers: this.headers};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 	
 		// Decode
@@ -163,20 +227,21 @@ module.exports = class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
-		// Make the call
-		let	response =
-					await fetch(url,
-							{
-								headers: headers,
-								body:
-										JSON.stringify(
-												{
-													'fromID': documentID,
-													'action': action,
-													'cacheName': cacheName,
-													'cacheValueName': cacheValueName,
-												}),
-							});
+		let	options =
+					{
+						headers: headers,
+						body:
+								JSON.stringify(
+										{
+											'fromID': documentID,
+											'action': action,
+											'cacheName': cacheName,
+											'cacheValueName': cacheValueName,
+										}),
+					};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 
 		return parseInt(await response.text());
@@ -192,21 +257,22 @@ module.exports = class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
-		// Make the call
-		let	response =
-					await fetch(url,
-							{
-								method: 'PUT',
-								headers: headers,
-								body:
-										JSON.stringify(
-												{
-													'name': name,
-													'documentType': documentType,
-													'relevantProperties': relevantProperties,
-													'valuesInfos': valuesInfos,
-												}),
-							});
+		let	options =
+					{
+						method: 'PUT',
+						headers: headers,
+						body:
+								JSON.stringify(
+										{
+											'name': name,
+											'documentType': documentType,
+											'relevantProperties': relevantProperties,
+											'valuesInfos': valuesInfos,
+										}),
+					};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 	}
 
@@ -221,23 +287,24 @@ module.exports = class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
-		// Make the call
-		let	response =
-					await fetch(url,
-							{
-								method: 'PUT',
-								headers: headers,
-								body:
-										JSON.stringify(
-												{
-													'name': name,
-													'documentType': documentType,
-													'relevantProperties': relevantProperties,
-													'isUpToDate': isUpToDate,
-													'isIncludedSelector': isIncludedSelector,
-													'isIncludedSelectorInfo': isIncludedSelectorInfo,
-												}),
-							});
+		let	options =
+					{
+						method: 'PUT',
+						headers: headers,
+						body:
+								JSON.stringify(
+										{
+											'name': name,
+											'documentType': documentType,
+											'relevantProperties': relevantProperties,
+											'isUpToDate': isUpToDate,
+											'isIncludedSelector': isIncludedSelector,
+											'isIncludedSelectorInfo': isIncludedSelectorInfo,
+										}),
+					};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 	}
 
@@ -248,8 +315,10 @@ module.exports = class MDSClient {
 
 		let	url = this.urlBase + '/v1/collection/' + documentStorageIDUse + '/' + name;
 
-		// Make the call
-		let	response = await fetch(url, {method: 'HEAD', headers: this.headers});
+		let	options = {method: 'HEAD', headers: this.headers};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 
 		// Decode header
@@ -272,8 +341,10 @@ module.exports = class MDSClient {
 		if (startIndex) url += '&startIndex=' + startIndex;
 		if (count) url += '&count=' + count;
 
-		// Make the call
-		let	response = await fetch(url, {headers: this.headers});
+		let	options = {headers: this.headers};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 	
 		return await response.json();
@@ -288,8 +359,10 @@ module.exports = class MDSClient {
 		if (startIndex) url += '&startIndex=' + startIndex;
 		if (count) url += '&count=' + count;
 
-		// Make the call
-		let	response = await fetch(url, {headers: this.headers});
+		let	options = {headers: this.headers};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 	
 		// Decode
@@ -308,14 +381,15 @@ module.exports = class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
-		// Make the call
-		let	response =
-					await fetch(url,
-							{
-								method: 'POST',
-								headers: headers,
-								body: JSON.stringify(documents.map(document => document.createInfo())),
-							});
+		let	options =
+					{
+						method: 'POST',
+						headers: headers,
+						body: JSON.stringify(documents.map(document => document.createInfo())),
+					};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 
 		// Decode info
@@ -338,9 +412,10 @@ module.exports = class MDSClient {
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
 		let	url = this.urlBase + '/v1/document/' + documentStorageIDUse + '/' + documentType;
+		let	options = {method: 'HEAD', headers: this.headers};
 
-		// Make the call
-		let	response = await fetch(url, {method: 'HEAD', headers: this.headers});
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 
 		// Decode header
@@ -364,8 +439,10 @@ module.exports = class MDSClient {
 							'?sinceRevision=' + sinceRevision;
 		if (count) url += '&count=' + count;
 
-		// Make the call
-		let	response = await fetch(url, {headers: this.headers});
+		let	options = {headers: this.headers};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 	
 		// Decode
@@ -379,6 +456,8 @@ module.exports = class MDSClient {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		let	documentIDsUse = documentIDs.map(documentID => documentID.replace('+', '%2B'));
+
+		let	options = {headers: this.headers};
 		
 		// Max each call at 10 documentIDs
 		var	documents = [];
@@ -389,8 +468,8 @@ module.exports = class MDSClient {
 						this.urlBase + '/v1/document/' + documentStorageIDUse + '/' + documentType +
 								'?id=' + documentIDsSlice.join('&id=');
 
-			// Make the call
-			let	response = await fetch(url, {headers: this.headers});
+			// Queue the call
+			let	response = await this.queue.add(() => fetch(url, options));
 			if (!response.ok) throw new Error('HTTP error: ' + response.status);
 
 			// Decode
@@ -418,14 +497,15 @@ module.exports = class MDSClient {
 			// Setup
 			let	documentsSlice = documents.slice(i, i + 100);
 
-			// Make the call
-			let	response =
-						await fetch(url,
-								{
-									method: 'PATCH',
-									headers: headers,
-									body: JSON.stringify(documentsSlice.map(document => document.updateInfo())),
-								});
+			let	options =
+						{
+							method: 'PATCH',
+							headers: headers,
+							body: JSON.stringify(documentsSlice.map(document => document.updateInfo())),
+						};
+
+			// Queue the call
+			let	response = await this.queue.add(() => fetch(url, options));
 			if (!response.ok) throw new Error('HTTP error: ' + response.status);
 
 			// Decode info
@@ -455,19 +535,20 @@ module.exports = class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
-		// Make the call
-		let	response =
-					await fetch(url,
-							{
-								method: 'POST',
-								headers: headers,
-								body:
-										JSON.stringify(
-												{
-													'info': info,
-													'content': content,
-												}),
-							});
+		let	options = 
+					{
+						method: 'POST',
+						headers: headers,
+						body:
+								JSON.stringify(
+										{
+											'info': info,
+											'content': content,
+										}),
+					};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 
 		return await response.json();
@@ -481,9 +562,10 @@ module.exports = class MDSClient {
 		let	url =
 					this.urlBase + '/v1/document/' + documentStorageIDUse + '/' + documentType + '/' + documentID +
 							'/attachment/' + attachmentID;
+		let	options = {headers: this.headers};
 
-		// Make the call
-		let	response = await fetch(url, {headers: this.headers});
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 
 		return await response.blob();
@@ -501,19 +583,20 @@ module.exports = class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
-		// Make the call
-		let	response =
-					await fetch(url,
-							{
-								method: 'POST',
-								headers: headers,
-								body:
-										JSON.stringify(
-												{
-													'info': info,
-													'content': content,
-												}),
-							});
+		let	options =
+					{
+						method: 'POST',
+						headers: headers,
+						body:
+								JSON.stringify(
+										{
+											'info': info,
+											'content': content,
+										}),
+					};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 	}
 
@@ -525,9 +608,10 @@ module.exports = class MDSClient {
 		let	url =
 					this.urlBase + '/v1/document/' + documentStorageIDUse + '/' + documentType + '/' + documentID +
 							'/attachment/' + attachmentID;
+		let	options = {method: 'DELETE', headers: this.headers};
 
-		// Make the call
-		let	response = await fetch(url, {method: 'DELETE', headers: this.headers});
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 	}
 
@@ -542,23 +626,24 @@ module.exports = class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
-		// Make the call
-		let	response =
-					await fetch(url,
-							{
-								method: 'PUT',
-								headers: headers,
-								body:
-										JSON.stringify(
-												{
-													'name': name,
-													'documentType': documentType,
-													'relevantProperties': relevantProperties,
-													'isUpToDate': isUpToDate,
-													'keysSelector': keysSelector,
-													'keysSelectorInfo': keysSelectorInfo,
-												}),
-							});
+		let	options =
+					{
+						method: 'PUT',
+						headers: headers,
+						body:
+								JSON.stringify(
+										{
+											'name': name,
+											'documentType': documentType,
+											'relevantProperties': relevantProperties,
+											'isUpToDate': isUpToDate,
+											'keysSelector': keysSelector,
+											'keysSelectorInfo': keysSelectorInfo,
+										}),
+					};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 	}
 
@@ -570,9 +655,10 @@ module.exports = class MDSClient {
 		let	url =
 					this.urlBase + '/v1/index/' + documentStorageIDUse + '/' + name + '?fullInfo=0' +
 							'?key=' + keys.join('&key=');
+		let	options = {headers: this.headers};
 
-		// Make the call
-		let	response = await fetch(url, {headers: this.headers});
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 	
 		return await response.json();
@@ -586,10 +672,10 @@ module.exports = class MDSClient {
 		let	url =
 					this.urlBase + '/v1/index/' + documentStorageIDUse + '/' + name + '?fullInfo=1' +
 							'?key=' + keys.join('&key=');
+		let	options = {headers: this.headers};
 
-
-		// Make the call
-		let	response = await fetch(url, {headers: this.headers});
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 	
 		// Decode
@@ -604,9 +690,10 @@ module.exports = class MDSClient {
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
 		let	url = this.urlBase + '/v1/info/' + documentStorageIDUse + '?key=' + keys.join('&key=');
+		let	options = {headers: this.headers};
 
-		// Make the call
-		let	response = await fetch(url, {headers: this.headers});
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 	
 		return await response.json();
@@ -622,14 +709,12 @@ module.exports = class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
-		// Make the call
-		let	response =
-					await fetch(url,
-							{
-								method: 'POST',
-								headers: headers,
-								body: JSON.stringify(info),
-							});
+		let	options = {method: 'POST', headers: headers, body: JSON.stringify(info)};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok) throw new Error('HTTP error: ' + response.status);
 	}
 }
+
+module.exports = MDSClient;
