@@ -1381,16 +1381,16 @@ class MDSHTTPServices {
 	//	=> json (body)
 	//		[
 	//			{
-	//				"documentID" :String
-	//				"updated" :{
+	//				"documentID" :String,		// Required
+	//				"updated" :{				// Optional
 	//								"key" :Any,
 	//								...
-	//						   }
-	//				"removed" :[
+	//						   },
+	//				"removed" :[				// Optional
 	//								"key",
 	//								...
-	//						   ]
-	//				"active" :0/1
+	//						   ],
+	//				"active" :0/1,				// Optional
 	//			},
 	//			...
 	//		]
@@ -1751,7 +1751,7 @@ class MDSHTTPServices {
 				multiValueQueryComponent: ("key", keys), headers: headers)
 	}
 
-	//MARK: - Info Set
+	// MARK: - Info Set
 	//	=> documentStorageID (path)
 	//	=> json (body)
 	//		[

@@ -379,13 +379,16 @@ module.exports = class Documents {
 										
 										let	id = currentDocument.id;
 										let	revision = lastRevision + 1;
-										let	active = info.active;
 										let	modificationDate = new Date().toISOString();
+
+										let	updated = info.updated || {};
+										let	removed = info.removed || [];
+										let	active = info.active || currentDocument.active;
 
 										var	jsonObject =
 													Object.assign(JSON.parse(currentDocument.json.toString()),
-															info.updated);
-										info.removed.forEach(key => delete jsonObject[key]);
+															updated);
+										removed.forEach(key => delete jsonObject[key]);
 
 										// Add document infos
 										returnDocumentInfos.push(
@@ -402,7 +405,7 @@ module.exports = class Documents {
 													revision: revision,
 													active: active,
 													json: jsonObject,
-													updatedProperties: Object.keys(info.updated).concat(info.removed),
+													updatedProperties: Object.keys(updated).concat(removed),
 												});
 
 										// Queue

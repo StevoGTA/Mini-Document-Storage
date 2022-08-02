@@ -238,16 +238,16 @@ exports.getV1 = async (event) => {
 //	=> json (body)
 //		[
 //			{
-//				"documentID" :String
-//				"updated" :{
+//				"documentID" :String,		// Required
+//				"updated" :{				// Optional
 //								"key" :Any,
 //								...
-//						   }
-//				"removed" :[
+//						   },
+//				"removed" :[				// Optional
 //								"key",
 //								...
-//						   ]
-//				"active" :0/1
+//						   ],
+//				"active" :0/1,				// Optional
 //			},
 //			...
 //		]
