@@ -18,11 +18,23 @@ module.exports = class MDSDocument {
 	get	revision() { return this.info.revision; }								// Integer
 
 	get isActive() { return this.info.active == 1; }							// Bool
-	setActive(active) { this.info.active = active ? 1 : 0; }
-	toggleIsActive() { this.info.active = 1 - this.info.active; }
+	setActive(active) {
+			// Update
+			this.info.active = active ? 1 : 0;
+			
+			// Note updated
+			this.activeChanged = true;
+		}
+	toggleIsActive() {
+			// Update
+			this.info.active = 1 - this.info.active;
+		
+			// Note updated
+			this.activeChanged = true;
+		}
 
-	get creationDate() { return Date.parse(this.info.creationDate); }			// Date
-	get	modificationDate() { return Date.parse(this.info.modificationDate); }	// Date
+	get creationDate() { return new Date(this.info.creationDate); }				// Date
+	get	modificationDate() { return new Date(this.info.modificationDate); }		// Date
 
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -44,6 +56,7 @@ module.exports = class MDSDocument {
 		// Setup
 		this.updated = {};
 		this.removed = new Set();
+		this.activeChanged = false;
 	}
 
 	// Instance methods
@@ -54,7 +67,7 @@ module.exports = class MDSDocument {
 	//------------------------------------------------------------------------------------------------------------------
 	value(property) {
 		// Check what the situation is
-		if (this.updated[property])
+		if (property in this.updated)
 			// Have updated value
 			return this.updated[property];
 		else if (this.removed.has(property))
@@ -66,9 +79,9 @@ module.exports = class MDSDocument {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	set(property, value) {
+	set(property, value = null) {
 		// Check value
-		if (value) {
+		if (value != null) {
 			// Have value
 			this.updated[property] = value;
 			this.removed.delete(property);
@@ -103,14 +116,29 @@ module.exports = class MDSDocument {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	hasUpdateInfo() { return (Object.keys(this.updated).length > 0) || (this.removed.size > 0) || this.activeChanged; }
+
+	//------------------------------------------------------------------------------------------------------------------
 	updateInfo() {
-		// Return info
-		return {
-			documentID: this.info.documentID,
-			updated: this.updated,
-			removed: Array.from(this.removed),
-			active: this.info.active,
-		};
+		// Setup
+		let	updateInfo = {documentID: this.info.documentID};
+
+		// Check if have updated properties
+		if (Object.keys(this.updated).length > 0)
+			// Have updated properties
+			updateInfo.updated = this.updated;
+		
+		// Check if have removed properties
+		if (this.removed.size > 0)
+			// Have removed properties
+			updateInfo.removed = Array.from(this.removed);
+		
+		// Check if active changed
+		if (this.activeChanged)
+			// Active changed
+			updateInfo.active = this.info.active;
+		
+		return updateInfo;
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -125,5 +153,6 @@ module.exports = class MDSDocument {
 		// Reset
 		this.updated = {};
 		this.removed.clear();
+		this.activeChanged = false;
 	}
 }

@@ -8,6 +8,7 @@
 // Imports
 // let fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 let	PQueue = require('p-queue').default;
+// import PQueue from 'p-queue';
 
 //----------------------------------------------------------------------------------------------------------------------
 // MDSClient
@@ -492,10 +493,16 @@ class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
+		// Collect updates
+		let	documentsToUpdate = documents.filter(document => document.hasUpdateInfo());
+		if (documentsToUpdate.length == 0)
+			// No updates
+			return;
+
 		// Max each call at 100 updates
-		for (let i = 0, length = documents.length; i < length; i += 100) {
+		for (let i = 0, length = documentsToUpdate.length; i < length; i += 100) {
 			// Setup
-			let	documentsSlice = documents.slice(i, i + 100);
+			let	documentsSlice = documentsToUpdate.slice(i, i + 100);
 
 			let	options =
 						{
@@ -705,6 +712,23 @@ class MDSClient {
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
 		let	url = this.urlBase + '/v1/info/' + documentStorageIDUse;
+
+		let	headers = {...this.headers};
+		headers['Content-Type'] = 'application/json';
+
+		let	options = {method: 'POST', headers: headers, body: JSON.stringify(info)};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
+		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async internalSet(info, documentStorageID) {
+		// Setup
+		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
+
+		let	url = this.urlBase + '/v1/internal/' + documentStorageIDUse;
 
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
