@@ -225,7 +225,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 		// May need to try this more than once
 		while true {
-			// Query collection document count
+			// Query documents
 			let	(isComplete, error) =
 						DispatchQueue.performBlocking() { completionProc in
 							// Call HTTP Endpoint Client
@@ -684,6 +684,25 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func getAssociations(for name :String) -> [(fromDocumentID :String, toDocumentID :String)] {
+		// Get assocations
+		let	info =
+					self.httpEndpointClient.associationGet(documentStorageID: self.documentStorageID, name: name,
+							authorization: self.authorization)
+
+		// Handle results
+		if let associations = info.info?.associations {
+			// Success
+			return associations
+		} else {
+			// Error
+			self.recentErrors.append(info.error!)
+
+			return []
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
 			proc :(_ document :U) -> Void) {
 		// May need to try this more than once
@@ -943,13 +962,15 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			proc :(_ key :String, _ document :T) -> Void) {
 		// Setup
 		var	keysRemaining = Set<String>(keys.filter({ !$0.isEmpty }))
+		var	isUpToDate = false
+		var	errors = [Error]()
 
 		// Keep going until all keys are processed
-		while !keysRemaining.isEmpty {
+		while !isUpToDate && errors.isEmpty && !keysRemaining.isEmpty {
 			// Retrieve the rest of the info
 			let	documentRevisionInfoMap = LockingDictionary<String, MDSDocument.RevisionInfo>()
 			let	semaphore = DispatchSemaphore(value: 0)
-			var	allDone = false
+			var	requestHasCompleted = false
 
 			// Queue info retrieval
 			self.httpEndpointClient.queue(
@@ -969,18 +990,21 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						// Ignore error (will collect below)
 						_ = $1
 					}, completionProc: {
+						// Store
+						isUpToDate = $0 ?? false
+
 						// Add errors
-						self.recentErrors += $1
+						errors += $1
 
 						// All done
-						allDone = true
+						requestHasCompleted = true
 
 						// Signal
 						semaphore.signal()
 					})
 
 			// Process results
-			while !allDone || !documentRevisionInfoMap.isEmpty {
+			while !requestHasCompleted || !documentRevisionInfoMap.isEmpty {
 				// Check if waiting for more info
 				if documentRevisionInfoMap.isEmpty {
 					// Wait for signal
@@ -1002,6 +1026,9 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 				}
 			}
 		}
+
+		// Add errors
+		self.recentErrors += errors
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1105,8 +1132,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 					self.remoteStorageCache.info(for: documentType, with: documentRevisionInfosPossiblyInCache)
 
 		// Update document backing cache
-		updateDocumentBackingCache(for: documentType, with: documentFullInfos)
-				.forEach() { proc($0.documentID) }
+		updateDocumentBackingCache(for: documentType, with: documentFullInfos).forEach() { proc($0.documentID) }
 
 		// Check if have documents to retrieve
 		documentRevisionInfosToRetrieve += documentRevisionInfosNotResolved
