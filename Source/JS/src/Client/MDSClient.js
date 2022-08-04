@@ -6,7 +6,7 @@
 //
 
 // Imports
-// let fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+let fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 let	PQueue = require('p-queue').default;
 // import PQueue from 'p-queue';
 
