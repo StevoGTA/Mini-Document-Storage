@@ -356,11 +356,16 @@ class MDSHTTPServices {
 
 		// MARK: Types
 		typealias SingleResponseCompletionProc = (_ info :T?, _ error :Error?) -> Void
+		typealias SingleResponseWithCountCompletionProc = (_ info :(info :T, count :Int)?, _ error :Error?) -> Void
+		typealias SingleResponseWithUpToDateAndCountCompletionProc =
+					(_ isUpToDate :Bool?, _ info :(info :T, count :Int)?, _ error :Error?) -> Void
 		typealias MultiResponsePartialResultsProc = (_ info :T?, _ error :Error?) -> Void
 		typealias MultiResponseCompletionProc = (_ errors :[Error]) -> Void
 
 		// MARK: Properties
 				var	completionProc :SingleResponseCompletionProc?
+				var	completionWithCountProc :SingleResponseWithCountCompletionProc?
+				var	completionWithUpToDateAndCountProc :SingleResponseWithUpToDateAndCountCompletionProc?
 				var	multiResponsePartialResultsProc :MultiResponsePartialResultsProc?
 				var	multiResponseCompletionProc :MultiResponseCompletionProc?
 
@@ -429,8 +434,50 @@ class MDSHTTPServices {
 
 				// Call proc
 				if totalRequests == 1 {
-					// Single request (but could have been multiple
-					callCompletion(response: response, info: info, error: localError)
+					// Single request, check desired completion approach
+					if self.completionProc != nil {
+						// Single response expected
+						self.completionProc!(info, error)
+					} else if self.completionWithCountProc != nil {
+						// Single response expected with count
+						if info != nil {
+							// Got info
+							if let contentRange = response!.contentRange, let size = contentRange.size {
+								// Got size
+								self.completionWithCountProc!((info!, Int(size)), nil)
+							} else {
+								// Did not get size
+								self.completionWithCountProc!(nil,
+										MDSError.invalidRequest(message: "Missing content range size"))
+							}
+						} else {
+							// No info
+							self.completionWithCountProc!(nil, error);
+						}
+					} else if self.completionWithUpToDateAndCountProc != nil {
+						// Single response expected with count, but could be not up to date
+						if info != nil {
+							// Got info
+							if let contentRange = response!.contentRange, let size = contentRange.size {
+								// Got size
+								self.completionWithUpToDateAndCountProc!(true, (info!, Int(size)), nil)
+							} else {
+								// Did not get size
+								self.completionWithUpToDateAndCountProc!(nil, nil,
+										MDSError.invalidRequest(message: "Missing content range size"))
+							}
+						} else if response != nil, HTTPEndpointStatus(rawValue: response!.statusCode)! == .conflict {
+							// Not up to date
+							self.completionWithUpToDateAndCountProc!(false, nil, nil)
+						} else {
+							// Error
+							self.completionWithUpToDateAndCountProc!(nil, nil, error)
+						}
+					} else {
+						// Multi-responses possible
+						self.multiResponsePartialResultsProc!(info, error)
+						self.multiResponseCompletionProc!((error != nil) ? [error!] : [])
+					}
 				} else {
 					// Multiple requests
 					self.multiResponsePartialResultsProc!(info, localError)
@@ -439,109 +486,6 @@ class MDSHTTPServices {
 						self.multiResponseCompletionProc!(self.errors)
 					}
 				}
-			}
-		}
-
-		// MARK: Instance methods
-		//--------------------------------------------------------------------------------------------------------------
-		func callCompletion(response :HTTPURLResponse?, info :T?, error :Error?) {
-			// Check desired method
-			if self.completionProc != nil {
-				// Single response expected
-				self.completionProc!(info, error)
-			} else {
-				// Multi-responses possible
-				self.multiResponsePartialResultsProc!(info, error)
-				self.multiResponseCompletionProc!((error != nil) ? [error!] : [])
-			}
-		}
-	}
-
-	// MARK: - MDSJSONWithCountHTTPEndpointRequest
-	class MDSJSONWithCountHTTPEndpointRequest<T> : MDSJSONHTTPEndpointRequest<T> {
-
-		// MARK: Types
-		typealias CompletionWithCountProc = (_ info :(info :T, count :Int)?, _ error :Error?) -> Void
-
-		// MARK: Properties
-		var	completionWithCountProc :CompletionWithCountProc = { _,_ in }
-
-		// MARK: MDSJSONHTTPEndpointRequest methods
-		//--------------------------------------------------------------------------------------------------------------
-		override func callCompletion(response :HTTPURLResponse?, info :T?, error :Error?) {
-			// Check situation
-			if info != nil {
-				// Success
-				if let contentRange = response!.contentRange, let size = contentRange.size {
-					// Got size
-					self.completionWithCountProc((info!, Int(size)), nil)
-				} else {
-					// Did not get size
-					self.completionWithCountProc(nil, MDSError.invalidRequest(message: "Missing content range size"))
-				}
-			} else {
-				// Error
-				self.completionWithCountProc(nil, error)
-			}
-		}
-	}
-
-	// MARK: - MDSJSONWithUpToDateHTTPEndpointRequest
-	class MDSJSONWithUpToDateHTTPEndpointRequest<T> : MDSJSONHTTPEndpointRequest<T> {
-
-		// MARK: Types
-		typealias CompletionWithUpToDateProc = (_ isUpToDate :Bool?, _ info :T?, _ error :Error?) -> Void
-
-		// MARK: Properties
-		var	completionWithUpToDateProc :CompletionWithUpToDateProc = { _,_,_ in }
-
-		// MARK: MDSJSONHTTPEndpointRequest methods
-		//--------------------------------------------------------------------------------------------------------------
-		override func callCompletion(response :HTTPURLResponse?, info :T?, error :Error?) {
-			// Check situation
-			if info != nil {
-				// Success
-				self.completionWithUpToDateProc(true, info, nil)
-			} else if response != nil, HTTPEndpointStatus(rawValue: response!.statusCode)! == .conflict {
-				// Not up to date
-				self.completionWithUpToDateProc(false, nil, nil)
-			} else {
-				// Error
-				self.completionWithUpToDateProc(nil, nil, error)
-			}
-		}
-	}
-
-	// MARK: - MDSJSONWithUpToDateAndCountHTTPEndpointRequest
-	class MDSJSONWithUpToDateAndCountHTTPEndpointRequest<T> : MDSJSONHTTPEndpointRequest<T> {
-
-		// MARK: Types
-		typealias CompletionWithUpToDateAndCountProc =
-				(_ isUpToDate :Bool?, _ info :(info :T, count :Int)?, _ error :Error?) -> Void
-
-		// MARK: Properties
-		var	completionWithUpToDateAndCountProc :CompletionWithUpToDateAndCountProc = { _,_,_ in }
-
-		// MARK: MDSJSONHTTPEndpointRequest methods
-		//--------------------------------------------------------------------------------------------------------------
-		override func callCompletion(response :HTTPURLResponse?, info :T?, error :Error?) {
-			// Check situation
-			if info != nil {
-				// Success
-				if let contentRange = response!.contentRange, let size = contentRange.size {
-					// Got size
-					self.completionWithUpToDateAndCountProc(true, (info!, Int(size)), nil)
-				} else {
-					// Did not get size
-					self.completionWithUpToDateAndCountProc(nil, nil,
-							MDSError.invalidRequest(message: "Missing content range size"))
-				}
-			} else if response != nil, HTTPEndpointStatus(rawValue: response!.statusCode)! == .conflict {
-				// Not up to date
-				self.completionWithUpToDateAndCountProc(false, nil, nil)
-			} else {
-				// Error
-				self.completionWithUpToDateAndCountProc(nil, nil, error)
 			}
 		}
 	}
@@ -583,8 +527,8 @@ class MDSHTTPServices {
 	}
 
 	// MARK: - General HTTPEndpointRequests
-	typealias GetDocumentInfosHTTPEndpointRequest = MDSJSONWithCountHTTPEndpointRequest<[String : Int]>
-	typealias GetDocumentsHTTPEndpointRequest = MDSJSONWithCountHTTPEndpointRequest<[[String : Any]]>
+	class GetDocumentInfosHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[String : Int]> {}
+	class GetDocumentsHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : Any]]> {}
 
 	// MARK: - Association Register
 	//	=> documentStorageID (path)
@@ -702,21 +646,31 @@ class MDSHTTPServices {
 						})
 	}
 
-	// MARK: - Association Get Document Infos
+	// MARK: - Association Get
 	//	=> documentStorageID (path)
 	//	=> name (path)
-	//	=> fromID -or- toID (query)
+	//	=> fromID -or- toID (query) (optional)
 	//	=> startIndex (query) (optional, default is 0)
 	//	=> count (query) (optional, default is all)
 	//	=> fullInfo (query) (optional, default is false)
 	//	=> authorization (header) (optional)
 	//
-	//	<= json (fullInfo == 0)
+// TODO: Implement this
+	//	<= json (no fromID nor toID given)
+	//		[
+	//			{
+	//				"fromDocumentID" :String,
+	//				"toDocumentID" :String,
+	//			},
+	//			...
+	//		]
+// TODO: Change to return array of minimal infos to match fullInfo==1 and retain order
+	//	<= json (fromID or toID given, fullInfo == 0)
 	//		{
 	//			String (documentID) : Int (revision),
 	//			...
 	//		}
-	//	<= json (fullInfo == 1)
+	//	<= json (fromID or toID given, fullInfo == 1)
 	//		[
 	//			{
 	//				"documentID" :String,
@@ -743,12 +697,13 @@ class MDSHTTPServices {
 	//			},
 	//			...
 	//		]
-	typealias GetAssociationDocumentInfoEndpointInfo =
+	class GetAssociationHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : String]]> {}
+	typealias GetAssociationEndpointInfo =
 				(documentStorageID :String, name :String, fromDocumentID :String?, toDocumentID :String?,
 						startIndex :Int, count :Int?, fullInfo :Bool, authorization :String?)
-	static	let	getAssociationDocumentInfosEndpoint =
+	static	let	getAssociationEndpoint =
 						BasicHTTPEndpoint(method: .get, path: "/v1/assocation/:documentStorageID/:name")
-								{ (urlComponents, headers) -> GetAssociationDocumentInfoEndpointInfo in
+								{ (urlComponents, headers) -> GetAssociationEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
@@ -760,14 +715,23 @@ class MDSHTTPServices {
 									let	startIndex = queryItemsMap["startIndex"] as? Int
 									let	count = queryItemsMap["count"] as? Int
 									let	fullInfo = queryItemsMap["fullInfo"] as? Int
-									guard (fromDocumentID != nil) || (toDocumentID != nil) else {
-										// Missing fromID and toID
-										throw HTTPEndpointError.badRequest(with: "missing fromID or toID")
-									}
 
 									return (documentStorageID, name, fromDocumentID, toDocumentID, startIndex ?? 0,
 											count, (fullInfo ?? 0) == 1, headers["Authorization"])
 								}
+	static func httpEndpointRequestForGetAssociation(documentStorageID :String, name :String, startIndex :Int = 0,
+			count :Int? = nil, authorization :String? = nil) -> GetAssociationHTTPEndpointRequest {
+		// Setup
+		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
+		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
+
+		var	queryComponents :[String : Any] = ["startIndex": startIndex]
+		queryComponents["count"] = count
+
+		// Return endpoint request
+		return GetAssociationHTTPEndpointRequest(method: .get, path: "/v1/association/\(documentStorageIDUse)/\(name)",
+				queryComponents: queryComponents, headers: headers)
+	}
 	static func httpEndpointRequestForGetAssociationDocumentInfos(documentStorageID :String, name :String,
 			fromDocumentID :String, startIndex :Int = 0, count :Int? = nil, authorization :String? = nil) ->
 			GetDocumentInfosHTTPEndpointRequest {
@@ -1103,7 +1067,7 @@ class MDSHTTPServices {
 				path: "/v1/collection/\(documentStorageIDUse)/\(nameUse)", headers: headers)
 	}
 
-	// MARK: - Collection Get Document Infos
+	// MARK: - Collection Get
 	//	=> documentStorageID (path)
 	//	=> name (path)
 	//	=> startIndex (query) (optional, default is 0)
@@ -1144,6 +1108,8 @@ class MDSHTTPServices {
 	//			},
 	//			...
 	//		]
+	class GetCollectionDocumentInfosHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[String : Int]> {}
+	class GetCollectionDocumentsHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : Any]]> {}
 	typealias GetCollectionDocumentInfosEndpointInfo =
 			(documentStorageID :String, name :String, startIndex :Int, count :Int?, fullInfo :Bool,
 					authorization :String?)
@@ -1165,7 +1131,7 @@ class MDSHTTPServices {
 								}
 	static func httpEndpointRequestForGetCollectionDocumentInfos(documentStorageID :String, name :String,
 			startIndex :Int = 0, count :Int? = nil, authorization :String? = nil) ->
-			MDSJSONWithUpToDateAndCountHTTPEndpointRequest<[String : Int]> {
+			GetCollectionDocumentInfosHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	nameUse = name.replacingOccurrences(of: "/", with: "_")
@@ -1179,13 +1145,13 @@ class MDSHTTPServices {
 		queryComponents["count"] = count
 
 		// Return endpoint request
-		return MDSJSONWithUpToDateAndCountHTTPEndpointRequest<[String : Int]>(method: .get,
+		return GetCollectionDocumentInfosHTTPEndpointRequest(method: .get,
 				path: "/v1/collection/\(documentStorageIDUse)/\(nameUse)", queryComponents: queryComponents,
 				headers: headers)
 	}
 	static func httpEndpointRequestForGetCollectionDocuments(documentStorageID :String, name :String,
 			startIndex :Int = 0, count :Int? = nil, authorization :String? = nil) ->
-			MDSJSONWithUpToDateAndCountHTTPEndpointRequest<[[String : Any]]> {
+			GetCollectionDocumentsHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	nameUse = name.replacingOccurrences(of: "/", with: "_")
@@ -1199,7 +1165,7 @@ class MDSHTTPServices {
 		queryComponents["count"] = count
 
 		// Return endpoint request
-		return MDSJSONWithUpToDateAndCountHTTPEndpointRequest<[[String : Any]]>(method: .get,
+		return GetCollectionDocumentsHTTPEndpointRequest(method: .get,
 				path: "/v1/collection/\(documentStorageIDUse)/\(nameUse)", queryComponents: queryComponents,
 				headers: headers)
 	}
@@ -1325,7 +1291,7 @@ class MDSHTTPServices {
 	//			},
 	//			...
 	//		]
-	class GetDocumentsSinceRevisionHTTPEndpointRequest : MDSJSONWithCountHTTPEndpointRequest<[[String : Any]]> {}
+	class GetDocumentsSinceRevisionHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : Any]]> {}
 	class GetDocumentsForDocumentIDsHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : Any]]> {}
 	typealias GetDocumentsEndpointInfo =
 				(documentStorageID :String, documentType :String, documentIDs :[String]?, sinceRevision :Int?,
@@ -1632,7 +1598,7 @@ class MDSHTTPServices {
 						  ])
 	}
 
-	// MARK: - Index Get Document Infos
+	// MARK: - Index Get
 	//	=> documentStorageID (path)
 	//	=> name (path)
 	//	=> key (query) (can specify multiple)
@@ -1673,9 +1639,8 @@ class MDSHTTPServices {
 	//				},
 	//			...
 	//		}
-	typealias GetIndexDocumentInfosHTTPEndpointRequest =
-			MDSJSONWithUpToDateHTTPEndpointRequest<[String : [String : Int]]>
-	typealias GetIndexDocumentsHTTPEndpointRequest = MDSJSONWithUpToDateHTTPEndpointRequest<[String : [String : Any]]>
+	class GetIndexDocumentInfosHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[String : [String : Int]]> {}
+	class GetIndexDocumentsHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[String : [String : Any]]> {}
 	typealias GetIndexDocumentInfosEndpointInfo =
 				(documentStorageID :String, name :String, keys :[String], authorization :String?)
 	static	let	getIndexDocumentInfosEndpoint =

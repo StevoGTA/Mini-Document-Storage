@@ -71,6 +71,7 @@ public protocol MDSDocumentStorage : AnyObject {
 	func registerAssociation(named name :String, fromDocumentType :String, toDocumentType :String)
 	func updateAssociation<T : MDSDocument, U : MDSDocument>(for name :String,
 			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)])
+	func getAssociations(for name :String) -> [(fromDocumentID :String, toDocumentID :String)]
 	func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
 			proc :(_ document :U) -> Void)
 	func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, to document :U,
@@ -142,6 +143,13 @@ extension MDSDocumentStorage {
 		// Update association
 		updateAssociation(for: associationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
 				updates: updates)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func getAssociations(fromDocumentType :String, toDocumentType :String) ->
+			[(fromDocumentID :String, toDocumentID :String)] {
+		// Get associations
+		return getAssociations(for: associationName(fromDocumentType: fromDocumentType, toDocumentType: toDocumentType))
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

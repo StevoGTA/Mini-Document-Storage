@@ -531,6 +531,12 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func getAssociations(for name :String) -> [(fromDocumentID :String, toDocumentID :String)] {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
 			proc :(_ document :U) -> Void) {
 		// Unimplemented
