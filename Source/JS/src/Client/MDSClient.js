@@ -128,6 +128,24 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	async associationGetDocumentInfos(name, startIndex, count, documentStorageID) {
+		// Setup
+		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
+		
+		var	url = this.urlBase + '/v1/association/' + documentStorageIDUse + '/' + name;
+		if (startIndex) url += '&startIndex=' + startIndex;
+		if (count) url += '&count=' + count;
+
+		let	options = {headers: this.headers};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
+		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+	
+		return await response.json();
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	async associationGetDocumentInfosFrom(name, document, startIndex, count, documentStorageID) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
@@ -450,6 +468,49 @@ class MDSClient {
 		let	infos = await response.json();
 
 		return infos.map(info => documentCreationProc(info));
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async documentGetAllSinceRevision(documentType, sinceRevision, batchCount, documentCreationProc, documentStorageID,
+			proc) {
+		// Setup
+		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
+		let	urlBase =
+					this.urlBase + '/v1/document/' + documentStorageIDUse + '/' + documentType +
+							'?count=' + batchCount + '&sinceRevision=';
+		let	options = {headers: this.headers};
+
+		var	sinceRevisionUse = sinceRevision;
+		var	totalDocumentCount = null;
+
+		// Loop until done
+		for (;;) {
+			// Retrieve next batch of documents
+			let	response = await this.queue.add(() => fetch(urlBase + sinceRevisionUse, options));
+			if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		
+			// Decode
+			let	infos = await response.json();
+			let	documents = infos.map(info => documentCreationProc(info));
+
+			if (documents.length > 0) {
+				// More Documents
+				if (totalDocumentCount == null) {
+					// Retrieve total count from header
+					let	contentRange = response.headers.get('content-range');
+					let	contentRangeParts = (contentRange || '').split('/');
+					totalDocumentCount = (contentRangeParts.length == 2) ? parseInt(contentRangeParts[1]) : null;
+				}
+
+				// Call proc
+				proc(documents, totalDocumentCount);
+
+				// Update
+				documents.forEach(document => sinceRevisionUse = Math.max(sinceRevisionUse, document.revision));
+			} else
+				// Have all Documents
+				break;
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

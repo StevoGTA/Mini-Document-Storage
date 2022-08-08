@@ -1,12 +1,13 @@
 {
   "name": "mini-document-storage",
-  "version": "2.0.27",
+  "version": "2.0.29",
   "description": "Fast, inexpensive document storage backed by a common database connector.",
   "main": "src/package.js",
   "exports": {
     ".": "./src/package.js",
     "./Client": "./src/Client/package.js",
-    "./Server": "./src/Server/package.js"
+    "./Server": "./src/Server/package.js",
+    "./src/Client/package": "./src/Client/package.js"
   },
   "repository": {
     "type": "git",
