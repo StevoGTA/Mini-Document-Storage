@@ -231,7 +231,9 @@ module.exports = class Collections {
 									null, statementPerformer.limit(startIndex, count));
 				if (results)
 					// Success
-					return [true, count, results, null];
+					return [true, count,
+							results.map(result => { return {documentID: result.documentID, revision: result.revision}; }),
+							null];
 				else
 					// Error
 					return [null, null, null, resultsError];

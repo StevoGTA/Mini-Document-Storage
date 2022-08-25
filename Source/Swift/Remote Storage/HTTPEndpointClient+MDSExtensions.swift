@@ -189,7 +189,9 @@ extension HTTPEndpointClient {
 				DispatchQueue.global().async() {
 					// Convert
 					let	documentRevisionInfos =
-								info!.info.map({ MDSDocument.RevisionInfo(documentID: $0.key, revision: $0.value) })
+								info!.info.map(
+										{ MDSDocument.RevisionInfo(documentID: $0["documentID"] as! String,
+												revision: $0["revision"] as! Int) })
 
 					// Switch queues to minimize memory usage
 					DispatchQueue.global().async() {
@@ -254,7 +256,9 @@ extension HTTPEndpointClient {
 				DispatchQueue.global().async() {
 					// Convert
 					let	documentRevisionInfos =
-								info!.info.map({ MDSDocument.RevisionInfo(documentID: $0.key, revision: $0.value) })
+								info!.info.map(
+										{ MDSDocument.RevisionInfo(documentID: $0["documentID"] as! String,
+												revision: $0["revision"] as! Int) })
 
 					// Switch queues to minimize memory usage
 					DispatchQueue.global().async() {

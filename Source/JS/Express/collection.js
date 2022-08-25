@@ -112,10 +112,13 @@ exports.getDocumentCountV1 = async (request, response) => {
 //
 //	<= HTTP Status 409 if collection is out of date => call endpoint again
 //	<= json (fullInfo == 0)
-//		{
-//			String (documentID) : Int (revision),
+//		[
+//			{
+//				"fromDocumentID" :String,
+//				"toDocumentID" :String,
+//			},
 //			...
-//		}
+//		]
 //	<= json (fullInfo == 1)
 //		[
 //			{

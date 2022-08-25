@@ -758,13 +758,8 @@ module.exports = class Documents {
 										documentInfo.infoTable.revisionTableColumn,
 									],
 									innerJoin, where, limit);
-				
-				var	infos = {};
-				for (let result of results)
-					// Update infos
-					infos[result.documentID] = result.revision;
-				
-				return [infos, null];
+									
+				return [results, null];
 			}
 		} catch (error) {
 			// Check error

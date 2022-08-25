@@ -530,7 +530,7 @@ class MDSHTTPServices {
 	}
 
 	// MARK: - General HTTPEndpointRequests
-	class GetDocumentInfosHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[String : Int]> {}
+	class GetDocumentInfosHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : Any]]> {}
 	class GetDocumentsHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : Any]]> {}
 
 	// MARK: - Association Register
@@ -669,10 +669,13 @@ class MDSHTTPServices {
 	//		]
 // TODO: Change to return array of minimal infos to match fullInfo==1 and retain order
 	//	<= json (fromID or toID given, fullInfo == 0)
-	//		{
-	//			String (documentID) : Int (revision),
+	//		[
+	//			{
+	//				"documentID" :String,
+	//				"revision" :Int
+	//			},
 	//			...
-	//		}
+	//		]
 	//	<= json (fromID or toID given, fullInfo == 1)
 	//		[
 	//			{
@@ -1080,10 +1083,13 @@ class MDSHTTPServices {
 	//
 	//	<= HTTP Status 409 if collection is out of date => call endpoint again
 	//	<= json (fullInfo == 0)
-	//		{
-	//			String (documentID) : Int (revision),
+	//		[
+	//			{
+	//				"fromDocumentID" :String,
+	//				"toDocumentID" :String,
+	//			},
 	//			...
-	//		}
+	//		]
 	//	<= json (fullInfo == 1)
 	//		[
 	//			{
@@ -1111,7 +1117,7 @@ class MDSHTTPServices {
 	//			},
 	//			...
 	//		]
-	class GetCollectionDocumentInfosHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[String : Int]> {}
+	class GetCollectionDocumentInfosHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : Any]]> {}
 	class GetCollectionDocumentsHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : Any]]> {}
 	typealias GetCollectionDocumentInfosEndpointInfo =
 			(documentStorageID :String, name :String, startIndex :Int, count :Int?, fullInfo :Bool,

@@ -210,7 +210,9 @@ module.exports = class Associations {
 								where, statementPerformer.limit(startIndex, count));
 			if (results)
 				// Success
-				return [totalCount, results, null];
+				return [totalCount,
+						results.map(result => { return {documentID: result.documentID, revision: result.revision}; }),
+						null];
 			else
 				// Error
 				return [null, null, resultsError];

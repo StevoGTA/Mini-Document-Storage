@@ -107,12 +107,15 @@ exports.updateV1 = async (event) => {
 //	=> count (query) (optional, default is all)
 //	=> fullInfo (query) (optional, default false)
 //
-//	<= json (fullInfo == 0)
-//		{
-//			String (documentID) : Int (revision),
+//	<= json (fromID or toID given, fullInfo == 0)
+//		[
+//			{
+//				"documentID" :String,
+//				"revision" :Int
+//			},
 //			...
-//		}
-//	<= json (fullInfo == 1)
+//		]
+//	<= json (fromID or toID given, fullInfo == 1)
 //		[
 //			{
 //				"documentID" :String,
