@@ -667,7 +667,6 @@ class MDSHTTPServices {
 	//			},
 	//			...
 	//		]
-// TODO: Change to return array of minimal infos to match fullInfo==1 and retain order
 	//	<= json (fromID or toID given, fullInfo == 0)
 	//		[
 	//			{
