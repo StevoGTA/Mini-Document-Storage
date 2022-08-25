@@ -7,7 +7,7 @@
 
 // Imports
 let	express = require('express');
-let {DocumentStorage} = require('mini-document-storage');
+let {DocumentStorage} = require('mini-document-storage/src/Server/package');
 let	MySQLToolbox = require('mysql-toolbox');
 let	routes = require('./routes');
 

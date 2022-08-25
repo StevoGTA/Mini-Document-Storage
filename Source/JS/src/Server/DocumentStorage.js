@@ -12,6 +12,7 @@ let	Collections = require('./Collections');
 let	Documents = require('./Documents');
 let	Indexes = require('./Indexes');
 let	Info = require('./Info');
+let	Internal = require('./Internal');
 let Internals = require('./Internals');
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -639,6 +640,60 @@ module.exports = class DocumentStorage {
 		}
 	}
 
+	//------------------------------------------------------------------------------------------------------------------
+	async internalGet(documentStorageID, keys) {
+		// Setup
+		let	statementPerformer = this.statementPerformerProc();
+		statementPerformer.use(documentStorageID);
+
+		let	internals = this.internals(statementPerformer, documentStorageID);
+
+		// Catch errors
+		try {
+			// Do it
+			let	{mySQLResults, results} =
+						await statementPerformer.batch(true,
+								() => { return internals.internal.get(statementPerformer, keys); });
+
+			return results;
+		} catch (error) {
+			// Error
+			if (statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return [null, 'Invalid documentStorageID'];
+			else
+				// Other
+				throw error;
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async internalSet(documentStorageID, keysAndValues) {
+		// Setup
+		let	statementPerformer = this.statementPerformerProc();
+		statementPerformer.use(documentStorageID);
+
+		let	internals = this.internals(statementPerformer, documentStorageID);
+
+		// Catch errors
+		try {
+			// Do it
+			let	{mySQLResults, results} =
+						await statementPerformer.batch(true,
+								() => internals.internal.set(statementPerformer, keysAndValues));
+			
+			return results;
+		} catch (error) {
+			// Error
+			if (statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return 'Invalid documentStorageID';
+			else
+				// Other
+				throw error;
+		}
+	}
+
 	// Private methods
 	//------------------------------------------------------------------------------------------------------------------
 	internals(statementPerformer, documentStorageID) {
@@ -659,6 +714,7 @@ module.exports = class DocumentStorage {
 			internals.documents = new Documents(internals, statementPerformer);
 			internals.indexes = new Indexes(internals, statementPerformer, this.indexKeysSelectorInfo);
 			internals.info = new Info(internals, statementPerformer);
+			internals.internal = new Internal(internals, statementPerformer);
 	
 			// Store
 			this.documentStorageInfo[documentStorageID].internals = internals;

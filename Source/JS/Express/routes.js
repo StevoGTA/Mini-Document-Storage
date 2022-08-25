@@ -52,5 +52,8 @@ router.get('/v1/index/:documentStorageID/:name', index.getDocumentsV1);
 router.get('/v1/info/:documentStorageID', info.getV1);
 router.post('/v1/info/:documentStorageID', info.setV1);
 
+// Setup Intenral routes
+router.post('/v1/internal/:documentStorageID', info.setV1);
+
 // Export
 module.exports = router;

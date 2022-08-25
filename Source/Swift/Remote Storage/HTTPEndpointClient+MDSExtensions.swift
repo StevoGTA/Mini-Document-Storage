@@ -782,7 +782,9 @@ extension HTTPEndpointClient {
 					MDSHTTPServices.httpEndpointRequestForGetDocuments(documentStorageID: documentStorageID,
 							documentType: documentType, sinceRevision: sinceRevision, authorization: authorization),
 					partialResultsProc: { documentFullInfos = $0 },
-					completionProc: { completionProc((($1 == nil) ? (documentFullInfos!, $0!) : nil, $1)) })
+					completionProc:
+							{ completionProc((($1 == nil) ? (documentFullInfos ?? [MDSDocument.FullInfo](), $0!) : nil,
+									$1)) })
 		}
 	}
 
@@ -943,6 +945,18 @@ extension HTTPEndpointClient {
 			// Queue
 			self.queue(
 					MDSHTTPServices.httpEndpointRequestForSetInfo(documentStorageID: documentStorageID, info: info,
+							authorization: authorization))
+					{ completionProc($0) }
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func internalSet(documentStorageID :String, info :[String : String], authorization :String? = nil) -> Error? {
+		// Perform
+		return DispatchQueue.performBlocking() { completionProc in
+			// Queue
+			self.queue(
+					MDSHTTPServices.httpEndpointRequestForSetInternal(documentStorageID: documentStorageID, info: info,
 							authorization: authorization))
 					{ completionProc($0) }
 		}

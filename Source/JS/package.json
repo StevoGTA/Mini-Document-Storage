@@ -7,7 +7,8 @@
     ".": "./src/package.js",
     "./Client": "./src/Client/package.js",
     "./Server": "./src/Server/package.js",
-    "./src/Client/package": "./src/Client/package.js"
+    "./src/Client/package": "./src/Client/package.js",
+    "./src/Server/package": "./src/Server/package.js"
   },
   "repository": {
     "type": "git",

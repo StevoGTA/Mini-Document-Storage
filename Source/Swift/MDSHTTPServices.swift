@@ -414,6 +414,9 @@ class MDSHTTPServices {
 							// No payload
 							localError = MDSError.responseWasEmpty
 						}
+					} else if statusCode == 409 {
+						// Not up to date
+						localError = error
 					} else if (statusCode >= 400) && (statusCode < 500) {
 						// Error
 						localError = mdsError(for: data)
@@ -437,7 +440,7 @@ class MDSHTTPServices {
 					// Single request, check desired completion approach
 					if self.completionProc != nil {
 						// Single response expected
-						self.completionProc!(info, error)
+						self.completionProc!(info, localError)
 					} else if self.completionWithCountProc != nil {
 						// Single response expected with count
 						if info != nil {
@@ -452,7 +455,7 @@ class MDSHTTPServices {
 							}
 						} else {
 							// No info
-							self.completionWithCountProc!(nil, error);
+							self.completionWithCountProc!(nil, localError);
 						}
 					} else if self.completionWithUpToDateAndCountProc != nil {
 						// Single response expected with count, but could be not up to date
@@ -471,12 +474,12 @@ class MDSHTTPServices {
 							self.completionWithUpToDateAndCountProc!(false, nil, nil)
 						} else {
 							// Error
-							self.completionWithUpToDateAndCountProc!(nil, nil, error)
+							self.completionWithUpToDateAndCountProc!(nil, nil, localError)
 						}
 					} else {
 						// Multi-responses possible
-						self.multiResponsePartialResultsProc!(info, error)
-						self.multiResponseCompletionProc!((error != nil) ? [error!] : [])
+						self.multiResponsePartialResultsProc!(info, localError)
+						self.multiResponseCompletionProc!(self.errors)
 					}
 				} else {
 					// Multiple requests
@@ -1743,5 +1746,34 @@ class MDSHTTPServices {
 
 		return MDSSuccessHTTPEndpointRequest(method: .post, path: "/v1/info/\(documentStorageIDUse)", headers: headers,
 				jsonBody: info)
+	}
+
+	// MARK: - Internal Set
+	//	=> documentStorageID (path)
+	//	=> json (body)
+	//		[
+	//			"key" :String
+	//			...
+	//		]
+	//	=> authorization (header) (optional)
+	typealias SetInternalEndpointInfo = (documentStorageID :String, info :[String : String], authorization :String?)
+	static	let	setInternalEndpoint =
+						JSONHTTPEndpoint<[String : String], SetInternalEndpointInfo>(method: .post,
+								path: "/v1/internal/:documentStorageID")
+								{ (urlComponents, headers, info) -> SetInternalEndpointInfo in
+									// Retrieve and validate
+									let	pathComponents = urlComponents.path.pathComponents
+									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
+
+									return (documentStorageID, info, headers["Authorization"])
+								}
+	static func httpEndpointRequestForSetInternal(documentStorageID :String, info :[String : String],
+			authorization :String? = nil) -> MDSSuccessHTTPEndpointRequest {
+		// Setup
+		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
+		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
+
+		return MDSSuccessHTTPEndpointRequest(method: .post, path: "/v1/internal/\(documentStorageIDUse)",
+				headers: headers, jsonBody: info)
 	}
 }
