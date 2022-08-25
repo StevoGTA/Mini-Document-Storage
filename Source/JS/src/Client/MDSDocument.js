@@ -92,6 +92,13 @@ module.exports = class MDSDocument {
 		}
 	}
 
+	//------------------------------------------------------------------------------------------------------------------
+	notePropertyChanged(property) {
+		// Updated
+		this.updated[property] = this.info.json[property];
+		this.removed.delete(property);
+	}
+
 	// Internal methods
 	//------------------------------------------------------------------------------------------------------------------
 	createInfo() {
