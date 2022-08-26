@@ -154,7 +154,7 @@ module.exports = class Associations {
 	//------------------------------------------------------------------------------------------------------------------
 	async getDocuments(statementPerformer, name, fromDocumentID, toDocumentID, startIndex, count, fullInfo) {
 		// Validate
-		if ((!fromDocumentID && !toDocumentID) || (fromDocumentID && toDocumentID))
+		if (fromDocumentID && toDocumentID)
 			return [null, null, 'Must specify one of fromDocumentID or toDocumentID'];
 
 		// Setup
@@ -165,57 +165,88 @@ module.exports = class Associations {
 		if (associationError)
 			// Error
 			return [null, null, associationError];
-		
-		// Compose where
-		let	sourceDocumentType = fromDocumentID ? association.fromType : association.toType;
-		let	returnDocumentType = fromDocumentID ? association.toType : association.fromType;
-		let	innerJoinIDTableColumn =
-					fromDocumentID ? association.table.toIDTableColumn : association.table.fromIDTableColumn;
-		let	whereIDTableColumn =
-					fromDocumentID ? association.table.fromIDTableColumn : association.table.toIDTableColumn;
-		let	documentID = fromDocumentID ? fromDocumentID : toDocumentID;
-		let	[ids, idsError] =
-					await internals.documents.getIDsForDocumentIDs(statementPerformer, sourceDocumentType,
-							[documentID]);
-		if (idsError)
-			return [null, null, idsError];
-		
-		let	where = statementPerformer.where(whereIDTableColumn, ids[documentID]);
 
-		// Query count
-		let	totalCount = await statementPerformer.count(association.table, where);
+		// Check approach
+		if (fromDocumentID || toDocumentID) {
+			// "From" or "To"
+			// Compose where
+			let	sourceDocumentType = fromDocumentID ? association.fromType : association.toType;
+			let	returnDocumentType = fromDocumentID ? association.toType : association.fromType;
 
-		// Check for full info
-		if (fullInfo) {
-			// Documents
-			let	[selectResults, documentsByID, resultsError] =
-						await internals.documents.getDocuments(statementPerformer, returnDocumentType,
-								association.table,
-								internals.documents.getDocumentInnerJoin(statementPerformer, returnDocumentType,
-										innerJoinIDTableColumn),
-								where, statementPerformer.limit(startIndex, count));
-			if (documentsByID)
-				// Success
-				return [totalCount, Object.values(documentsByID), null];
-			else
-				// Error
-				return [null, null, resultsError];
+			let	innerJoinIDTableColumn =
+						fromDocumentID ? association.table.toIDTableColumn : association.table.fromIDTableColumn;
+			let	whereIDTableColumn =
+						fromDocumentID ? association.table.fromIDTableColumn : association.table.toIDTableColumn;
+			let	documentID = fromDocumentID ? fromDocumentID : toDocumentID;
+			let	[ids, idsError] =
+						await internals.documents.getIDsForDocumentIDs(statementPerformer, sourceDocumentType,
+								[documentID]);
+			if (idsError)
+				return [null, null, idsError];
+			
+			let	where = statementPerformer.where(whereIDTableColumn, ids[documentID]);
+
+			// Query count
+			let	totalCount = await statementPerformer.count(association.table, where);
+
+			// Check for full info
+			if (fullInfo) {
+				// Documents
+				let	[selectResults, documentsByID, resultsError] =
+							await internals.documents.getDocuments(statementPerformer, returnDocumentType,
+									association.table,
+									internals.documents.getInnerJoinForDocument(statementPerformer, returnDocumentType,
+											innerJoinIDTableColumn),
+									where, statementPerformer.limit(startIndex, count));
+				if (documentsByID)
+					// Success
+					return [totalCount, Object.values(documentsByID), null];
+				else
+					// Error
+					return [null, null, resultsError];
+			} else {
+				// Document info
+				let	[results, resultsError] =
+							await internals.documents.getDocumentInfos(statementPerformer, returnDocumentType,
+									association.table,
+									internals.documents.getInnerJoinForDocumentInfo(statementPerformer,
+											returnDocumentType, innerJoinIDTableColumn),
+									where, statementPerformer.limit(startIndex, count));
+				if (results)
+					// Success
+					return [totalCount,
+							results.map(result =>
+									{ return {documentID: result.documentID, revision: result.revision}; }),
+							null];
+				else
+					// Error
+					return [null, null, resultsError];
+			}
 		} else {
-			// Document info
-			let	[results, resultsError] =
-						await internals.documents.getDocumentInfos(statementPerformer, returnDocumentType,
-								association.table,
-								internals.documents.getDocumentInfoInnerJoin(statementPerformer, returnDocumentType,
-										innerJoinIDTableColumn),
-								where, statementPerformer.limit(startIndex, count));
+			// Return associations translated from DB IDs to Document IDs
+			let	totalCount = await statementPerformer.count(association.table);
+
+			// Select
+			let	fromDocumentIDString =
+						internals.documents.getDocumentIDTableColumnString(statementPerformer, association.fromType,
+								'fromDocumentID');
+			let	toDocumentIDString =
+						internals.documents.getDocumentIDTableColumnString(statementPerformer, association.toType,
+								'toDocumentID');
+
+			let	results =
+						await statementPerformer.select(true, association.table,
+								fromDocumentIDString + ', ' + toDocumentIDString,
+								internals.documents.getInnerJoinForDocumentInfos(statementPerformer,
+										association.fromType, association.table.fromIDTableColumn,
+										association.toType, association.table.toIDTableColumn));
+			
 			if (results)
 				// Success
-				return [totalCount,
-						results.map(result => { return {documentID: result.documentID, revision: result.revision}; }),
-						null];
+				return [totalCount, results, null];
 			else
 				// Error
-				return [null, null, resultsError];
+				return [null, null, "Something went wrong..."];
 		}
 	}
 

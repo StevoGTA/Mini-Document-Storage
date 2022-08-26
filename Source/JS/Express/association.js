@@ -98,6 +98,14 @@ exports.updateV1 = async (request, response) => {
 //	=> count (query) (optional, default is all)
 //	=> fullInfo (query) (optional, default false)
 //
+//	<= json (no fromID nor toID given)
+//		[
+//			{
+//				"fromDocumentID" :String,
+//				"toDocumentID" :String,
+//			},
+//			...
+//		]
 //	<= json (fromID or toID given, fullInfo == 0)
 //		[
 //			{

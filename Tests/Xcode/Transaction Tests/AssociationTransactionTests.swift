@@ -59,6 +59,13 @@ class AssociationTransactionTests : XCTestCase {
 		XCTAssertEqual(addErrors.count, 0, "update (add) received errors: \(addErrors)")
 		guard addErrors.isEmpty else { return }
 
+		// Retrieve all
+		let	(getInfo1, getError1) =
+					config.httpEndpointClient.associationGet(documentStorageID: config.documentStorageID,
+							name: associationName)
+		XCTAssertNotNil(getInfo1, "get (1) did not receive info")
+		XCTAssertNil(getError1, "get (1) received error: \(getError1!)")
+
 		// Retrieve from
 		let	(fromInfo1, fromError1) =
 					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: config.documentStorageID,

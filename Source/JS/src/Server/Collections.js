@@ -212,7 +212,7 @@ module.exports = class Collections {
 				let	[selectResults, documentsByID, resultsError] =
 							await internals.documents.getDocuments(statementPerformer, collection.type,
 									collection.table,
-									internals.documents.getDocumentInnerJoin(statementPerformer, collection.type,
+									internals.documents.getInnerJoinForDocument(statementPerformer, collection.type,
 											collection.table.idTableColumn),
 									null, statementPerformer.limit(startIndex, count));
 				if (documentsByID)
@@ -226,7 +226,7 @@ module.exports = class Collections {
 				let	[results, resultsError] =
 							await internals.documents.getDocumentInfos(statementPerformer, collection.type,
 									collection.table,
-									internals.documents.getDocumentInfoInnerJoin(statementPerformer, collection.type,
+									internals.documents.getInnerJoinForDocumentInfo(statementPerformer, collection.type,
 											collection.table.idTableColumn),
 									null, statementPerformer.limit(startIndex, count));
 				if (results)

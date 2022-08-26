@@ -76,4 +76,149 @@ class AssociationUnitTests : XCTestCase {
 		// Evaluate results
 		XCTAssertEqual(errors.count, 0, "received errors: \(errors)")
 	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testGetFailInvalidDocumentStorageID() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	(info, error) = config.httpEndpointClient.associationGet(documentStorageID: "ABC", name: "ABC")
+
+		// Evaluate results
+		XCTAssertNil(info, "did receive info")
+
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testGetDocumentInfosFromFailInvalidDocumentStorageID() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	documentStorage = MDSEphemeral()
+		let	parent = Parent(id: "ABC", documentStorage: documentStorage)
+
+		let	(info, error) =
+					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: "ABC", name: "ABC",
+							fromDocumentID: parent.id)
+
+		// Evaluate results
+		XCTAssertNil(info, "did receive info")
+
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testGetDocumentsFromFailInvalidDocumentStorageID() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	documentStorage = MDSEphemeral()
+		let	parent = Parent(id: "ABC", documentStorage: documentStorage)
+
+		let	(info, error) =
+					config.httpEndpointClient.associationGetDocuments(documentStorageID: "ABC", name: "ABC",
+							fromDocumentID: parent.id)
+
+		// Evaluate results
+		XCTAssertNil(info, "did receive info")
+
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testGetDocumentInfosToFailInvalidDocumentStorageID() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	documentStorage = MDSEphemeral()
+		let	child = Child(id: "ABC", documentStorage: documentStorage)
+
+		let	(info, error) =
+					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: "ABC", name: "ABC",
+							toDocumentID: child.id)
+
+		// Evaluate results
+		XCTAssertNil(info, "did receive info")
+
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testGetDocumentsToFailInvalidDocumentStorageID() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	documentStorage = MDSEphemeral()
+		let	child = Child(id: "ABC", documentStorage: documentStorage)
+
+		let	(info, error) =
+					config.httpEndpointClient.associationGetDocuments(documentStorageID: "ABC", name: "ABC",
+							toDocumentID: child.id)
+
+		// Evaluate results
+		XCTAssertNil(info, "did receive info")
+
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
 }

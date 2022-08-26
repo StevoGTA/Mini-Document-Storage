@@ -177,7 +177,7 @@ module.exports = class Indexes {
 				// Documents
 				let	[selectResults, documentsByID, resultsError] =
 							await internals.documents.getDocuments(statementPerformer, index.type, index.table,
-									internals.documents.getDocumentInnerJoin(statementPerformer, index.type,
+									internals.documents.getInnerJoinForDocument(statementPerformer, index.type,
 											index.table.idTableColumn),
 									wheres, null);
 				
@@ -202,7 +202,7 @@ module.exports = class Indexes {
 				// Document info
 				let	[results, resultsError] =
 						await internals.documents.getDocumentInfos(statementPerformer, index.type, index.table,
-								internals.documents.getDocumentInfoInnerJoin(statementPerformer, index.type,
+								internals.documents.getInnerJoinForDocumentInfo(statementPerformer, index.type,
 										index.table.idTableColumn),
 								wheres, null);
 				
