@@ -474,7 +474,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			if let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
 				// Have document in batch
 				batchDocumentInfo.updateAttachment(attachmentID: attachmentInfo.id,
-						currentRevision: attachmentInfo.revision, info: updatedInfo, content: updatedContent)
+						currentRevision: attachmentInfo.revision, info: info, content: updatedContent)
 			} else {
 				// Don't have document in batch
 				let	documentBacking = self.documentBacking(for: document)
