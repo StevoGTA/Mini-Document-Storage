@@ -178,7 +178,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
+	public func documentCreate<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
 			-> T {
 		// Setup
 		let	documentID = UUID().base64EncodedString
@@ -376,7 +376,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						(valueUse != nil) ?
 								MDSDocument.UpdateInfo(documentID: document.id, updated: [property : valueUse!]) :
 								MDSDocument.UpdateInfo(documentID: document.id, removed: [property])
-			updateDocuments(documentType: documentBacking.type,
+			documentUpdate(documentType: documentBacking.type,
 					documentUpdateInfos: [DocumentUpdateInfo(documentUpdateInfo, documentBacking)])
 		}
 	}
@@ -430,7 +430,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func addAttachment<T : MDSDocument>(for document :T, type :String, info :[String : Any], content :Data) {
+	public func attachmentAdd<T : MDSDocument>(for document :T, type :String, info :[String : Any], content :Data) {
 		// Setup
 		let	documentType = Swift.type(of: document).documentType
 
@@ -442,7 +442,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			// In batch
 			if let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
 				// Have document in batch
-				batchDocumentInfo.addAttachment(info: infoUse, content: content)
+				batchDocumentInfo.attachmentAdd(info: infoUse, content: content)
 			} else {
 				// Don't have document in batch
 				let	documentBacking = self.documentBacking(for: document)
@@ -450,17 +450,17 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 								documentBacking: documentBacking, creationDate: documentBacking.creationDate,
 								modificationDate: documentBacking.modificationDate,
 								valueProc: { documentBacking.propertyMap[$0] })
-						.addAttachment(info: infoUse, content: content)
+						.attachmentAdd(info: infoUse, content: content)
 			}
 		} else {
 			// Not in batch
-			addAttachment(documentType: documentType, documentID: document.id, documentBacking: nil, info: infoUse,
+			attachmentAdd(documentType: documentType, documentID: document.id, documentBacking: nil, info: infoUse,
 					content: content)
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func updateAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
+	public func attachmentUpdate<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
 			updatedInfo :[String : Any], updatedContent :Data) {
 		// Setup
 		let	documentType = type(of: document).documentType
@@ -473,7 +473,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			// In batch
 			if let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
 				// Have document in batch
-				batchDocumentInfo.updateAttachment(attachmentID: attachmentInfo.id,
+				batchDocumentInfo.attachmentUpdate(attachmentID: attachmentInfo.id,
 						currentRevision: attachmentInfo.revision, info: updatedInfo, content: updatedContent)
 			} else {
 				// Don't have document in batch
@@ -482,18 +482,18 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 								documentBacking: documentBacking, creationDate: documentBacking.creationDate,
 								modificationDate: documentBacking.modificationDate,
 								valueProc: { documentBacking.propertyMap[$0] })
-						.updateAttachment(attachmentID: attachmentInfo.id, currentRevision: attachmentInfo.revision,
+						.attachmentUpdate(attachmentID: attachmentInfo.id, currentRevision: attachmentInfo.revision,
 								info: info, content: updatedContent)
 			}
 		} else {
 			// Not in batch
-			updateAttachment(documentType: documentType, documentID: document.id, documentBacking: nil,
+			attachmentUpdate(documentType: documentType, documentID: document.id, documentBacking: nil,
 					attachmentID: attachmentInfo.id, info: info, content: updatedContent)
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func removeAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) {
+	public func attachmentRemove<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) {
 		// Setup
 		let	documentType = type(of: document).documentType
 
@@ -502,7 +502,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			// In batch
 			if let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
 				// Have document in batch
-				batchDocumentInfo.removeAttachment(attachmentID: attachmentInfo.id)
+				batchDocumentInfo.attachmentRemove(attachmentID: attachmentInfo.id)
 			} else {
 				// Don't have document in batch
 				let	documentBacking = self.documentBacking(for: document)
@@ -510,11 +510,11 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 								documentBacking: documentBacking, creationDate: documentBacking.creationDate,
 								modificationDate: documentBacking.modificationDate,
 								valueProc: { documentBacking.propertyMap[$0] })
-						.removeAttachment(attachmentID: attachmentInfo.id)
+						.attachmentRemove(attachmentID: attachmentInfo.id)
 			}
 		} else {
 			// Not in batch
-			removeAttachment(documentType: documentType, documentID: document.id, documentBacking: nil,
+			attachmentRemove(documentType: documentType, documentID: document.id, documentBacking: nil,
 					attachmentID: attachmentInfo.id)
 		}
 	}
@@ -555,19 +555,19 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						// Process attachments
 						batchDocumentInfo.removeAttachmentInfos.forEach() {
 							// Remove attachment
-							self.removeAttachment(documentType: documentType, documentID: documentID,
+							self.attachmentRemove(documentType: documentType, documentID: documentID,
 									documentBacking: batchDocumentInfo.documentBacking,
 									attachmentID: $0.attachmentID)
 						}
 						batchDocumentInfo.addAttachmentInfos.forEach() {
 							// Add attachment
-							self.addAttachment(documentType: documentType, documentID: documentID,
+							self.attachmentAdd(documentType: documentType, documentID: documentID,
 									documentBacking: batchDocumentInfo.documentBacking, info: $0.info,
 									content: $0.content)
 						}
 						batchDocumentInfo.updateAttachmentInfos.forEach() {
 							// Update attachment
-							self.updateAttachment(documentType: documentType, documentID: documentID,
+							self.attachmentUpdate(documentType: documentType, documentID: documentID,
 									documentBacking: batchDocumentInfo.documentBacking,
 									attachmentID: $0.attachmentID, info: $0.info, content: $0.content)
 						}
@@ -607,17 +607,17 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 					// Iterate add attachment infos
 					addAttachmentInfos.forEach() {
 						// Add attachment
-						self.addAttachment(documentType: documentType, documentID: documentID,
+						self.attachmentAdd(documentType: documentType, documentID: documentID,
 								documentBacking: documentBacking, info: $0.info, content: $0.content)
 					}
 				}
 
 				// Update documents
-				self.updateDocuments(documentType: documentType, documentUpdateInfos: documentUpdateInfos)
+				self.documentUpdate(documentType: documentType, documentUpdateInfos: documentUpdateInfos)
 			}
 			batchInfo.iterateAssocationChanges() {
 				// Update assocation
-				self.updateAssociation(for: $0, updates: $1)
+				self.associationUpdate(for: $0, updates: $1)
 			}
 		}
 
@@ -647,7 +647,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		} else {
 			// Not in batch
 			let	documentBacking = self.documentBacking(for: document)
-			updateDocuments(documentType: documentBacking.type,
+			documentUpdate(documentType: documentBacking.type,
 					documentUpdateInfos:
 							[DocumentUpdateInfo(MDSDocument.UpdateInfo(documentID: document.id, active: false),
 									documentBacking)])
@@ -655,7 +655,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func registerAssociation(named name :String, fromDocumentType :String, toDocumentType :String) {
+	public func associationRegister(named name :String, fromDocumentType :String, toDocumentType :String) {
 		// Register assocation
 		let	error =
 					self.httpEndpointClient.associationRegister(documentStorageID: self.documentStorageID, name: name,
@@ -670,7 +670,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func updateAssociation<T : MDSDocument, U : MDSDocument>(for name :String,
+	public func associationUpdate<T : MDSDocument, U : MDSDocument>(for name :String,
 			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)]) {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
@@ -679,12 +679,12 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 					updates: updates.map({ ($0.action, $0.fromDocument.id, $0.toDocument.id) }))
 		} else {
 			// Not in batch
-			updateAssociation(for: name, updates: updates.map({ ($0.action, $0.fromDocument.id, $0.toDocument.id) }))
+			associationUpdate(for: name, updates: updates.map({ ($0.action, $0.fromDocument.id, $0.toDocument.id) }))
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func getAssociations(for name :String) -> [(fromDocumentID :String, toDocumentID :String)] {
+	public func associationGet(for name :String) -> [(fromDocumentID :String, toDocumentID :String)] {
 		// Get assocations
 		let	info =
 					self.httpEndpointClient.associationGet(documentStorageID: self.documentStorageID, name: name,
@@ -703,7 +703,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
+	public func associationIterate<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
 			proc :(_ document :U) -> Void) {
 		// May need to try this more than once
 		var	startIndex = 0
@@ -744,7 +744,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, to document :U,
+	public func associationIterate<T : MDSDocument, U : MDSDocument>(for name :String, to document :U,
 			proc :(_ document :T) -> Void) {
 		// May need to try this more than once
 		var	startIndex = 0
@@ -785,7 +785,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func retrieveAssociationValue<T : MDSDocument, U>(for name :String, from document :T,
+	public func associationGetValue<T : MDSDocument, U>(for name :String, from document :T,
 			summedFromCachedValueWithName cachedValueName :String) -> U {
 		// May need to try this more than once
 		while true {
@@ -821,7 +821,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
+	public func cacheRegister<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)]) {
 		// Register cache
 		let	error =
@@ -841,7 +841,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func registerCollection<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
+	public func collectionRegister<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
 			isIncludedProc :@escaping (_ document :T) -> Bool) {
 		// Register collection
@@ -862,7 +862,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentCountForCollection(named name :String) -> Int {
+	public func collectionGetDocumentCount(for name :String) -> Int {
 		// May need to try this more than once
 		while true {
 			// Query collection document count
@@ -895,7 +895,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func iterateCollection<T : MDSDocument>(name :String, proc :(_ document : T) -> Void) {
+	public func collectionIterate<T : MDSDocument>(name :String, proc :(_ document : T) -> Void) {
 		// May need to try this more than once
 		var	startIndex = 0
 		while true {
@@ -937,7 +937,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func registerIndex<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
+	public func indexRegister<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
 			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any],
 			keysProc :@escaping (_ document :T) -> [String]) {
 		// Register index
@@ -958,7 +958,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func iterateIndex<T : MDSDocument>(name :String, keys :[String],
+	public func indexIterate<T : MDSDocument>(name :String, keys :[String],
 			proc :(_ key :String, _ document :T) -> Void) {
 		// Setup
 		var	keysRemaining = Set<String>(keys.filter({ !$0.isEmpty }))
@@ -1149,7 +1149,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func updateAssociation(for name :String,
+	private func associationUpdate(for name :String,
 			updates :[(action :MDSAssociationAction, fromDocumentID :String, toDocumentID :String)]) {
 		// Check if have updates
 		guard !updates.isEmpty else { return }
@@ -1310,7 +1310,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func updateDocuments(documentType :String, documentUpdateInfos :[DocumentUpdateInfo]) {
+	private func documentUpdate(documentType :String, documentUpdateInfos :[DocumentUpdateInfo]) {
 		// Preflight
 		guard !documentUpdateInfos.isEmpty else { return }
 
@@ -1375,7 +1375,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func addAttachment(documentType :String, documentID :String, documentBacking :DocumentBacking?,
+	private func attachmentAdd(documentType :String, documentID :String, documentBacking :DocumentBacking?,
 			info :[String : Any], content :Data) {
 		// Perform
 		let	(attachmentInfo, error) =
@@ -1412,7 +1412,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func updateAttachment(documentType :String, documentID :String, documentBacking :DocumentBacking?,
+	private func attachmentUpdate(documentType :String, documentID :String, documentBacking :DocumentBacking?,
 			attachmentID :String, info :[String : Any], content :Data) {
 		// Perform
 		let	(attachmentInfo, error) =
@@ -1441,7 +1441,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func removeAttachment(documentType :String, documentID :String, documentBacking :DocumentBacking?,
+	private func attachmentRemove(documentType :String, documentID :String, documentBacking :DocumentBacking?,
 			attachmentID :String) {
 		// Perform
 		let	error =

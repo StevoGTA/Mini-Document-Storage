@@ -139,13 +139,13 @@ class MDSBatchInfo<T> {
 		func remove() { self.lock.write() { self.removed = true; self.modificationDate = Date() } }
 
 		//--------------------------------------------------------------------------------------------------------------
-		func addAttachment(info :[String : Any], content :Data) {
+		func attachmentAdd(info :[String : Any], content :Data) {
 			// Add info
 			self.addAttachmentInfos.append(AddAttachmentInfo(info: info, content: content))
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		func updateAttachment(attachmentID :String, currentRevision :Int, info :[String : Any], content :Data) {
+		func attachmentUpdate(attachmentID :String, currentRevision :Int, info :[String : Any], content :Data) {
 			// Add info
 			self.updateAttachmentInfos.append(
 					UpdateAttachmentInfo(attachmentID: attachmentID, currentRevision: currentRevision, info: info,
@@ -153,7 +153,7 @@ class MDSBatchInfo<T> {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		func removeAttachment(attachmentID :String) {
+		func attachmentRemove(attachmentID :String) {
 			// Add info
 			self.removeAttachmentInfos.append(RemoveAttachmentInfo(attachmentID: attachmentID))
 		}

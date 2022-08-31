@@ -85,37 +85,86 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 
 	// MARK: MDSDocumentStorage methods
 	//------------------------------------------------------------------------------------------------------------------
-	public func info(for keys :[String]) -> [String : String] { self.info.filter({ keys.contains($0.key) }) }
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func set(_ info :[String : String]) { self.info.merge(info, uniquingKeysWith: { $1 }) }
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func remove(keys :[String]) { keys.forEach() { self.info[$0] = nil } }
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func ephemeralValue<T>(for key :String) -> T? { self.ephemeralValues?[key] as? T }
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func store<T>(ephemeralValue value :T?, for key :String) {
-		// Store
-		if (self.ephemeralValues == nil) && (value != nil) {
-			// First one
-			self.ephemeralValues = [key : value!]
-		} else {
-			// Update
-			self.ephemeralValues?[key] = value
-
-			// Check for empty
-			if self.ephemeralValues?.isEmpty ?? false {
-				// No more values
-				self.ephemeralValues = nil
-			}
-		}
+	public func associationRegister(named name :String, fromDocumentType :String, toDocumentType :String) {
+		// Unimplemented
+		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
+	public func associationUpdate<T : MDSDocument, U : MDSDocument>(for name :String,
+			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)]) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func associationGet(for name :String) -> [(fromDocumentID :String, toDocumentID :String)] {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func associationIterate<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
+			proc :(_ document :U) -> Void) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func associationIterate<T : MDSDocument, U : MDSDocument>(for name :String, to document :U,
+			proc :(_ document :T) -> Void) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+//	//------------------------------------------------------------------------------------------------------------------
+//	public func associationGetValue<T : MDSDocument, U>(for name :String, to document :T,
+//			summedFromCachedValueWithName cachedValueName :String) -> U {
+//		// Unimplemented
+//		fatalError("Unimplemented")
+//	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func cacheRegister<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
+			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)]) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func collectionRegister<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
+			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
+			isIncludedProc :@escaping (_ document :T) -> Bool) {
+		// Ensure this collection has not already been registered
+		guard self.collectionsByNameMap.value(for: name) == nil else { return }
+
+		// Create collection
+		let	collection =
+					MDSCollectionSpecialized(name: name, relevantProperties: relevantProperties, lastRevision: 0,
+							isIncludedProc: isIncludedProc)
+
+		// Add to maps
+		self.collectionsByNameMap.set(collection, for: name)
+		self.collectionsByDocumentTypeMap.append(collection, for: T.documentType)
+
+		// Update creation proc map
+		self.documentCreationProcMap.set({ T(id: $0, documentStorage: $1) }, for: T.documentType)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func collectionGetDocumentCount(for name :String) -> Int {
+		// Return count
+		return self.collectionValuesMap.value(for: name)?.count ?? 0
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func collectionIterate<T : MDSDocument>(name :String, proc :(_ document : T) -> Void) {
+		// Iterate
+		self.collectionValuesMap.value(for: name)?.forEach() { proc(T(id: $0, documentStorage: self)) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func documentCreate<T : MDSDocument>(_ proc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
 			-> T {
 		// Setup
 		let	documentID = UUID().base64EncodedString
@@ -127,13 +176,13 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			_ = batchInfo.addDocument(documentType: T.documentType, documentID: documentID, creationDate: date,
 					modificationDate: date)
 
-			return creationProc(documentID, self)
+			return proc(documentID, self)
 		} else {
 			// Will be creating document
 			self.documentsBeingCreatedPropertyMapMap.set([:], for: documentID)
 
 			// Create
-			let	document = creationProc(documentID, self)
+			let	document = proc(documentID, self)
 
 			// Remove property map
 			let	propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: documentID)!
@@ -219,7 +268,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func value(for property :String, in document :MDSDocument) -> Any? {
+	public func value(for property :String, of document :MDSDocument) -> Any? {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
 				let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
@@ -235,19 +284,19 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func data(for property :String, in document :MDSDocument) -> Data? {
+	public func data(for property :String, of document :MDSDocument) -> Data? {
 		// Return data
-		return value(for: property, in: document) as? Data
+		return value(for: property, of: document) as? Data
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func date(for property :String, in document :MDSDocument) -> Date? {
+	public func date(for property :String, of document :MDSDocument) -> Date? {
 		// Return date
-		return value(for: property, in: document) as? Date
+		return value(for: property, of: document) as? Date
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func set<T : MDSDocument>(_ value :Any?, for property :String, in document :T) {
+	public func set<T : MDSDocument>(_ value :Any?, for property :String, of document :T) {
 		// Setup
 		let	documentType = type(of: document).documentType
 
@@ -310,23 +359,99 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func addAttachment<T : MDSDocument>(for document :T, type :String, info :[String : Any], content :Data) {
+	public func attachmentAdd<T : MDSDocument>(to document :T, type :String, info :[String : Any], content :Data) {
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func updateAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
+	public func attachmentUpdate<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
 			updatedInfo :[String : Any], updatedContent :Data) {
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func removeAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) {
+	public func attachmentRemove<T : MDSDocument>(from document :T, attachmentInfo :MDSDocument.AttachmentInfo) {
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func remove(_ document :MDSDocument) {
+		// Setup
+		let	documentType = type(of: document).documentType
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+			// In batch
+			if let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
+				// Have document in batch
+				batchDocumentInfo.remove()
+			} else {
+				// Don't have document in batch
+				let	date = Date()
+				batchInfo.addDocument(documentType: documentType, documentID: document.id, documentBacking: [:],
+						creationDate: date, modificationDate: date)
+					.remove()
+			}
+		} else {
+			// Not in batch
+			self.documentMapsLock.write() { self.documentBackingByIDMap[document.id]?.active = false }
+
+			// Remove from collections and indexes
+			removeFromCollections(documentIDs: Set<String>([document.id]))
+			removeFromIndexes(documentIDs: Set<String>([document.id]))
+
+			// Call document changed procs
+			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .removed) }
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func indexRegister<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
+			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any],
+			keysProc :@escaping (_ document :T) -> [String]) {
+		// Ensure this index has not already been registered
+		guard self.indexesByNameMap.value(for: name) == nil else { return }
+
+		// Create index
+		let	index =
+					MDSIndexSpecialized(name: name, relevantProperties: relevantProperties, lastRevision: 0,
+							keysProc: keysProc)
+
+		// Add to maps
+		self.indexesByNameMap.set(index, for: name)
+		self.indexesByDocumentTypeMap.append(index, for: T.documentType)
+
+		// Update creation proc map
+		self.documentCreationProcMap.set({ T(id: $0, documentStorage: $1) }, for: T.documentType)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func indexIterate<T : MDSDocument>(name :String, keys :[String],
+			proc :(_ key :String, _ document :T) -> Void) {
+		// Setup
+		guard let indexValues = self.indexValuesMap.value(for: name) else { return }
+
+		// Iterate keys
+		keys.forEach() {
+			// Retrieve documentID
+			if let documentID = indexValues[$0] {
+				// Call proc
+				proc($0, T(id: documentID, documentStorage: self))
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func info(for keys :[String]) -> [String : String] { self.info.filter({ keys.contains($0.key) }) }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func set(_ info :[String : String]) { self.info.merge(info, uniquingKeysWith: { $1 }) }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func remove(keys :[String]) { keys.forEach() { self.info[$0] = nil } }
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func batch(_ proc :() throws -> MDSBatchResult) rethrows {
@@ -440,160 +565,58 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func remove(_ document :MDSDocument) {
-		// Setup
-		let	documentType = type(of: document).documentType
-
-		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
-			// In batch
-			if let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
-				// Have document in batch
-				batchDocumentInfo.remove()
-			} else {
-				// Don't have document in batch
-				let	date = Date()
-				batchInfo.addDocument(documentType: documentType, documentID: document.id, documentBacking: [:],
-						creationDate: date, modificationDate: date)
-					.remove()
-			}
-		} else {
-			// Not in batch
-			self.documentMapsLock.write() { self.documentBackingByIDMap[document.id]?.active = false }
-
-			// Remove from collections and indexes
-			removeFromCollections(documentIDs: Set<String>([document.id]))
-			removeFromIndexes(documentIDs: Set<String>([document.id]))
-
-			// Call document changed procs
-			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .removed) }
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func registerAssociation(named name :String, fromDocumentType :String, toDocumentType :String) {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func updateAssociation<T : MDSDocument, U : MDSDocument>(for name :String,
-			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)]) {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func getAssociations(for name :String) -> [(fromDocumentID :String, toDocumentID :String)] {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
-			proc :(_ document :U) -> Void) {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, to document :U,
-			proc :(_ document :T) -> Void) {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-//	//------------------------------------------------------------------------------------------------------------------
-//	public func retrieveAssociationValue<T : MDSDocument, U>(for name :String, to document :T,
-//			summedFromCachedValueWithName cachedValueName :String) -> U {
-//		// Unimplemented
-//		fatalError("Unimplemented")
-//	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
-			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)]) {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func registerCollection<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
-			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
-			isIncludedProc :@escaping (_ document :T) -> Bool) {
-		// Ensure this collection has not already been registered
-		guard self.collectionsByNameMap.value(for: name) == nil else { return }
-
-		// Create collection
-		let	collection =
-					MDSCollectionSpecialized(name: name, relevantProperties: relevantProperties, lastRevision: 0,
-							isIncludedProc: isIncludedProc)
-
-		// Add to maps
-		self.collectionsByNameMap.set(collection, for: name)
-		self.collectionsByDocumentTypeMap.append(collection, for: T.documentType)
-
-		// Update creation proc map
-		self.documentCreationProcMap.set({ T(id: $0, documentStorage: $1) }, for: T.documentType)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func documentCountForCollection(named name :String) -> Int {
-		// Return count
-		return self.collectionValuesMap.value(for: name)?.count ?? 0
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func iterateCollection<T : MDSDocument>(name :String, proc :(_ document : T) -> Void) {
-		// Iterate
-		self.collectionValuesMap.value(for: name)?.forEach() { proc(T(id: $0, documentStorage: self)) }
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func registerIndex<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
-			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any],
-			keysProc :@escaping (_ document :T) -> [String]) {
-		// Ensure this index has not already been registered
-		guard self.indexesByNameMap.value(for: name) == nil else { return }
-
-		// Create index
-		let	index =
-					MDSIndexSpecialized(name: name, relevantProperties: relevantProperties, lastRevision: 0,
-							keysProc: keysProc)
-
-		// Add to maps
-		self.indexesByNameMap.set(index, for: name)
-		self.indexesByDocumentTypeMap.append(index, for: T.documentType)
-
-		// Update creation proc map
-		self.documentCreationProcMap.set({ T(id: $0, documentStorage: $1) }, for: T.documentType)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func iterateIndex<T : MDSDocument>(name :String, keys :[String],
-			proc :(_ key :String, _ document :T) -> Void) {
-		// Setup
-		guard let indexValues = self.indexValuesMap.value(for: name) else { return }
-
-		// Iterate keys
-		keys.forEach() {
-			// Retrieve documentID
-			if let documentID = indexValues[$0] {
-				// Call proc
-				proc($0, T(id: documentID, documentStorage: self))
-			}
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
 	public func registerDocumentChangedProc(documentType :String, proc :@escaping MDSDocument.ChangedProc) {
 		//  Add
 		self.documentChangedProcsMap.append(proc, for: documentType)
 	}
 
+	//------------------------------------------------------------------------------------------------------------------
+	public func ephemeralValue<T>(for key :String) -> T? { self.ephemeralValues?[key] as? T }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func store<T>(ephemeralValue value :T?, for key :String) {
+		// Store
+		if (self.ephemeralValues == nil) && (value != nil) {
+			// First one
+			self.ephemeralValues = [key : value!]
+		} else {
+			// Update
+			self.ephemeralValues?[key] = value
+
+			// Check for empty
+			if self.ephemeralValues?.isEmpty ?? false {
+				// No more values
+				self.ephemeralValues = nil
+			}
+		}
+	}
+
 	// MARK: MDSDocumentStorageServerHandler methods
 	//------------------------------------------------------------------------------------------------------------------
-	func newDocuments(documentType :String, documentCreateInfos :[MDSDocument.CreateInfo]) {
+	func collectionRegister(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+			isIncludedSelector :String, isIncludedSelectorInfo :[String : Any]) ->
+			(documentLastRevision: Int, collectionLastDocumentRevision: Int) {
+		// Not implemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func collectionIterate(name :String, proc :@escaping (_ documentRevisionInfo :MDSDocument.RevisionInfo) -> Void) {
+		// Retrieve collection
+		guard let collection = self.collectionValuesMap.value(for: name) else { return }
+
+		// Play nice
+		self.documentMapsLock.read() {
+			// Iterate all documents in collection
+			collection.forEach() {
+				// Call proc
+				proc(MDSDocument.RevisionInfo(documentID: $0, revision: self.documentBackingByIDMap[$0]!.revision))
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentCreate(documentType :String, documentCreateInfos :[MDSDocument.CreateInfo]) {
 		fatalError("Unimplemented")
 	}
 
@@ -624,35 +647,12 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func updateDocuments(documentType :String, documentUpdateInfos :[MDSDocument.UpdateInfo]) {
+	func documentUpdate(documentType :String, documentUpdateInfos :[MDSDocument.UpdateInfo]) {
 		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerCollection(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
-			isIncludedSelector :String, isIncludedSelectorInfo :[String : Any]) ->
-			(documentLastRevision: Int, collectionLastDocumentRevision: Int) {
-		// Not implemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func iterateCollection(name :String, proc :@escaping (_ documentRevisionInfo :MDSDocument.RevisionInfo) -> Void) {
-		// Retrieve collection
-		guard let collection = self.collectionValuesMap.value(for: name) else { return }
-
-		// Play nice
-		self.documentMapsLock.read() {
-			// Iterate all documents in collection
-			collection.forEach() {
-				// Call proc
-				proc(MDSDocument.RevisionInfo(documentID: $0, revision: self.documentBackingByIDMap[$0]!.revision))
-			}
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func registerIndex(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+	func indexRegister(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			keysSelector :String, keysSelectorInfo :[String : Any]) ->
 			(documentLastRevision: Int, collectionLastDocumentRevision: Int) {
 		// Not implemented
@@ -660,7 +660,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func iterateIndex(name :String, keys :[String],
+	func indexIterate(name :String, keys :[String],
 			proc :@escaping (_ key :String, _ documentRevisionInfo :MDSDocument.RevisionInfo) -> Void) {
 		// Iterate
 		guard let indexValues = self.indexValuesMap.value(for: name) else { return }

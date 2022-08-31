@@ -87,40 +87,100 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 
 	// MARK: MDSDocumentStorage methods
 	//------------------------------------------------------------------------------------------------------------------
-	public func info(for keys :[String]) -> [String : String] {
-		// Return dictionary
-		return [String : String](keys){ self.databaseManager.string(for: $0) }
+	public func associationRegister(named name :String, fromDocumentType :String, toDocumentType :String) {
+		// Unimplemented
+		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func set(_ info :[String : String]) { info.forEach() { self.databaseManager.set($0.value, for: $0.key) } }
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func remove(keys :[String]) { keys.forEach() { self.databaseManager.set(nil, for: $0) } }
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func ephemeralValue<T>(for key :String) -> T? { self.ephemeralValues?[key] as? T }
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func store<T>(ephemeralValue value :T?, for key :String) {
-		// Store
-		if (self.ephemeralValues == nil) && (value != nil) {
-			// First one
-			self.ephemeralValues = [key : value!]
-		} else {
-			// Update
-			self.ephemeralValues?[key] = value
-
-			// Check for empty
-			if self.ephemeralValues?.isEmpty ?? false {
-				// No more values
-				self.ephemeralValues = nil
-			}
-		}
+	public func associationUpdate<T : MDSDocument, U : MDSDocument>(for name :String,
+			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)]) {
+		// Unimplemented
+		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
+	public func associationGet(for name :String) -> [(fromDocumentID :String, toDocumentID :String)] {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func associationIterate<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
+			proc :(_ document :U) -> Void) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func associationIterate<T : MDSDocument, U : MDSDocument>(for name :String, to document :U,
+			proc :(_ document :T) -> Void) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+//	//------------------------------------------------------------------------------------------------------------------
+//	public func associationGetValue<T : MDSDocument, U>(for name :String, to document :T,
+//			summedFromCachedValueWithName cachedValueName :String) -> U {
+//		// Unimplemented
+//		fatalError("Unimplemented")
+//	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func cacheRegister<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
+			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)]) {
+		// Unimplemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func collectionRegister<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
+			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
+			isIncludedProc :@escaping (_ document :T) -> Bool) {
+		// Ensure this collection has not already been registered
+		guard self.collectionsByNameMap.value(for: name) == nil else { return }
+
+		// Note this document type
+		self.databaseManager.note(documentType: T.documentType)
+
+		// Register collection
+		let	lastRevision =
+					self.databaseManager.collectionRegister(documentType: T.documentType, name: name, version: version,
+							isUpToDate: isUpToDate)
+
+		// Create collection
+		let	collection =
+					MDSCollectionSpecialized(name: name, relevantProperties: relevantProperties,
+							lastRevision: lastRevision, isIncludedProc: isIncludedProc)
+
+		// Add to maps
+		self.collectionsByNameMap.set(collection, for: name)
+		self.collectionsByDocumentTypeMap.append(collection, for: T.documentType)
+
+		// Update creation proc map
+		self.documentCreationProcMap.set({ T(id: $0, documentStorage: $1) }, for: T.documentType)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func collectionGetDocumentCount(for name :String) -> Int {
+		// Run lean
+		autoreleasepool() { _ = bringCollectionUpToDate(name: name) }
+
+		return self.databaseManager.collectionGetDocumentCount(for: name)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func collectionIterate<T : MDSDocument>(name :String, proc :(_ document : T) -> Void) {
+		// Collect document IDs
+		var	documentIDs = [String]()
+		autoreleasepool() { collectionIterate(name: name, with: { documentIDs.append($0.documentID) }) }
+
+		// Iterate document IDs
+		autoreleasepool() { documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) } }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func documentCreate<T : MDSDocument>(_ proc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
 			-> T {
 		// Setup
 		let	documentID = UUID().base64EncodedString
@@ -132,13 +192,13 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 			_ = batchInfo.addDocument(documentType: T.documentType, documentID: documentID, creationDate: date,
 					modificationDate: date)
 
-			return creationProc(documentID, self)
+			return proc(documentID, self)
 		} else {
 			// Will be creating document
 			self.documentsBeingCreatedPropertyMapMap.set([:], for: documentID)
 
 			// Create
-			let	document = creationProc(documentID, self)
+			let	document = proc(documentID, self)
 
 			// Remove property map
 			let	propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: documentID)!
@@ -242,7 +302,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func value(for property :String, in document :MDSDocument) -> Any? {
+	public func value(for property :String, of document :MDSDocument) -> Any? {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
 				let batchDocumentInfo = batchInfo.documentInfo(for: document.id) {
@@ -259,21 +319,21 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func data(for property :String, in document :MDSDocument) -> Data? {
+	public func data(for property :String, of document :MDSDocument) -> Data? {
 		// Retrieve Base64-encoded string
-		guard let string = value(for: property, in: document) as? String else { return nil }
+		guard let string = value(for: property, of: document) as? String else { return nil }
 
 		return Data(base64Encoded: string)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func date(for property :String, in document :MDSDocument) -> Date? {
+	public func date(for property :String, of document :MDSDocument) -> Date? {
 		// Return date
-		return Date(fromRFC3339Extended: value(for: property, in: document) as? String)
+		return Date(fromRFC3339Extended: value(for: property, of: document) as? String)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func set<T : MDSDocument>(_ value :Any?, for property :String, in document :T) {
+	public func set<T : MDSDocument>(_ value :Any?, for property :String, of document :T) {
 		// Setup
 		let	documentType = type(of: document).documentType
 		let	documentID = document.id
@@ -340,23 +400,112 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func addAttachment<T : MDSDocument>(for document :T, type :String, info :[String : Any], content :Data) {
+	public func attachmentAdd<T : MDSDocument>(to document :T, type :String, info :[String : Any], content :Data) {
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func updateAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
+	public func attachmentUpdate<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
 			updatedInfo :[String : Any], updatedContent :Data) {
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func removeAttachment<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) {
+	public func attachmentRemove<T : MDSDocument>(from document :T, attachmentInfo :MDSDocument.AttachmentInfo) {
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func remove(_ document :MDSDocument) {
+		// Setup
+		let	documentType = type(of: document).documentType
+		let	documentID = document.id
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+			// In batch
+			if let batchDocumentInfo = batchInfo.documentInfo(for: documentID) {
+				// Have document in batch
+				batchDocumentInfo.remove()
+			} else {
+				// Don't have document in batch
+				let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
+				batchInfo.addDocument(documentType: documentType, documentID: documentID,
+						documentBacking: documentBacking, creationDate: Date(), modificationDate: Date())
+					.remove()
+			}
+		} else {
+			// Not in batch
+			let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
+
+			// Remove from collections and indexes
+			removeFromCollections(for: documentType, documentBackingIDs: [documentBacking.id])
+			removeFromIndexes(for: documentType, documentBackingIDs: [documentBacking.id])
+
+			// Remove
+			self.databaseManager.remove(documentType: documentType, id: documentBacking.id)
+
+			// Remove from cache
+			self.documentBackingCache.remove([documentID])
+
+			// Call document changed procs
+			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .removed) }
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func indexRegister<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
+			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any],
+			keysProc :@escaping (_ document :T) -> [String]) {
+		// Ensure this index has not already been registered
+		guard self.indexesByNameMap.value(for: name) == nil else { return }
+
+		// Note this document type
+		self.databaseManager.note(documentType: T.documentType)
+
+		// Register index
+		let	lastRevision =
+					self.databaseManager.indexRegister(documentType: T.documentType, name: name, version: version,
+							isUpToDate: isUpToDate)
+
+		// Create index
+		let	index =
+					MDSIndexSpecialized(name: name, relevantProperties: relevantProperties, lastRevision: lastRevision,
+							keysProc: keysProc)
+
+		// Add to maps
+		self.indexesByNameMap.set(index, for: name)
+		self.indexesByDocumentTypeMap.append(index, for: T.documentType)
+
+		// Update creation proc map
+		self.documentCreationProcMap.set({ T(id: $0, documentStorage: $1) }, for: T.documentType)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func indexIterate<T : MDSDocument>(name :String, keys :[String],
+			proc :(_ key :String, _ document :T) -> Void) {
+		// Compose map
+		var	documentIDMap = [/* Key */ String : /* String */ String]()
+		autoreleasepool() { indexIterate(name: name, keys: keys, with: { documentIDMap[$0] = $1.documentID }) }
+
+		// Iterate map
+		autoreleasepool() { documentIDMap.forEach() { proc($0.key, T(id: $0.value, documentStorage: self)) } }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func info(for keys :[String]) -> [String : String] {
+		// Return dictionary
+		return [String : String](keys){ self.databaseManager.string(for: $0) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func set(_ info :[String : String]) { info.forEach() { self.databaseManager.set($0.value, for: $0.key) } }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func remove(keys :[String]) { keys.forEach() { self.databaseManager.set(nil, for: $0) } }
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func batch(_ proc :() throws -> MDSBatchResult) rethrows {
@@ -381,7 +530,8 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 				batchInfo.iterateDocumentChanges() { documentType, batchDocumentInfosMap in
 					// Setup
 					let	updateBatchQueue =
-								BatchQueue<MDSUpdateInfo<Int64>>() {
+								BatchQueue<MDSUpdateInfo<Int64>>(
+										maximumBatchSize: self.databaseManager.variableNumberLimit) {
 									// Update collections and indexes
 									self.updateCollections(for: documentType, updateInfos: $0)
 									self.updateIndexes(for: documentType, updateInfos: $0)
@@ -480,189 +630,59 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func remove(_ document :MDSDocument) {
-		// Setup
-		let	documentType = type(of: document).documentType
-		let	documentID = document.id
-
-		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
-			// In batch
-			if let batchDocumentInfo = batchInfo.documentInfo(for: documentID) {
-				// Have document in batch
-				batchDocumentInfo.remove()
-			} else {
-				// Don't have document in batch
-				let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
-				batchInfo.addDocument(documentType: documentType, documentID: documentID,
-						documentBacking: documentBacking, creationDate: Date(), modificationDate: Date())
-					.remove()
-			}
-		} else {
-			// Not in batch
-			let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
-
-			// Remove from collections and indexes
-			removeFromCollections(for: documentType, documentBackingIDs: [documentBacking.id])
-			removeFromIndexes(for: documentType, documentBackingIDs: [documentBacking.id])
-
-			// Remove
-			self.databaseManager.remove(documentType: documentType, id: documentBacking.id)
-
-			// Remove from cache
-			self.documentBackingCache.remove([documentID])
-
-			// Call document changed procs
-			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .removed) }
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func registerAssociation(named name :String, fromDocumentType :String, toDocumentType :String) {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func updateAssociation<T : MDSDocument, U : MDSDocument>(for name :String,
-			updates :[(action :MDSAssociationAction, fromDocument :T, toDocument :U)]) {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func getAssociations(for name :String) -> [(fromDocumentID :String, toDocumentID :String)] {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, from document :T,
-			proc :(_ document :U) -> Void) {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func iterateAssociation<T : MDSDocument, U : MDSDocument>(for name :String, to document :U,
-			proc :(_ document :T) -> Void) {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-//	//------------------------------------------------------------------------------------------------------------------
-//	public func retrieveAssociationValue<T : MDSDocument, U>(for name :String, to document :T,
-//			summedFromCachedValueWithName cachedValueName :String) -> U {
-//		// Unimplemented
-//		fatalError("Unimplemented")
-//	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func registerCache<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
-			valuesInfos :[(name :String, valueType :MDSValueType, selector :String, proc :(_ document :T) -> Any)]) {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func registerCollection<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
-			isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
-			isIncludedProc :@escaping (_ document :T) -> Bool) {
-		// Ensure this collection has not already been registered
-		guard self.collectionsByNameMap.value(for: name) == nil else { return }
-
-		// Note this document type
-		self.databaseManager.note(documentType: T.documentType)
-
-		// Register collection
-		let	lastRevision =
-					self.databaseManager.registerCollection(documentType: T.documentType, name: name, version: version,
-							isUpToDate: isUpToDate)
-
-		// Create collection
-		let	collection =
-					MDSCollectionSpecialized(name: name, relevantProperties: relevantProperties,
-							lastRevision: lastRevision, isIncludedProc: isIncludedProc)
-
-		// Add to maps
-		self.collectionsByNameMap.set(collection, for: name)
-		self.collectionsByDocumentTypeMap.append(collection, for: T.documentType)
-
-		// Update creation proc map
-		self.documentCreationProcMap.set({ T(id: $0, documentStorage: $1) }, for: T.documentType)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func documentCountForCollection(named name :String) -> Int {
-		// Run lean
-		autoreleasepool() { _ = bringCollectionUpToDate(name: name) }
-
-		return self.databaseManager.documentCountForCollection(named: name)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func iterateCollection<T : MDSDocument>(name :String, proc :(_ document : T) -> Void) {
-		// Collect document IDs
-		var	documentIDs = [String]()
-		autoreleasepool() { iterateCollection(name: name, with: { documentIDs.append($0.documentID) }) }
-
-		// Iterate document IDs
-		autoreleasepool() { documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) } }
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func registerIndex<T : MDSDocument>(named name :String, version :Int, relevantProperties :[String],
-			isUpToDate :Bool, keysSelector :String, keysSelectorInfo :[String : Any],
-			keysProc :@escaping (_ document :T) -> [String]) {
-		// Ensure this index has not already been registered
-		guard self.indexesByNameMap.value(for: name) == nil else { return }
-
-		// Note this document type
-		self.databaseManager.note(documentType: T.documentType)
-
-		// Register index
-		let	lastRevision =
-					self.databaseManager.registerIndex(documentType: T.documentType, name: name, version: version,
-							isUpToDate: isUpToDate)
-
-		// Create index
-		let	index =
-					MDSIndexSpecialized(name: name, relevantProperties: relevantProperties, lastRevision: lastRevision,
-							keysProc: keysProc)
-
-		// Add to maps
-		self.indexesByNameMap.set(index, for: name)
-		self.indexesByDocumentTypeMap.append(index, for: T.documentType)
-
-		// Update creation proc map
-		self.documentCreationProcMap.set({ T(id: $0, documentStorage: $1) }, for: T.documentType)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func iterateIndex<T : MDSDocument>(name :String, keys :[String],
-			proc :(_ key :String, _ document :T) -> Void) {
-		// Compose map
-		var	documentIDMap = [/* Key */ String : /* String */ String]()
-		autoreleasepool() { iterateIndex(name: name, keys: keys, with: { documentIDMap[$0] = $1.documentID }) }
-
-		// Iterate map
-		autoreleasepool() { documentIDMap.forEach() { proc($0.key, T(id: $0.value, documentStorage: self)) } }
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
 	public func registerDocumentChangedProc(documentType :String, proc :@escaping MDSDocument.ChangedProc) {
 		//  Add
 		self.documentChangedProcsMap.append(proc, for: documentType)
 	}
 
+	//------------------------------------------------------------------------------------------------------------------
+	public func ephemeralValue<T>(for key :String) -> T? { self.ephemeralValues?[key] as? T }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func store<T>(ephemeralValue value :T?, for key :String) {
+		// Store
+		if (self.ephemeralValues == nil) && (value != nil) {
+			// First one
+			self.ephemeralValues = [key : value!]
+		} else {
+			// Update
+			self.ephemeralValues?[key] = value
+
+			// Check for empty
+			if self.ephemeralValues?.isEmpty ?? false {
+				// No more values
+				self.ephemeralValues = nil
+			}
+		}
+	}
+
 	// MARK: MDSDocumentStorageServerHandler methods
 	//------------------------------------------------------------------------------------------------------------------
-	func newDocuments(documentType :String, documentCreateInfos :[MDSDocument.CreateInfo]) {
+	func collectionRegister(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+			isIncludedSelector :String, isIncludedSelectorInfo :[String : Any]) ->
+			(documentLastRevision: Int, collectionLastDocumentRevision: Int) {
+		// Not implemented
+		fatalError("Unimplemented")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func collectionIterate(name :String, proc :(_ documentRevisionInfo :MDSDocument.RevisionInfo) -> Void) {
+		// Bring up to date
+		let	collection = autoreleasepool() { bringCollectionUpToDate(name: name) }
+		let	documentType = collection.documentType
+
+		// Iterate
+		self.databaseManager.collectionIterate(name: name, documentType: documentType) { proc($0.documentRevisionInfo) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentCreate(documentType :String, documentCreateInfos :[MDSDocument.CreateInfo]) {
 		// Batch
 		self.databaseManager.batch() {
 			// Setup
 			let	batchQueue =
-						BatchQueue<MDSUpdateInfo<Int64>>(maximumBatchSize: 999) {
+						BatchQueue<MDSUpdateInfo<Int64>>(
+								maximumBatchSize: self.databaseManager.variableNumberLimit) {
 							// Update collections and indexes
 							self.updateCollections(for: documentType, updateInfos: $0)
 							self.updateIndexes(for: documentType, updateInfos: $0)
@@ -718,13 +738,14 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func updateDocuments(documentType :String, documentUpdateInfos :[MDSDocument.UpdateInfo]) {
+	func documentUpdate(documentType :String, documentUpdateInfos :[MDSDocument.UpdateInfo]) {
 		// Batch changes
 		self.databaseManager.batch() {
 			// Setup
 			let	map = Dictionary(documentUpdateInfos.map() { ($0.documentID, $0) })
 			let	updateBatchQueue =
-						BatchQueue<MDSUpdateInfo<Int64>>(maximumBatchSize: 999) {
+						BatchQueue<MDSUpdateInfo<Int64>>(
+								maximumBatchSize: self.databaseManager.variableNumberLimit) {
 							// Update collections and indexes
 							self.updateCollections(for: documentType, updateInfos: $0)
 							self.updateIndexes(for: documentType, updateInfos: $0)
@@ -778,25 +799,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerCollection(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
-			isIncludedSelector :String, isIncludedSelectorInfo :[String : Any]) ->
-			(documentLastRevision: Int, collectionLastDocumentRevision: Int) {
-		// Not implemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func iterateCollection(name :String, proc :(_ documentRevisionInfo :MDSDocument.RevisionInfo) -> Void) {
-		// Bring up to date
-		let	collection = autoreleasepool() { bringCollectionUpToDate(name: name) }
-		let	documentType = collection.documentType
-
-		// Iterate
-		self.databaseManager.iterateCollection(name: name, documentType: documentType) { proc($0.documentRevisionInfo) }
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func registerIndex(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+	func indexRegister(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			keysSelector :String, keysSelectorInfo :[String : Any]) ->
 			(documentLastRevision: Int, collectionLastDocumentRevision: Int) {
 		// Not implemented
@@ -804,14 +807,14 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func iterateIndex(name :String, keys :[String],
+	func indexIterate(name :String, keys :[String],
 			proc :(_ key :String, _ documentRevisionInfo :MDSDocument.RevisionInfo) -> Void) {
 		// Bring up to date
 		let	index = autoreleasepool() { bringIndexUpToDate(name: name) }
 		let	documentType = index.documentType
 
 		// Iterate index
-		self.databaseManager.iterateIndex(name: name, documentType: documentType, keys: keys)
+		self.databaseManager.indexIterate(name: name, documentType: documentType, keys: keys)
 				{ proc($0, $1.documentRevisionInfo) }
 	}
 
@@ -943,7 +946,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func iterateCollection(name :String,
+	private func collectionIterate(name :String,
 			with proc :(_ documentBackingInfo :MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
 		// Bring up to date
 		let	collection = autoreleasepool() { bringCollectionUpToDate(name: name) }
@@ -1032,7 +1035,7 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func iterateIndex(name :String, keys :[String],
+	private func indexIterate(name :String, keys :[String],
 			with proc
 					:(_ key :String,
 							_ documentBackingInfo :MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>) -> Void) {

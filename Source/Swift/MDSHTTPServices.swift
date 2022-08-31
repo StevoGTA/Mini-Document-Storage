@@ -1437,7 +1437,7 @@ class MDSHTTPServices {
 				jsonBody: documentUpdateInfos.map({ $0.httpServicesInfo }))
 	}
 
-	// MARK: - Document Add Attachment
+	// MARK: - Document Attachment Add
 	//	=> documentStorageID (path)
 	//	=> documentType (path)
 	//	=> documentID (path)
@@ -1450,7 +1450,7 @@ class MDSHTTPServices {
 	//			"id" :String,
 	//			"revision" :Int
 	//		}
-	static func httpEndpointRequestForDocumentAddAttachment(documentStorageID :String, documentType :String,
+	static func httpEndpointRequestForDocumentAttachmentAdd(documentStorageID :String, documentType :String,
 			documentID :String, info :[String : Any], content :Data, authorization :String? = nil) ->
 			MDSJSONHTTPEndpointRequest<[String : Any]> {
 		// Setup
@@ -1463,7 +1463,7 @@ class MDSHTTPServices {
 				headers: headers, jsonBody: ["info": info, "content": content.base64EncodedString()])
 	}
 
-	// MARK: - Document Get Attachment
+	// MARK: - Document Attachment Get
 	//	=> documentStorageID (path)
 	//	=> documentType (path)
 	//	=> documentID (path)
@@ -1471,7 +1471,7 @@ class MDSHTTPServices {
 	//	=> authorization (header) (optional)
 	//
 	//	<= data
-	static func httpEndpointRequestForDocumentGetAttachment(documentStorageID :String, documentType :String,
+	static func httpEndpointRequestForDocumentAttachmentGet(documentStorageID :String, documentType :String,
 			documentID :String, attachmentID :String, authorization :String? = nil) -> MDSDataHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
@@ -1484,7 +1484,7 @@ class MDSHTTPServices {
 				headers: headers)
 	}
 
-	// MARK: - Document Update Attachment
+	// MARK: - Document Attachment Update
 	//	=> documentStorageID (path)
 	//	=> documentType (path)
 	//	=> documentID (path)
@@ -1497,7 +1497,7 @@ class MDSHTTPServices {
 	//		{
 	//			"revision" :Int
 	//		}
-	static func httpEndpointRequestForDocumentUpdateAttachment(documentStorageID :String, documentType :String,
+	static func httpEndpointRequestForDocumentAttachmentUpdate(documentStorageID :String, documentType :String,
 			documentID :String, attachmentID :String, info :[String : Any], content :Data,
 			authorization :String? = nil) -> MDSJSONHTTPEndpointRequest<[String : Any]> {
 		// Setup
@@ -1511,13 +1511,13 @@ class MDSHTTPServices {
 				headers: headers, jsonBody: ["info": info, "content": content.base64EncodedString()])
 	}
 
-	// MARK: - Document Remove Attachment
+	// MARK: - Document Attachment Remove
 	//	=> documentStorageID (path)
 	//	=> documentType (path)
 	//	=> documentID (path)
 	//	=> attachmentID (path)
 	//	=> authorization (header) (optional)
-	static func httpEndpointRequestForDocumentRemoveAttachment(documentStorageID :String, documentType :String,
+	static func httpEndpointRequestForDocumentAttachmentRemove(documentStorageID :String, documentType :String,
 			documentID :String, attachmentID :String, authorization :String? = nil) -> MDSSuccessHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")

@@ -470,6 +470,8 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	// MARK: Properties
+			var	variableNumberLimit :Int { self.infoTable.variableNumberLimit }
+
 	private	let	database :SQLiteDatabase
 	private	var	databaseVersion :Int?
 
@@ -619,7 +621,7 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerCollection(documentType :String, name :String, version :Int, isUpToDate :Bool) -> Int {
+	func collectionRegister(documentType :String, name :String, version :Int, isUpToDate :Bool) -> Int {
 		// Get current info
 		let (storedVersion, storedLastRevision) = CollectionsTable.info(forName: name, in: self.collectionsMasterTable)
 
@@ -660,10 +662,10 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentCountForCollection(named name :String) -> Int { self.collectionTablesMap.value(for: name)!.count() }
+	func collectionGetDocumentCount(for name :String) -> Int { self.collectionTablesMap.value(for: name)!.count() }
 
 	//------------------------------------------------------------------------------------------------------------------
-	func iterateCollection(name :String, documentType :String, proc :(_ info :Info) -> Void) {
+	func collectionIterate(name :String, documentType :String, proc :(_ info :Info) -> Void) {
 		// Setup
 		let	(infoTable, _) = documentTables(for: documentType)
 		let	collectionContentsTable = self.collectionTablesMap.value(for: name)!
@@ -691,7 +693,7 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func registerIndex(documentType :String, name :String, version :Int, isUpToDate :Bool) -> Int {
+	func indexRegister(documentType :String, name :String, version :Int, isUpToDate :Bool) -> Int {
 		// Get current info
 		let (storedVersion, storedLastRevision) = IndexesTable.info(forName: name, in: self.indexesMasterTable)
 
@@ -731,7 +733,7 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func iterateIndex(name :String, documentType :String, keys :[String], proc :(_ key :String, _ info :Info) -> Void) {
+	func indexIterate(name :String, documentType :String, keys :[String], proc :(_ key :String, _ info :Info) -> Void) {
 		// Setup
 		let	(infoTable, _) = documentTables(for: documentType)
 		let	indexContentsTable = self.indexTablesMap.value(for: name)!

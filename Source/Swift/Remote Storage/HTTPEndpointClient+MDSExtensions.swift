@@ -809,7 +809,7 @@ extension HTTPEndpointClient {
 		return DispatchQueue.performBlocking() { completionProc in
 			// Queue
 			self.queue(
-					MDSHTTPServices.httpEndpointRequestForDocumentAddAttachment(documentStorageID: documentStorageID,
+					MDSHTTPServices.httpEndpointRequestForDocumentAttachmentAdd(documentStorageID: documentStorageID,
 							documentType: documentType, documentID: documentID, info: info, content: content,
 							authorization: authorization))
 					{ completionProc(($0, $1)) }
@@ -823,7 +823,7 @@ extension HTTPEndpointClient {
 		return DispatchQueue.performBlocking() { completionProc in
 			// Queue
 			self.queue(
-					MDSHTTPServices.httpEndpointRequestForDocumentGetAttachment(documentStorageID: documentStorageID,
+					MDSHTTPServices.httpEndpointRequestForDocumentAttachmentGet(documentStorageID: documentStorageID,
 							documentType: documentType, documentID: documentID, attachmentID: attachmentID,
 							authorization: authorization))
 					{ completionProc(($0, $1)) }
@@ -838,7 +838,7 @@ extension HTTPEndpointClient {
 		return DispatchQueue.performBlocking() { completionProc in
 			// Queue
 			self.queue(
-					MDSHTTPServices.httpEndpointRequestForDocumentUpdateAttachment(documentStorageID: documentStorageID,
+					MDSHTTPServices.httpEndpointRequestForDocumentAttachmentUpdate(documentStorageID: documentStorageID,
 							documentType: documentType, documentID: documentID, attachmentID: attachmentID,
 							info: info, content: content, authorization: authorization))
 					{ completionProc(($0, $1)) }
@@ -852,7 +852,7 @@ extension HTTPEndpointClient {
 		return DispatchQueue.performBlocking() { completionProc in
 			// QueuehttpEndpointRequestForRemoveDocumentAttachment
 			self.queue(
-					MDSHTTPServices.httpEndpointRequestForDocumentRemoveAttachment(documentStorageID: documentStorageID,
+					MDSHTTPServices.httpEndpointRequestForDocumentAttachmentRemove(documentStorageID: documentStorageID,
 							documentType: documentType, documentID: documentID, attachmentID: attachmentID,
 							authorization: authorization))
 					{ completionProc($0) }

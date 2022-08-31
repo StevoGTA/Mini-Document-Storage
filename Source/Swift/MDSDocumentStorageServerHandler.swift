@@ -13,21 +13,21 @@ import Foundation
 protocol MDSDocumentStorageServerHandler : MDSDocumentStorage {
 
 	// MARK: Instance methods
-	func newDocuments(documentType :String, documentCreateInfos :[MDSDocument.CreateInfo])
+	func collectionRegister(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+			isIncludedSelector :String, isIncludedSelectorInfo :[String : Any]) ->
+			(documentLastRevision: Int, collectionLastDocumentRevision: Int)
+	func collectionIterate(name :String, proc :@escaping (_ documentRevisionInfo :MDSDocument.RevisionInfo) -> Void)
+
+	func documentCreate(documentType :String, documentCreateInfos :[MDSDocument.CreateInfo])
 	func iterate(documentType :String, documentIDs :[String],
 			proc :(_ documentFullInfo :MDSDocument.FullInfo) -> Void)
 	func iterate(documentType :String, sinceRevision revision :Int,
 			proc :(_ documentFullInfo :MDSDocument.FullInfo) -> Void)
-	func updateDocuments(documentType :String, documentUpdateInfos :[MDSDocument.UpdateInfo])
+	func documentUpdate(documentType :String, documentUpdateInfos :[MDSDocument.UpdateInfo])
 
-	func registerCollection(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
-			isIncludedSelector :String, isIncludedSelectorInfo :[String : Any]) ->
-			(documentLastRevision: Int, collectionLastDocumentRevision: Int)
-	func iterateCollection(name :String, proc :@escaping (_ documentRevisionInfo :MDSDocument.RevisionInfo) -> Void)
-
-	func registerIndex(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+	func indexRegister(named name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			keysSelector :String, keysSelectorInfo :[String : Any]) ->
 			(documentLastRevision: Int, collectionLastDocumentRevision: Int)
-	func iterateIndex(name :String, keys :[String],
+	func indexIterate(name :String, keys :[String],
 			proc :@escaping (_ key :String, _ documentRevisionInfo :MDSDocument.RevisionInfo) -> Void)
 }
