@@ -19,7 +19,7 @@ let	{documentStorage} = require('./globals');
 //		}
 exports.registerV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	info = (event.body) ? JSON.parse(event.body) : null;
 
 	// Catch errors
@@ -65,7 +65,7 @@ exports.registerV1 = async (event) => {
 //		]
 exports.updateV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	name = event.pathParameters.name;
 	let	infos = (event.body) ? JSON.parse(event.body) : null;
 
@@ -152,12 +152,12 @@ exports.updateV1 = async (event) => {
 //		]
 exports.getDocumentsV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');			// Convert back to /
 	let	name = event.pathParameters.name;
 
 	let	queryStringParameters = event.queryStringParameters || {};
-	let	fromDocumentID = queryStringParameters.fromID;
-	let	toDocumentID = queryStringParameters.toID;
+	let	fromDocumentID = queryStringParameters.fromID?.replace(/%2B/g, '+').replace(/_/g, '/');	// Convert back to + and /
+	let	toDocumentID = queryStringParameters.toID?.replace(/%2B/g, '+').replace(/_/g, '/');		// Convert back to + and /
 	let	startIndex = queryStringParameters.startIndex || 0;
 	let	count = queryStringParameters.count;
 	let	fullInfo = queryStringParameters.fullInfo || 0;
@@ -216,11 +216,11 @@ exports.getDocumentsV1 = async (event) => {
 //	<= count
 exports.getValueV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');			// Convert back to /
 	let	name = event.pathParameters.name;
 
 	let	queryStringParameters = event.queryStringParameters || {};
-	let	fromDocumentID = queryStringParameters.fromID;
+	let	fromDocumentID = queryStringParameters.fromID.replace(/%2B/g, '+').replace(/_/g, '/');	// Convert back to + and /
 	let	action = queryStringParameters.action;
 	let	cacheName = queryStringParameters.cacheName;
 	let	cacheValueName = queryStringParameters.cacheValueName;

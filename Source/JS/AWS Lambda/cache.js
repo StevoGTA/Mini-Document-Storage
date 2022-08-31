@@ -26,7 +26,7 @@ let	{documentStorage} = require('./globals');
 //				 		   ]
 exports.registerV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	info = (event.body) ? JSON.parse(event.body) : {};
 
 	// Catch errors

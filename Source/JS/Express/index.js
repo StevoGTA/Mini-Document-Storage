@@ -22,7 +22,7 @@
 //		}
 exports.registerV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	info = request.body;
 
 	// Catch errors
@@ -93,8 +93,8 @@ exports.registerV1 = async (request, response) => {
 //		}
 exports.getDocumentsV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
-	let	name = request.params.name.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
+	let	name = request.params.name.replace(/_/g, '/');								// Convert back to /
 
 	let	keys = request.query.key;
 	if (typeof keys == 'string')

@@ -19,7 +19,7 @@ let	{documentStorage} = require('./globals');
 //	   ]
 exports.getV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
 
 	let	multiValueQueryStringParameters = event.multiValueQueryStringParameters || {};
 	let	keys = multiValueQueryStringParameters.key;
@@ -64,7 +64,7 @@ exports.getV1 = async (event) => {
 //		]
 exports.setV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = event.pathParameters.replace(/_/g, '/');	// Convert back to /
 	let	info = (event.body) ? JSON.parse(event.body) : null;
 
 	// Catch errors

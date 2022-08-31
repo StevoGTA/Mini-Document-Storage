@@ -35,7 +35,7 @@
 //		]
 exports.createV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	documentType = request.params.documentType;
 	let	infos = request.body;
 
@@ -74,7 +74,7 @@ exports.createV1 = async (request, response) => {
 //	<= count in header
 exports.getCountV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	documentType = request.params.documentType;
 
 	// Catch errors
@@ -149,7 +149,7 @@ exports.getCountV1 = async (request, response) => {
 //		]
 exports.getV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	documentType = request.params.documentType;
 
 	let	sinceRevision = request.query.sinceRevision;
@@ -159,7 +159,7 @@ exports.getV1 = async (request, response) => {
 	if (typeof documentIDs == 'string')
 		documentIDs = [documentIDs];
 	// Convert back to + and from _ to /
-	documentIDs = documentIDs.map(documentID => documentID.replace(/%2B/g, '+'));
+	documentIDs = documentIDs.map(documentID => documentID.replace(/_/g, '/'));		// Convert back to /
 
 	// Catch errors
 	try {
@@ -253,7 +253,7 @@ exports.getV1 = async (request, response) => {
 //		]
 exports.updateV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	documentType = request.params.documentType;
 	let	infos = request.body;
 
@@ -299,9 +299,9 @@ exports.updateV1 = async (request, response) => {
 //		}
 exports.addAttachmentV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	documentType = request.params.documentType;
-	let	documentID = request.params.documentID.replace(/%2B/g, '+');
+	let	documentID = request.params.documentID.replace(/_/g, '/');					// Convert back to /
 	let info = request.body.info;
 	let	content = request.body.content;
 
@@ -343,10 +343,10 @@ exports.addAttachmentV1 = async (request, response) => {
 //	<= data
 exports.getAttachmentV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	documentType = request.params.documentType;
-	let	documentID = request.params.documentID.replace(/%2B/g, '+');
-	let	attachmentID = request.params.attachmentID.replace(/%2B/g, '+');
+	let	documentID = request.params.documentID.replace(/_/g, '/');					// Convert back to /
+	let	attachmentID = request.params.attachmentID.replace(/_/g, '/');				// Convert back to /
 
 	// Catch errors
 	try {
@@ -391,10 +391,10 @@ exports.getAttachmentV1 = async (request, response) => {
 //		}
 exports.updateAttachmentV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	documentType = request.params.documentType;
-	let	documentID = request.params.documentID.replace(/%2B/g, '+');
-	let	attachmentID = request.params.attachmentID.replace(/%2B/g, '+');
+	let	documentID = request.params.documentID.replace(/_/g, '/');					// Convert back to /
+	let	attachmentID = request.params.attachmentID.replace(/_/g, '/');				// Convert back to /
 	let info = request.body.info;
 	let	content = request.body.content;
 
@@ -434,10 +434,10 @@ exports.updateAttachmentV1 = async (request, response) => {
 //	=> attachmentID (path)
 exports.removeAttachmentV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	documentType = request.params.documentType;
-	let	documentID = request.params.documentID.replace(/%2B/g, '+');
-	let	attachmentID = request.params.attachmentID.replace(/%2B/g, '+');
+	let	documentID = request.params.documentID.replace(/_/g, '/');					// Convert back to /
+	let	attachmentID = request.params.attachmentID.replace(/_/g, '/');				// Convert back to /
 
 	// Catch errors
 	try {

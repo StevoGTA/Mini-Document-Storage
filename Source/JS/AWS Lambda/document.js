@@ -38,7 +38,7 @@ let	{documentStorage} = require('./globals');
 //		]
 exports.createV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	documentType = event.pathParameters.documentType;
 	let	infos = (event.body) ? JSON.parse(event.body) : null;
 
@@ -81,7 +81,7 @@ exports.createV1 = async (event) => {
 //	<= count in header
 exports.getCountV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	documentType = event.pathParameters.documentType;
 
 	// Catch errors
@@ -159,7 +159,7 @@ exports.getCountV1 = async (event) => {
 //		]
 exports.getV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	documentType = event.pathParameters.documentType;
 
 	let	queryStringParameters = event.queryStringParameters || {};
@@ -167,7 +167,9 @@ exports.getV1 = async (event) => {
 	let	count = queryStringParameters.count;
 
 	let	multiValueQueryStringParameters = event.multiValueQueryStringParameters || {};
-	var	documentIDs = (multiValueQueryStringParameters.id || []).map(documentID => documentID.replace(/%2B/g, '+'));	// Convert back to +);
+	let	documentIDs =
+				(multiValueQueryStringParameters.id || [])
+						.map(documentID => documentID.replace(/%2B/g, '+').replace(/_/g, '/'));	// Convert back to + and /
 
 	// Catch errors
 	try {
@@ -268,7 +270,7 @@ exports.getV1 = async (event) => {
 //		]
 exports.updateV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	documentType = event.pathParameters.documentType;
 	let	infos = (event.body) ? JSON.parse(event.body) : null;
 
@@ -317,9 +319,9 @@ exports.updateV1 = async (event) => {
 //		}
 exports.addAttachmentV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	documentType = event.pathParameters.documentType;
-	let	documentID = event.pathParameters.documentID.replace(/%2B/g, '+');
+	let	documentID = event.pathParameters.documentID.replace(/_/g, '/');				// Convert back to /
 
 	let	body = JSON.parse(event.body || {});
 	let info = body.info;
@@ -367,10 +369,10 @@ exports.addAttachmentV1 = async (event) => {
 //	<= data
 exports.getAttachmentV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	documentType = event.pathParameters.documentType;
-	let	documentID = event.pathParameters.documentID.replace(/%2B/g, '+');
-	let	attachmentID = event.pathParameters.attachmentID.replace(/%2B/g, '+');
+	let	documentID = event.pathParameters.documentID.replace(/_/g, '/');				// Convert back to /
+	let	attachmentID = event.pathParameters.attachmentID.replace(/_/g, '/');			// Convert back to /
 
 	// Catch errors
 	try {
@@ -419,10 +421,10 @@ exports.getAttachmentV1 = async (event) => {
 //		}
 exports.updateAttachmentV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	documentType = event.pathParameters.documentType;
-	let	documentID = event.pathParameters.documentID.replace(/%2B/g, '+');
-	let	attachmentID = event.pathParameters.attachmentID.replace(/%2B/g, '+');
+	let	documentID = event.pathParameters.documentID.replace(/_/g, '/');				// Convert back to /
+	let	attachmentID = event.pathParameters.attachmentID.replace(/_/g, '/');			// Convert back to /
 
 	let	body = JSON.parse(event.body || {});
 	let info = body.info;
@@ -468,10 +470,10 @@ exports.updateAttachmentV1 = async (event) => {
 //	=> attachmentID (path)
 exports.removeAttachmentV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	documentType = event.pathParameters.documentType;
-	let	documentID = event.pathParameters.documentID.replace(/%2B/g, '+');
-	let	attachmentID = event.pathParameters.attachmentID.replace(/%2B/g, '+');
+	let	documentID = event.pathParameters.documentID.replace(/_/g, '/');				// Convert back to /
+	let	attachmentID = event.pathParameters.attachmentID.replace(/_/g, '/');			// Convert back to /
 
 	// Catch errors
 	try {

@@ -25,7 +25,7 @@ let	{documentStorage} = require('./globals');
 //		}
 exports.registerV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = event.pathParameters.replace(/_/g, '/');	// Convert back to /
 	let	info = (event.body) ? JSON.parse(event.body) : {};
 
 	// Catch errors
@@ -66,8 +66,8 @@ exports.registerV1 = async (event) => {
 //	<= count in header
 exports.getDocumentCountV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
-	let	name = event.pathParameters.name.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
+	let	name = event.pathParameters.name.replace(/_/g, '/');							// Convert back to /
 
 	// Catch errors
 	try {
@@ -153,8 +153,8 @@ exports.getDocumentCountV1 = async (event) => {
 //		]
 exports.getDocumentsV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/%2B/g, '+');
-	let	name = event.pathParameters.name.replace(/%2B/g, '+').replace(/_/g, '/');
+	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
+	let	name = event.pathParameters.name.replace(/_/g, '/');							// Convert back to /
 
 	let	queryStringParameters = event.queryStringParameters || {};
 	let	startIndex = queryStringParameters.startIndex || 0;

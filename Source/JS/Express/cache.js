@@ -23,7 +23,7 @@
 //				 		   ]
 exports.registerV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	info = request.body || {};
 
 	// Catch errors

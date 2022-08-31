@@ -16,7 +16,7 @@
 //		}
 exports.registerV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	info = request.body;
 
 	// Catch errors
@@ -59,7 +59,7 @@ exports.registerV1 = async (request, response) => {
 //		]
 exports.updateV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	name = request.params.name;
 	let	infos = request.body;
 
@@ -143,10 +143,10 @@ exports.updateV1 = async (request, response) => {
 //		]
 exports.getDocumentsV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	name = request.params.name;
-	let	fromDocumentID = request.query.fromID;
-	let	toDocumentID = request.query.toID;
+	let	fromDocumentID = request.query.fromID?.replace(/_/g, '/');					// Convert back to /
+	let	toDocumentID = request.query.toID?.replace(/_/g, '/');						// Convert back to /
 	let	startIndex = request.query.startIndex || 0;
 	let	count = request.query.count;
 	let	fullInfo = request.query.fullInfo || 0;
@@ -201,10 +201,10 @@ exports.getDocumentsV1 = async (request, response) => {
 //	<= count
 exports.getValueV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	name = request.params.name;
 
-	let	fromDocumentID = request.query.fromID;
+	let	fromDocumentID = request.query.fromID?.replace(/_/g, '/');					// Convert back to /
 	let	action = request.query.action;
 	let	cacheName = request.query.cacheName;
 	let	cacheValueName = request.query.cacheValueName;

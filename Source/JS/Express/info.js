@@ -16,7 +16,7 @@
 //	   ]
 exports.getV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	keys = request.query.key;
 
 	// Catch errors
@@ -56,7 +56,7 @@ exports.getV1 = async (request, response) => {
 //		]
 exports.setV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/%2B/g, '+');
+	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
 	let	info = request.body;
 
 	// Catch errors
