@@ -356,9 +356,10 @@ class MDSHTTPServices {
 
 		// MARK: Types
 		typealias SingleResponseCompletionProc = (_ info :T?, _ error :Error?) -> Void
-		typealias SingleResponseWithCountCompletionProc = (_ info :(info :T, count :Int)?, _ error :Error?) -> Void
+		typealias SingleResponseWithCountCompletionProc =
+					(_ info :(info :T, isComplete :Bool)?, _ error :Error?) -> Void
 		typealias SingleResponseWithUpToDateAndCountCompletionProc =
-					(_ isUpToDate :Bool?, _ info :(info :T, count :Int)?, _ error :Error?) -> Void
+					(_ isUpToDate :Bool?, _ info :(info :T, isComplete :Bool)?, _ error :Error?) -> Void
 		typealias MultiResponsePartialResultsProc = (_ info :T?, _ error :Error?) -> Void
 		typealias MultiResponseCompletionProc = (_ errors :[Error]) -> Void
 
@@ -445,9 +446,13 @@ class MDSHTTPServices {
 						// Single response expected with count
 						if info != nil {
 							// Got info
-							if let contentRange = response!.contentRange, let size = contentRange.size {
-								// Got size
-								self.completionWithCountProc!((info!, Int(size)), nil)
+							if let contentRange = response!.contentRange {
+								// Got contentRange
+								let	isComplete =
+											(contentRange.range == nil) ||
+													((contentRange.range!.start + contentRange.range!.length) ==
+															contentRange.size!)
+								self.completionWithCountProc!((info!, isComplete), nil)
 							} else {
 								// Did not get size
 								self.completionWithCountProc!(nil,
@@ -461,9 +466,13 @@ class MDSHTTPServices {
 						// Single response expected with count, but could be not up to date
 						if info != nil {
 							// Got info
-							if let contentRange = response!.contentRange, let size = contentRange.size {
-								// Got size
-								self.completionWithUpToDateAndCountProc!(true, (info!, Int(size)), nil)
+							if let contentRange = response!.contentRange {
+								// Got contentRange
+								let	isComplete =
+											(contentRange.range == nil) ||
+													((contentRange.range!.start + contentRange.range!.length) ==
+															contentRange.size!)
+								self.completionWithUpToDateAndCountProc!(true, (info!, isComplete), nil)
 							} else {
 								// Did not get size
 								self.completionWithUpToDateAndCountProc!(nil, nil,
