@@ -230,7 +230,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						DispatchQueue.performBlocking() { completionProc in
 							// Call HTTP Endpoint Client
 							self.httpEndpointClient.queue(
-									MDSHTTPServices.httpEndpointRequestForGetDocuments(
+									MDSHTTPServices.httpEndpointRequestForDocumentGet(
 											documentStorageID: self.documentStorageID, documentType: documentType,
 											sinceRevision: lastRevision, authorization: self.authorization),
 									partialResultsProc: { self.updateCaches(for: documentType, with: $0) },
@@ -713,7 +713,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						DispatchQueue.performBlocking() { completionProc in
 							// Queue
 							self.httpEndpointClient.queue(
-									MDSHTTPServices.httpEndpointRequestForGetAssociationDocumentInfos(
+									MDSHTTPServices.httpEndpointRequestForAssociationGetDocumentInfos(
 											documentStorageID: self.documentStorageID, name: name,
 											fromDocumentID: document.id, startIndex: startIndex,
 											authorization: self.authorization))
@@ -754,7 +754,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						DispatchQueue.performBlocking() { completionProc in
 							// Queue
 							self.httpEndpointClient.queue(
-									MDSHTTPServices.httpEndpointRequestForGetAssociationDocumentInfos(
+									MDSHTTPServices.httpEndpointRequestForAssociationGetDocumentInfos(
 											documentStorageID: self.documentStorageID, name: name,
 											toDocumentID: document.id, startIndex: startIndex,
 											authorization: self.authorization))
@@ -794,7 +794,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						DispatchQueue.performBlocking() { completionProc in
 							// Call HTTP Endpoint Client
 							self.httpEndpointClient.queue(
-									MDSHTTPServices.httpEndpointRequestForGetAssocationIntegerValue(
+									MDSHTTPServices.httpEndpointRequestForAssocationGetIntegerValue(
 											documentStorageID: self.documentStorageID, name: name, fromID: document.id,
 											action: .sum, cacheName: T.documentType, cacheValueName: cachedValueName,
 											authorization: self.authorization))
@@ -829,7 +829,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 							documentType: T.documentType, relevantProperties: relevantProperties,
 							valueInfos:
 									valuesInfos.map(
-											{ MDSHTTPServices.RegisterCacheEndpointValueInfo($0.name, $0.valueType,
+											{ MDSHTTPServices.CacheRegisterEndpointValueInfo($0.name, $0.valueType,
 													$0.selector) }),
 							authorization: self.authorization)
 		guard error == nil else {
@@ -870,7 +870,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						DispatchQueue.performBlocking() { completionProc in
 							// Call HTTP Endpoint Client
 							self.httpEndpointClient.queue(
-									MDSHTTPServices.httpEndpointRequestForGetCollectionDocumentCount(
+									MDSHTTPServices.httpEndpointRequestForCollectionGetDocumentCount(
 											documentStorageID: self.documentStorageID, name: name,
 											authorization: self.authorization))
 									{ completionProc(($0, $1)) }
@@ -904,7 +904,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						DispatchQueue.performBlocking() { completionProc in
 							// Queue
 							self.httpEndpointClient.queue(
-									MDSHTTPServices.httpEndpointRequestForGetCollectionDocumentInfos(
+									MDSHTTPServices.httpEndpointRequestForCollectionGetDocumentInfo(
 											documentStorageID: self.documentStorageID, name: name,
 											startIndex: startIndex, authorization: self.authorization))
 									{ completionProc(($0, $1, $2)) }
@@ -974,7 +974,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 			// Queue info retrieval
 			self.httpEndpointClient.queue(
-					MDSHTTPServices.httpEndpointRequestForGetIndexDocumentInfos(
+					MDSHTTPServices.httpEndpointRequestForIndexGetDocumentInfo(
 							documentStorageID: self.documentStorageID, name: name, keys: Array(keysRemaining),
 							authorization: self.authorization),
 					partialResultsProc: {
@@ -1265,7 +1265,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 		// Queue document retrieval
 		self.httpEndpointClient.queue(
-				MDSHTTPServices.httpEndpointRequestForGetDocuments(documentStorageID: self.documentStorageID,
+				MDSHTTPServices.httpEndpointRequestForDocumentGet(documentStorageID: self.documentStorageID,
 						documentType: documentType, documentIDs: documentIDs, authorization: self.authorization),
 				partialResultsProc: {
 					// Handle results

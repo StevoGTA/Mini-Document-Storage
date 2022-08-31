@@ -44,7 +44,7 @@ class IndexUnitTests : XCTestCase {
 
 		// Perform
 		let	(isUpToDate, info, error) =
-					config.httpEndpointClient.indexGetDocumentInfos(documentStorageID: "ABC", name: "ABC",
+					config.httpEndpointClient.indexGetDocumentInfo(documentStorageID: "ABC", name: "ABC",
 							keys: ["ABC"])
 
 		// Evaluate results
@@ -73,7 +73,7 @@ class IndexUnitTests : XCTestCase {
 
 		// Perform
 		let	(isUpToDate, info, error) =
-					config.httpEndpointClient.indexGetDocumentInfos(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.indexGetDocumentInfo(documentStorageID: config.documentStorageID,
 							name: "ABC", keys: ["ABC"])
 
 		// Evaluate results

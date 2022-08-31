@@ -46,7 +46,7 @@ class IndexTransactionTests : XCTestCase {
 
 		// Retrieve documents
 		let	(getDocumentInfosIsUpToDate, getDocumentInfosMap, getDocumentInfosError) =
-					config.httpEndpointClient.indexGetDocumentInfos(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.indexGetDocumentInfo(documentStorageID: config.documentStorageID,
 							name: indexName, keys: ["abc", "def"])
 		XCTAssertNotNil(getDocumentInfosIsUpToDate, "get document infos did not return isUpToDate")
 		if getDocumentInfosIsUpToDate != nil {
@@ -69,7 +69,7 @@ class IndexTransactionTests : XCTestCase {
 
 		// Retrieve documents (should be not up to date)
 		let	(getDocumentsIsUpToDate1, getDocumentsMap1, getDocumentsError1) =
-					config.httpEndpointClient.indexGetDocuments(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.indexGetDocument(documentStorageID: config.documentStorageID,
 							name: indexName, keys: ["123", "456"])
 		XCTAssertNotNil(getDocumentsIsUpToDate1, "get documents (1) did not return isUpToDate")
 		if getDocumentsIsUpToDate1 != nil {
@@ -81,7 +81,7 @@ class IndexTransactionTests : XCTestCase {
 
 		// Retrieve documents again
 		let	(getDocumentsIsUpToDate2, getDocumentsMap2, getDocumentsError2) =
-					config.httpEndpointClient.indexGetDocuments(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.indexGetDocument(documentStorageID: config.documentStorageID,
 							name: indexName, keys: ["123", "456"])
 		XCTAssertNotNil(getDocumentsIsUpToDate2, "get documents (2) did not return isUpToDate")
 		if getDocumentsIsUpToDate2 != nil {

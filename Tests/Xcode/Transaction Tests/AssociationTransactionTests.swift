@@ -68,7 +68,7 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve from
 		let	(fromInfo1, fromError1) =
-					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.associationGetDocumentInfo(documentStorageID: config.documentStorageID,
 							name: associationName, fromDocumentID: parent.id)
 		XCTAssertNotNil(fromInfo1, "get from (1) did not receive info")
 		if fromInfo1 != nil {
@@ -82,7 +82,7 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve to
 		let	(toInfo1, toError1) =
-					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.associationGetDocumentInfo(documentStorageID: config.documentStorageID,
 							name: associationName, toDocumentID: child.id)
 		XCTAssertNotNil(toInfo1, "get to (1) did not receive info")
 		if toInfo1 != nil {
@@ -103,7 +103,7 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve from
 		let	(fromInfo2, fromError2) =
-					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.associationGetDocumentInfo(documentStorageID: config.documentStorageID,
 							name: associationName, fromDocumentID: parent.id)
 		XCTAssertNotNil(fromInfo2, "get from (2) did not receive info")
 		if fromInfo2 != nil {
@@ -113,7 +113,7 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve to
 		let	(toInfo2, toError2) =
-					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.associationGetDocumentInfo(documentStorageID: config.documentStorageID,
 							name: associationName, toDocumentID: child.id)
 		XCTAssertNotNil(toInfo2, "get to (2) did not receive info")
 		if toInfo2 != nil {
@@ -171,7 +171,7 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve from
 		let	(fromInfo1, fromError1) =
-					config.httpEndpointClient.associationGetDocuments(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.associationGetDocument(documentStorageID: config.documentStorageID,
 							name: associationName, fromDocumentID: parent.id)
 		XCTAssertNotNil(fromInfo1, "get from (1) did not receive info")
 		if fromInfo1 != nil {
@@ -185,7 +185,7 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve to
 		let	(toInfo1, toError1) =
-					config.httpEndpointClient.associationGetDocuments(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.associationGetDocument(documentStorageID: config.documentStorageID,
 							name: associationName, toDocumentID: child.id)
 		XCTAssertNotNil(toInfo1, "get to (1) did not receive info")
 		if toInfo1 != nil {
@@ -206,7 +206,7 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve from
 		let	(fromInfo2, fromError2) =
-					config.httpEndpointClient.associationGetDocuments(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.associationGetDocument(documentStorageID: config.documentStorageID,
 							name: associationName, fromDocumentID: parent.id)
 		XCTAssertNotNil(fromInfo2, "get from (2) did not receive info")
 		if fromInfo2 != nil {
@@ -216,7 +216,7 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve to
 		let	(toInfo2, toError2) =
-					config.httpEndpointClient.associationGetDocuments(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.associationGetDocument(documentStorageID: config.documentStorageID,
 							name: associationName, toDocumentID: child.id)
 		XCTAssertNotNil(toInfo2, "get to (2) did not receive info")
 		if toInfo2 != nil {

@@ -112,7 +112,7 @@ class AssociationUnitTests : XCTestCase {
 		let	parent = Parent(id: "ABC", documentStorage: documentStorage)
 
 		let	(info, error) =
-					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: "ABC", name: "ABC",
+					config.httpEndpointClient.associationGetDocumentInfo(documentStorageID: "ABC", name: "ABC",
 							fromDocumentID: parent.id)
 
 		// Evaluate results
@@ -142,7 +142,7 @@ class AssociationUnitTests : XCTestCase {
 		let	parent = Parent(id: "ABC", documentStorage: documentStorage)
 
 		let	(info, error) =
-					config.httpEndpointClient.associationGetDocuments(documentStorageID: "ABC", name: "ABC",
+					config.httpEndpointClient.associationGetDocument(documentStorageID: "ABC", name: "ABC",
 							fromDocumentID: parent.id)
 
 		// Evaluate results
@@ -172,7 +172,7 @@ class AssociationUnitTests : XCTestCase {
 		let	child = Child(id: "ABC", documentStorage: documentStorage)
 
 		let	(info, error) =
-					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: "ABC", name: "ABC",
+					config.httpEndpointClient.associationGetDocumentInfo(documentStorageID: "ABC", name: "ABC",
 							toDocumentID: child.id)
 
 		// Evaluate results
@@ -202,7 +202,7 @@ class AssociationUnitTests : XCTestCase {
 		let	child = Child(id: "ABC", documentStorage: documentStorage)
 
 		let	(info, error) =
-					config.httpEndpointClient.associationGetDocuments(documentStorageID: "ABC", name: "ABC",
+					config.httpEndpointClient.associationGetDocument(documentStorageID: "ABC", name: "ABC",
 							toDocumentID: child.id)
 
 		// Evaluate results

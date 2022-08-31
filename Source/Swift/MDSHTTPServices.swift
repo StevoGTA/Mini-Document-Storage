@@ -221,7 +221,7 @@ class MDSHTTPServices {
 							completionProc(Int(size), nil)
 						} else {
 							// Bad server
-							completionProc(nil, HTTPEndpointClientMDSExtensionsError.didNotReceiveSizeInHeader)
+							completionProc(nil, MDSError.didNotReceiveSizeInHeader)
 						}
 					} else if statusCode == 409 {
 						// Not up to date
@@ -270,8 +270,7 @@ class MDSHTTPServices {
 							completionWithUpToDateProc((true, Int(size)), nil)
 						} else {
 							// Bad server
-							completionWithUpToDateProc(nil,
-									HTTPEndpointClientMDSExtensionsError.didNotReceiveSizeInHeader)
+							completionWithUpToDateProc(nil, MDSError.didNotReceiveSizeInHeader)
 						}
 					} else if statusCode == 409 {
 						// Not up to date
@@ -542,13 +541,13 @@ class MDSHTTPServices {
 	//			"toDocumentType" :String,
 	//		}
 	//	=> authorization (header) (optional)
-	typealias RegisterAssociationEndpointInfo =
+	typealias AssociationRegisterEndpointInfo =
 			(documentStorageID :String, name :String, fromDocumentType :String, toDOcumentType :String,
 					authorization :String?)
-	static	let	registerAssociationEndpoint =
-						JSONHTTPEndpoint<[String : Any], RegisterAssociationEndpointInfo>(method: .put,
+	static	let	associationRegisteEndpoint =
+						JSONHTTPEndpoint<[String : Any], AssociationRegisterEndpointInfo>(method: .put,
 								path: "/v1/association/:documentStorageID")
-								{ (urlComponents, headers, info) -> RegisterAssociationEndpointInfo in
+								{ (urlComponents, headers, info) -> AssociationRegisterEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
@@ -569,7 +568,7 @@ class MDSHTTPServices {
 									return (documentStorageID, name, fromDocumentType, toDocumentType,
 											headers["Authorization"])
 								}
-	static func httpEndpointRequestForRegisterAssociation(documentStorageID :String, name :String,
+	static func httpEndpointRequestForAssociationRegister(documentStorageID :String, name :String,
 			fromDocumentType :String, toDocumentType :String, authorization :String? = nil) ->
 			MDSSuccessHTTPEndpointRequest {
 		// Setup
@@ -597,14 +596,14 @@ class MDSHTTPServices {
 	//			}
 	//		]
 	//	=> authorization (header) (optional)
-	typealias UpdateAssociationEndpointInfo =
+	typealias AssociationUpdateEndpointInfo =
 				(documentStorageID :String, name :String,
 						updates :[(action :MDSAssociationAction, fromDocumentID :String, toDocumentID :String)],
 						authorization :String?)
-	static	let	updateAssocationEndpoint =
-						JSONHTTPEndpoint<[[String : Any]], UpdateAssociationEndpointInfo>(method: .patch,
+	static	let	assocationUpdateEndpoint =
+						JSONHTTPEndpoint<[[String : Any]], AssociationUpdateEndpointInfo>(method: .patch,
 								path: "/v1/association/:documentStorageID/:name")
-								{ (urlComponents, headers, infos) -> UpdateAssociationEndpointInfo in
+								{ (urlComponents, headers, infos) -> AssociationUpdateEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
@@ -630,7 +629,7 @@ class MDSHTTPServices {
 
 									return (documentStorageID, name, updates, headers["Authorization"])
 								}
-	static func httpEndpointRequestForUpdateAssocation(documentStorageID :String, name :String,
+	static func httpEndpointRequestForAssocationUpdate(documentStorageID :String, name :String,
 			updates :[(action :MDSAssociationAction, fromDocumentID :String, toDocumentID :String)],
 			authorization :String? = nil) -> MDSSuccessHTTPEndpointRequest {
 		// Setup
@@ -658,7 +657,6 @@ class MDSHTTPServices {
 	//	=> fullInfo (query) (optional, default is false)
 	//	=> authorization (header) (optional)
 	//
-// TODO: Implement this
 	//	<= json (no fromID nor toID given)
 	//		[
 	//			{
@@ -702,13 +700,13 @@ class MDSHTTPServices {
 	//			},
 	//			...
 	//		]
-	class GetAssociationHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : String]]> {}
-	typealias GetAssociationEndpointInfo =
+	class AssociationGetHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : String]]> {}
+	typealias AssociationGetEndpointInfo =
 				(documentStorageID :String, name :String, fromDocumentID :String?, toDocumentID :String?,
 						startIndex :Int, count :Int?, fullInfo :Bool, authorization :String?)
-	static	let	getAssociationEndpoint =
+	static	let	associationGetEndpoint =
 						BasicHTTPEndpoint(method: .get, path: "/v1/assocation/:documentStorageID/:name")
-								{ (urlComponents, headers) -> GetAssociationEndpointInfo in
+								{ (urlComponents, headers) -> AssociationGetEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
@@ -724,8 +722,8 @@ class MDSHTTPServices {
 									return (documentStorageID, name, fromDocumentID, toDocumentID, startIndex ?? 0,
 											count, (fullInfo ?? 0) == 1, headers["Authorization"])
 								}
-	static func httpEndpointRequestForGetAssociation(documentStorageID :String, name :String, startIndex :Int = 0,
-			count :Int? = nil, authorization :String? = nil) -> GetAssociationHTTPEndpointRequest {
+	static func httpEndpointRequestForAssociationGet(documentStorageID :String, name :String, startIndex :Int = 0,
+			count :Int? = nil, authorization :String? = nil) -> AssociationGetHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
@@ -734,10 +732,10 @@ class MDSHTTPServices {
 		queryComponents["count"] = count
 
 		// Return endpoint request
-		return GetAssociationHTTPEndpointRequest(method: .get, path: "/v1/association/\(documentStorageIDUse)/\(name)",
+		return AssociationGetHTTPEndpointRequest(method: .get, path: "/v1/association/\(documentStorageIDUse)/\(name)",
 				queryComponents: queryComponents, headers: headers)
 	}
-	static func httpEndpointRequestForGetAssociationDocumentInfos(documentStorageID :String, name :String,
+	static func httpEndpointRequestForAssociationGetDocumentInfos(documentStorageID :String, name :String,
 			fromDocumentID :String, startIndex :Int = 0, count :Int? = nil, authorization :String? = nil) ->
 			GetDocumentInfosHTTPEndpointRequest {
 		// Setup
@@ -757,7 +755,7 @@ class MDSHTTPServices {
 				path: "/v1/association/\(documentStorageIDUse)/\(name)", queryComponents: queryComponents,
 				headers: headers)
 	}
-	static func httpEndpointRequestForGetAssociationDocuments(documentStorageID :String, name :String,
+	static func httpEndpointRequestForAssociationGetDocuments(documentStorageID :String, name :String,
 			fromDocumentID :String, startIndex :Int = 0, count :Int? = nil, authorization :String? = nil) ->
 			GetDocumentsHTTPEndpointRequest {
 		// Setup
@@ -776,7 +774,7 @@ class MDSHTTPServices {
 		return GetDocumentsHTTPEndpointRequest(method: .get, path: "/v1/association/\(documentStorageIDUse)/\(name)",
 				queryComponents: queryComponents, headers: headers)
 	}
-	static func httpEndpointRequestForGetAssociationDocumentInfos(documentStorageID :String, name :String,
+	static func httpEndpointRequestForAssociationGetDocumentInfos(documentStorageID :String, name :String,
 			toDocumentID :String, startIndex :Int = 0, count :Int? = nil, authorization :String? = nil) ->
 			GetDocumentInfosHTTPEndpointRequest {
 		// Setup
@@ -796,7 +794,7 @@ class MDSHTTPServices {
 				path: "/v1/association/\(documentStorageIDUse)/\(name)", queryComponents: queryComponents,
 				headers: headers)
 	}
-	static func httpEndpointRequestForGetAssociationDocuments(documentStorageID :String, name :String,
+	static func httpEndpointRequestForAssociationGetDocuments(documentStorageID :String, name :String,
 			toDocumentID :String, startIndex :Int = 0, count :Int? = nil, authorization :String? = nil) ->
 			GetDocumentsHTTPEndpointRequest {
 		// Setup
@@ -827,15 +825,15 @@ class MDSHTTPServices {
 	//
 	//	<= HTTP Status 409 if cache is out of date => call endpoint again
 	//	<= count
-	enum GetAssociationValueAction : String {
+	enum AssociationGetValueAction : String {
 		case sum = "sum"
 	}
-	typealias GetAssociationValueEndpointInfo =
-				(documentStorageID :String, name :String, fromID :String, action :GetAssociationValueAction,
+	typealias AssociationGetValueEndpointInfo =
+				(documentStorageID :String, name :String, fromID :String, action :AssociationGetValueAction,
 						cacheName :String, cacheNameValue :String, authorization :String?)
-	static	let	getAssocationValueEndpoint =
+	static	let	assocationGetValueEndpoint =
 						BasicHTTPEndpoint(method: .get, path: "/v1/association/:documentStorageID/:name/value")
-								{ (urlComponents, headers) -> GetAssociationValueEndpointInfo in
+								{ (urlComponents, headers) -> AssociationGetValueEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
@@ -847,7 +845,7 @@ class MDSHTTPServices {
 										throw HTTPEndpointError.badRequest(with: "missing fromID")
 									}
 									guard let action =
-											GetAssociationValueAction(
+											AssociationGetValueAction(
 													rawValue: (queryItemsMap["action"] as? String) ?? "") else {
 										// Missing/invalid action
 										throw HTTPEndpointError.badRequest(with: "missing or invalid action")
@@ -864,8 +862,8 @@ class MDSHTTPServices {
 									return (documentStorageID, name, fromID, action, cacheName, cacheValueName,
 											headers["Authorization"])
 								}
-	static func httpEndpointRequestForGetAssocationIntegerValue(documentStorageID :String, name :String, fromID :String,
-			action :GetAssociationValueAction, cacheName :String, cacheValueName :String, authorization :String? = nil)
+	static func httpEndpointRequestForAssocationGetIntegerValue(documentStorageID :String, name :String, fromID :String,
+			action :AssociationGetValueAction, cacheName :String, cacheValueName :String, authorization :String? = nil)
 			-> MDSIntegerWithUpToDateHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
@@ -898,14 +896,14 @@ class MDSHTTPServices {
 	//							...
 	//				 		   ]
 	//	=> authorization (header) (optional)
-	typealias RegisterCacheEndpointValueInfo = (name :String, valueType :MDSValueType, selector :String)
-	typealias RegisterCacheEndpointInfo =
+	typealias CacheRegisterEndpointValueInfo = (name :String, valueType :MDSValueType, selector :String)
+	typealias CacheRegisterEndpointInfo =
 				(documentStorageID :String, name :String, documentType :String, relevantProperties :[String],
-						valuesInfos :[RegisterCacheEndpointValueInfo], authorization :String?)
-	static	let	registerCacheEndpoint =
-						JSONHTTPEndpoint<[String : Any], RegisterCacheEndpointInfo>(method: .put,
+						valuesInfos :[CacheRegisterEndpointValueInfo], authorization :String?)
+	static	let	cacheRegisterEndpoint =
+						JSONHTTPEndpoint<[String : Any], CacheRegisterEndpointInfo>(method: .put,
 								path: "/v1/cache/:documentStorageID")
-								{ (urlComponents, headers, info) -> RegisterCacheEndpointInfo in
+								{ (urlComponents, headers, info) -> CacheRegisterEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
@@ -927,7 +925,7 @@ class MDSHTTPServices {
 										throw HTTPEndpointError.badRequest(with: "missing or invalid valuesInfos")
 									}
 									let	valuesInfos =
-												valuesInfosInfo.compactMap({ info -> RegisterCacheEndpointValueInfo? in
+												valuesInfosInfo.compactMap({ info -> CacheRegisterEndpointValueInfo? in
 													// Setup
 													guard let name = info["name"] as? String,
 															let valueType = info["valueType"] as? String,
@@ -935,7 +933,7 @@ class MDSHTTPServices {
 															let selector = info["selector"] as? String else
 														{ return nil }
 
-													return RegisterCacheEndpointValueInfo(name, .integer, selector)
+													return CacheRegisterEndpointValueInfo(name, .integer, selector)
 												})
 									guard valuesInfos.count == valuesInfosInfo.count else {
 										// Invalid values infos
@@ -945,8 +943,8 @@ class MDSHTTPServices {
 									return (documentStorageID, name, documentType, relevantProperties, valuesInfos,
 											headers["Authorization"])
 								}
-	static func httpEndpointRequestForRegisterCache(documentStorageID :String, name :String, documentType :String,
-			relevantProperties :[String] = [], valueInfos :[RegisterCacheEndpointValueInfo],
+	static func httpEndpointRequestForCacheRegister(documentStorageID :String, name :String, documentType :String,
+			relevantProperties :[String] = [], valueInfos :[CacheRegisterEndpointValueInfo],
 			authorization :String? = nil) -> MDSSuccessHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
@@ -982,14 +980,14 @@ class MDSHTTPServices {
 	//									  },
 	//		}
 	//	=> authorization (header) (optional)
-	typealias RegisterCollectionEndpointInfo =
+	typealias CollectionRegisterEndpointInfo =
 				(documentStorageID :String, name :String, documentType :String, relevantProperties :[String],
 						isUpToDate :Bool, isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
 						authorization :String?)
-	static	let	registerCollectionEndpoint =
-						JSONHTTPEndpoint<[String : Any], RegisterCollectionEndpointInfo>(method: .put,
+	static	let	collectionRegisterEndpoint =
+						JSONHTTPEndpoint<[String : Any], CollectionRegisterEndpointInfo>(method: .put,
 								path: "/v1/collection/:documentStorageID")
-								{ (urlComponents, headers, info) -> RegisterCollectionEndpointInfo in
+								{ (urlComponents, headers, info) -> CollectionRegisterEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
@@ -1023,7 +1021,7 @@ class MDSHTTPServices {
 									return (documentStorageID, name, documentType, relevantProperties, isUpToDate,
 											isIncludedSelector, isIncludedSelectorInfo, headers["Authorization"])
 								}
-	static func httpEndpointRequestForRegisterCollection(documentStorageID :String, name :String, documentType :String,
+	static func httpEndpointRequestForCollectionRegister(documentStorageID :String, name :String, documentType :String,
 			relevantProperties :[String] = [], isUpToDate :Bool = false, isIncludedSelector :String,
 			isIncludedSelectorInfo :[String : Any] = [:], authorization :String? = nil) ->
 			MDSSuccessHTTPEndpointRequest {
@@ -1050,10 +1048,10 @@ class MDSHTTPServices {
 	//
 	//	<= HTTP Status 409 if collection is out of date => call endpoint again
 	//	<= count in header
-	typealias GetCollectionDocumentCountEndpointInfo = (documentStorageID :String, name :String, authorization :String?)
-	static	let	getCollectionDocumentCountEndpoint =
+	typealias CollectionGetDocumentCountEndpointInfo = (documentStorageID :String, name :String, authorization :String?)
+	static	let	collectionGetDocumentCountEndpoint =
 						BasicHTTPEndpoint(method: .head, path: "/v1/collection/:documentStorageID/:name")
-								{ (urlComponents, headers) -> GetCollectionDocumentCountEndpointInfo in
+								{ (urlComponents, headers) -> CollectionGetDocumentCountEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
@@ -1061,7 +1059,7 @@ class MDSHTTPServices {
 
 									return (documentStorageID, name, headers["Authorization"])
 								}
-	static func httpEndpointRequestForGetCollectionDocumentCount(documentStorageID :String, name :String,
+	static func httpEndpointRequestForCollectionGetDocumentCount(documentStorageID :String, name :String,
 			authorization :String? = nil) -> MDSHeadWithUpToDateHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
@@ -1116,14 +1114,14 @@ class MDSHTTPServices {
 	//			},
 	//			...
 	//		]
-	class GetCollectionDocumentInfosHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : Any]]> {}
-	class GetCollectionDocumentsHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : Any]]> {}
-	typealias GetCollectionDocumentInfosEndpointInfo =
+	class CollectionGetDocumentInfoHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : Any]]> {}
+	class CollectionGetDocumentHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : Any]]> {}
+	typealias CollectionGetDocumentInfoEndpointInfo =
 			(documentStorageID :String, name :String, startIndex :Int, count :Int?, fullInfo :Bool,
 					authorization :String?)
-	static	let	getCollectionDocumentInfosEndpoint =
+	static	let	collectionGetDocumentInfoEndpoint =
 						BasicHTTPEndpoint(method: .get, path: "/v1/collection/:documentStorageID/:name")
-								{ (urlComponents, headers) -> GetCollectionDocumentInfosEndpointInfo in
+								{ (urlComponents, headers) -> CollectionGetDocumentInfoEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
@@ -1137,9 +1135,9 @@ class MDSHTTPServices {
 									return (documentStorageID, name, startIndex ?? 0, count, (fullInfo ?? 0) == 1,
 											headers["Authorization"])
 								}
-	static func httpEndpointRequestForGetCollectionDocumentInfos(documentStorageID :String, name :String,
+	static func httpEndpointRequestForCollectionGetDocumentInfo(documentStorageID :String, name :String,
 			startIndex :Int = 0, count :Int? = nil, authorization :String? = nil) ->
-			GetCollectionDocumentInfosHTTPEndpointRequest {
+			CollectionGetDocumentInfoHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	nameUse = name.replacingOccurrences(of: "/", with: "_")
@@ -1153,13 +1151,13 @@ class MDSHTTPServices {
 		queryComponents["count"] = count
 
 		// Return endpoint request
-		return GetCollectionDocumentInfosHTTPEndpointRequest(method: .get,
+		return CollectionGetDocumentInfoHTTPEndpointRequest(method: .get,
 				path: "/v1/collection/\(documentStorageIDUse)/\(nameUse)", queryComponents: queryComponents,
 				headers: headers)
 	}
-	static func httpEndpointRequestForGetCollectionDocuments(documentStorageID :String, name :String,
+	static func httpEndpointRequestForCollectionGetDocument(documentStorageID :String, name :String,
 			startIndex :Int = 0, count :Int? = nil, authorization :String? = nil) ->
-			GetCollectionDocumentsHTTPEndpointRequest {
+			CollectionGetDocumentHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	nameUse = name.replacingOccurrences(of: "/", with: "_")
@@ -1173,7 +1171,7 @@ class MDSHTTPServices {
 		queryComponents["count"] = count
 
 		// Return endpoint request
-		return GetCollectionDocumentsHTTPEndpointRequest(method: .get,
+		return CollectionGetDocumentHTTPEndpointRequest(method: .get,
 				path: "/v1/collection/\(documentStorageIDUse)/\(nameUse)", queryComponents: queryComponents,
 				headers: headers)
 	}
@@ -1206,13 +1204,13 @@ class MDSHTTPServices {
 	//			},
 	//			...
 	//		]
-	typealias CreateDocumentsEndpointInfo =
+	typealias DocumentCreateEndpointInfo =
 				(documentStorageID :String, documentType :String, documentCreateInfos :[MDSDocument.CreateInfo],
 						authorization :String?)
-	static	let	createDocumentsEndpoint =
-						JSONHTTPEndpoint<Any, CreateDocumentsEndpointInfo>(method: .post,
+	static	let	documentCreateEndpoint =
+						JSONHTTPEndpoint<Any, DocumentCreateEndpointInfo>(method: .post,
 								path: "/v1/document/:documentStorageID/:type")
-								{ (urlComponents, headers, info) -> CreateDocumentsEndpointInfo in
+								{ (urlComponents, headers, info) -> DocumentCreateEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
@@ -1234,7 +1232,7 @@ class MDSHTTPServices {
 									return (documentStorageID, documentType, documentCreateInfos,
 											headers["Authorization"])
 								}
-	static func httpEndpointRequestForCreateDocuments(documentStorageID :String, documentType :String,
+	static func httpEndpointRequestForDocumentCreate(documentStorageID :String, documentType :String,
 			documentCreateInfos :[MDSDocument.CreateInfo], authorization :String? = nil) ->
 			MDSJSONHTTPEndpointRequest<[[String : Any]]> {
 		// Setup
@@ -1252,7 +1250,7 @@ class MDSHTTPServices {
 	//	=> authorization (header) (optional)
 	//
 	//	<= count in header
-	static func httpEndpointRequestForGetDocumentCount(documentStorageID :String, documentType :String,
+	static func httpEndpointRequestForDocumentGetCount(documentStorageID :String, documentType :String,
 			authorization :String? = nil) -> MDSHeadHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
@@ -1299,14 +1297,14 @@ class MDSHTTPServices {
 	//			},
 	//			...
 	//		]
-	class GetDocumentsSinceRevisionHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : Any]]> {}
-	class GetDocumentsForDocumentIDsHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : Any]]> {}
-	typealias GetDocumentsEndpointInfo =
+	class DocumentGetSinceRevisionHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : Any]]> {}
+	class DocumentGetForDocumentIDsHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[[String : Any]]> {}
+	typealias DocumentGetEndpointInfo =
 				(documentStorageID :String, documentType :String, documentIDs :[String]?, sinceRevision :Int?,
 						count :Int?, authorization :String?)
-	static	let	getDocumentsEndpoint =
+	static	let	documentGetEndpoint =
 						BasicHTTPEndpoint(method: .get, path: "/v1/document/:documentStorageID/:type")
-								{ (urlComponents, headers) -> GetDocumentsEndpointInfo in
+								{ (urlComponents, headers) -> DocumentGetEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
@@ -1325,8 +1323,8 @@ class MDSHTTPServices {
 									return (documentStorageID, documentType, documentIDs, sinceRevision, count,
 											headers["Authorization"])
 								}
-	static func httpEndpointRequestForGetDocuments(documentStorageID :String, documentType :String, sinceRevision :Int,
-			count :Int? = nil, authorization :String? = nil) -> GetDocumentsSinceRevisionHTTPEndpointRequest {
+	static func httpEndpointRequestForDocumentGet(documentStorageID :String, documentType :String, sinceRevision :Int,
+			count :Int? = nil, authorization :String? = nil) -> DocumentGetSinceRevisionHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
@@ -1334,17 +1332,17 @@ class MDSHTTPServices {
 		var	queryComponents :[String : Any] = ["sinceRevision": sinceRevision]
 		queryComponents["count"] = count
 
-		return GetDocumentsSinceRevisionHTTPEndpointRequest(method: .get,
+		return DocumentGetSinceRevisionHTTPEndpointRequest(method: .get,
 				path: "/v1/document/\(documentStorageIDUse)/\(documentType)", queryComponents: queryComponents,
 				headers: headers)
 	}
-	static func httpEndpointRequestForGetDocuments(documentStorageID :String, documentType :String,
-			documentIDs :[String], authorization :String? = nil) -> GetDocumentsForDocumentIDsHTTPEndpointRequest {
+	static func httpEndpointRequestForDocumentGet(documentStorageID :String, documentType :String,
+			documentIDs :[String], authorization :String? = nil) -> DocumentGetForDocumentIDsHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return GetDocumentsForDocumentIDsHTTPEndpointRequest(method: .get,
+		return DocumentGetForDocumentIDsHTTPEndpointRequest(method: .get,
 				path: "/v1/document/\(documentStorageIDUse)/\(documentType)",
 				multiValueQueryComponent: ("id", documentIDs), headers: headers)
 	}
@@ -1384,13 +1382,13 @@ class MDSHTTPServices {
 	//			},
 	//			...
 	//		]
-	typealias UpdateDocumentsEndpointInfo =
+	typealias DocumentUpdateEndpointInfo =
 				(documentStorageID :String, documentType :String, documentUpdateInfos :[MDSDocument.UpdateInfo],
 						authorization :String?)
-	static	let	updateDocumentsEndpoint =
-						JSONHTTPEndpoint<Any, UpdateDocumentsEndpointInfo>(method: .patch,
+	static	let	documentUpdateEndpoint =
+						JSONHTTPEndpoint<Any, DocumentUpdateEndpointInfo>(method: .patch,
 								path: "/v1/document/:documentStorageID/:type")
-								{ (urlComponents, headers, info) -> UpdateDocumentsEndpointInfo in
+								{ (urlComponents, headers, info) -> DocumentUpdateEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
@@ -1427,7 +1425,7 @@ class MDSHTTPServices {
 									return (documentStorageID, documentType, documentUpdateInfos,
 											headers["Authorization"])
 								}
-	static func httpEndpointRequestForUpdateDocuments(documentStorageID :String, documentType :String,
+	static func httpEndpointRequestForDocumentUpdate(documentStorageID :String, documentType :String,
 			documentUpdateInfos :[MDSDocument.UpdateInfo], authorization :String? = nil) ->
 			MDSJSONHTTPEndpointRequest<[[String : Any]]> {
 		// Setup
@@ -1452,7 +1450,7 @@ class MDSHTTPServices {
 	//			"id" :String,
 	//			"revision" :Int
 	//		}
-	static func httpEndpointRequestForAddDocumentAttachment(documentStorageID :String, documentType :String,
+	static func httpEndpointRequestForDocumentAddAttachment(documentStorageID :String, documentType :String,
 			documentID :String, info :[String : Any], content :Data, authorization :String? = nil) ->
 			MDSJSONHTTPEndpointRequest<[String : Any]> {
 		// Setup
@@ -1473,7 +1471,7 @@ class MDSHTTPServices {
 	//	=> authorization (header) (optional)
 	//
 	//	<= data
-	static func httpEndpointRequestForGetDocumentAttachment(documentStorageID :String, documentType :String,
+	static func httpEndpointRequestForDocumentGetAttachment(documentStorageID :String, documentType :String,
 			documentID :String, attachmentID :String, authorization :String? = nil) -> MDSDataHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
@@ -1499,7 +1497,7 @@ class MDSHTTPServices {
 	//		{
 	//			"revision" :Int
 	//		}
-	static func httpEndpointRequestForUpdateDocumentAttachment(documentStorageID :String, documentType :String,
+	static func httpEndpointRequestForDocumentUpdateAttachment(documentStorageID :String, documentType :String,
 			documentID :String, attachmentID :String, info :[String : Any], content :Data,
 			authorization :String? = nil) -> MDSJSONHTTPEndpointRequest<[String : Any]> {
 		// Setup
@@ -1519,7 +1517,7 @@ class MDSHTTPServices {
 	//	=> documentID (path)
 	//	=> attachmentID (path)
 	//	=> authorization (header) (optional)
-	static func httpEndpointRequestForRemoveDocumentAttachment(documentStorageID :String, documentType :String,
+	static func httpEndpointRequestForDocumentRemoveAttachment(documentStorageID :String, documentType :String,
 			documentID :String, attachmentID :String, authorization :String? = nil) -> MDSSuccessHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
@@ -1547,14 +1545,14 @@ class MDSHTTPServices {
 	//							    },
 	//		}
 	//	=> authorization (header) (optional)
-	typealias RegisterIndexEndpointInfo =
+	typealias IndexRegisterEndpointInfo =
 				(documentStorageID :String, name :String, documentType :String, relevantProperties :[String],
 						isUpToDate :Bool, keysSelector :String, keysSelectorInfo: [String : Any],
 						authorization :String?)
-	static	let	registerIndexEndpoint =
-						JSONHTTPEndpoint<[String : Any], RegisterIndexEndpointInfo>(method: .put,
+	static	let	indexRegisterEndpoint =
+						JSONHTTPEndpoint<[String : Any], IndexRegisterEndpointInfo>(method: .put,
 								path: "/v1/index/:documentStorageID")
-								{ (urlComponents, headers, info) -> RegisterIndexEndpointInfo in
+								{ (urlComponents, headers, info) -> IndexRegisterEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
@@ -1588,7 +1586,7 @@ class MDSHTTPServices {
 									return (documentStorageID, name, documentType, relevantProperties, isUpToDate,
 											keysSelector, keysSelectorInfo, headers["Authorization"])
 								}
-	static func httpEndpointRequestForRegisterIndex(documentStorageID :String, name :String, documentType :String,
+	static func httpEndpointRequestForIndexRegister(documentStorageID :String, name :String, documentType :String,
 			relevantProperties :[String] = [], isUpToDate :Bool = false, keysSelector :String,
 			keysSelectorInfo :[String : Any] = [:], authorization :String? = nil) -> MDSSuccessHTTPEndpointRequest {
 		// Setup
@@ -1647,13 +1645,13 @@ class MDSHTTPServices {
 	//				},
 	//			...
 	//		}
-	class GetIndexDocumentInfosHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[String : [String : Int]]> {}
-	class GetIndexDocumentsHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[String : [String : Any]]> {}
-	typealias GetIndexDocumentInfosEndpointInfo =
+	class IndexGetDocumentInfoHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[String : [String : Int]]> {}
+	class IndexGetDocumentHTTPEndpointRequest : MDSJSONHTTPEndpointRequest<[String : [String : Any]]> {}
+	typealias IndexDocumentGetInfoEndpointInfo =
 				(documentStorageID :String, name :String, keys :[String], authorization :String?)
-	static	let	getIndexDocumentInfosEndpoint =
+	static	let	indexGetDocumentInfoEndpoint =
 						BasicHTTPEndpoint(method: .get, path: "/v1/index/:documentStorageID/:name")
-								{ (urlComponents, headers) -> GetIndexDocumentInfosEndpointInfo in
+								{ (urlComponents, headers) -> IndexDocumentGetInfoEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
@@ -1667,25 +1665,25 @@ class MDSHTTPServices {
 
 									return (documentStorageID, name, keys, headers["Authorization"])
 								}
-	static func httpEndpointRequestForGetIndexDocumentInfos(documentStorageID :String, name :String, keys :[String],
-			authorization :String? = nil) -> GetIndexDocumentInfosHTTPEndpointRequest {
+	static func httpEndpointRequestForIndexGetDocumentInfo(documentStorageID :String, name :String, keys :[String],
+			authorization :String? = nil) -> IndexGetDocumentInfoHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	nameUse = name.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return GetIndexDocumentInfosHTTPEndpointRequest(method: .get,
+		return IndexGetDocumentInfoHTTPEndpointRequest(method: .get,
 				path: "/v1/index/\(documentStorageIDUse)/\(nameUse)", queryComponents: ["fullInfo": 0],
 				multiValueQueryComponent: ("key", keys), headers: headers)
 	}
-	static func httpEndpointRequestForGetIndexDocuments(documentStorageID :String, name :String, keys :[String],
-			authorization :String? = nil) -> GetIndexDocumentsHTTPEndpointRequest {
+	static func httpEndpointRequestForIndexGetDocument(documentStorageID :String, name :String, keys :[String],
+			authorization :String? = nil) -> IndexGetDocumentHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
 		let	nameUse = name.replacingOccurrences(of: "/", with: "_")
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return GetIndexDocumentsHTTPEndpointRequest(method: .get,
+		return IndexGetDocumentHTTPEndpointRequest(method: .get,
 				path: "/v1/index/\(documentStorageIDUse)/\(nameUse)", queryComponents: ["fullInfo": 1],
 				multiValueQueryComponent: ("key", keys), headers: headers)
 	}
@@ -1699,10 +1697,10 @@ class MDSHTTPServices {
 	//		"key" :String
 	//		...
 	//	   ]
-	typealias GetInfoEndpointInfo = (documentStorageID :String, keys :[String], authorization :String?)
-	static	let	getInfoEndpoint =
+	typealias InfoGetEndpointInfo = (documentStorageID :String, keys :[String], authorization :String?)
+	static	let	infoGetEndpoint =
 						BasicHTTPEndpoint(method: .get, path: "/v1/info/:documentStorageID")
-								{ (urlComponents, headers) -> GetInfoEndpointInfo in
+								{ (urlComponents, headers) -> InfoGetEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
@@ -1714,7 +1712,7 @@ class MDSHTTPServices {
 
 									return (documentStorageID, keys, headers["Authorization"])
 								}
-	static func httpEndpointRequestForGetInfo(documentStorageID :String, keys :[String], authorization :String? = nil)
+	static func httpEndpointRequestForInfoGet(documentStorageID :String, keys :[String], authorization :String? = nil)
 			-> MDSJSONHTTPEndpointRequest<[String : String]> {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
@@ -1732,18 +1730,18 @@ class MDSHTTPServices {
 	//			...
 	//		]
 	//	=> authorization (header) (optional)
-	typealias SetInfoEndpointInfo = (documentStorageID :String, info :[String : String], authorization :String?)
-	static	let	setInfoEndpoint =
-						JSONHTTPEndpoint<[String : String], SetInfoEndpointInfo>(method: .post,
+	typealias InfoSetEndpointInfo = (documentStorageID :String, info :[String : String], authorization :String?)
+	static	let	infoSetEndpoint =
+						JSONHTTPEndpoint<[String : String], InfoSetEndpointInfo>(method: .post,
 								path: "/v1/info/:documentStorageID")
-								{ (urlComponents, headers, info) -> SetInfoEndpointInfo in
+								{ (urlComponents, headers, info) -> InfoSetEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
 
 									return (documentStorageID, info, headers["Authorization"])
 								}
-	static func httpEndpointRequestForSetInfo(documentStorageID :String, info :[String : String],
+	static func httpEndpointRequestForInfoSet(documentStorageID :String, info :[String : String],
 			authorization :String? = nil) -> MDSSuccessHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")
@@ -1761,18 +1759,18 @@ class MDSHTTPServices {
 	//			...
 	//		]
 	//	=> authorization (header) (optional)
-	typealias SetInternalEndpointInfo = (documentStorageID :String, info :[String : String], authorization :String?)
-	static	let	setInternalEndpoint =
-						JSONHTTPEndpoint<[String : String], SetInternalEndpointInfo>(method: .post,
+	typealias InternalSetEndpointInfo = (documentStorageID :String, info :[String : String], authorization :String?)
+	static	let	internalSetEndpoint =
+						JSONHTTPEndpoint<[String : String], InternalSetEndpointInfo>(method: .post,
 								path: "/v1/internal/:documentStorageID")
-								{ (urlComponents, headers, info) -> SetInternalEndpointInfo in
+								{ (urlComponents, headers, info) -> InternalSetEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
 									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
 
 									return (documentStorageID, info, headers["Authorization"])
 								}
-	static func httpEndpointRequestForSetInternal(documentStorageID :String, info :[String : String],
+	static func httpEndpointRequestForInternalSet(documentStorageID :String, info :[String : String],
 			authorization :String? = nil) -> MDSSuccessHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.replacingOccurrences(of: "/", with: "_")

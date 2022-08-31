@@ -96,7 +96,7 @@ class CollectionUnitTests : XCTestCase {
 
 		// Perform
 		let	(isUpToDate, info, error) =
-					config.httpEndpointClient.collectionGetDocumentInfos(documentStorageID: "ABC", name: "ABC")
+					config.httpEndpointClient.collectionGetDocumentInfo(documentStorageID: "ABC", name: "ABC")
 
 		// Evaluate results
 		XCTAssertNil(isUpToDate, "received isUpToDate")
@@ -124,7 +124,7 @@ class CollectionUnitTests : XCTestCase {
 
 		// Perform
 		let	(isUpToDate, info, error) =
-					config.httpEndpointClient.collectionGetDocumentInfos(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.collectionGetDocumentInfo(documentStorageID: config.documentStorageID,
 							name: "ABC")
 
 		// Evaluate results
