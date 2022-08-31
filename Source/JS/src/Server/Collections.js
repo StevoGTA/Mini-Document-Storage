@@ -217,7 +217,7 @@ module.exports = class Collections {
 									null, statementPerformer.limit(startIndex, count));
 				if (documentsByID)
 					// Success
-					return [true, count, Object.values(documentsByID), null];
+					return [true, (count >= startIndex) ? count - startIndex : 0, Object.values(documentsByID), null];
 				else
 					// Error
 					return [null, null, null, resultsError];
@@ -231,8 +231,9 @@ module.exports = class Collections {
 									null, statementPerformer.limit(startIndex, count));
 				if (results)
 					// Success
-					return [true, count,
-							results.map(result => { return {documentID: result.documentID, revision: result.revision}; }),
+					return [true, (count >= startIndex) ? count - startIndex : 0,
+							results.map(
+									result => { return {documentID: result.documentID, revision: result.revision}; }),
 							null];
 				else
 					// Error

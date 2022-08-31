@@ -169,7 +169,7 @@ exports.getDocumentsV1 = async (event) => {
 							fullInfo == 1);
 		if (upToDate) {
 			// Success
-			let	endIndex = startIndex + Object.keys(results).length - 1;
+			let	endIndex = parseInt(startIndex) + Object.keys(results).length - 1;
 			let	contentRange =
 						(totalCount > 0) ?
 								'documents ' + startIndex + '-' + endIndex + '/' + totalCount : 'documents */0';
