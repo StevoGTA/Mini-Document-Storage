@@ -144,7 +144,7 @@ extension HTTPEndpointClient {
 				let	associations = info!.info.map({ ($0["fromDocumentID"]!, $0["toDocumentID"]!) })
 
 				// Call completion
-				completionProc((associations, info!.info.count == info!.count), nil)
+				completionProc((associations, info!.isComplete), nil)
 			} else {
 				// Error
 				completionProc(nil, error)
@@ -178,8 +178,7 @@ extension HTTPEndpointClient {
 					// Switch queues to minimize memory usage
 					DispatchQueue.global().async() {
 						// Call completion proc
-						completionProc(isUpToDate, (documentRevisionInfos, documentRevisionInfos.count == info!.count),
-								nil)
+						completionProc(isUpToDate, (documentRevisionInfos, info!.isComplete), nil)
 					}
 				}
 			} else {
@@ -211,7 +210,7 @@ extension HTTPEndpointClient {
 					// Switch queues to minimize memory usage
 					DispatchQueue.global().async() {
 						// Call completion proc
-						completionProc(isUpToDate, (documentFullInfos, documentFullInfos.count == info!.count), nil)
+						completionProc(isUpToDate, (documentFullInfos, info!.isComplete), nil)
 					}
 				}
 			} else {
@@ -245,7 +244,7 @@ extension HTTPEndpointClient {
 					// Switch queues to minimize memory usage
 					DispatchQueue.global().async() {
 						// Call completion proc
-						completionProc((documentRevisionInfos, documentRevisionInfos.count == info!.count), nil)
+						completionProc((documentRevisionInfos, info!.isComplete), nil)
 					}
 				}
 			} else {
@@ -276,7 +275,7 @@ extension HTTPEndpointClient {
 					// Switch queues to minimize memory usage
 					DispatchQueue.global().async() {
 						// Call completion proc
-						completionProc((documentFullInfos, documentFullInfos.count == info!.count), nil)
+						completionProc((documentFullInfos, info!.isComplete), nil)
 					}
 				}
 			} else {
@@ -376,7 +375,7 @@ extension HTTPEndpointClient {
 		// Setup
 		documentGetSinceRevisionHTTPEndpointRequest.completionWithCountProc = { info, error in
 			// Handle results
-			if let (infos, count) = info {
+			if let (infos, isComplete) = info {
 				// Success
 				DispatchQueue.global().async() {
 					// Process in chunks to control memory usage
@@ -389,7 +388,7 @@ extension HTTPEndpointClient {
 					}
 
 					// Call completion proc
-					completionProc(infos.count == count, nil)
+					completionProc(isComplete, nil)
 				}
 			} else {
 				// Error

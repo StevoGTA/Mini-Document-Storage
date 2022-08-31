@@ -415,6 +415,12 @@ open class MDSDocument : Hashable {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func attachmentAdd(type :String, info :[String : Any] = [:], content :Data) {
+		// Add attachment
+		self.documentStorage.attachmentAdd(to: self, type: type, info: info, content: content)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func attachmentAdd(type :String, info :[String : Any] = [:], content :String) {
 		// Add attachment
 		self.documentStorage.attachmentAdd(to: self, type: type, info: info, content: content.data(using: .utf8)!)
@@ -435,10 +441,33 @@ open class MDSDocument : Hashable {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func update(attachmentInfo :AttachmentInfo, updatedInfo :[String : Any], updatedContent :Data) {
+	public func update(attachmentInfo :AttachmentInfo, updatedInfo :[String : Any] = [:], updatedContent :Data) {
 		// Update attachment
 		self.documentStorage.attachmentUpdate(for: self, attachmentInfo: attachmentInfo, updatedInfo: updatedInfo,
 				updatedContent: updatedContent)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func update(attachmentInfo :AttachmentInfo, updatedInfo :[String : Any] = [:], updatedContent :String) {
+		// Update attachment
+		self.documentStorage.attachmentUpdate(for: self, attachmentInfo: attachmentInfo, updatedInfo: updatedInfo,
+				updatedContent: updatedContent.data(using: .utf8)!)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func update(attachmentInfo :AttachmentInfo, updatedInfo :[String : Any] = [:],
+			updatedContent :[String : Any]) {
+		// Update attachment
+		self.documentStorage.attachmentUpdate(for: self, attachmentInfo: attachmentInfo, updatedInfo: updatedInfo,
+				updatedContent: try! JSONSerialization.data(withJSONObject: updatedContent, options: []))
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func update(attachmentInfo :AttachmentInfo, updatedInfo :[String : Any] = [:],
+			updatedContent :[[String : Any]]) {
+		// Update attachment
+		self.documentStorage.attachmentUpdate(for: self, attachmentInfo: attachmentInfo, updatedInfo: updatedInfo,
+				updatedContent: try! JSONSerialization.data(withJSONObject: updatedContent, options: []))
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
