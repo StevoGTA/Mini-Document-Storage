@@ -231,7 +231,7 @@ module.exports = class Collections {
 									null, statementPerformer.limit(startIndex, count));
 				if (results)
 					// Success
-					return [true, (count >= startIndex) ? count - startIndex : 0,
+					return [true, count,
 							results.map(
 									result => { return {documentID: result.documentID, revision: result.revision}; }),
 							null];

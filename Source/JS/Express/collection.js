@@ -163,10 +163,8 @@ exports.getDocumentsV1 = async (request, response) => {
 							count, fullInfo == 1);
 		if (upToDate) {
 			// Success
-			let	endIndex = parseInt(startIndex) + Object.keys(results).length - 1;
-			let	contentRange =
-						(totalCount > 0) ?
-								'documents ' + startIndex + '-' + endIndex + '/' + totalCount : 'documents */0';
+			let	range = (results.length > 0) ? startIndex + '-' + (parseInt(startIndex) + results.length - 1) : '*';
+			let	contentRange = 'documents ' + range + '/' + totalCount;
 
 			response
 					.status(200)
