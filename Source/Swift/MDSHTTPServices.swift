@@ -97,7 +97,7 @@ extension MDSDocument.UpdateInfo {
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSError
 enum MDSError : Error {
-	case invalidRequest(message :String)
+	case invalidRequest(error :String)
 	case responseWasEmpty
 	case didNotReceiveSizeInHeader
 	case failed(status :HTTPEndpointStatus)
@@ -112,7 +112,7 @@ extension MDSError : CustomStringConvertible, LocalizedError {
 	public	var	errorDescription :String? {
 						// What are we
 						switch self {
-							case .invalidRequest(let message):			return message
+							case .invalidRequest(let error):			return error
 							case .responseWasEmpty:						return "Server response was empty"
 							case .didNotReceiveSizeInHeader:			return "Did not receive size in header"
 							case .failed(let status):					return "Failed: \(status)"
@@ -138,9 +138,9 @@ class MDSHTTPServices {
 				do {
 					// Try to compose info from data
 					let	info = try JSONSerialization.jsonObject(with: responseData!, options: []) as? [String : String]
-					if let message = info?["error"] {
-						// Received error message
-						return MDSError.invalidRequest(message: message)
+					if let error = info?["error"] {
+						// Received error
+						return MDSError.invalidRequest(error: error)
 					} else {
 						// Nope
 						return HTTPEndpointRequestError.unableToProcessResponseData
@@ -456,7 +456,7 @@ class MDSHTTPServices {
 							} else {
 								// Did not get size
 								self.completionWithCountProc!(nil,
-										MDSError.invalidRequest(message: "Missing content range size"))
+										MDSError.invalidRequest(error: "Missing content range size"))
 							}
 						} else {
 							// No info
@@ -476,7 +476,7 @@ class MDSHTTPServices {
 							} else {
 								// Did not get size
 								self.completionWithUpToDateAndCountProc!(nil, nil,
-										MDSError.invalidRequest(message: "Missing content range size"))
+										MDSError.invalidRequest(error: "Missing content range size"))
 							}
 						} else if response != nil, HTTPEndpointStatus(rawValue: response!.statusCode)! == .conflict {
 							// Not up to date

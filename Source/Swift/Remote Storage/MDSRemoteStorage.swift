@@ -962,46 +962,83 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			proc :(_ key :String, _ document :T) -> Void) {
 		// Setup
 		var	keysRemaining = Set<String>(keys.filter({ !$0.isEmpty }))
-		var	isUpToDate = false
+		guard !keysRemaining.isEmpty else { return }
+
+		// Process first key to ensure index is up to date.  We need to only call the API one at a time to avoid the
+		//	server overlapping calls.  In the future would be great to figure a different way to make the client
+		//	simpler.
+		let	firstKey = keysRemaining.removeFirst()
+		let	documentRevisionInfoMap = LockingDictionary<String, MDSDocument.RevisionInfo>()
 		var	errors = [Error]()
+		while true {
+			// Retrieve info
+			let	info =
+						DispatchQueue.performBlocking() { completionProc in
+							// Call network client
+							self.httpEndpointClient.queue(
+									MDSHTTPServices.httpEndpointRequestForGetIndexDocumentInfos(
+											documentStorageID: self.documentStorageID, name: name, keys: [firstKey],
+											authorization: self.authorization),
+									partialResultsProc: {
+										// Handle results
+										if $0 != nil {
+											// Add to dictionary
+											documentRevisionInfoMap.merge($0!)
+										}
+
+										// Ignore error (will collect via completionProc)
+										_ = $1
+									},
+									completionProc: {completionProc(($0, $1)) })
+						}
+
+			// Handle results
+			if !(info.0 ?? true) {
+				// Not up to date
+				continue
+			} else {
+				// Is up to date or error
+				errors += info.1
+				break
+			}
+		}
 
 		// Keep going until all keys are processed
-		while !isUpToDate && errors.isEmpty && !keysRemaining.isEmpty {
-			// Retrieve the rest of the info
-			let	documentRevisionInfoMap = LockingDictionary<String, MDSDocument.RevisionInfo>()
+		while errors.isEmpty && (!keysRemaining.isEmpty || !documentRevisionInfoMap.isEmpty) {
+			// Retrieve the rest
 			let	semaphore = DispatchSemaphore(value: 0)
-			var	requestHasCompleted = false
+			var	requestHasCompleted = keysRemaining.isEmpty
 
-			// Queue info retrieval
-			self.httpEndpointClient.queue(
-					MDSHTTPServices.httpEndpointRequestForGetIndexDocumentInfos(
-							documentStorageID: self.documentStorageID, name: name, keys: Array(keysRemaining),
-							authorization: self.authorization),
-					partialResultsProc: {
-						// Handle results
-						if $0 != nil {
-							// Add to dictionary
-							documentRevisionInfoMap.merge($0!)
+			// Check if have remaining keys
+			if !keysRemaining.isEmpty {
+				// Queue info retrieval
+				self.httpEndpointClient.queue(
+						MDSHTTPServices.httpEndpointRequestForGetIndexDocumentInfos(
+								documentStorageID: self.documentStorageID, name: name, keys: Array(keysRemaining),
+								authorization: self.authorization),
+						partialResultsProc: {
+							// Handle results
+							if $0 != nil {
+								// Add to dictionary
+								documentRevisionInfoMap.merge($0!)
+
+								// Signal
+								semaphore.signal()
+							}
+
+							// Ignore error (will collect below)
+							_ = $1
+						}, completionProc: {
+							// Note errors
+							errors += $1
+
+							// All done
+							requestHasCompleted = true
 
 							// Signal
 							semaphore.signal()
-						}
-
-						// Ignore error (will collect below)
-						_ = $1
-					}, completionProc: {
-						// Store
-						isUpToDate = $0 ?? false
-
-						// Add errors
-						errors += $1
-
-						// All done
-						requestHasCompleted = true
-
-						// Signal
-						semaphore.signal()
-					})
+						})
+			}
 
 			// Process results
 			while !requestHasCompleted || !documentRevisionInfoMap.isEmpty {
@@ -1017,12 +1054,15 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 					let	documentRevisionInfoMapToProcess = documentRevisionInfoMap.removeAll()
 
 					// Process
-					keysRemaining.formSymmetricDifference(documentRevisionInfoMapToProcess.keys)
+					keysRemaining.subtract(documentRevisionInfoMapToProcess.keys)
 
 					let	map = Dictionary(documentRevisionInfoMapToProcess.map({ ($0.value.documentID, $0.key )}))
-					self.iterateDocumentIDs(documentType: T.documentType,
-							activeDocumentRevisionInfos: Array(documentRevisionInfoMapToProcess.values))
-							{ proc(map[$0]!, T(id: $0, documentStorage: self)) }
+					if !map.isEmpty {
+						// Iterate document IDs
+						self.iterateDocumentIDs(documentType: T.documentType,
+								activeDocumentRevisionInfos: Array(documentRevisionInfoMapToProcess.values))
+								{ proc(map[$0]!, T(id: $0, documentStorage: self)) }
+					}
 				}
 			}
 		}
