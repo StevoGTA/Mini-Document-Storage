@@ -61,6 +61,14 @@ module.exports = class MDSDocument {
 
 	// Instance methods
 	//------------------------------------------------------------------------------------------------------------------
+	attachments(type) {
+		// Return attachments filtered by given type
+		return Object.fromEntries(
+				Object.entries(this.info.attachments)
+						.filter(([id, info]) => info.info.type == type));
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	toString() { return JSON.stringify(this.info); }
 
 	// Subclass methods

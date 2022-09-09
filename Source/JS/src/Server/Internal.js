@@ -24,7 +24,7 @@ module.exports = class Internal {
 									TableColumn.options.primaryKey | TableColumn.options.nonNull |
 											TableColumn.options.unique,
 									767),
-							new TableColumn.VARCHAR('value', TableColumn.options.nonNull, 45),
+							new TableColumn.VARCHAR('value', TableColumn.options.nonNull, 767),
 						]);
 	}
 
