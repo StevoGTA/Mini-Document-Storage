@@ -41,7 +41,7 @@ module.exports = class Documents {
 	async create(statementPerformer, documentType, infos) {
 		// Validate
 		if (!infos || !Array.isArray(infos) || (infos.length == 0))
-			return [null, 'Missing infos'];
+			return [null, 'Missing info(s)'];
 
 		// Setup
 		let	internals = this.internals;

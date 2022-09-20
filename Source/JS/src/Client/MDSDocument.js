@@ -46,12 +46,16 @@ module.exports = class MDSDocument {
 			let documentID = btoa(String.fromCharCode(...new Uint8Array(uuidBytes))).slice(0, 22);
 
 			this.info = {documentID: documentID, active: 1, json: {}, attachments: {}};
-		} else if ((typeof info) == 'string')
+			this.isNew = true;
+		} else if ((typeof info) == 'string') {
 			// Decode
 			this.info = JSON.parse(info);
-		else 
+			this.isNew = false;
+		} else {
 			// Store
 			this.info = info;
+			this.isNew = false;
+		}
 		
 		// Setup
 		this.updated = {};
@@ -124,6 +128,8 @@ module.exports = class MDSDocument {
 		this.info.creationDate = info.creationDate;
 		this.info.modificationDate = info.modificationDate;
 		this.info.json = this.updated;
+
+		this.isNew = false;
 
 		// Reset
 		this.updated = {};

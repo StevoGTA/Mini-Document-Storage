@@ -119,8 +119,8 @@ exports.getDocumentCountV1 = async (event) => {
 //	<= json (fullInfo == 0)
 //		[
 //			{
-//				"fromDocumentID" :String,
-//				"toDocumentID" :String,
+//				"documentID" :String,
+//				"revision" :Int,
 //			},
 //			...
 //		]
