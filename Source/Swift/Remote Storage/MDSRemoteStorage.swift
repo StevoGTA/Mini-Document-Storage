@@ -233,8 +233,11 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 									MDSHTTPServices.httpEndpointRequestForGetDocuments(
 											documentStorageID: self.documentStorageID, documentType: documentType,
 											sinceRevision: lastRevision, authorization: self.authorization),
-									partialResultsProc: { self.updateCaches(for: documentType, with: $0) },
-									completionProc: { (isComplete :Bool?, error :Error?) in
+									partialResultsProc: {
+										// Update caches and then update lastRevision based on results
+										self.updateCaches(for: documentType, with: $0).forEach()
+											{ lastRevision = max(lastRevision, $0.documentBacking.revision) }
+									}, completionProc: { (isComplete :Bool?, error :Error?) in
 										// Call completion proc
 										completionProc((isComplete, error))
 									})
@@ -252,18 +255,12 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			}
 		}
 
-		// Retrieve documentInfos
-		let	documentFullInfos = self.remoteStorageCache.activeDocumentFullInfos(for: documentType)
-
-		// Update document backing cache
-		updateDocumentBackingCache(for: documentType, with: documentFullInfos)
-			.forEach() { lastRevision = max(lastRevision, $0.documentBacking.revision) }
-
 		// Update last revision
 		self.remoteStorageCache.set(lastRevision, for: lastRevisionKey)
 
 		// Iterate document infos, again
-		documentFullInfos.forEach() { proc(T(id: $0.documentID, documentStorage: self)) }
+		self.remoteStorageCache.activeDocumentFullInfos(for: documentType).forEach()
+				{ proc(T(id: $0.documentID, documentStorage: self)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
