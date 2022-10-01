@@ -135,7 +135,7 @@ struct AssociationPair {
 				TNLockingArrayDictionary<CMDSDocument::ChangedProcInfo>	mDocumentChangedProcInfosMap;
 				TNDictionary<TSet<CString> >							mDocumentIDsByTypeMap;
 				TNLockingDictionary<CMDSDocument::Info>					mDocumentInfoMap;
-				TNLockingDictionary<SNumberWrapper<UInt32> >			mDocumentLastRevisionMap;
+				TNLockingDictionary<TNumber<UInt32> >					mDocumentLastRevisionMap;
 				CReadPreferringLock										mDocumentMapsLock;
 				TNLockingDictionary<CDictionary>						mDocumentsBeingCreatedPropertyMapMap;
 
@@ -164,11 +164,11 @@ UInt32 CMDSEphemeralInternals::getNextRevision(const CString& documentType)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Compose next revision
-	const	OR<SNumberWrapper<UInt32> >	currentRevision = mDocumentLastRevisionMap[documentType];
-			UInt32						nextRevision = currentRevision.hasReference() ? currentRevision->mValue + 1 : 1;
+	const	OR<TNumber<UInt32> >	currentRevision = mDocumentLastRevisionMap[documentType];
+			UInt32					nextRevision = currentRevision.hasReference() ? **currentRevision + 1 : 1;
 
 	// Store
-	mDocumentLastRevisionMap.set(documentType, SNumberWrapper<UInt32>(nextRevision));
+	mDocumentLastRevisionMap.set(documentType, TNumber<UInt32>(nextRevision));
 
 	return nextRevision;
 }

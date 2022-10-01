@@ -18,7 +18,7 @@
 typedef	TMDSBatchInfo<CMDSSQLiteDocumentBacking>						CMDSSQLiteBatchInfo;
 typedef	CMDSSQLiteBatchInfo::DocumentInfo<CMDSSQLiteDocumentBacking>	CMDSSQLiteBatchDocumentInfo;
 
-typedef	CMDSSQLiteCollection::UpdateInfo<TNumericArray<SInt64> >		CMDSSQLiteCollectionUpdateInfo;
+typedef	CMDSSQLiteCollection::UpdateInfo<TNumberArray<SInt64> >			CMDSSQLiteCollectionUpdateInfo;
 
 typedef	TMDSDocumentBackingCache<CMDSSQLiteDocumentBacking>				CMDSSQLiteDocumentBackingCache;
 typedef	CMDSDocument::BackingInfo<CMDSSQLiteDocumentBacking>			CMDSSQLiteDocumentBackingInfo;
@@ -167,7 +167,7 @@ class CMDSSQLiteInternals {
 						CMDSSQLiteCollection			bringCollectionUpToDate(const CString& name);
 						void							bringUpToDate(CMDSSQLiteCollection& collection);
 						void							removeFromCollections(const CString& documentType,
-																const TNumericArray<SInt64>& documentBackingIDs);
+																const TNumberArray<SInt64>& documentBackingIDs);
 
 						void							iterateIndex(const CString& name, const TArray<CString>& keys,
 																CMDSSQLiteKeyDocumentBackingInfoProc
@@ -178,7 +178,7 @@ class CMDSSQLiteInternals {
 						CMDSSQLiteIndex					bringIndexUpToDate(const CString& name);
 						void							bringUpToDate(CMDSSQLiteIndex& index);
 						void							removeFromIndexes(const CString& documentType,
-																const TNumericArray<SInt64>& documentBackingIDs);
+																const TNumberArray<SInt64>& documentBackingIDs);
 
 						void							notifyDocumentChanged(const CString& documentType,
 																const CMDSDocument& document,
@@ -402,7 +402,7 @@ void CMDSSQLiteInternals::bringUpToDate(CMDSSQLiteCollection& collection)
 
 //----------------------------------------------------------------------------------------------------------------------
 void CMDSSQLiteInternals::removeFromCollections(const CString& documentType,
-		const TNumericArray<SInt64>& documentBackingIDs)
+		const TNumberArray<SInt64>& documentBackingIDs)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get collections for this document type
@@ -415,7 +415,8 @@ void CMDSSQLiteInternals::removeFromCollections(const CString& documentType,
 	for (TIteratorD<CMDSSQLiteCollection> iterator = collections->getIterator(); iterator.hasValue();
 			iterator.advance())
 		// Update collection
-		mDatabaseManager.updateCollection(iterator->getName(), TNumericArray<SInt64>(), documentBackingIDs, iterator->getLastRevision());
+		mDatabaseManager.updateCollection(iterator->getName(), TNumberArray<SInt64>(), documentBackingIDs,
+				iterator->getLastRevision());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -460,7 +461,7 @@ void CMDSSQLiteInternals::updateIndexes(const CString& documentType, const TArra
 			CMDSSQLiteIndexUpdateInfo	updateInfo = iterator->update(updateInfos);
 
 			// Update database
-			mDatabaseManager.updateIndex(iterator->getName(), updateInfo.mKeysInfos, TNumericArray<SInt64>(),
+			mDatabaseManager.updateIndex(iterator->getName(), updateInfo.mKeysInfos, TNumberArray<SInt64>(),
 					updateInfo.mLastRevision);
 		} else
 			// Bring up to date
@@ -500,13 +501,12 @@ void CMDSSQLiteInternals::bringUpToDate(CMDSSQLiteIndex& index)
 	CMDSSQLiteIndexUpdateInfo	updateInfo = index.bringUpToDate(collectionIndexBringUpToDateInfo.mBringUpToDateInfos);
 
 	// Update database
-	mDatabaseManager.updateIndex(index.getName(), updateInfo.mKeysInfos, TNumericArray<SInt64>(),
+	mDatabaseManager.updateIndex(index.getName(), updateInfo.mKeysInfos, TNumberArray<SInt64>(),
 			updateInfo.mLastRevision);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteInternals::removeFromIndexes(const CString& documentType,
-		const TNumericArray<SInt64>& documentBackingIDs)
+void CMDSSQLiteInternals::removeFromIndexes(const CString& documentType, const TNumberArray<SInt64>& documentBackingIDs)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get indexes for this document type
@@ -633,7 +633,7 @@ OI<SError> CMDSSQLiteInternals::batchMap(const CString& documentType,
 			CMDSSQLiteUpdateInfoBatchQueue	updateBatchQueue(
 													(CMDSSQLiteUpdateInfoBatchQueue::Proc) updateCollectionsIndexes,
 													&collectionIndexUpdateInfo);
-			TNumericArray<SInt64>			removedDocumentBackingIDs;
+			TNumberArray<SInt64>			removedDocumentBackingIDs;
 
 	// Update documents
 	for (TIteratorS<CDictionary::Item> iterator = documentInfosMap.getIterator(); iterator.hasValue();
@@ -1034,7 +1034,7 @@ void CMDSSQLite::remove(const CMDSDocument& document)
 		OR<CMDSSQLiteDocumentBacking>	documentBacking = mInternals->getDocumentBacking(documentType, documentID);
 
 		// Remove from collections and indexes
-		TNumericArray<SInt64>	ids(documentBacking->getID());
+		TNumberArray<SInt64>	ids(documentBacking->getID());
 		mInternals->removeFromCollections(documentType, ids);
 		mInternals->removeFromIndexes(documentType, ids);
 

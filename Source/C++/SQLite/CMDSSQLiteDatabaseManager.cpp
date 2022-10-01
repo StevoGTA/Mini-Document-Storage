@@ -36,23 +36,23 @@
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Local types
 
-typedef	CMDSSQLiteCollection::UpdateInfo<TNumericArray<SInt64> >	CMDSSQLiteCollectionUpdateInfo;
+typedef	CMDSSQLiteCollection::UpdateInfo<TNumberArray<SInt64> >	CMDSSQLiteCollectionUpdateInfo;
 
-typedef	CMDSSQLiteCollectionUpdateInfo								SCollectionUpdateInfo;
+typedef	CMDSSQLiteCollectionUpdateInfo							SCollectionUpdateInfo;
 
-typedef	CMDSSQLiteDatabaseManager::DocumentBackingInfo				DocumentBackingInfo;
-typedef	CMDSSQLiteDatabaseManager::ExistingDocumentInfo				ExistingDocumentInfo;
-typedef	CMDSSQLiteDatabaseManager::ExistingDocumentInfoProc			ExistingDocumentInfoProc;
+typedef	CMDSSQLiteDatabaseManager::DocumentBackingInfo			DocumentBackingInfo;
+typedef	CMDSSQLiteDatabaseManager::ExistingDocumentInfo			ExistingDocumentInfo;
+typedef	CMDSSQLiteDatabaseManager::ExistingDocumentInfoProc		ExistingDocumentInfoProc;
 
-typedef	CSQLiteTable::TableColumnAndValue							TableColumnAndValue;
+typedef	CSQLiteTable::TableColumnAndValue						TableColumnAndValue;
 
-typedef	CSQLiteTableColumn::Reference								Reference;
+typedef	CSQLiteTableColumn::Reference							Reference;
 
-typedef	TMArray<SSQLiteValue>										SSQLiteValuesArray;
+typedef	TMArray<SSQLiteValue>									SSQLiteValuesArray;
 
 struct SIndexUpdateInfo {
 	// Lifecycle methods
-	SIndexUpdateInfo(const CMDSSQLiteIndexKeysInfos& keysInfos, const TNumericArray<SInt64>& removedIDs,
+	SIndexUpdateInfo(const CMDSSQLiteIndexKeysInfos& keysInfos, const TNumberArray<SInt64>& removedIDs,
 			UInt32 lastRevision) :
 		mKeysInfos(keysInfos), mRemovedIDs(removedIDs), mLastRevision(lastRevision)
 		{}
@@ -62,7 +62,7 @@ struct SIndexUpdateInfo {
 
 	// Properties
 	CMDSSQLiteIndexKeysInfos	mKeysInfos;
-	TNumericArray<SInt64>		mRemovedIDs;
+	TNumberArray<SInt64>		mRemovedIDs;
 	UInt32						mLastRevision;
 };
 
@@ -530,8 +530,8 @@ class CCollectionContentsTable {
 									{ return database.getTable(CString(OSSTR("Collection-")) + name,
 											CSQLiteTable::kWithoutRowID,
 											TSArray<CSQLiteTableColumn>(mTableColumns, 1)); }
-		static	void			update(const TNumericArray<SInt64>& includedIDs,
-										const TNumericArray<SInt64>& notIncludedIDs, CSQLiteTable& table)
+		static	void			update(const TNumberArray<SInt64>& includedIDs,
+										const TNumberArray<SInt64>& notIncludedIDs, CSQLiteTable& table)
 									{
 										// Update
 										if (!notIncludedIDs.isEmpty())
@@ -642,7 +642,7 @@ class CIndexContentsTable {
 		static	CString			getKey(const CSQLiteResultsRow& resultsRow)
 									{ return *resultsRow.getString(mKeyTableColumn); }
 		static	void			update(const CMDSSQLiteIndexKeysInfos& keysInfos,
-										const TNumericArray<SInt64>& removedIDs, CSQLiteTable& table)
+										const TNumberArray<SInt64>& removedIDs, CSQLiteTable& table)
 									{
 										// Setup
 										SSQLiteValuesArray	idsToRemove = SSQLiteValue::valuesFrom(removedIDs);
@@ -766,14 +766,14 @@ class CMDSSQLiteDatabaseManagerInternals {
 				UInt32				getNextRevision(const CString& documentType)
 										{
 											// Compose next revision
-											const	OR<SNumberWrapper<UInt32> >	currentRevision =
-																						mDocumentLastRevisionMap.get(
-																								documentType);
-													UInt32						nextRevision =
-																						currentRevision.hasReference() ?
-																								currentRevision->mValue
-																										+ 1 :
-																								1;
+											const	OR<TNumber<UInt32> >	currentRevision =
+																					mDocumentLastRevisionMap.get(
+																							documentType);
+													UInt32					nextRevision =
+																					currentRevision.hasReference() ?
+																							currentRevision->mValue
+																									+ 1 :
+																							1;
 
 											// Check for batch
 											const	OR<SBatchInfo>	batchInfo =
@@ -787,35 +787,33 @@ class CMDSSQLiteDatabaseManagerInternals {
 												CDocumentsTable::set(nextRevision, documentType, mDocumentsMasterTable);
 
 											// Store
-											mDocumentLastRevisionMap.set(documentType,
-													SNumberWrapper<UInt32>(nextRevision));
+											mDocumentLastRevisionMap.set(documentType, TNumber<UInt32>(nextRevision));
 
 											return nextRevision;
 										}
 
 	private:
 		static	void				setupDocumentsLastRevisionMap(const CString& documentType, UInt32 lastRevision,
-											TNLockingDictionary<SNumberWrapper<UInt32> >* documentLastRevisionMap)
-										{ documentLastRevisionMap->set(documentType,
-													SNumberWrapper<UInt32>(lastRevision)); }
+											TNLockingDictionary<TNumber<UInt32> >* documentLastRevisionMap)
+										{ documentLastRevisionMap->set(documentType, TNumber<UInt32>(lastRevision)); }
 
 	public:
-		CSQLiteDatabase& 								mDatabase;
-		OV<UInt32>										mDatabaseVersion;
+		CSQLiteDatabase& 						mDatabase;
+		OV<UInt32>								mDatabaseVersion;
 
-		CSQLiteTable									mInfoTable;
+		CSQLiteTable							mInfoTable;
 
-		CSQLiteTable									mDocumentsMasterTable;
-		TNLockingDictionary<DocumentTables>				mDocumentTablesMap;
-		TNLockingDictionary<SNumberWrapper<UInt32> >	mDocumentLastRevisionMap;
+		CSQLiteTable							mDocumentsMasterTable;
+		TNLockingDictionary<DocumentTables>		mDocumentTablesMap;
+		TNLockingDictionary<TNumber<UInt32> >	mDocumentLastRevisionMap;
 
-		CSQLiteTable									mCollectionsMasterTable;
-		TNLockingDictionary<CSQLiteTable>				mCollectionTablesMap;
+		CSQLiteTable							mCollectionsMasterTable;
+		TNLockingDictionary<CSQLiteTable>		mCollectionTablesMap;
 
-		CSQLiteTable									mIndexesMasterTable;
-		TNLockingDictionary<CSQLiteTable>				mIndexTablesMap;
+		CSQLiteTable							mIndexesMasterTable;
+		TNLockingDictionary<CSQLiteTable>		mIndexTablesMap;
 
-		TNLockingDictionary<SBatchInfo>					mBatchInfoMap;
+		TNLockingDictionary<SBatchInfo>			mBatchInfoMap;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1003,7 +1001,7 @@ UInt32 CMDSSQLiteDatabaseManager::registerCollection(const CString& documentType
 	bool	updateMasterTable;
 	if (!collectionInfo.mStoredLastRevision.hasValue()) {
 		// New
-		OR<SNumberWrapper<UInt32> >	currentLastRevision = mInternals->mDocumentLastRevisionMap.get(documentType);
+		OR<TNumber<UInt32> >	currentLastRevision = mInternals->mDocumentLastRevisionMap.get(documentType);
 		lastRevision = isUpToDate ? (currentLastRevision.hasReference() ? currentLastRevision->mValue : 0) : 0;
 		updateMasterTable = true;
 	} else if (version != *collectionInfo.mStoredLastRevision) {
@@ -1037,8 +1035,8 @@ UInt32 CMDSSQLiteDatabaseManager::getCollectionDocumentCount(const CString& name
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteDatabaseManager::updateCollection(const CString& name, const TNumericArray<SInt64>& includedIDs,
-		const TNumericArray<SInt64>& notIncludedIDs, UInt32 lastRevision)
+void CMDSSQLiteDatabaseManager::updateCollection(const CString& name, const TNumberArray<SInt64>& includedIDs,
+		const TNumberArray<SInt64>& notIncludedIDs, UInt32 lastRevision)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check if in batch
@@ -1078,7 +1076,7 @@ UInt32 CMDSSQLiteDatabaseManager::registerIndex(const CString& documentType, con
 	bool	updateMasterTable;
 	if (!indexInfo.mStoredLastRevision.hasValue()) {
 		// New
-		OR<SNumberWrapper<UInt32> >	currentLastRevision = mInternals->mDocumentLastRevisionMap.get(documentType);
+		OR<TNumber<UInt32> >	currentLastRevision = mInternals->mDocumentLastRevisionMap.get(documentType);
 		lastRevision = isUpToDate ? (currentLastRevision.hasReference() ? currentLastRevision->mValue : 0) : 0;
 		updateMasterTable = true;
 	} else if (version != *indexInfo.mStoredLastRevision) {
@@ -1106,7 +1104,7 @@ UInt32 CMDSSQLiteDatabaseManager::registerIndex(const CString& documentType, con
 
 //----------------------------------------------------------------------------------------------------------------------
 void CMDSSQLiteDatabaseManager::updateIndex(const CString& name, const CMDSSQLiteIndexKeysInfos& keysInfos,
-		const TNumericArray<SInt64>& removedIDs, UInt32 lastRevision)
+		const TNumberArray<SInt64>& removedIDs, UInt32 lastRevision)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check if in batch
