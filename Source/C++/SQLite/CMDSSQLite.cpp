@@ -940,9 +940,15 @@ OV<UniversalTime> CMDSSQLite::getUniversalTime(const CString& property, const CM
 {
 	// Get value
 	OI<SValue>	value = getValue(property, document);
+	if (!value.hasInstance())
+		return OV<UniversalTime>();
 
-	return value.hasInstance() ?
-			OV<UniversalTime>(SUniversalTime::getFromRFC3339Extended(value->getString())) : OV<UniversalTime>();
+	OV<SGregorianDate>	gregorianDate =
+								SGregorianDate::getFrom(value->getString(), SGregorianDate::kStringStyleRFC339Extended);
+	if (!gregorianDate.hasValue())
+		return OV<UniversalTime>();
+
+	return OV<UniversalTime>(gregorianDate->getUniversalTime());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -961,7 +967,11 @@ void CMDSSQLite::set(const CString& property, const OI<SValue>& value, const CMD
 		valueUse = OI<SValue>(value->getData().getBase64String());
 	else if (value.hasInstance() && (setValueInfo == kUniversalTime))
 		// UniversalTime
-		valueUse = OI<SValue>(SUniversalTime::getRFC339Extended(value->getFloat64()));
+		valueUse =
+				OI<SValue>(
+						SValue(
+								SGregorianDate(value->getFloat64())
+										.getString(SGregorianDate::kStringStyleRFC339Extended)));
 	else
 		// Everything else
 		valueUse = value;

@@ -306,18 +306,20 @@ class CDocumentTypeInfoTable {
 		static	const	CSQLiteTableColumn	mTableColumns[];
 };
 
-CSQLiteTableColumn	CDocumentTypeInfoTable::mIDTableColumn(CString(OSSTR("id")), CSQLiteTableColumn::kInteger,
-							(CSQLiteTableColumn::Options)
-									(CSQLiteTableColumn::kPrimaryKey | CSQLiteTableColumn::kAutoIncrement));
-CSQLiteTableColumn	CDocumentTypeInfoTable::mDocumentIDTableColumn(CString(OSSTR("documentID")),
-							CSQLiteTableColumn::kText,
-							(CSQLiteTableColumn::Options) (CSQLiteTableColumn::kNotNull | CSQLiteTableColumn::kUnique));
-CSQLiteTableColumn	CDocumentTypeInfoTable::mRevisionTableColumn(CString(OSSTR("revision")),
-							CSQLiteTableColumn::kInteger, CSQLiteTableColumn::kNotNull);
-CSQLiteTableColumn	CDocumentTypeInfoTable::mActiveTableColumn(CString(OSSTR("active")), CSQLiteTableColumn::kInteger,
-							CSQLiteTableColumn::kNotNull);
-CSQLiteTableColumn	CDocumentTypeInfoTable::mTableColumns[] =
-							{ mIDTableColumn, mDocumentIDTableColumn, mRevisionTableColumn, mActiveTableColumn };
+const	CSQLiteTableColumn	CDocumentTypeInfoTable::mIDTableColumn(CString(OSSTR("id")), CSQLiteTableColumn::kInteger,
+									(CSQLiteTableColumn::Options)
+											(CSQLiteTableColumn::kPrimaryKey | CSQLiteTableColumn::kAutoIncrement));
+const	CSQLiteTableColumn	CDocumentTypeInfoTable::mDocumentIDTableColumn(CString(OSSTR("documentID")),
+									CSQLiteTableColumn::kText,
+											(CSQLiteTableColumn::Options)
+													(CSQLiteTableColumn::kNotNull | CSQLiteTableColumn::kUnique));
+const	CSQLiteTableColumn	CDocumentTypeInfoTable::mRevisionTableColumn(CString(OSSTR("revision")),
+									CSQLiteTableColumn::kInteger, CSQLiteTableColumn::kNotNull);
+const	CSQLiteTableColumn	CDocumentTypeInfoTable::mActiveTableColumn(CString(OSSTR("active")),
+									CSQLiteTableColumn::kInteger, CSQLiteTableColumn::kNotNull);
+const	CSQLiteTableColumn	CDocumentTypeInfoTable::mTableColumns[] =
+									{ mIDTableColumn, mDocumentIDTableColumn, mRevisionTableColumn,
+											mActiveTableColumn };
 
 //----------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------
@@ -342,18 +344,23 @@ class CDocumentTypeContentTable {
 										{
 											// Process results
 													UniversalTime	creationUniversalTime =
-																			*SUniversalTime::getFromRFC3339Extended(
+																			SGregorianDate::getFrom(
 																					*resultsRow.getString(
-																							mCreationDateTableColumn));
+																							mCreationDateTableColumn),
+																					SGregorianDate::
+																							kStringStyleRFC339Extended)
+																					->getUniversalTime();
 													UniversalTime	modificationUniversalTime =
-																			*SUniversalTime::getFromRFC3339Extended(
+																			SGregorianDate::getFrom(
 																					*resultsRow.getString(
-																							mModificationDateTableColumn));
+																							mModificationDateTableColumn),
+																					SGregorianDate::
+																							kStringStyleRFC339Extended)
+																					->getUniversalTime();
 											const	CDictionary&	propertyMap =
-																			CJSON::dictionaryFrom(
+																			*CJSON::dictionaryFrom(
 																							*resultsRow.getData(
-																									mJSONTableColumn))
-																					.getValue();
+																									mJSONTableColumn));
 
 											return DocumentBackingInfo(
 													existingDocumentInfo.mDocumentRevisionInfo.mDocumentID,
@@ -367,7 +374,7 @@ class CDocumentTypeContentTable {
 											CSQLiteTable& table)
 										{
 											// Setup
-											const	CData&	data = CJSON::dataFrom(propertyMap).getValue();
+											const	CData&	data = *CJSON::dataFrom(propertyMap);
 
 											// Insert
 											TableColumnAndValue	contentTableColumnAndValues[] =
@@ -375,12 +382,18 @@ class CDocumentTypeContentTable {
 																			TableColumnAndValue(mIDTableColumn, id),
 																			TableColumnAndValue(
 																					mCreationDateTableColumn,
-																					SUniversalTime::getRFC339Extended(
-																							creationUniversalTime)),
+																					SGregorianDate(
+																							creationUniversalTime)
+																					.getString(
+																							SGregorianDate::
+																							kStringStyleRFC339Extended)),
 																			TableColumnAndValue(
 																					mModificationDateTableColumn,
-																					SUniversalTime::getRFC339Extended(
-																							modificationUniversalTime)),
+																					SGregorianDate(
+																							modificationUniversalTime)
+																					.getString(
+																							SGregorianDate::
+																							kStringStyleRFC339Extended)),
 																			TableColumnAndValue(mJSONTableColumn, data),
 																		};
 											table.insertRow(contentTableColumnAndValues, 4);
@@ -389,15 +402,18 @@ class CDocumentTypeContentTable {
 											const CDictionary& propertyMap, CSQLiteTable& table)
 										{
 											// Setup
-											const	CData&	data = CJSON::dataFrom(propertyMap).getValue();
+											const	CData&	data = *CJSON::dataFrom(propertyMap);
 
 											// Update
 											TableColumnAndValue	contentTableColumnAndValues[] =
 																		{
 																			TableColumnAndValue(
 																					mModificationDateTableColumn,
-																					SUniversalTime::getRFC339Extended(
-																							modificationUniversalTime)),
+																					SGregorianDate(
+																							modificationUniversalTime)
+																					.getString(
+																							SGregorianDate::
+																							kStringStyleRFC339Extended)),
 																			TableColumnAndValue(mJSONTableColumn, data),
 																		};
 											table.update(contentTableColumnAndValues, 2,
@@ -406,16 +422,17 @@ class CDocumentTypeContentTable {
 		static	void				remove(SInt64 id, CSQLiteTable& table)
 										{
 											// Setup
-											const	CData&	data = CJSON::dataFrom(CDictionary()).getValue();
+											const	CData&	data = *CJSON::dataFrom(CDictionary());
 
 											// Update
 											TableColumnAndValue	contentTableColumnAndValues[] =
 																		{
 																			TableColumnAndValue(
 																					mModificationDateTableColumn,
-																					SUniversalTime::getRFC339Extended(
-																							SUniversalTime::
-																									getCurrent())),
+																					SGregorianDate()
+																					.getString(
+																							SGregorianDate::
+																							kStringStyleRFC339Extended)),
 																			TableColumnAndValue(mJSONTableColumn, data),
 																		};
 											table.update(contentTableColumnAndValues, 2,
@@ -683,11 +700,11 @@ class CIndexContentsTable {
 		static	const	CSQLiteTableColumn	mTableColumns[];
 };
 
-CSQLiteTableColumn	CIndexContentsTable::mKeyTableColumn(CString(OSSTR("key")), CSQLiteTableColumn::kText,
-							CSQLiteTableColumn::kPrimaryKey);
-CSQLiteTableColumn	CIndexContentsTable::mIDTableColumn(CString(OSSTR("id")), CSQLiteTableColumn::kInteger,
-							CSQLiteTableColumn::kNotNull);
-CSQLiteTableColumn	CIndexContentsTable::mTableColumns[] = { mKeyTableColumn, mIDTableColumn };
+const	CSQLiteTableColumn	CIndexContentsTable::mKeyTableColumn(CString(OSSTR("key")), CSQLiteTableColumn::kText,
+									CSQLiteTableColumn::kPrimaryKey);
+const	CSQLiteTableColumn	CIndexContentsTable::mIDTableColumn(CString(OSSTR("id")), CSQLiteTableColumn::kInteger,
+									CSQLiteTableColumn::kNotNull);
+const	CSQLiteTableColumn	CIndexContentsTable::mTableColumns[] = { mKeyTableColumn, mIDTableColumn };
 
 //----------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------
@@ -771,9 +788,7 @@ class CMDSSQLiteDatabaseManagerInternals {
 																							documentType);
 													UInt32					nextRevision =
 																					currentRevision.hasReference() ?
-																							currentRevision->mValue
-																									+ 1 :
-																							1;
+																							**currentRevision + 1 : 1;
 
 											// Check for batch
 											const	OR<SBatchInfo>	batchInfo =
@@ -884,7 +899,7 @@ void CMDSSQLiteDatabaseManager::batch(BatchProc batchProc, void* userData)
 	for (TIteratorS<CString> iterator = batchInfo.mDocumentLastRevisionTypesNeedingWrite.getIterator();
 			iterator.hasValue(); iterator.advance())
 		// Update
-		CDocumentsTable::set(mInternals->mDocumentLastRevisionMap.get(*iterator)->mValue, *iterator,
+		CDocumentsTable::set(**mInternals->mDocumentLastRevisionMap.get(*iterator), *iterator,
 				mInternals->mDocumentsMasterTable);
 	for (TIteratorS<CDictionary::Item> iterator = batchInfo.mCollectionInfo.getIterator(); iterator.hasValue();
 			iterator.advance()) {
@@ -1002,7 +1017,7 @@ UInt32 CMDSSQLiteDatabaseManager::registerCollection(const CString& documentType
 	if (!collectionInfo.mStoredLastRevision.hasValue()) {
 		// New
 		OR<TNumber<UInt32> >	currentLastRevision = mInternals->mDocumentLastRevisionMap.get(documentType);
-		lastRevision = isUpToDate ? (currentLastRevision.hasReference() ? currentLastRevision->mValue : 0) : 0;
+		lastRevision = isUpToDate ? (currentLastRevision.hasReference() ? **currentLastRevision : 0) : 0;
 		updateMasterTable = true;
 	} else if (version != *collectionInfo.mStoredLastRevision) {
 		// Updated version
@@ -1077,7 +1092,7 @@ UInt32 CMDSSQLiteDatabaseManager::registerIndex(const CString& documentType, con
 	if (!indexInfo.mStoredLastRevision.hasValue()) {
 		// New
 		OR<TNumber<UInt32> >	currentLastRevision = mInternals->mDocumentLastRevisionMap.get(documentType);
-		lastRevision = isUpToDate ? (currentLastRevision.hasReference() ? currentLastRevision->mValue : 0) : 0;
+		lastRevision = isUpToDate ? (currentLastRevision.hasReference() ? **currentLastRevision : 0) : 0;
 		updateMasterTable = true;
 	} else if (version != *indexInfo.mStoredLastRevision) {
 		// Updated version
