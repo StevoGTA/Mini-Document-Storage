@@ -6,6 +6,7 @@
 
 #include "CThread.h"
 #include "CUUID.h"
+#include "SError.h"
 #include "TLockingDictionary.h"
 #include "TMDSBatchInfo.h"
 #include "TMDSCollection.h"
