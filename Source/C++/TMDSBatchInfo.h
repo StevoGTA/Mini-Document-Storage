@@ -13,14 +13,14 @@
 template <typename T> class TMDSBatchInfo {
 	// Procs
 	public:
-		typedef	const	OI<SValue>	(*DocumentPropertyValueProc)(const CString& documentID, const CString& property,
+		typedef	const	OV<SValue>	(*DocumentPropertyValueProc)(const CString& documentID, const CString& property,
 											void* internals);
 
 	// DocumentInfo
 	public:
 		template <typename U> struct DocumentInfo {
 			// Procs
-			typedef	OI<SError>	(*MapProc)(const CString& documentType,
+			typedef	OV<SError>	(*MapProc)(const CString& documentType,
 										const TDictionary<DocumentInfo<U> >& documentInfosMap, void* userData);
 
 									// Lifecycle methods
@@ -46,10 +46,10 @@ template <typename T> class TMDSBatchInfo {
 										{ return mCreationUniversalTime; }
 					UniversalTime	getModificationUniversalTime() const
 										{ return mModificationUniversalTime; }
-					OI<SValue>		getValue(const CString& property)
+					OV<SValue>		getValue(const CString& property)
 										{
 											// Setup
-											OI<SValue>	value;
+											OV<SValue>	value;
 
 											// Check for document removed
 											if (mRemoved)
@@ -64,7 +64,7 @@ template <typename T> class TMDSBatchInfo {
 												returnValue = true;
 											else if (mUpdatedPropertyMap.contains(property)) {
 												// Property updated
-												value = OI<SValue>(mUpdatedPropertyMap.getValue(property));
+												value = OV<SValue>(mUpdatedPropertyMap.getValue(property));
 												returnValue = true;
 											}
 											mLock.lockForWriting();
@@ -73,11 +73,11 @@ template <typename T> class TMDSBatchInfo {
 											// Call proc
 											return mValueProc(mDocumentID, property, mValueProcUserData);
 										}
-					void			set(const CString& property, const OI<SValue>& value)
+					void			set(const CString& property, const OV<SValue>& value)
 										{
 											// Write
 											mLock.lockForWriting();
-											if (value.hasInstance()) {
+											if (value.hasValue()) {
 												// Have value
 												mUpdatedPropertyMap.set(property, *value);
 												mRemovedProperties -= property;
@@ -153,7 +153,7 @@ template <typename T> class TMDSBatchInfo {
 
 										return documentInfo;
 									}
-		OI<SError>				iterate(typename DocumentInfo<T>::MapProc mapProc, void* userData)
+		OV<SError>				iterate(typename DocumentInfo<T>::MapProc mapProc, void* userData)
 									{
 										// Collate
 										TNDictionary<TNDictionary<DocumentInfo<T> > >	map;
@@ -190,15 +190,15 @@ template <typename T> class TMDSBatchInfo {
 																									.getOpaque());
 
 											// Call proc
-											OI<SError>	error = mapProc(iterator->mKey, documentInfosMap, userData);
+											OV<SError>	error = mapProc(iterator->mKey, documentInfosMap, userData);
 
 											// Check error
-											if (error.hasInstance())
+											if (error.hasValue())
 												// Return error
 												return error;
 										}
 
-										return OI<SError>();
+										return OV<SError>();
 									}
 
 	// Properties

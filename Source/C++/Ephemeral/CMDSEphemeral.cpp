@@ -105,22 +105,22 @@ struct AssociationPair {
 				void						notifyDocumentChanged(const CString& documentType,
 													const CMDSDocument& document, CMDSDocument::ChangeKind changeKind);
 
-		static	OI<TSet<CString> >			updateCollectionValues(const OR<TSet<CString> >& currentValues,
+		static	OV<TSet<CString> >			updateCollectionValues(const OR<TSet<CString> >& currentValues,
 													const CMDSEphemeralCollectionUpdateInfo* updateInfo);
-		static	OI<TSet<CString> >			removeCollectionValues(const OR<TSet<CString> >& currentValues,
+		static	OV<TSet<CString> >			removeCollectionValues(const OR<TSet<CString> >& currentValues,
 													const TSet<CString>* documentIDs);
-		static	OI<TDictionary<CString> >	updateIndexValues(const OR<TDictionary<CString> >& currentValue,
+		static	OV<TDictionary<CString> >	updateIndexValues(const OR<TDictionary<CString> >& currentValue,
 													const UpdateIndexValuesInfo* updateIndexValuesInfo);
-		static	OI<TDictionary<CString> >	removeIndexValues(const OR<TDictionary<CString> >& currentValue,
+		static	OV<TDictionary<CString> >	removeIndexValues(const OR<TDictionary<CString> >& currentValue,
 													const TSet<CString>* documentIDs);
 		static	CString						getValueFromKeysInfo(CMDSEphemeralIndex::KeysInfo<CString>* keysInfo);
 		static	bool						isItemNotInSet(const CDictionary::Item& item, const TSet<CString>* strings);
 		static	bool						isDocumentActive(const CString& documentID,
 													const TNDictionary<CMDSEphemeralDocumentBacking>*
 															documentBackingByIDMap);
-		static	const	OI<SValue>			getDocumentBackingPropertyValue(const CString& documentID,
+		static	const	OV<SValue>			getDocumentBackingPropertyValue(const CString& documentID,
 													const CString& property, CMDSEphemeralInternals* internals);
-		static	OI<SError>					batchMap(const CString& documentType,
+		static	OV<SError>					batchMap(const CString& documentType,
 													const TDictionary<CMDSEphemeralBatchDocumentInfo >&
 															documentInfosMap,
 													CMDSEphemeralInternals* internals);
@@ -262,7 +262,7 @@ void CMDSEphemeralInternals::notifyDocumentChanged(const CString& documentType, 
 // MARK: Class methods
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<TSet<CString> > CMDSEphemeralInternals::updateCollectionValues(const OR<TSet<CString> >& currentValues,
+OV<TSet<CString> > CMDSEphemeralInternals::updateCollectionValues(const OR<TSet<CString> >& currentValues,
 		const CMDSEphemeralCollectionUpdateInfo* updateInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -276,11 +276,11 @@ OI<TSet<CString> > CMDSEphemeralInternals::updateCollectionValues(const OR<TSet<
 		// Don't have current values
 		updatedValues = TSet<CString>(updateInfo->mIncludedValues);
 
-	return !updatedValues.isEmpty() ? OI<TSet<CString> >(updatedValues) : OI<TSet<CString> >();
+	return !updatedValues.isEmpty() ? OV<TSet<CString> >(updatedValues) : OV<TSet<CString> >();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<TSet<CString> > CMDSEphemeralInternals::removeCollectionValues(const OR<TSet<CString> >& currentValues,
+OV<TSet<CString> > CMDSEphemeralInternals::removeCollectionValues(const OR<TSet<CString> >& currentValues,
 		const TSet<CString>* documentIDs)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -290,11 +290,11 @@ OI<TSet<CString> > CMDSEphemeralInternals::removeCollectionValues(const OR<TSet<
 		// Have current values
 		updatedValues = currentValues->removeFrom(*documentIDs);
 
-	return !updatedValues.isEmpty() ? OI<TSet<CString> >(updatedValues) : OI<TSet<CString> >();
+	return !updatedValues.isEmpty() ? OV<TSet<CString> >(updatedValues) : OV<TSet<CString> >();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<TDictionary<CString> > CMDSEphemeralInternals::updateIndexValues(const OR<TDictionary<CString> >& currentValue,
+OV<TDictionary<CString> > CMDSEphemeralInternals::updateIndexValues(const OR<TDictionary<CString> >& currentValue,
 		const UpdateIndexValuesInfo* updateIndexValuesInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -314,11 +314,11 @@ OI<TDictionary<CString> > CMDSEphemeralInternals::updateIndexValues(const OR<TDi
 			updatedValues.set(*keyIterator, keysInfoIterator->mValue);
 	}
 
-	return !updatedValues.isEmpty() ? OI<TDictionary<CString> >(updatedValues) : OI<TDictionary<CString> >();
+	return !updatedValues.isEmpty() ? OV<TDictionary<CString> >(updatedValues) : OV<TDictionary<CString> >();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<TDictionary<CString> > CMDSEphemeralInternals::removeIndexValues(const OR<TDictionary<CString> >& currentValue,
+OV<TDictionary<CString> > CMDSEphemeralInternals::removeIndexValues(const OR<TDictionary<CString> >& currentValue,
 		const TSet<CString>* documentIDs)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -326,7 +326,7 @@ OI<TDictionary<CString> > CMDSEphemeralInternals::removeIndexValues(const OR<TDi
 	TNDictionary<CString>	updatedValues(currentValue.hasReference() ? *currentValue : TNDictionary<CString>(),
 									(CDictionary::Item::IncludeProc) isItemNotInSet, (void*) documentIDs);
 
-	return !updatedValues.isEmpty() ? OI<TDictionary<CString> >(updatedValues) : OI<TDictionary<CString> >();
+	return !updatedValues.isEmpty() ? OV<TDictionary<CString> >(updatedValues) : OV<TDictionary<CString> >();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -352,26 +352,26 @@ bool CMDSEphemeralInternals::isDocumentActive(const CString& documentID,
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-const OI<SValue> CMDSEphemeralInternals::getDocumentBackingPropertyValue(const CString& documentID,
+const OV<SValue> CMDSEphemeralInternals::getDocumentBackingPropertyValue(const CString& documentID,
 		const CString& property, CMDSEphemeralInternals* internals)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
 	internals->mDocumentMapsLock.lockForReading();
 	const	OR<CMDSEphemeralDocumentBacking>	documentBacking = internals->mDocumentBackingByIDMap[documentID];
-	const	OI<SValue>							value =
+	const	OV<SValue>							value =
 														documentBacking.hasReference() ?
-																OI<SValue>(
+																OV<SValue>(
 																		documentBacking->mPropertyMap.getValue(
 																				property)) :
-																OI<SValue>();
+																OV<SValue>();
 	internals->mDocumentMapsLock.unlockForReading();
 
 	return value;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<SError> CMDSEphemeralInternals::batchMap(const CString& documentType,
+OV<SError> CMDSEphemeralInternals::batchMap(const CString& documentType,
 		const TDictionary<CMDSEphemeralBatchDocumentInfo >& documentInfosMap, CMDSEphemeralInternals* internals)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -484,7 +484,7 @@ OI<SError> CMDSEphemeralInternals::batchMap(const CString& documentType,
 	internals->updateIndexes(removedDocumentIDs);
 	internals->updateIndexes(documentType, updateInfos);
 
-	return OI<SError>();
+	return OV<SError>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -679,7 +679,7 @@ UniversalTime CMDSEphemeral::getModificationUniversalTime(const CMDSDocument& do
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<SValue> CMDSEphemeral::getValue(const CString& property, const CMDSDocument& document) const
+OV<SValue> CMDSEphemeral::getValue(const CString& property, const CMDSDocument& document) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check for batch
@@ -696,32 +696,32 @@ OI<SValue> CMDSEphemeral::getValue(const CString& property, const CMDSDocument& 
 	const	OR<CDictionary>	propertyMap = mInternals->mDocumentsBeingCreatedPropertyMapMap[document.getID()];
 	if (propertyMap.hasReference())
 		// Being created
-		return propertyMap->contains(property) ? OI<SValue>(propertyMap->getValue(property)) : OI<SValue>();
+		return propertyMap->contains(property) ? OV<SValue>(propertyMap->getValue(property)) : OV<SValue>();
 
 	// "Idle"
 	mInternals->mDocumentMapsLock.lockForReading();
 	const	OR<CMDSEphemeralDocumentBacking>	documentBacking =
 														mInternals->mDocumentBackingByIDMap[document.getID()];
-			OI<SValue>							value =
+			OV<SValue>							value =
 														(documentBacking.hasReference() &&
 																	documentBacking->mPropertyMap.contains(property)) ?
-																OI<SValue>(
+																OV<SValue>(
 																		documentBacking->mPropertyMap.getValue(
 																				property)) :
-																OI<SValue>();
+																OV<SValue>();
 	mInternals->mDocumentMapsLock.unlockForReading();
 
 	return value;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<CData> CMDSEphemeral::getData(const CString& property, const CMDSDocument& document) const
+OV<CData> CMDSEphemeral::getData(const CString& property, const CMDSDocument& document) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OI<SValue>	value = getValue(property, document);
+	OV<SValue>	value = getValue(property, document);
 
-	return value.hasInstance() ? OI<CData>(value->getData()) : OI<CData>();
+	return value.hasValue() ? OV<CData>(value->getData()) : OV<CData>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -729,13 +729,13 @@ OV<UniversalTime> CMDSEphemeral::getUniversalTime(const CString& property, const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OI<SValue>	value = getValue(property, document);
+	OV<SValue>	value = getValue(property, document);
 
-	return value.hasInstance() ? OV<UniversalTime>(value->getFloat64()) : OV<UniversalTime>();
+	return value.hasValue() ? OV<UniversalTime>(value->getFloat64()) : OV<UniversalTime>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSEphemeral::set(const CString& property, const OI<SValue>& value, const CMDSDocument& document,
+void CMDSEphemeral::set(const CString& property, const OV<SValue>& value, const CMDSDocument& document,
 		SetValueInfo setValueInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {

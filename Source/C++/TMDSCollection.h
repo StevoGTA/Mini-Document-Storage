@@ -56,7 +56,7 @@ template <typename T, typename U> class TMDSCollection {
 										for (TIteratorD<TMDSUpdateInfo<T> > iterator = updateInfos.getIterator();
 												iterator.hasValue(); iterator.advance()) {
 											// Check if there is something to do
-											if (!iterator->mChangedProperties.hasInstance() ||
+											if (!iterator->mChangedProperties.hasValue() ||
 													(mRelevantProperties.intersects(*iterator->mChangedProperties))) {
 												// Query
 												if (mIsIncludedProc(iterator->mDocument, mIsIncludedProcUserData))

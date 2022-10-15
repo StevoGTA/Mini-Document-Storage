@@ -85,13 +85,13 @@ class CMDSDocumentStorage {
 		virtual			UniversalTime				getModificationUniversalTime(const CMDSDocument& document) const
 															= 0;
 
-		virtual			OI<SValue>					getValue(const CString& property, const CMDSDocument& document)
+		virtual			OV<SValue>					getValue(const CString& property, const CMDSDocument& document)
 															const = 0;
-		virtual			OI<CData>					getData(const CString& property, const CMDSDocument& document) const
+		virtual			OV<CData>					getData(const CString& property, const CMDSDocument& document) const
 															= 0;
 		virtual			OV<UniversalTime>			getUniversalTime(const CString& property,
 															const CMDSDocument& document) const = 0;
-		virtual			void						set(const CString& property, const OI<SValue>& value,
+		virtual			void						set(const CString& property, const OV<SValue>& value,
 															const CMDSDocument& document,
  															SetValueInfo setValueInfo = kNothingSpecial) = 0;
 

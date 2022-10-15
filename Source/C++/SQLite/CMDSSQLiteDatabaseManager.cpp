@@ -93,23 +93,23 @@ class CInfoTable {
 									{
 										// Retrieve value
 										CSQLiteTableColumn	tableColumns[] = { mValueTableColumn };
-										OI<CString>			string;
+										OV<CString>			string;
 										table.select(tableColumns, 1, CSQLiteWhere(mKeyTableColumn, key),
 												(CSQLiteResultsRow::Proc) getInfoString, &string);
 
 										return string.hasInstance() ? OV<UInt32>(string->getUInt32()) : OV<UInt32>();
 									}
-		static	OI<CString>		getString(const CString& key, CSQLiteTable& table)
+		static	OV<CString>		getString(const CString& key, CSQLiteTable& table)
 									{
 										// Retrieve value
 										CSQLiteTableColumn	tableColumns[] = { mValueTableColumn };
-										OI<CString>			string;
+										OV<CString>			string;
 										table.select(tableColumns, 1, CSQLiteWhere(mKeyTableColumn, key),
 												(CSQLiteResultsRow::Proc) getInfoString, &string);
 
 										return string;
 									}
-		static	void			set(const CString& key, const OI<SValue>& value, CSQLiteTable& table)
+		static	void			set(const CString& key, const OV<SValue>& value, CSQLiteTable& table)
 									{
 										// Check if storing or removing
 										if (value.hasInstance()) {
@@ -127,7 +127,7 @@ class CInfoTable {
 									}
 
 	private:
-		static	void			getInfoString(const CSQLiteResultsRow& resultsRow, OI<CString>* string)
+		static	void			getInfoString(const CSQLiteResultsRow& resultsRow, OV<CString>* string)
 									{ *string = resultsRow.getString(mValueTableColumn); }
 
 	// Properties
@@ -745,7 +745,7 @@ class CMDSSQLiteDatabaseManagerInternals {
 												// Update version
 												mDatabaseVersion = OV<UInt32>(1);
 												CInfoTable::set(CString(OSSTR("version")),
-														OI<SValue>(*mDatabaseVersion), mInfoTable);
+														OV<SValue>(*mDatabaseVersion), mInfoTable);
 											}
 
 											// Finalize setup
@@ -861,14 +861,14 @@ OV<UInt32> CMDSSQLiteDatabaseManager::getUInt32(const CString& key) const
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<CString> CMDSSQLiteDatabaseManager::getString(const CString& key) const
+OV<CString> CMDSSQLiteDatabaseManager::getString(const CString& key) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	return CInfoTable::getString(key, mInternals->mInfoTable);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteDatabaseManager::set(const CString& key, const OI<SValue>& value)
+void CMDSSQLiteDatabaseManager::set(const CString& key, const OV<SValue>& value)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	CInfoTable::set(key, value, mInternals->mInfoTable);

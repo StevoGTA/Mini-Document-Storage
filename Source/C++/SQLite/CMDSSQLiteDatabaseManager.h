@@ -87,8 +87,8 @@ class CMDSSQLiteDatabaseManager {
 
 										// Instance methods
 				OV<UInt32>				getUInt32(const CString& key) const;
-				OI<CString>				getString(const CString& key) const;
-				void					set(const CString& key, const OI<SValue>& value);
+				OV<CString>				getString(const CString& key) const;
+				void					set(const CString& key, const OV<SValue>& value);
 
 				void					note(const CString& documentType);
 				void					batch(BatchProc batchProc, void* userData);

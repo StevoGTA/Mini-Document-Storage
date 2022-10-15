@@ -184,7 +184,7 @@ class CMDSSQLiteInternals {
 																const CMDSDocument& document,
 																CMDSDocument::ChangeKind changeKind);
 
-		static	const	OI<SValue>						getDocumentBackingPropertyValue(const CString& documentID,
+		static	const	OV<SValue>						getDocumentBackingPropertyValue(const CString& documentID,
 																const CString& property,
 																CMDSSQLiteDocumentBacking* documentBacking);
 		static			void							processExistingDocumentInfo(
@@ -245,7 +245,7 @@ class CMDSSQLiteInternals {
 															}
 
 		static			void							batch(BatchInfo* batchInfo);
-		static			OI<SError>						batchMap(const CString& documentType,
+		static			OV<SError>						batchMap(const CString& documentType,
 																const TDictionary<CMDSSQLiteBatchDocumentInfo >&
 																		documentInfosMap,
 																CMDSSQLiteInternals* internals);
@@ -542,7 +542,7 @@ void CMDSSQLiteInternals::notifyDocumentChanged(const CString& documentType, con
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-const OI<SValue> CMDSSQLiteInternals::getDocumentBackingPropertyValue(const CString& documentID,
+const OV<SValue> CMDSSQLiteInternals::getDocumentBackingPropertyValue(const CString& documentID,
 		const CString& property, CMDSSQLiteDocumentBacking* documentBacking)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -621,7 +621,7 @@ void CMDSSQLiteInternals::batch(BatchInfo* batchInfo)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<SError> CMDSSQLiteInternals::batchMap(const CString& documentType,
+OV<SError> CMDSSQLiteInternals::batchMap(const CString& documentType,
 		const TDictionary<CMDSSQLiteBatchDocumentInfo >& documentInfosMap, CMDSSQLiteInternals* internals)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -722,7 +722,7 @@ OI<SError> CMDSSQLiteInternals::batchMap(const CString& documentType,
 	internals->removeFromCollections(documentType, removedDocumentBackingIDs);
 	internals->removeFromIndexes(documentType, removedDocumentBackingIDs);
 
-	return OI<SError>();
+	return OV<SError>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -776,7 +776,7 @@ void CMDSSQLite::set(const TDictionary<CString>& info)
 	// Iterate all items
 	for (TIteratorS<CDictionary::Item> iterator = info.getIterator(); iterator.hasValue(); iterator.advance())
 		// Set value
-		mInternals->mDatabaseManager.set(iterator->mKey, OI<SValue>(iterator->mValue));
+		mInternals->mDatabaseManager.set(iterator->mKey, OV<SValue>(iterator->mValue));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -786,7 +786,7 @@ void CMDSSQLite::remove(const TArray<CString>& keys)
 	// Iterate all keys
 	for (TIteratorD<CString> iterator = keys.getIterator(); iterator.hasValue(); iterator.advance())
 		// Remove value
-		mInternals->mDatabaseManager.set(*iterator, OI<SValue>());
+		mInternals->mDatabaseManager.set(*iterator, OV<SValue>());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -901,7 +901,7 @@ UniversalTime CMDSSQLite::getModificationUniversalTime(const CMDSDocument& docum
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<SValue> CMDSSQLite::getValue(const CString& property, const CMDSDocument& document) const
+OV<SValue> CMDSSQLite::getValue(const CString& property, const CMDSDocument& document) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check for batch
@@ -918,20 +918,20 @@ OI<SValue> CMDSSQLite::getValue(const CString& property, const CMDSDocument& doc
 	const	OR<CDictionary>	propertyMap = mInternals->mDocumentsBeingCreatedPropertyMapMap[document.getID()];
 	if (propertyMap.hasReference())
 		// Being created
-		return propertyMap->contains(property) ? OI<SValue>(propertyMap->getValue(property)) : OI<SValue>();
+		return propertyMap->contains(property) ? OV<SValue>(propertyMap->getValue(property)) : OV<SValue>();
 	else
 		// "Idle"
 		return mInternals->getDocumentBacking(document.getDocumentType(), document.getID())->getValue(property);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<CData> CMDSSQLite::getData(const CString& property, const CMDSDocument& document) const
+OV<CData> CMDSSQLite::getData(const CString& property, const CMDSDocument& document) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OI<SValue>	value = getValue(property, document);
+	OV<SValue>	value = getValue(property, document);
 
-	return value.hasInstance() ? OI<CData>(new CData(value->getString())) : OI<CData>();
+	return value.hasInstance() ? OV<CData>(CData(value->getString())) : OV<CData>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -939,7 +939,7 @@ OV<UniversalTime> CMDSSQLite::getUniversalTime(const CString& property, const CM
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OI<SValue>	value = getValue(property, document);
+	OV<SValue>	value = getValue(property, document);
 	if (!value.hasInstance())
 		return OV<UniversalTime>();
 
@@ -952,7 +952,7 @@ OV<UniversalTime> CMDSSQLite::getUniversalTime(const CString& property, const CM
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::set(const CString& property, const OI<SValue>& value, const CMDSDocument& document,
+void CMDSSQLite::set(const CString& property, const OV<SValue>& value, const CMDSDocument& document,
 		SetValueInfo setValueInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -961,14 +961,14 @@ void CMDSSQLite::set(const CString& property, const OI<SValue>& value, const CMD
 	const	CString&	documentID = document.getID();
 
 	// Transform
-	OI<SValue>	valueUse;
+	OV<SValue>	valueUse;
 	if (value.hasInstance() && (value->getType() == SValue::kData))
 		// Data
-		valueUse = OI<SValue>(value->getData().getBase64String());
+		valueUse = OV<SValue>(value->getData().getBase64String());
 	else if (value.hasInstance() && (setValueInfo == kUniversalTime))
 		// UniversalTime
 		valueUse =
-				OI<SValue>(
+				OV<SValue>(
 						SValue(
 								SGregorianDate(value->getFloat64())
 										.getString(SGregorianDate::kStringStyleRFC339Extended)));

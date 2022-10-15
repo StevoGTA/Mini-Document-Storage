@@ -30,8 +30,8 @@ class CMDSSQLiteDocumentBacking {
 		UniversalTime	getCreationUniversalTime() const;
 		UniversalTime	getModificationUniversalTime() const;
 
-		OI<SValue>		getValue(const CString& property) const;
-		void			set(const CString& property, const OI<SValue>& value, const CString& documentType,
+		OV<SValue>		getValue(const CString& property) const;
+		void			set(const CString& property, const OV<SValue>& value, const CString& documentType,
 								CMDSSQLiteDatabaseManager& databaseManager, bool commitChange = true);
 		void			update(const CString& documentType, const CDictionary& updatedPropertyMap,
 								const TSet<CString>& removedProperties, CMDSSQLiteDatabaseManager& databaseManager,

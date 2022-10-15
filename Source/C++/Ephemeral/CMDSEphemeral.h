@@ -32,10 +32,10 @@ class CMDSEphemeral : public CMDSDocumentStorage {
 				UniversalTime			getCreationUniversalTime(const CMDSDocument& document) const;
 				UniversalTime			getModificationUniversalTime(const CMDSDocument& document) const;
 
-				OI<SValue>				getValue(const CString& property, const CMDSDocument& document) const;
-				OI<CData>				getData(const CString& property, const CMDSDocument& document) const;
+				OV<SValue>				getValue(const CString& property, const CMDSDocument& document) const;
+				OV<CData>				getData(const CString& property, const CMDSDocument& document) const;
 				OV<UniversalTime>		getUniversalTime(const CString& property, const CMDSDocument& document) const;
-				void					set(const CString& property, const OI<SValue>& value,
+				void					set(const CString& property, const OV<SValue>& value,
 												const CMDSDocument& document,
 												SetValueInfo setValueInfo = kNothingSpecial);
 
