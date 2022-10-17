@@ -10,19 +10,12 @@ let	{documentStorage} = require('./globals');
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get
-//	=> documentStorageID (path)
-//	=> key (query) (can specify multiple)
-//
-//	<= [
-//		"key" :String
-//		...
-//	   ]
 exports.getV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
 
 	let	multiValueQueryStringParameters = event.multiValueQueryStringParameters || {};
-	let	keys = multiValueQueryStringParameters.key;
+	let	keys = multiValueQueryStringParameters.key.map(key => decodeURIComponent(key));
 
 	// Catch errors
 	try {
@@ -56,15 +49,9 @@ exports.getV1 = async (event) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Set
-//	=> documentStorageID (path)
-//	=> json (body)
-//		[
-//			"key" :String
-//			...
-//		]
 exports.setV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.replace(/_/g, '/');	// Convert back to /
+	let	documentStorageID = decodeURIComponent(event.pathParameters);
 	let	info = (event.body) ? JSON.parse(event.body) : null;
 
 	// Catch errors

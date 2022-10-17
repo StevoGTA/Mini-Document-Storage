@@ -7,23 +7,9 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Register
-//	=> documentStorageID (path)
-//	=> json (body)
-//		{
-//			"name" :String,
-//			"documentType" :String,
-//			"relevantProperties" :[String]
-//			"valuesInfos" :[
-//							{
-//								"name" :String,
-//								"valueType" :"integer",
-//								"selector" :String,
-//							},
-//							...
-//				 		   ]
 exports.registerV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	info = request.body || {};
 
 	// Catch errors

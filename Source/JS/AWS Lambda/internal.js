@@ -10,15 +10,9 @@ let	{documentStorage} = require('./globals');
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Set
-//	=> documentStorageID (path)
-//	=> json (body)
-//		[
-//			"key" :String
-//			...
-//		]
 exports.setV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
 	let	info = (event.body) ? JSON.parse(event.body) : null;
 
 	// Catch errors

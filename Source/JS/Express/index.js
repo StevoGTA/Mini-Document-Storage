@@ -7,22 +7,9 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Register
-//	=> documentStorageID (path)
-//	=> json (body)
-//		{
-//			"documentType" :String,
-//			"name" :String,
-//			"relevantProperties" :[String]
-//			"isUpToDate" :Int (0 or 1)
-//			"keysSelector" :String,
-//			"keysSelectorInfo" :{
-//									"key" :Any,
-//									...
-//							    },
-//		}
 exports.registerV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	info = request.body;
 
 	// Catch errors
@@ -52,53 +39,15 @@ exports.registerV1 = async (request, response) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Document Infos
-//	=> documentStorageID (path)
-//	=> name (path)
-//	=> key (query) (can specify multiple)
-//	=> fullInfo (query) (optional, default false)
-//
-//	<= HTTP Status 409 if collection is out of date => call endpoint again
-//	<= json (fullInfo == 0)
-//		{
-//			key: {String (documentID) : Int (revision)},
-//			...
-//		}
-//	<= json (fullInfo == 1)
-//		{
-//			key:
-//				{
-//					"documentID" :String,
-//					"revision" :Int,
-//					"active" :0/1,
-//					"creationDate" :String,
-//					"modificationDate" :String,
-//					"json" :{
-//								"key" :Any,
-//								...
-//							},
-//					"attachments":
-//							{
-//								id :
-//									{
-//										"revision" :Int,
-//										"info" :{
-//													"key" :Any,
-//													...
-//												},
-//									},
-//									..
-//							}
-//				},
-//			...
-//		}
 exports.getDocumentsV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	name = request.params.name.replace(/_/g, '/');								// Convert back to /
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
+	let	name = decodeURIComponent(request.params.name);
 
-	let	keys = request.query.key;
+	var	keys = request.query.key;
 	if (typeof keys == 'string')
 		keys = [keys];
+	keys = keys.map(key => decodeURIComponent(key));
 
 	let	fullInfo = request.query.fullInfo || 0;
 

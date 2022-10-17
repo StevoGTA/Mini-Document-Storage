@@ -10,36 +10,10 @@ let	{documentStorage} = require('./globals');
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Create
-//	=> documentStorageID (path)
-//	=> documentType (path)
-//	=> json (body)
-//		[
-//			{
-//				"documentID" :String (optional)
-//				"creationDate" :String (optional)
-//				"modificationDate" :String (optional)
-//				"json" :{
-//							"key" :Any,
-//							...
-//						}
-//			},
-//			...
-//		]
-//
-//	<= json
-//		[
-//			{
-//				"documentID" :String,
-//				"revision" :Int,
-//				"creationDate" :String,
-//				"modificationDate" :String,
-//			},
-//			...
-//		]
 exports.createV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	documentType = event.pathParameters.documentType;
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
+	let	documentType = decodeURIComponent(event.pathParameters.documentType);
 	let	infos = (event.body) ? JSON.parse(event.body) : null;
 
 	// Catch errors
@@ -75,14 +49,10 @@ exports.createV1 = async (event) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Count
-//	=> documentStorageID (path)
-//	=> type (path)
-//
-//	<= count in header
 exports.getCountV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	documentType = event.pathParameters.documentType;
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
+	let	documentType = decodeURIComponent(event.pathParameters.documentType);
 
 	// Catch errors
 	try {
@@ -122,54 +92,17 @@ exports.getCountV1 = async (event) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get
-//	=> documentStorageID (path)
-//	=> type (path)
-//
-//	=> sinceRevision (query)
-//	=> count (query, optional)
-//		-or-
-//	=> id (query) (can specify multiple)
-//
-//	<= json
-//		[
-//			{
-//				"documentID" :String,
-//				"revision" :Int,
-//				"active" :0/1,
-//				"creationDate" :String,
-//				"modificationDate" :String,
-//				"json" :{
-//							"key" :Any,
-//							...
-//						},
-//				"attachments":
-//						{
-//							id :
-//								{
-//									"revision" :Int,
-//									"info" :{
-//												"key" :Any,
-//												...
-//											},
-//								},
-//								..
-//						}
-//			},
-//			...
-//		]
 exports.getV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	documentType = event.pathParameters.documentType;
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
+	let	documentType = decodeURIComponent(event.pathParameters.documentType);
 
 	let	queryStringParameters = event.queryStringParameters || {};
 	let	sinceRevision = queryStringParameters.sinceRevision;
 	let	count = queryStringParameters.count;
 
 	let	multiValueQueryStringParameters = event.multiValueQueryStringParameters || {};
-	let	documentIDs =
-				(multiValueQueryStringParameters.id || [])
-						.map(documentID => documentID.replace(/%2B/g, '+').replace(/_/g, '/'));	// Convert back to + and /
+	let	documentIDs = (multiValueQueryStringParameters.id || []) .map(documentID => decodeURIComponent(documentID));
 
 	// Catch errors
 	try {
@@ -235,43 +168,10 @@ exports.getV1 = async (event) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Update
-//	=> documentStorageID (path)
-//	=> type (path)
-//	=> json (body)
-//		[
-//			{
-//				"documentID" :String,		// Required
-//				"updated" :{				// Optional
-//								"key" :Any,
-//								...
-//						   },
-//				"removed" :[				// Optional
-//								"key",
-//								...
-//						   ],
-//				"active" :0/1,				// Optional
-//			},
-//			...
-//		]
-//
-//	<= json
-//		[
-//			{
-//				"documentID" :String,
-//				"revision" :Int,
-//				"active" :0/1,
-//				"modificationDate" :String,
-//				"json" :{
-//							"key" :Any,
-//							...
-//						},
-//			},
-//			...
-//		]
 exports.updateV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	documentType = event.pathParameters.documentType;
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
+	let	documentType = decodeURIComponent(event.pathParameters.documentType);
 	let	infos = (event.body) ? JSON.parse(event.body) : null;
 
 	// Catch errors
@@ -306,22 +206,11 @@ exports.updateV1 = async (event) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Add Attachment
-//	=> documentStorageID (path)
-//	=> documentType (path)
-//	=> documentID (path)
-//	=> info (body)
-//	=> content (body)
-//
-//	<= json
-//		{
-//			"id" :String,
-//			"revision" :Int
-//		}
 exports.addAttachmentV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	documentType = event.pathParameters.documentType;
-	let	documentID = event.pathParameters.documentID.replace(/_/g, '/');				// Convert back to /
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
+	let	documentType = decodeURIComponent(event.pathParameters.documentType);
+	let	documentID = decodeURIComponent(event.pathParameters.documentID);
 
 	let	body = JSON.parse(event.body || {});
 	let info = body.info;
@@ -361,18 +250,12 @@ exports.addAttachmentV1 = async (event) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Attachment
-//	=> documentStorageID (path)
-//	=> documentType (path)
-//	=> documentID (path)
-//	=> attachmentID (path)
-//
-//	<= data
 exports.getAttachmentV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	documentType = event.pathParameters.documentType;
-	let	documentID = event.pathParameters.documentID.replace(/_/g, '/');				// Convert back to /
-	let	attachmentID = event.pathParameters.attachmentID.replace(/_/g, '/');			// Convert back to /
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
+	let	documentType = decodeURIComponent(event.pathParameters.documentType);
+	let	documentID = decodeURIComponent(event.pathParameters.documentID);
+	let	attachmentID = decodeURIComponent(event.pathParameters.attachmentID);
 
 	// Catch errors
 	try {
@@ -408,23 +291,12 @@ exports.getAttachmentV1 = async (event) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Update Attachment
-//	=> documentStorageID (path)
-//	=> documentType (path)
-//	=> documentID (path)
-//	=> attachmentID (path)
-//	=> info (body)
-//	=> content (body)
-//
-//	<= json
-//		{
-//			"revision" :Int
-//		}
 exports.updateAttachmentV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	documentType = event.pathParameters.documentType;
-	let	documentID = event.pathParameters.documentID.replace(/_/g, '/');				// Convert back to /
-	let	attachmentID = event.pathParameters.attachmentID.replace(/_/g, '/');			// Convert back to /
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID)
+	let	documentType = decodeURIComponent(event.pathParameters.documentType);
+	let	documentID = decodeURIComponent(event.pathParameters.documentID);
+	let	attachmentID = decodeURIComponent(event.pathParameters.attachmentID);
 
 	let	body = JSON.parse(event.body || {});
 	let info = body.info;
@@ -464,16 +336,12 @@ exports.updateAttachmentV1 = async (event) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Remove Attachment
-//	=> documentStorageID (path)
-//	=> documentType (path)
-//	=> documentID (path)
-//	=> attachmentID (path)
 exports.removeAttachmentV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	documentType = event.pathParameters.documentType;
-	let	documentID = event.pathParameters.documentID.replace(/_/g, '/');				// Convert back to /
-	let	attachmentID = event.pathParameters.attachmentID.replace(/_/g, '/');			// Convert back to /
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
+	let	documentType = decodeURIComponent(event.pathParameters.documentType);
+	let	documentID = decodeURIComponent(event.pathParameters.documentID);
+	let	attachmentID = decodeURIComponent(event.pathParameters.attachmentID);
 
 	// Catch errors
 	try {

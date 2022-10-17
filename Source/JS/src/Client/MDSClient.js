@@ -87,7 +87,7 @@ class MDSClient {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
-		let	url = this.urlBase + '/v1/association/' + documentStorageIDUse;
+		let	url = this.urlBase + '/v1/association/' + encodeURIComponent(documentStorageIDUse);
 
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
@@ -115,7 +115,9 @@ class MDSClient {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
-		let	url = this.urlBase + '/v1/association/' + documentStorageIDUse + '/' + name;
+		let	url =
+					this.urlBase + '/v1/association/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name);
 
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
@@ -132,7 +134,9 @@ class MDSClient {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		
-		var	url = this.urlBase + '/v1/association/' + documentStorageIDUse + '/' + name;
+		var	url =
+					this.urlBase + '/v1/association/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name);
 		if (startIndex) url += '&startIndex=' + startIndex;
 		if (count) url += '&count=' + count;
 
@@ -152,8 +156,8 @@ class MDSClient {
 		let	documentID = document.documentID.replace(/\+/g, '%2B');
 		
 		var	url =
-					this.urlBase + '/v1/association/' + documentStorageIDUse + '/' + name + '?fromID=' + documentID +
-							'&fullInfo=0';
+					this.urlBase + '/v1/association/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name) + '?fromID=' + encodeURIComponent(documentID) + '&fullInfo=0';
 		if (startIndex) url += '&startIndex=' + startIndex;
 		if (count) url += '&count=' + count;
 
@@ -173,8 +177,8 @@ class MDSClient {
 		let	documentID = document.documentID.replace(/\+/g, '%2B');
 		
 		var	url =
-					this.urlBase + '/v1/association/' + documentStorageIDUse + '/' + name + '?fromID=' + documentID +
-							'&fullInfo=1';
+					this.urlBase + '/v1/association/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name) + '?fromID=' + encodeURIComponent(documentID) + '&fullInfo=1';
 		if (startIndex) url += '&startIndex=' + startIndex;
 		if (count) url += '&count=' + count;
 
@@ -197,8 +201,8 @@ class MDSClient {
 		let	documentID = document.documentID.replace(/\+/g, '%2B');
 		
 		var	url =
-					this.urlBase + '/v1/association/' + documentStorageIDUse + '/' + name + '?toID=' + documentID +
-							'&fullInfo=0';
+					this.urlBase + '/v1/association/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name) + '?toID=' + encodeURIComponent(documentID) + '&fullInfo=0';
 		if (startIndex) url += '&startIndex=' + startIndex;
 		if (count) url += '&count=' + count;
 
@@ -218,8 +222,8 @@ class MDSClient {
 		let	documentID = document.documentID.replace(/\+/g, '%2B');
 		
 		var	url =
-					this.urlBase + '/v1/association/' + documentStorageIDUse + '/' + name + '?toID=' + documentID +
-							'&fullInfo=1';
+					this.urlBase + '/v1/association/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name) + '?toID=' + encodeURIComponent(documentID) + '&fullInfo=1';
 		if (startIndex) url += '&startIndex=' + startIndex;
 		if (count) url += '&count=' + count;
 
@@ -236,28 +240,22 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async associationGetValue(name, fromDocument, action, cacheName, cacheValueName, documentStorageID) {
+	async associationGetValue(name, action, fromDocument, cacheName, cachedValueName, documentStorageID) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		let	documentID = fromDocument.documentID.replace(/\+/g, '%2B');
 		
-		let	url = this.urlBase + '/v1/association/' + documentStorageIDUse + '/' + name + '/value';
+		let	url =
+					this.urlBase + '/v1/association/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name) + '/' + action +
+							'?fromID=' + encodeURIComponent(fromDocument.documentID) +
+							'&cacheName=' + encodeURIComponent(cacheName) +
+							'&cachedValueName=' + encodeURIComponent(cachedValueName);
 
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
-		let	options =
-					{
-						headers: headers,
-						body:
-								JSON.stringify(
-										{
-											'fromID': documentID,
-											'action': action,
-											'cacheName': cacheName,
-											'cacheValueName': cacheValueName,
-										}),
-					};
+		let	options = {headers: headers};
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
@@ -267,11 +265,11 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async cacheRegister(name, documentType, relevantProperties, valuesInfos, documentStorageID) {
+	async cacheRegister(name, documentType, relevantProperties, valueInfos, documentStorageID) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
-		let	url = this.urlBase + '/v1/cache/' + documentStorageIDUse;
+		let	url = this.urlBase + '/v1/cache/' + encodeURIComponent(documentStorageIDUse);
 
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
@@ -286,7 +284,7 @@ class MDSClient {
 											'name': name,
 											'documentType': documentType,
 											'relevantProperties': relevantProperties,
-											'valuesInfos': valuesInfos,
+											'valueInfos': valueInfos,
 										}),
 					};
 
@@ -301,7 +299,7 @@ class MDSClient {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
-		let	url = this.urlBase + '/v1/collection/' + documentStorageIDUse;
+		let	url = this.urlBase + '/v1/collection/' + encodeURIComponent(documentStorageIDUse);
 
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
@@ -332,7 +330,9 @@ class MDSClient {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
-		let	url = this.urlBase + '/v1/collection/' + documentStorageIDUse + '/' + name;
+		let	url =
+					this.urlBase + '/v1/collection/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name);
 
 		let	options = {method: 'HEAD', headers: this.headers};
 
@@ -356,7 +356,9 @@ class MDSClient {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
-		let	url = this.urlBase + '/v1/collection/' + documentStorageIDUse + '/' + name + '?fullInfo=0';
+		let	url =
+					this.urlBase + '/v1/collection/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name) + '?fullInfo=0';
 		if (startIndex) url += '&startIndex=' + startIndex;
 		if (count) url += '&count=' + count;
 
@@ -374,7 +376,9 @@ class MDSClient {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
-		let	url = this.urlBase + '/v1/collection/' + documentStorageIDUse + '/' + name + '?fullInfo=1';
+		let	url =
+					this.urlBase + '/v1/collection/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name) + '?fullInfo=1';
 		if (startIndex) url += '&startIndex=' + startIndex;
 		if (count) url += '&count=' + count;
 
@@ -395,7 +399,9 @@ class MDSClient {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
-		let	url = this.urlBase + '/v1/document/' + documentStorageIDUse + '/' + documentType;
+		let	url =
+					this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(documentType);
 
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
@@ -430,7 +436,9 @@ class MDSClient {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
-		let	url = this.urlBase + '/v1/document/' + documentStorageIDUse + '/' + documentType;
+		let	url =
+					this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(documentType);
 		let	options = {method: 'HEAD', headers: this.headers};
 
 		// Queue the call
@@ -454,8 +462,8 @@ class MDSClient {
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
 		var	url =
-					this.urlBase + '/v1/document/' + documentStorageIDUse + '/' + documentType +
-							'?sinceRevision=' + sinceRevision;
+					this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(documentType) + '?sinceRevision=' + sinceRevision;
 		if (count) url += '&count=' + count;
 
 		let	options = {headers: this.headers};
@@ -476,8 +484,8 @@ class MDSClient {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		let	urlBase =
-					this.urlBase + '/v1/document/' + documentStorageIDUse + '/' + documentType +
-							'?count=' + batchCount + '&sinceRevision=';
+					this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(documentType) + '?count=' + batchCount + '&sinceRevision=';
 		let	options = {headers: this.headers};
 
 		var	sinceRevisionUse = sinceRevision;
@@ -517,7 +525,7 @@ class MDSClient {
 	async documentGet(documentType, documentIDs, documentCreationProc, documentStorageID) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
-		let	documentIDsUse = documentIDs.map(documentID => documentID.replace('+', '%2B'));
+		let	documentIDsUse = documentIDs.map(documentID => encodeURIComponent(documentID));
 
 		let	options = {headers: this.headers};
 		
@@ -527,8 +535,8 @@ class MDSClient {
 			// Setup
 			let	documentIDsSlice = documentIDsUse.slice(i, i + 10);
 			let	url = 
-						this.urlBase + '/v1/document/' + documentStorageIDUse + '/' + documentType +
-								'?id=' + documentIDsSlice.join('&id=');
+						this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
+								encodeURIComponent(documentType) + '?id=' + documentIDsSlice.join('&id=');
 
 			// Queue the call
 			let	response = await this.queue.add(() => fetch(url, options));
@@ -549,7 +557,9 @@ class MDSClient {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
-		let	url = this.urlBase + '/v1/document/' + documentStorageIDUse + '/' + documentType;
+		let	url =
+					this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(documentType);
 
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
@@ -597,8 +607,8 @@ class MDSClient {
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
 		let	url =
-					this.urlBase + '/v1/document/' + documentStorageIDUse + '/' + documentType + '/' + documentID +
-							'/attachment';
+					this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(documentType) + '/' + encodeURIComponent(documentID) + '/attachment';
 
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
@@ -628,8 +638,9 @@ class MDSClient {
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
 		let	url =
-					this.urlBase + '/v1/document/' + documentStorageIDUse + '/' + documentType + '/' + documentID +
-							'/attachment/' + attachmentID;
+					this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(documentType) + '/' + encodeURIComponent(documentID) + '/attachment/' +
+							encodeURIComponent(attachmentID);
 		let	options = {headers: this.headers};
 
 		// Queue the call
@@ -645,8 +656,9 @@ class MDSClient {
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
 		let	url =
-					this.urlBase + '/v1/document/' + documentStorageIDUse + '/' + documentType + '/' + documentID +
-							'/attachment/' + attachmentID;
+					this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(documentType) + '/' + encodeURIComponent(documentID) + '/attachment/' +
+							encodeURIComponent(attachmentID);
 
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
@@ -674,8 +686,9 @@ class MDSClient {
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
 		let	url =
-					this.urlBase + '/v1/document/' + documentStorageIDUse + '/' + documentType + '/' + documentID +
-							'/attachment/' + attachmentID;
+					this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(documentType) + '/' + encodeURIComponent(documentID) + '/attachment/' +
+							encodeURIComponent(attachmentID);
 		let	options = {method: 'DELETE', headers: this.headers};
 
 		// Queue the call
@@ -689,7 +702,7 @@ class MDSClient {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
-		let	url = this.urlBase + '/v1/index/' + documentStorageIDUse;
+		let	url = this.urlBase + '/v1/index/' + encodeURIComponent(documentStorageIDUse);
 
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
@@ -719,10 +732,11 @@ class MDSClient {
 	async indexGetDocumentInfos(name, keys, documentStorageID) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
+		let	keysUse = keys.map(key => encodeURIComponent(key));
 
 		let	url =
-					this.urlBase + '/v1/index/' + documentStorageIDUse + '/' + name + '?fullInfo=0' +
-							'?key=' + keys.join('&key=');
+					this.urlBase + '/v1/index/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name) + '?fullInfo=0' + '?key=' + keysUse.join('&key=');
 		let	options = {headers: this.headers};
 
 		// Queue the call
@@ -736,10 +750,11 @@ class MDSClient {
 	async indexGetDocuments(name, keys, documentCreationProc, documentStorageID) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
+		let	keysUse = keys.map(key => encodeURIComponent(key));
 
 		let	url =
-					this.urlBase + '/v1/index/' + documentStorageIDUse + '/' + name + '?fullInfo=1' +
-							'?key=' + keys.join('&key=');
+					this.urlBase + '/v1/index/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name) + '?fullInfo=1' + '?key=' + keysUse.join('&key=');
 		let	options = {headers: this.headers};
 
 		// Queue the call
@@ -756,8 +771,11 @@ class MDSClient {
 	async infoGet(keys, documentStorageID) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
+		let	keysUse = keys.map(key => encodeURIComponent(key));
 
-		let	url = this.urlBase + '/v1/info/' + documentStorageIDUse + '?key=' + keys.join('&key=');
+		let	url =
+					this.urlBase + '/v1/info/' + encodeURIComponent(documentStorageIDUse) +
+							'?key=' + keysUse.join('&key=');
 		let	options = {headers: this.headers};
 
 		// Queue the call
@@ -772,7 +790,7 @@ class MDSClient {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
-		let	url = this.urlBase + '/v1/info/' + documentStorageIDUse;
+		let	url = this.urlBase + '/v1/info/' + encodeURIComponent(documentStorageIDUse);
 
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
@@ -789,7 +807,7 @@ class MDSClient {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
-		let	url = this.urlBase + '/v1/internal/' + documentStorageIDUse;
+		let	url = this.urlBase + '/v1/internal/' + encodeURIComponent(documentStorageIDUse);
 
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';

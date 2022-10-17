@@ -153,10 +153,6 @@ module.exports = class Associations {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async getDocuments(statementPerformer, name, fromDocumentID, toDocumentID, startIndex, count, fullInfo) {
-		// Validate
-		if (fromDocumentID && toDocumentID)
-			return [null, null, 'Must specify one of fromDocumentID or toDocumentID'];
-
 		// Setup
 		let	internals = this.internals;
 
@@ -251,20 +247,20 @@ module.exports = class Associations {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getValue(statementPerformer, name, fromDocumentID, action, cacheName, cacheValueName) {
+	async getValue(statementPerformer, name, action, fromDocumentID, cacheName, cachedValueName) {
 		// Validate
 		if (!name)
-			return [null, null, 'Must specify name'];
-		if (!fromDocumentID)
-			return [null, null, 'Must specify fromDocumentID'];
+			return [null, null, 'Missing name'];
 		if (!action)
-			return [null, null, 'Must specify action'];
+			return [null, null, 'Missing action'];
 		if (action != 'sum')
 			return [null, null, 'Action ' + action + ' not supported.'];
+		if (!fromDocumentID)
+			return [null, null, 'Missing fromDocumentID'];
 		if (!cacheName)
-			return [null, null, 'Must specify cacheName'];
-		if (!cacheValueName)
-			return [null, null, 'Must specify cacheValueName'];
+			return [null, null, 'Missing cacheName'];
+		if (!cachedValueName)
+			return [null, null, 'Missing cachedValueName'];
 
 		// Setup
 		let	internals = this.internals;
@@ -298,7 +294,7 @@ module.exports = class Associations {
 
 			// Perform
 			let	value =
-						await statementPerformer.sum(association.table, cache.tableColumn(cacheValueName),
+						await statementPerformer.sum(association.table, cache.tableColumn(cachedValueName),
 								statementPerformer.innerJoin(cache.table, association.table.toIDTableColumn,
 										cache.table.idTableColumn),
 								statementPerformer.where(association.table.fromIDTableColumn, fromID));

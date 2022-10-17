@@ -7,17 +7,10 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get
-//	=> documentStorageID (path)
-//	=> key (query) (can specify multiple)
-//
-//	<= [
-//		"key" :String
-//		...
-//	   ]
 exports.getV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	keys = request.query.key;
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
+	let	keys = request.query.key.map(key => decodeURIComponent(key));
 
 	// Catch errors
 	try {
@@ -48,15 +41,9 @@ exports.getV1 = async (request, response) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Set
-//	=> documentStorageID (path)
-//	=> json (body)
-//		[
-//			"key" :String
-//			...
-//		]
 exports.setV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	info = request.body;
 
 	// Catch errors

@@ -7,15 +7,9 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Set
-//	=> documentStorageID (path)
-//	=> json (body)
-//		[
-//			"key" :String
-//			...
-//		]
 exports.setV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	info = request.body;
 
 	// Catch errors

@@ -10,22 +10,9 @@ let	{documentStorage} = require('./globals');
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Register
-//	=> documentStorageID (path)
-//	=> json (body)
-//		{
-//			"name" :String,
-//			"documentType" :String,
-//			"relevantProperties" :[String],
-//			"isUpToDate" :Int (0 or 1)
-//			"isIncludedSelector" :String,
-//			"isIncludedSelectorInfo" :{
-//											"key" :Any,
-//											...
-//									  },
-//		}
 exports.registerV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.replace(/_/g, '/');	// Convert back to /
+	let	documentStorageID = decodeURIComponent(event.pathParameters);
 	let	info = (event.body) ? JSON.parse(event.body) : {};
 
 	// Catch errors
@@ -59,15 +46,10 @@ exports.registerV1 = async (event) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Document Count
-//	=> documentStorageID (path)
-//	=> name (path)
-//
-//	<= HTTP Status 409 if collection is out of date => call endpoint again
-//	<= count in header
 exports.getDocumentCountV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	name = event.pathParameters.name.replace(/_/g, '/');							// Convert back to /
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
+	let	name = decodeURIComponent(event.pathParameters.name);
 
 	// Catch errors
 	try {
@@ -109,52 +91,10 @@ exports.getDocumentCountV1 = async (event) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Document Infos
-//	=> documentStorageID (path)
-//	=> name (path)
-//	=> startIndex (query) (optional, default is 0)
-//	=> count (query) (optional, default is all)
-//	=> fullInfo (query) (optional, default is false)
-//
-//	<= HTTP Status 409 if collection is out of date => call endpoint again
-//	<= json (fullInfo == 0)
-//		[
-//			{
-//				"documentID" :String,
-//				"revision" :Int,
-//			},
-//			...
-//		]
-//	<= json (fullInfo == 1)
-//		[
-//			{
-//				"documentID" :String,
-//				"revision" :Int,
-//				"active" :0/1,
-//				"creationDate" :String,
-//				"modificationDate" :String,
-//				"json" :{
-//							"key" :Any,
-//							...
-//						},
-//				"attachments":
-//						{
-//							id :
-//								{
-//									"revision" :Int,
-//									"info" :{
-//												"key" :Any,
-//												...
-//											},
-//								},
-//								..
-//						}
-//			},
-//			...
-//		]
 exports.getDocumentsV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	name = event.pathParameters.name.replace(/_/g, '/');							// Convert back to /
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
+	let	name = decodeURIComponent(event.pathParameters.name);
 
 	let	queryStringParameters = event.queryStringParameters || {};
 	let	startIndex = queryStringParameters.startIndex || 0;

@@ -7,36 +7,10 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Create
-//	=> documentStorageID (path)
-//	=> documentType (path)
-//	=> json (body)
-//		[
-//			{
-//				"documentID" :String (optional)
-//				"creationDate" :String (optional)
-//				"modificationDate" :String (optional)
-//				"json" :{
-//							"key" :Any,
-//							...
-//						}
-//			},
-//			...
-//		]
-//
-//	<= json
-//		[
-//			{
-//				"documentID" :String,
-//				"revision" :Int,
-//				"creationDate" :String,
-//				"modificationDate" :String,
-//			},
-//			...
-//		]
 exports.createV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	documentType = request.params.documentType;
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
+	let	documentType = decodeURIComponent(request.params.documentType);
 	let	infos = request.body;
 
 	// Catch errors
@@ -68,14 +42,10 @@ exports.createV1 = async (request, response) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Count
-//	=> documentStorageID (path)
-//	=> type (path)
-//
-//	<= count in header
 exports.getCountV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	documentType = request.params.documentType;
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
+	let	documentType = decodeURIComponent(request.params.documentType);
 
 	// Catch errors
 	try {
@@ -112,45 +82,10 @@ exports.getCountV1 = async (request, response) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get
-//	=> documentStorageID (path)
-//	=> type (path)
-//
-//	=> sinceRevision (query)
-//	=> count (query, optional)
-//		-or-
-//	=> id (query) (can specify multiple)
-//
-//	<= json
-//		[
-//			{
-//				"documentID" :String,
-//				"revision" :Int,
-//				"active" :0/1,
-//				"creationDate" :String,
-//				"modificationDate" :String,
-//				"json" :{
-//							"key" :Any,
-//							...
-//						},
-//				"attachments":
-//						{
-//							id :
-//								{
-//									"revision" :Int,
-//									"info" :{
-//												"key" :Any,
-//												...
-//											},
-//								},
-//								..
-//						}
-//			},
-//			...
-//		]
 exports.getV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	documentType = request.params.documentType;
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
+	let	documentType = decodeURIComponent(request.params.documentType);
 
 	let	sinceRevision = request.query.sinceRevision;
 	let	count = request.query.count;
@@ -158,8 +93,7 @@ exports.getV1 = async (request, response) => {
 	var	documentIDs = request.query.id || [];
 	if (typeof documentIDs == 'string')
 		documentIDs = [documentIDs];
-	// Convert back to + and from _ to /
-	documentIDs = documentIDs.map(documentID => documentID.replace(/_/g, '/'));		// Convert back to /
+	documentIDs = documentIDs.map(documentID => decodeURIComponent(documentID));
 
 	// Catch errors
 	try {
@@ -218,43 +152,10 @@ exports.getV1 = async (request, response) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Update
-//	=> documentStorageID (path)
-//	=> type (path)
-//	=> json (body)
-//		[
-//			{
-//				"documentID" :String,		// Required
-//				"updated" :{				// Optional
-//								"key" :Any,
-//								...
-//						   },
-//				"removed" :[				// Optional
-//								"key",
-//								...
-//						   ],
-//				"active" :0/1,				// Optional
-//			},
-//			...
-//		]
-//
-//	<= json
-//		[
-//			{
-//				"documentID" :String,
-//				"revision" :Int,
-//				"active" :0/1,
-//				"modificationDate" :String,
-//				"json" :{
-//							"key" :Any,
-//							...
-//						},
-//			},
-//			...
-//		]
 exports.updateV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	documentType = request.params.documentType;
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
+	let	documentType = decodeURIComponent(request.params.documentType);
 	let	infos = request.body;
 
 	// Catch errors
@@ -286,22 +187,11 @@ exports.updateV1 = async (request, response) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Add Attachment
-//	=> documentStorageID (path)
-//	=> documentType (path)
-//	=> documentID (path)
-//	=> info (body)
-//	=> content (body)
-//
-//	<= json
-//		{
-//			"id" :String,
-//			"revision" :Int
-//		}
 exports.addAttachmentV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	documentType = request.params.documentType;
-	let	documentID = request.params.documentID.replace(/_/g, '/');					// Convert back to /
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
+	let	documentType = decodeURIComponent(request.params.documentType);
+	let	documentID = decodeURIComponent(request.params.documentID);
 	let info = request.body.info;
 	let	content = request.body.content;
 
@@ -335,18 +225,12 @@ exports.addAttachmentV1 = async (request, response) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Attachment
-//	=> documentStorageID (path)
-//	=> documentType (path)
-//	=> documentID (path)
-//	=> attachmentID (path)
-//
-//	<= data
 exports.getAttachmentV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	documentType = request.params.documentType;
-	let	documentID = request.params.documentID.replace(/_/g, '/');					// Convert back to /
-	let	attachmentID = request.params.attachmentID.replace(/_/g, '/');				// Convert back to /
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
+	let	documentType = decodeURIComponent(request.params.documentType);
+	let	documentID = decodeURIComponent(request.params.documentID);
+	let	attachmentID = decodeURIComponent(request.params.attachmentID);
 
 	// Catch errors
 	try {
@@ -378,23 +262,12 @@ exports.getAttachmentV1 = async (request, response) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Update Attachment
-//	=> documentStorageID (path)
-//	=> documentType (path)
-//	=> documentID (path)
-//	=> attachmentID (path)
-//	=> info (body)
-//	=> content (body)
-//
-//	<= json
-//		{
-//			"revision" :Int
-//		}
 exports.updateAttachmentV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	documentType = request.params.documentType;
-	let	documentID = request.params.documentID.replace(/_/g, '/');					// Convert back to /
-	let	attachmentID = request.params.attachmentID.replace(/_/g, '/');				// Convert back to /
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
+	let	documentType = decodeURIComponent(request.params.documentType);
+	let	documentID = decodeURIComponent(request.params.documentID);
+	let	attachmentID = decodeURIComponent(request.params.attachmentID);
 	let info = request.body.info;
 	let	content = request.body.content;
 
@@ -428,16 +301,12 @@ exports.updateAttachmentV1 = async (request, response) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Remove Attachment
-//	=> documentStorageID (path)
-//	=> documentType (path)
-//	=> documentID (path)
-//	=> attachmentID (path)
 exports.removeAttachmentV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	documentType = request.params.documentType;
-	let	documentID = request.params.documentID.replace(/_/g, '/');					// Convert back to /
-	let	attachmentID = request.params.attachmentID.replace(/_/g, '/');				// Convert back to /
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
+	let	documentType = decodeURIComponent(request.params.documentType);
+	let	documentID = decodeURIComponent(request.params.documentID);
+	let	attachmentID = decodeURIComponent(request.params.attachmentID);
 
 	// Catch errors
 	try {

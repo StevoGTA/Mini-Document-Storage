@@ -522,9 +522,7 @@ module.exports = class Documents {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
 				// No such table
-				return [null,
-						'Attachment ' + attachmentID + ' for ' + documentID + ' of type ' + documentType +
-								' not found.'];
+				return [null, 'Invalid document type: ' + documentType];
 			else
 				// Other error
 				throw error;
@@ -971,6 +969,7 @@ module.exports = class Documents {
 
 			tablesInfo =
 					{
+						documentType: documentType,
 						infoTable:
 								statementPerformer.table(infoTableName,
 										[
@@ -1071,7 +1070,7 @@ module.exports = class Documents {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
 				// No such table
-				return [null, 'No Documents'];
+				return [null, 'Invalid document type: ' + tablesInfo.documentType];
 			else
 				// Other error
 				throw error;

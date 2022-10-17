@@ -7,16 +7,9 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Register
-//	=> documentStorageID (path)
-//	=> json (body)
-//		{
-//			"name" :String
-//			"fromDocumentType" :String,
-//			"toDocumentType" :String,
-//		}
 exports.registerV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	info = request.body;
 
 	// Catch errors
@@ -47,20 +40,10 @@ exports.registerV1 = async (request, response) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Update
-//	=> documentStorageID (path)
-//	=> name (path)
-//	=> json (body)
-//		[
-//			{
-//				"action" :"add" or "remove"
-//				"fromID" :String
-//				"toID :String
-//			}
-//		]
 exports.updateV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	name = request.params.name;
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
+	let	name = decodeURIComponent(request.params.name);
 	let	infos = request.body;
 
 	// Catch errors
@@ -91,62 +74,12 @@ exports.updateV1 = async (request, response) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Document Infos
-//	=> documentStorageID (path)
-//	=> name (path)
-//	=> fromID -or- toID (query)
-//	=> startIndex (query) (optional, default 0)
-//	=> count (query) (optional, default is all)
-//	=> fullInfo (query) (optional, default false)
-//
-//	<= json (no fromID nor toID given)
-//		[
-//			{
-//				"fromDocumentID" :String,
-//				"toDocumentID" :String,
-//			},
-//			...
-//		]
-//	<= json (fromID or toID given, fullInfo == 0)
-//		[
-//			{
-//				"documentID" :String,
-//				"revision" :Int
-//			},
-//			...
-//		]
-//	<= json (fromID or toID given, fullInfo == 1)
-//		[
-//			{
-//				"documentID" :String,
-//				"revision" :Int,
-//				"active" :0/1,
-//				"creationDate" :String,
-//				"modificationDate" :String,
-//				"json" :{
-//							"key" :Any,
-//							...
-//						},
-//				"attachments":
-//						{
-//							id :
-//								{
-//									"revision" :Int,
-//									"info" :{
-//												"key" :Any,
-//												...
-//											},
-//								},
-//								..
-//						}
-//			},
-//			...
-//		]
 exports.getDocumentsV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	name = request.params.name;
-	let	fromDocumentID = request.query.fromID?.replace(/_/g, '/');					// Convert back to /
-	let	toDocumentID = request.query.toID?.replace(/_/g, '/');						// Convert back to /
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
+	let	name = decodeURIComponent(request.params.name);
+	let	fromDocumentID = request.query.fromID ? decodeURIComponent(request.query.fromID) : null;
+	let	toDocumentID = request.query.toID ? decodeURIComponent(request.query.toID) : null;
 	let	startIndex = request.query.startIndex || 0;
 	let	count = request.query.count;
 	let	fullInfo = request.query.fullInfo || 0;
@@ -191,30 +124,22 @@ exports.getDocumentsV1 = async (request, response) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Association Value
-//	=> documentStorageID (path)
-//	=> name (path)
-//	=> fromID (query)
-//	=> action (query)
-//	=> cacheName (query)
-//	=> cacheValueName (query)
-//
-//	<= count
 exports.getValueV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	name = request.params.name;
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
+	let	name = decodeURIComponent(request.params.name);
+	let	action = request.params.action;
 
-	let	fromDocumentID = request.query.fromID?.replace(/_/g, '/');					// Convert back to /
-	let	action = request.query.action;
-	let	cacheName = request.query.cacheName;
-	let	cacheValueName = request.query.cacheValueName;
+	let	fromDocumentID = decodeURIComponent(request.query.fromID);
+	let	cacheName = decodeURIComponent(request.query.cacheName);
+	let	cachedValueName = decodeURIComponent(request.query.cachedValueName);
 
 	// Catch errors
 	try {
 		// Get info
 		let	[upToDate, value, error] =
-					await request.app.locals.documentStorage.associationGetValue(documentStorageID, name,
-							fromDocumentID, action, cacheName, cacheValueName);
+					await request.app.locals.documentStorage.associationGetValue(documentStorageID, name, action,
+							fromDocumentID, cacheName, cachedValueName);
 		if (upToDate)
 			// Success
 			response

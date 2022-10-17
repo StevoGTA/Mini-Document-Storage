@@ -56,11 +56,11 @@ module.exports = class Caches {
 		if (!relevantProperties)
 			return 'Missing relevantProperties';
 
-		let	valuesInfos = info.valuesInfos;
-		if (!valuesInfos)
-			return 'Missing valuesInfos';
+		let	valueInfos = info.valueInfos;
+		if (!valueInfos)
+			return 'Missing valueInfos';
 
-		for (let valueInfo of valuesInfos) {
+		for (let valueInfo of valueInfos) {
 			// Setup
 			let	name = valueInfo.name;
 			if (!name)
@@ -90,7 +90,7 @@ module.exports = class Caches {
 							statementPerformer.where(this.cachesTable.nameTableColumn, name));
 		if (results.length == 0) {
 			// Add
-			let	cache = this.createCache(statementPerformer, name, documentType, relevantProperties, valuesInfos, 0);
+			let	cache = this.createCache(statementPerformer, name, documentType, relevantProperties, valueInfos, 0);
 
 			statementPerformer.queueInsertInto(this.cachesTable,
 					[
@@ -98,16 +98,16 @@ module.exports = class Caches {
 						{tableColumn: this.cachesTable.typeTableColumn, value: documentType},
 						{tableColumn: this.cachesTable.relevantPropertiesTableColumn,
 								value: relevantProperties.toString()},
-						{tableColumn: this.cachesTable.infoTableColumn, value: JSON.stringify(valuesInfos)},
+						{tableColumn: this.cachesTable.infoTableColumn, value: JSON.stringify(valueInfos)},
 						{tableColumn: this.cachesTable.lastDocumentRevisionTableColumn, value: 0},
 					]);
 			cache.queueCreate(statementPerformer);
 		} else {
 			// Have existing
-			if (!util.isDeepStrictEqual(valuesInfos, JSON.parse(results[0].info.toString()))) {
+			if (!util.isDeepStrictEqual(valueInfos, JSON.parse(results[0].info.toString()))) {
 				// Update
 				let	cache =
-							this.createCache(statementPerformer, name, documentType, relevantProperties, valuesInfos,
+							this.createCache(statementPerformer, name, documentType, relevantProperties, valueInfos,
 									0);
 
 				statementPerformer.queueReplace(this.cachesTable,
@@ -116,7 +116,7 @@ module.exports = class Caches {
 							{tableColumn: this.cachesTable.typeTableColumn, value: documentType},
 							{tableColumn: this.cachesTable.relevantPropertiesTableColumn,
 									value: relevantProperties.toString()},
-							{tableColumn: this.cachesTable.infoTableColumn, value: JSON.stringify(valuesInfos)},
+							{tableColumn: this.cachesTable.infoTableColumn, value: JSON.stringify(valueInfos)},
 							{tableColumn: this.cachesTable.lastDocumentRevisionTableColumn, value: 0},
 						]);
 				cache.queueTruncate(statementPerformer);
@@ -228,10 +228,10 @@ module.exports = class Caches {
 
 	// Private methods
 	//------------------------------------------------------------------------------------------------------------------
-	createCache(statementPerformer, name, type, relevantProperties, valuesInfos, lastDocumentRevision) {
+	createCache(statementPerformer, name, type, relevantProperties, valueInfos, lastDocumentRevision) {
 		// Setup
-		let	valuesInfosUse =
-					valuesInfos.map(valueInfo => {
+		let	valueInfosUse =
+					valueInfos.map(valueInfo => {
 							return {
 								name: valueInfo.name,
 								valueType: valueInfo.valueType,
@@ -240,6 +240,6 @@ module.exports = class Caches {
 					})
 
 		// Create cache
-		return new Cache(statementPerformer, name, type, relevantProperties, valuesInfosUse, lastDocumentRevision);
+		return new Cache(statementPerformer, name, type, relevantProperties, valueInfosUse, lastDocumentRevision);
 	}
 }

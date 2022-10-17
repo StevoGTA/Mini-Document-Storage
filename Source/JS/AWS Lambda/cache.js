@@ -10,23 +10,9 @@ let	{documentStorage} = require('./globals');
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Register
-//	=> documentStorageID (path)
-//	=> json (body)
-//		{
-//			"name" :String,
-//			"documentType" :String,
-//			"relevantProperties" :[String]
-//			"valuesInfos" :[
-//							{
-//								"name" :String,
-//								"valueType" :"integer",
-//								"selector" :String,
-//							},
-//							...
-//				 		   ]
 exports.registerV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
 	let	info = (event.body) ? JSON.parse(event.body) : {};
 
 	// Catch errors

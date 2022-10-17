@@ -10,16 +10,9 @@ let	{documentStorage} = require('./globals');
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Register
-//	=> documentStorageID (path)
-//	=> json (body)
-//		{
-//			"name" :String
-//			"fromDocumentType" :String,
-//			"toDocumentType" :String,
-//		}
 exports.registerV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
 	let	info = (event.body) ? JSON.parse(event.body) : null;
 
 	// Catch errors
@@ -53,20 +46,10 @@ exports.registerV1 = async (event) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Update
-//	=> documentStorageID (path)
-//	=> name (path)
-//	=> json (body)
-//		[
-//			{
-//				"action" :"add" or "remove"
-//				"fromID" :String
-//				"toID :String
-//			}
-//		]
 exports.updateV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	name = event.pathParameters.name;
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
+	let	name = decodeURIComponent(event.pathParameters.name);
 	let	infos = (event.body) ? JSON.parse(event.body) : null;
 
 	// Catch errors
@@ -100,64 +83,14 @@ exports.updateV1 = async (event) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Document Infos
-//	=> documentStorageID (path)
-//	=> name (path)
-//	=> fromID -or- toID (query)
-//	=> startIndex (query) (optional, default 0)
-//	=> count (query) (optional, default is all)
-//	=> fullInfo (query) (optional, default false)
-//
-//	<= json (no fromID nor toID given)
-//		[
-//			{
-//				"fromDocumentID" :String,
-//				"toDocumentID" :String,
-//			},
-//			...
-//		]
-//	<= json (fromID or toID given, fullInfo == 0)
-//		[
-//			{
-//				"documentID" :String,
-//				"revision" :Int
-//			},
-//			...
-//		]
-//	<= json (fromID or toID given, fullInfo == 1)
-//		[
-//			{
-//				"documentID" :String,
-//				"revision" :Int,
-//				"active" :0/1,
-//				"creationDate" :String,
-//				"modificationDate" :String,
-//				"json" :{
-//							"key" :Any,
-//							...
-//						},
-//				"attachments":
-//						{
-//							id :
-//								{
-//									"revision" :Int,
-//									"info" :{
-//												"key" :Any,
-//												...
-//											},
-//								},
-//								..
-//						}
-//			},
-//			...
-//		]
 exports.getDocumentsV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');			// Convert back to /
-	let	name = event.pathParameters.name;
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
+	let	name = decodeURIComponent(event.pathParameters.name);
 
 	let	queryStringParameters = event.queryStringParameters || {};
-	let	fromDocumentID = queryStringParameters.fromID?.replace(/%2B/g, '+').replace(/_/g, '/');	// Convert back to + and /
-	let	toDocumentID = queryStringParameters.toID?.replace(/%2B/g, '+').replace(/_/g, '/');		// Convert back to + and /
+	let	fromDocumentID = queryStringParameters.fromID ? decodeURIComponent(queryStringParameters.fromID) : null;
+	let	toDocumentID = queryStringParameters.toID ? decodeURIComponent(queryStringParameters.toID) : null;
 	let	startIndex = queryStringParameters.startIndex || 0;
 	let	count = queryStringParameters.count;
 	let	fullInfo = queryStringParameters.fullInfo || 0;
@@ -206,31 +139,23 @@ exports.getDocumentsV1 = async (event) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Association Value
-//	=> documentStorageID (path)
-//	=> name (path)
-//	=> fromID (query)
-//	=> action (query)
-//	=> cacheName (query)
-//	=> cacheValueName (query)
-//
-//	<= count
 exports.getValueV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.documentStorageID.replace(/_/g, '/');			// Convert back to /
-	let	name = event.pathParameters.name;
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
+	let	name = decodeURIComponent(event.pathParameters.name);
+	let	action = event.pathParameters.action;
 
 	let	queryStringParameters = event.queryStringParameters || {};
-	let	fromDocumentID = queryStringParameters.fromID.replace(/%2B/g, '+').replace(/_/g, '/');	// Convert back to + and /
-	let	action = queryStringParameters.action;
-	let	cacheName = queryStringParameters.cacheName;
-	let	cacheValueName = queryStringParameters.cacheValueName;
+	let	fromDocumentID = decodeURIComponent(queryStringParameters.fromID);
+	let	cacheName = decodeURIComponent(queryStringParameters.cacheName);
+	let	cachedValueName = decodeURIComponent(queryStringParameters.cachedValueName);
 
 	// Catch errors
 	try {
 		// Get info
 		let	[upToDate, value, error] =
-					await documentStorage.associationGetValue(documentStorageID, name, fromDocumentID, action,
-							cacheName, cacheValueName);
+					await documentStorage.associationGetValue(documentStorageID, name, action, fromDocumentID,
+							cacheName, cachedValueName);
 		if (upToDate)
 			// Success
 			return {

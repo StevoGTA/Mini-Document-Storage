@@ -11,12 +11,12 @@ module.exports = class Cache {
 
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	constructor(statementPerformer, name, type, relevantProperties, valuesInfos, lastDocumentRevision) {
+	constructor(statementPerformer, name, type, relevantProperties, valueInfos, lastDocumentRevision) {
 		// Store
 		this.name = name;
 		this.type = type;
 		this.relevantProperties = relevantProperties;
-		this.valuesInfos = valuesInfos;
+		this.valueInfos = valueInfos;
 		this.lastDocumentRevision = lastDocumentRevision;
 
 		// Setup
@@ -27,7 +27,7 @@ module.exports = class Cache {
 							TableColumn.options.primaryKey | TableColumn.options.nonNull | TableColumn.options.unsigned,
 							tableName)]
 							.concat(
-									valuesInfos.map(valueInfo => {
+									valueInfos.map(valueInfo => {
 											// // Check value type
 											// if (valueInfo.valueType == 'integer')
 												// Integer
@@ -68,7 +68,7 @@ module.exports = class Cache {
 									{tableColumn: this.table.idTableColumn, variable: updateDocumentInfo.idVariable});
 
 						// Iterate infos
-						for (let valueInfo of this.valuesInfos) {
+						for (let valueInfo of this.valueInfos) {
 							// Query value
 							let	value = valueInfo.selector(updateDocumentInfo.json, valueInfo.name);
 

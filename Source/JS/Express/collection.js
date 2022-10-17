@@ -7,22 +7,9 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Register
-//	=> documentStorageID (path)
-//	=> json (body)
-//		{
-//			"name" :String,
-//			"documentType" :String,
-//			"relevantProperties" :[String],
-//			"isUpToDate" :Int (0 or 1)
-//			"isIncludedSelector" :String,
-//			"isIncludedSelectorInfo" :{
-//											"key" :Any,
-//											...
-//									  },
-//		}
 exports.registerV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	info = request.body || {};
 
 	// Catch errors
@@ -53,15 +40,10 @@ exports.registerV1 = async (request, response) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Document Count
-//	=> documentStorageID (path)
-//	=> name (path)
-//
-//	<= HTTP Status 409 if collection is out of date => call endpoint again
-//	<= count in header
 exports.getDocumentCountV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	name = request.params.name.replace(/_/g, '/');								// Convert back to /
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
+	let	name = decodeURIComponent(request.params.name);
 
 	// Catch errors
 	try {
@@ -104,52 +86,10 @@ exports.getDocumentCountV1 = async (request, response) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Document Infos
-//	=> documentStorageID (path)
-//	=> name (path)
-//	=> startIndex (query) (optional, default is 0)
-//	=> count (query) (optional, default is all)
-//	=> fullInfo (query) (optional, default is false)
-//
-//	<= HTTP Status 409 if collection is out of date => call endpoint again
-//	<= json (fullInfo == 0)
-//		[
-//			{
-//				"documentID" :String,
-//				"revision" :Int,
-//			},
-//			...
-//		]
-//	<= json (fullInfo == 1)
-//		[
-//			{
-//				"documentID" :String,
-//				"revision" :Int,
-//				"active" :0/1,
-//				"creationDate" :String,
-//				"modificationDate" :String,
-//				"json" :{
-//							"key" :Any,
-//							...
-//						},
-//				"attachments":
-//						{
-//							id :
-//								{
-//									"revision" :Int,
-//									"info" :{
-//												"key" :Any,
-//												...
-//											},
-//								},
-//								..
-//						}
-//			},
-//			...
-//		]
 exports.getDocumentsV1 = async (request, response) => {
 	// Setup
-	let	documentStorageID = request.params.documentStorageID.replace(/_/g, '/');	// Convert back to /
-	let	name = request.params.name.replace(/_/g, '/');								// Convert back to /
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
+	let	name = decodeURIComponent(request.params.name);
 
 	let	startIndex = request.query.startIndex || 0;
 	let	count = request.query.count;

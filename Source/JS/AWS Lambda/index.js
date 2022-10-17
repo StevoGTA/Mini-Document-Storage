@@ -10,22 +10,9 @@ let	{documentStorage} = require('./globals');
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Register
-//	=> documentStorageID (path)
-//	=> json (body)
-//		{
-//			"documentType" :String,
-//			"name" :String,
-//			"relevantProperties" :[String]
-//			"isUpToDate" :Int (0 or 1)
-//			"keysSelector" :String,
-//			"keysSelectorInfo" :{
-//									"key" :Any,
-//									...
-//							    },
-//		}
 exports.registerV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.replace(/_/g, '/');	// Convert back to /
+	let	documentStorageID = decodeURIComponent(event.pathParameters);
 	let	info = (event.body) ? JSON.parse(event.body) : null;
 
 	// Catch errors
@@ -59,55 +46,16 @@ exports.registerV1 = async (event) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Document Infos
-//	=> documentStorageID (path)
-//	=> name (path)
-//	=> key (query) (can specify multiple)
-//	=> fullInfo (query) (optional, default false)
-//
-//	<= HTTP Status 409 if collection is out of date => call endpoint again
-//	<= json (fullInfo == 0)
-//		{
-//			key: {String (documentID) : Int (revision)},
-//			...
-//		}
-//	<= json (fullInfo == 1)
-//		{
-//			key:
-//				{
-//					"documentID" :String,
-//					"revision" :Int,
-//					"active" :0/1,
-//					"creationDate" :String,
-//					"modificationDate" :String,
-//					"json" :{
-//								"key" :Any,
-//								...
-//							},
-//					"attachments":
-//							{
-//								id :
-//									{
-//										"revision" :Int,
-//										"info" :{
-//													"key" :Any,
-//													...
-//												},
-//									},
-//									..
-//							}
-//				},
-//			...
-//		}
 exports.getDocumentsV1 = async (event) => {
 	// Setup
-	let	documentStorageID = event.pathParameters.replace(/_/g, '/');	// Convert back to /
-	let	name = event.pathParameters.name.replace(/_/g, '/');			// Convert back to /
+	let	documentStorageID = decodeURIComponent(event.pathParameters);
+	let	name = decodeURIComponent(event.pathParameters.name);
 
 	let	queryStringParameters = event.queryStringParameters || {};
 	let	fullInfo = queryStringParameters.fullInfo || 0;
 
 	let	multiValueQueryStringParameters = event.multiValueQueryStringParameters || {};
-	let	keys = multiValueQueryStringParameters.key;
+	let	keys = multiValueQueryStringParameters.key.map(key => decodeURIComponent(key));
 
 	// Catch errors
 	try {
