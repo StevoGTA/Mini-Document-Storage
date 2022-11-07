@@ -107,7 +107,7 @@ template <typename T> class TMDSBatchInfo {
 						UniversalTime				mCreationUniversalTime;
 						UniversalTime				mModificationUniversalTime;
 						CDictionary					mUpdatedPropertyMap;
-						TSet<CString>				mRemovedProperties;
+						TNSet<CString>				mRemovedProperties;
 						bool						mRemoved;
 
 						DocumentPropertyValueProc	mValueProc;

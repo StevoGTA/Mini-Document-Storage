@@ -54,8 +54,9 @@ class CMDSEphemeral : public CMDSDocumentStorage {
 												const CMDSDocument::Info& toDocumentInfo);
 				void					updateAssociation(const CString& name,
 												const TArray<AssociationUpdate>& updates);
-//				void					iterateAssociationFrom(const CString& name, const CMDSDocument& fromDocument,
-//												CMDSDocument::Proc proc, void* userData) const;
+				void					iterateAssociationFrom(const CString& name, const CMDSDocument& fromDocument,
+												const CMDSDocument::Info& toDocumentInfo, CMDSDocument::Proc proc,
+												void* userData);
 				void					iterateAssociationTo(const CString& name,
 												const CMDSDocument::Info& fromDocumentInfo,
 												const CMDSDocument& toDocument, CMDSDocument::Proc proc,

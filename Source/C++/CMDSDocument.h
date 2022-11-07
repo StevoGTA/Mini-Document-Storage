@@ -102,7 +102,7 @@ class CMDSDocument : public CHashable {
 			CString			mDocumentID;
 			bool			mActive;
 			CDictionary		mUpdated;
-			TSet<CString>	mRemoved;
+			TNSet<CString>	mRemoved;
 		};
 
 	// Procs

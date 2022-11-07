@@ -97,7 +97,7 @@ template <typename T> class TMDSIndex {
 	private:
 				CString					mName;
 		const	CString&				mDocumentType;
-				TSet<CString>			mRelevantProperties;
+				TNSet<CString>			mRelevantProperties;
 				UInt32					mLastRevision;
 
 				CMDSDocument::KeysProc	mKeysProc;

@@ -75,7 +75,7 @@ struct SBatchInfo {
 		{}
 
 	// Properties
-	TSet<CString>						mDocumentLastRevisionTypesNeedingWrite;
+	TNSet<CString>						mDocumentLastRevisionTypesNeedingWrite;
 	TNDictionary<SCollectionUpdateInfo>	mCollectionInfo;
 	TNDictionary<SIndexUpdateInfo>		mIndexInfo;
 };

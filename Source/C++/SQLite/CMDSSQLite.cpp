@@ -690,7 +690,7 @@ OV<SError> CMDSSQLiteInternals::batchMap(const CString& documentType,
 					// Update collections and indexes
 					updateBatchQueue.add(
 							CMDSSQLiteUpdateInfo(*document, documentBacking.getRevision(), documentBacking.getID(),
-									TSet<CString>()));
+									TNSet<CString>()));
 
 					// Call document changed procs
 					internals->notifyDocumentChanged(documentType, *document, CMDSDocument::kCreated);
@@ -1008,7 +1008,7 @@ void CMDSSQLite::set(const CString& property, const OV<SValue>& value, const CMD
 
 			// Update collections and indexes
 			CMDSSQLiteUpdateInfo	updateInfo(document, documentBacking->getRevision(), documentBacking->getID(),
-											TSet<CString>(property));
+											TNSet<CString>(property));
 			mInternals->updateCollections(documentType, TSArray<CMDSSQLiteUpdateInfo>(updateInfo));
 			mInternals->updateIndexes(documentType, TSArray<CMDSSQLiteUpdateInfo>(updateInfo));
 

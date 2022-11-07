@@ -69,6 +69,19 @@ void CMDSDocumentStorage::updateAssociation(const CMDSDocument::Info& fromDocume
 //}
 //
 //----------------------------------------------------------------------------------------------------------------------
+TArray<CMDSDocument> CMDSDocumentStorage::getDocumentsAssociatedFrom(const CMDSDocument& fromDocument,
+		const CMDSDocument::Info& toDocumentInfo)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Iterate association
+	TCArray<CMDSDocument>	documents;
+	iterateAssociationFrom(sComposeAssociationName(fromDocument.getDocumentType(), toDocumentInfo.getDocumentType()),
+			fromDocument, toDocumentInfo, (CMDSDocument::Proc) sAddDocumentToArray, &documents);
+
+	return documents;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void CMDSDocumentStorage::iterateAssociationTo(const CMDSDocument::Info& fromDocumentInfo,
 		const CMDSDocument& toDocument, CMDSDocument::Proc proc, void* userData)
 //----------------------------------------------------------------------------------------------------------------------

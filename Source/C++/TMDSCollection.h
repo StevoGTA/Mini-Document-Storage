@@ -100,7 +100,7 @@ template <typename T, typename U> class TMDSCollection {
 	private:
 				CString							mName;
 		const	CString&						mDocumentType;
-				TSet<CString>					mRelevantProperties;
+				TNSet<CString>					mRelevantProperties;
 				UInt32							mLastRevision;
 
 				CMDSDocument::IsIncludedProc	mIsIncludedProc;

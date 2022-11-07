@@ -118,12 +118,15 @@ class CMDSDocumentStorage {
 						void						updateAssociation(const CMDSDocument::Info& fromDocumentInfo,
 															const CMDSDocument::Info& toDocumentInfo,
 															const TArray<AssociationUpdate>& updates);
-//		virtual			void						iterateAssociationFrom(const CString& name,
-//															const CMDSDocument& fromDocument, CMDSDocument::Proc proc,
-//															void* userData) const = 0;
+		virtual			void						iterateAssociationFrom(const CString& name,
+															const CMDSDocument& fromDocument,
+															const CMDSDocument::Info& toDocumentInfo,
+															CMDSDocument::Proc proc, void* userData) = 0;
 //						void						iterateAssociationFrom(const CMDSDocument& fromDocument,
 //															const CMDSDocument::Info& toDocumentInfo,
 //															CMDSDocument::Proc proc, void* userData) const;
+						TArray<CMDSDocument>		getDocumentsAssociatedFrom(const CMDSDocument& fromDocument,
+															const CMDSDocument::Info& toDocumentInfo);
 		virtual			void						iterateAssociationTo(const CString& name,
 															const CMDSDocument::Info& fromDocumentInfo,
 															const CMDSDocument& toDocument, CMDSDocument::Proc proc,

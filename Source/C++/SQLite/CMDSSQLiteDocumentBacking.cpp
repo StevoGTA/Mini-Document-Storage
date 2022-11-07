@@ -124,10 +124,10 @@ void CMDSSQLiteDocumentBacking::set(const CString& property, const OV<SValue>& v
 		CDictionary	updatedPropertyMap;
 		updatedPropertyMap.set(property, *value);
 
-		update(documentType, updatedPropertyMap, TSet<CString>(), databaseManager, commitChange);
+		update(documentType, updatedPropertyMap, TNSet<CString>(), databaseManager, commitChange);
 	} else
 		// Remove
-		update(documentType, CDictionary(), TSet<CString>(property), databaseManager, commitChange);
+		update(documentType, CDictionary(), TNSet<CString>(property), databaseManager, commitChange);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
