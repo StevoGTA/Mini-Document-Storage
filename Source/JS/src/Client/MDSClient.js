@@ -570,10 +570,10 @@ class MDSClient {
 			// No updates
 			return;
 
-		// Max each call at 100 updates
-		for (let i = 0, length = documentsToUpdate.length; i < length; i += 100) {
+		// Max each call at 50 updates
+		for (let i = 0, length = documentsToUpdate.length; i < length; i += 50) {
 			// Setup
-			let	documentsSlice = documentsToUpdate.slice(i, i + 100);
+			let	documentsSlice = documentsToUpdate.slice(i, i + 50);
 
 			let	options =
 						{

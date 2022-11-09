@@ -280,7 +280,7 @@ Document Update
 	//	=> json (body)
 	//		[
 	//			{
-	//				"documentID" :String,		// Required
+	//				"documentID" :String,
 	//				"updated" :{				// Optional
 	//								"key" :Any,
 	//								...
