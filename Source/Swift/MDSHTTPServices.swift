@@ -995,7 +995,7 @@ class MDSHTTPServices {
 							"name": name,
 							"documentType": documentType,
 							"relevantProperties": relevantProperties,
-							"valuesInfos": valuesInfosTransformed,
+							"valueInfos": valuesInfosTransformed,
 						  ])
 	}
 
