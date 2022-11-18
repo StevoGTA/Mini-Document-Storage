@@ -104,8 +104,7 @@ module.exports = class DocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async associationGetDocumentInfos(documentStorageID, name, fromDocumentID, toDocumentID, startIndex, count,
-			fullInfo) {
+	async associationGetDocuments(documentStorageID, name, fromDocumentID, toDocumentID, startIndex, count, fullInfo) {
 		// Setup
 		let	statementPerformer = this.statementPerformerProc();
 		statementPerformer.use(documentStorageID);

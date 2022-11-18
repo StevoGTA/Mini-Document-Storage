@@ -7,7 +7,7 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Create
-exports.createV1 = async (request, response) => {
+export async function createV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	documentType = decodeURIComponent(request.params.documentType);
@@ -38,11 +38,11 @@ exports.createV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({error: 'Internal error'});
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Count
-exports.getCountV1 = async (request, response) => {
+export async function getCountV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	documentType = decodeURIComponent(request.params.documentType);
@@ -82,12 +82,12 @@ exports.getCountV1 = async (request, response) => {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get
-exports.getV1 = async (request, response) => {
+export async function getV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	documentType = decodeURIComponent(request.params.documentType);
 
-	let	sinceRevision = request.query.sinceRevision;
+	let	sinceRevision = parseInt(request.query.sinceRevision);
 	let	count = request.query.count;
 	
 	var	documentIDs = request.query.id || [];
@@ -98,7 +98,7 @@ exports.getV1 = async (request, response) => {
 	// Catch errors
 	try {
 		// Check request type
-		if (sinceRevision) {
+		if (!isNaN(sinceRevision)) {
 			// Since revision
 			let	[totalCount, results, error] =
 						await request.app.locals.documentStorage.documentGetSinceRevision(documentStorageID,
@@ -148,11 +148,11 @@ exports.getV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({error: 'Internal error'});
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Update
-exports.updateV1 = async (request, response) => {
+export async function updateV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	documentType = decodeURIComponent(request.params.documentType);
@@ -160,7 +160,7 @@ exports.updateV1 = async (request, response) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Update Document
 		let	[results, error] =
 					await request.app.locals.documentStorage.documentUpdate(documentStorageID, documentType, infos);
 		if (results)
@@ -183,11 +183,11 @@ exports.updateV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({error: 'Internal error'});
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Add Attachment
-exports.addAttachmentV1 = async (request, response) => {
+export async function addAttachmentV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	documentType = decodeURIComponent(request.params.documentType);
@@ -197,7 +197,7 @@ exports.addAttachmentV1 = async (request, response) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Add Document Attachment
 		let	[results, error] =
 					await request.app.locals.documentStorage.documentAttachmentAdd(documentStorageID, documentType,
 							documentID, info, Buffer.from(content, 'base64'));
@@ -221,11 +221,11 @@ exports.addAttachmentV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({error: 'Internal error'});
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Attachment
-exports.getAttachmentV1 = async (request, response) => {
+export async function getAttachmentV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	documentType = decodeURIComponent(request.params.documentType);
@@ -234,7 +234,7 @@ exports.getAttachmentV1 = async (request, response) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Get Document Attachment
 		let	[results, error] =
 					await request.app.locals.documentStorage.documentAttachmentGet(documentStorageID, documentType,
 							documentID, attachmentID);
@@ -258,11 +258,11 @@ exports.getAttachmentV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({error: 'Internal error'});
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Update Attachment
-exports.updateAttachmentV1 = async (request, response) => {
+export async function updateAttachmentV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	documentType = decodeURIComponent(request.params.documentType);
@@ -273,7 +273,7 @@ exports.updateAttachmentV1 = async (request, response) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Update Document Attachment
 		let	[results, error] =
 					await request.app.locals.documentStorage.documentAttachmentUpdate(documentStorageID, documentType,
 							documentID, attachmentID, info, Buffer.from(content, 'base64'));
@@ -297,11 +297,11 @@ exports.updateAttachmentV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({error: 'Internal error'});
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Remove Attachment
-exports.removeAttachmentV1 = async (request, response) => {
+export async function removeAttachmentV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	documentType = decodeURIComponent(request.params.documentType);
@@ -310,7 +310,7 @@ exports.removeAttachmentV1 = async (request, response) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Remove Document Attachment
 		let	error =
 					await request.app.locals.documentStorage.documentAttachmentRemove(documentStorageID, documentType,
 							documentID, attachmentID);
@@ -334,4 +334,4 @@ exports.removeAttachmentV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({error: 'Internal error'});
 	}
-};
+}

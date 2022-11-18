@@ -41,7 +41,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 
 		return response;
 	}
@@ -60,7 +60,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 
 		return response;
 	}
@@ -77,7 +77,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 
 		return response;
 	}
@@ -107,7 +107,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -126,7 +126,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -144,7 +144,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 	
 		return await response.json();
 	}
@@ -165,7 +165,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 	
 		return await response.json();
 	}
@@ -186,7 +186,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 	
 		// Decode
 		let	infos = await response.json();
@@ -210,7 +210,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 	
 		return await response.json();
 	}
@@ -231,7 +231,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 	
 		// Decode
 		let	infos = await response.json();
@@ -259,7 +259,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 
 		return parseInt(await response.text());
 	}
@@ -290,7 +290,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -322,7 +322,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -338,7 +338,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 
 		// Decode header
 		let	contentRange = response.headers.get('content-range');
@@ -366,7 +366,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 	
 		return await response.json();
 	}
@@ -386,7 +386,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 	
 		// Decode
 		let	infos = await response.json();
@@ -415,7 +415,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 
 		// Decode info
 		let	results = await response.json();
@@ -443,7 +443,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 
 		// Decode header
 		let	contentRange = response.headers.get('content-range');
@@ -470,7 +470,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 	
 		// Decode
 		let	infos = await response.json();
@@ -495,7 +495,7 @@ class MDSClient {
 		for (;;) {
 			// Retrieve next batch of documents
 			let	response = await this.queue.add(() => fetch(urlBase + sinceRevisionUse, options));
-			if (!response.ok) throw new Error('HTTP error: ' + response.status);
+			await processResponse(response);
 		
 			// Decode
 			let	infos = await response.json();
@@ -540,7 +540,7 @@ class MDSClient {
 
 			// Queue the call
 			let	response = await this.queue.add(() => fetch(url, options));
-			if (!response.ok) throw new Error('HTTP error: ' + response.status);
+			await processResponse(response);
 
 			// Decode
 			let	infos = await response.json();
@@ -584,7 +584,7 @@ class MDSClient {
 
 			// Queue the call
 			let	response = await this.queue.add(() => fetch(url, options));
-			if (!response.ok) throw new Error('HTTP error: ' + response.status);
+			await processResponse(response);
 
 			// Decode info
 			let	results = await response.json();
@@ -627,7 +627,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 
 		return await response.json();
 	}
@@ -645,7 +645,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 
 		return await response.blob();
 	}
@@ -677,7 +677,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -693,7 +693,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -725,7 +725,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -741,7 +741,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 	
 		return await response.json();
 	}
@@ -759,7 +759,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 	
 		// Decode
 		let	results = await response.json();
@@ -780,7 +780,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 	
 		return await response.json();
 	}
@@ -799,7 +799,7 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -816,7 +816,34 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok) throw new Error('HTTP error: ' + response.status);
+		await processResponse(response);
+	}
+}
+
+// Private methods
+//----------------------------------------------------------------------------------------------------------------------
+async function processResponse(response) {
+	// Check status
+	if (!response.ok) {
+		// Catch errors
+		var	info;
+		try {
+			// Try to get results
+			info = await response.json();
+		} catch (error) {
+			// Don't worry about these errors
+		}
+
+		// Process results
+		if (info.error)
+			// Have error in response
+			throw new Error('HTTP response: ' + response.status + ', error: ' + info.error);
+		else if (info.message)
+			// Have message in response
+			throw new Error('HTTP response: ' + response.status + ', message: ' + info.message);
+		else
+			// Other
+			throw new Error('HTTP response: ' + response.status);
 	}
 }
 

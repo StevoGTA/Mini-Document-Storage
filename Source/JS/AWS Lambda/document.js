@@ -32,7 +32,7 @@ exports.createV1 = async (event) => {
 			return {
 					statusCode: 400,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: JSON.stringify({error: error})
+					body: JSON.stringify({error: error.toString()})
 			};
 	} catch (error) {
 		// Error
@@ -42,10 +42,10 @@ exports.createV1 = async (event) => {
 		return {
 				statusCode: 400,
 				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify({error: error})
+				body: JSON.stringify({error: error.toString()})
 		};
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Count
@@ -75,7 +75,7 @@ exports.getCountV1 = async (event) => {
 			return {
 					statusCode: 400,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: JSON.stringify({error: error})
+					body: JSON.stringify({error: error.toString()})
 			};
 	} catch (error) {
 		// Error
@@ -85,7 +85,7 @@ exports.getCountV1 = async (event) => {
 		return {
 				statusCode: 400,
 				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-				body: JSON.stringify({error: error})
+				body: JSON.stringify({error: error.toString()})
 		};
 	}
 }
@@ -98,7 +98,7 @@ exports.getV1 = async (event) => {
 	let	documentType = decodeURIComponent(event.pathParameters.documentType);
 
 	let	queryStringParameters = event.queryStringParameters || {};
-	let	sinceRevision = queryStringParameters.sinceRevision;
+	let	sinceRevision = parseInt(queryStringParameters.sinceRevision);
 	let	count = queryStringParameters.count;
 
 	let	multiValueQueryStringParameters = event.multiValueQueryStringParameters || {};
@@ -107,7 +107,7 @@ exports.getV1 = async (event) => {
 	// Catch errors
 	try {
 		// Check request type
-		if (sinceRevision) {
+		if (!isNaN(sinceRevision)) {
 			// Since revision
 			let	[totalCount, results, error] =
 						await documentStorage.documentGetSinceRevision(documentStorageID, documentType, sinceRevision,
@@ -133,7 +133,7 @@ exports.getV1 = async (event) => {
 				return {
 						statusCode: 400,
 						headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-						body: JSON.stringify({error: error})
+						body: JSON.stringify({error: error.toString()})
 				};
 		} else {
 			// DocumentIDs
@@ -151,7 +151,7 @@ exports.getV1 = async (event) => {
 				return {
 						statusCode: 400,
 						headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-						body: JSON.stringify({error: error})
+						body: JSON.stringify({error: error.toString()})
 				};
 		}
 	} catch (error) {
@@ -164,7 +164,7 @@ exports.getV1 = async (event) => {
 				body: '{"error": "Internal error"}',
 		};
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Update
@@ -176,7 +176,7 @@ exports.updateV1 = async (event) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Update Document
 		let	[results, error] = await documentStorage.documentUpdate(documentStorageID, documentType, infos);
 		if (results)
 			// Success
@@ -190,7 +190,7 @@ exports.updateV1 = async (event) => {
 			return {
 					statusCode: 400,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: JSON.stringify({error: error})
+					body: JSON.stringify({error: error.toString()})
 			};
 	} catch (error) {
 		// Error
@@ -202,7 +202,7 @@ exports.updateV1 = async (event) => {
 				body: '{"error": "Internal error"}',
 		};
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Add Attachment
@@ -218,7 +218,7 @@ exports.addAttachmentV1 = async (event) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Add Document Attachment
 		let	[results, error] =
 					await documentStorage.documentAttachmentAdd(documentStorageID, documentType, documentID, info,
 							Buffer.from(content, 'base64'));
@@ -234,7 +234,7 @@ exports.addAttachmentV1 = async (event) => {
 			return {
 					statusCode: 400,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: JSON.stringify({error: error})
+					body: JSON.stringify({error: error.toString()})
 			};
 	} catch (error) {
 		// Error
@@ -246,7 +246,7 @@ exports.addAttachmentV1 = async (event) => {
 				body: '{"error": "Internal error"}',
 		};
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Attachment
@@ -259,7 +259,7 @@ exports.getAttachmentV1 = async (event) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Get Document Attachment
 		let	[results, error] =
 					await documentStorage.documentAttachmentGet(documentStorageID, documentType, documentID,
 							attachmentID);
@@ -275,7 +275,7 @@ exports.getAttachmentV1 = async (event) => {
 			return {
 					statusCode: 400,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: JSON.stringify({error: error})
+					body: JSON.stringify({error: error.toString()})
 			};
 	} catch (error) {
 		// Error
@@ -287,7 +287,7 @@ exports.getAttachmentV1 = async (event) => {
 				body: '{"error": "Internal error"}',
 		};
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Update Attachment
@@ -304,7 +304,7 @@ exports.updateAttachmentV1 = async (event) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Update Document Attachment
 		let	[results, error] =
 					await documentStorage.documentAttachmentUpdate(documentStorageID, documentType, documentID,
 							attachmentID, info, Buffer.from(content, 'base64'));
@@ -320,7 +320,7 @@ exports.updateAttachmentV1 = async (event) => {
 			return {
 					statusCode: 400,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: JSON.stringify({error: error})
+					body: JSON.stringify({error: error.toString()})
 			};
 	} catch (error) {
 		// Error
@@ -332,7 +332,7 @@ exports.updateAttachmentV1 = async (event) => {
 				body: '{"error": "Internal error"}',
 		};
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Remove Attachment
@@ -345,7 +345,7 @@ exports.removeAttachmentV1 = async (event) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Remove Document Attachment
 		let	error =
 					await documentStorage.documentAttachmentRemove(documentStorageID, documentType, documentID,
 							attachmentID);
@@ -360,7 +360,7 @@ exports.removeAttachmentV1 = async (event) => {
 			return {
 					statusCode: 400,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: JSON.stringify({error: error})
+					body: JSON.stringify({error: error.toString()})
 			};
 	} catch (error) {
 		// Error
@@ -372,4 +372,4 @@ exports.removeAttachmentV1 = async (event) => {
 				body: '{"error": "Internal error"}',
 		};
 	}
-};
+}

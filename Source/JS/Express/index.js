@@ -7,14 +7,14 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Register
-exports.registerV1 = async (request, response) => {
+export async function registerV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	info = request.body;
 
 	// Catch errors
 	try {
-		// Get info
+		// Register index
 		let	error = await request.app.locals.documentStorage.indexRegister(documentStorageID, info);
 		if (!error)
 			// Success
@@ -35,11 +35,11 @@ exports.registerV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({error: 'Internal error'});
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Document Infos
-exports.getDocumentsV1 = async (request, response) => {
+export async function getDocumentsV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	name = decodeURIComponent(request.params.name);
@@ -53,7 +53,7 @@ exports.getDocumentsV1 = async (request, response) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Get Index Documents
 		let	[upToDate, results, error] =
 					await request.app.locals.documentStorage.indexGetDocuments(documentStorageID, name, keys,
 							fullInfo == 1);
@@ -83,4 +83,4 @@ exports.getDocumentsV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({error: 'Internal error'});
 	}
-};
+}

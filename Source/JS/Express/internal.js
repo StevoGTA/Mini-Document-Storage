@@ -7,7 +7,7 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Set
-exports.setV1 = async (request, response) => {
+export async function setV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	info = request.body;
@@ -36,4 +36,4 @@ exports.setV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({error: 'Internal error'});
 	}
-};
+}

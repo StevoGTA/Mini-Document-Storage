@@ -7,14 +7,14 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Register
-exports.registerV1 = async (request, response) => {
+export async function registerV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	info = request.body || {};
 
 	// Catch errors
 	try {
-		// Get info
+		// Register cache
 		let	error = await request.app.locals.documentStorage.cacheRegister(documentStorageID, info);
 		if (!error)
 			// Success
@@ -37,4 +37,4 @@ exports.registerV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({error: 'Internal error'});
 	}
-};
+}

@@ -173,7 +173,7 @@ module.exports = class Indexes {
 			let	wheres = keys.map(key => statementPerformer.where(index.table.keyTableColumn, key));
 
 			// Check for full info
-			if (fullInfo == 1) {
+			if (fullInfo) {
 				// Documents
 				let	[selectResults, documentsByID, resultsError] =
 							await internals.documents.getDocuments(statementPerformer, index.type, index.table,

@@ -33,7 +33,7 @@ exports.getV1 = async (event) => {
 			return {
 					statusCode: 400,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: JSON.stringify({error: error})
+					body: JSON.stringify({error: error.toString()})
 			};
 	} catch (error) {
 		// Error
@@ -45,7 +45,7 @@ exports.getV1 = async (event) => {
 				body: '{"error": "Internal error"}',
 		};
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Set
@@ -69,7 +69,7 @@ exports.setV1 = async (event) => {
 			return {
 					statusCode: 400,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: JSON.stringify({error: error})
+					body: JSON.stringify({error: error.toString()})
 			};
 	} catch (error) {
 		// Error
@@ -81,4 +81,4 @@ exports.setV1 = async (event) => {
 				body: '{"error": "Internal error"}',
 		};
 	}
-};
+}

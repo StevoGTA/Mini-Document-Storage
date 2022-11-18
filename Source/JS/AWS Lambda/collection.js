@@ -12,12 +12,12 @@ let	{documentStorage} = require('./globals');
 // MARK: Register
 exports.registerV1 = async (event) => {
 	// Setup
-	let	documentStorageID = decodeURIComponent(event.pathParameters);
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
 	let	info = (event.body) ? JSON.parse(event.body) : {};
 
 	// Catch errors
 	try {
-		// Get info
+		// Register collection
 		let	error = await documentStorage.collectionRegister(documentStorageID, info);
 		if (!error)
 			// Success
@@ -30,7 +30,7 @@ exports.registerV1 = async (event) => {
 			return {
 					statusCode: 400,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: JSON.stringify({error: error})
+					body: JSON.stringify({error: error.toString()})
 			};
 	} catch (error) {
 		// Error
@@ -42,7 +42,7 @@ exports.registerV1 = async (event) => {
 				body: '{"error": "Internal error"}',
 		};
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Document Count
@@ -53,7 +53,7 @@ exports.getDocumentCountV1 = async (event) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Get Document count
 		let	[upToDate, count, error] = await documentStorage.collectionGetDocumentCount(documentStorageID, name);
 		if (upToDate)
 			// Success
@@ -87,7 +87,7 @@ exports.getDocumentCountV1 = async (event) => {
 				body: 'Error: ' + error,
 		};
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Document Infos
@@ -103,7 +103,7 @@ exports.getDocumentsV1 = async (event) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Get Documents
 		let	[upToDate, totalCount, results, error] =
 					await documentStorage.collectionGetDocuments(documentStorageID, name, startIndex, count,
 							fullInfo == 1);
@@ -134,7 +134,7 @@ exports.getDocumentsV1 = async (event) => {
 			return {
 					statusCode: 400,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: JSON.stringify({error: error})
+					body: JSON.stringify({error: error.toString()})
 			};
 	} catch (error) {
 		// Error
@@ -146,4 +146,4 @@ exports.getDocumentsV1 = async (event) => {
 				body: '{"error": "Internal error"}',
 		};
 	}
-};
+}

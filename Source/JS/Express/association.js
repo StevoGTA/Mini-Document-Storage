@@ -7,14 +7,14 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Register
-exports.registerV1 = async (request, response) => {
+export async function registerV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	info = request.body;
 
 	// Catch errors
 	try {
-		// Get info
+		// Register association
 		let	error = await request.app.locals.documentStorage.associationRegister(documentStorageID, info);
 		if (!error)
 			// Success
@@ -36,11 +36,11 @@ exports.registerV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({error: 'Internal error'});
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Update
-exports.updateV1 = async (request, response) => {
+export async function updateV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	name = decodeURIComponent(request.params.name);
@@ -48,7 +48,7 @@ exports.updateV1 = async (request, response) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Update association
 		let	error = await request.app.locals.documentStorage.associationUpdate(documentStorageID, name, infos);
 		if (!error)
 			// Success
@@ -70,11 +70,11 @@ exports.updateV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({error: 'Internal error'});
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Document Infos
-exports.getDocumentsV1 = async (request, response) => {
+export async function getDocumentsV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	name = decodeURIComponent(request.params.name);
@@ -86,7 +86,7 @@ exports.getDocumentsV1 = async (request, response) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Get Association Document infos
 		let	[totalCount, results, error] =
 					await request.app.locals.documentStorage.associationGetDocumentInfos(documentStorageID, name,
 							fromDocumentID, toDocumentID, startIndex, count, fullInfo == 1);
@@ -120,11 +120,11 @@ exports.getDocumentsV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({error: 'Internal error'});
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Association Value
-exports.getValueV1 = async (request, response) => {
+export async function getValueV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	name = decodeURIComponent(request.params.name);
@@ -136,7 +136,7 @@ exports.getValueV1 = async (request, response) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Get Association value
 		let	[upToDate, value, error] =
 					await request.app.locals.documentStorage.associationGetValue(documentStorageID, name, action,
 							fromDocumentID, cacheName, cachedValueName);
@@ -166,4 +166,4 @@ exports.getValueV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({error: 'Internal error'});
 	}
-}; 
+}

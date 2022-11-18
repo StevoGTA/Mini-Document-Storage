@@ -7,14 +7,14 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Register
-exports.registerV1 = async (request, response) => {
+export async function registerV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	info = request.body || {};
 
 	// Catch errors
 	try {
-		// Get info
+		// Register collection
 		let	error = await request.app.locals.documentStorage.collectionRegister(documentStorageID, info);
 		if (!error)
 			// Success
@@ -36,18 +36,18 @@ exports.registerV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({error: 'Internal error'});
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Document Count
-exports.getDocumentCountV1 = async (request, response) => {
+export async function getDocumentCountV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	name = decodeURIComponent(request.params.name);
 
 	// Catch errors
 	try {
-		// Get info
+		// Get Collection Document count
 		let	[upToDate, count, error] =
 					await request.app.locals.documentStorage.collectionGetDocumentCount(documentStorageID, name);
 		if (upToDate)
@@ -82,11 +82,11 @@ exports.getDocumentCountV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send();
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Document Infos
-exports.getDocumentsV1 = async (request, response) => {
+export async function getDocumentsV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	name = decodeURIComponent(request.params.name);
@@ -97,7 +97,7 @@ exports.getDocumentsV1 = async (request, response) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Get Collection Documents
 		let	[upToDate, totalCount, results, error] =
 					await request.app.locals.documentStorage.collectionGetDocuments(documentStorageID, name, startIndex,
 							count, fullInfo == 1);
@@ -135,4 +135,4 @@ exports.getDocumentsV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({error: 'Internal error'});
 	}
-};
+}

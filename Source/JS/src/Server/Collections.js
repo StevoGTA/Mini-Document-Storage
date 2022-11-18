@@ -207,7 +207,7 @@ module.exports = class Collections {
 			let	count = await statementPerformer.count(collection.table);
 
 			// Check for full info
-			if (fullInfo == 1) {
+			if (fullInfo) {
 				// Documents
 				let	[selectResults, documentsByID, resultsError] =
 							await internals.documents.getDocuments(statementPerformer, collection.type,

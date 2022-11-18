@@ -7,7 +7,7 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get
-exports.getV1 = async (request, response) => {
+export async function getV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	keys = request.query.key.map(key => decodeURIComponent(key));
@@ -37,11 +37,11 @@ exports.getV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({error: 'Internal error'});
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Set
-exports.setV1 = async (request, response) => {
+export async function setV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	info = request.body;
@@ -70,4 +70,4 @@ exports.setV1 = async (request, response) => {
 				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
 				.send({error: 'Internal error'});
 	}
-};
+}

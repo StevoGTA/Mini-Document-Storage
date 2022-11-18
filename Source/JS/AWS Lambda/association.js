@@ -17,7 +17,7 @@ exports.registerV1 = async (event) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Register association
 		let	error = await documentStorage.associationRegister(documentStorageID, info);
 		if (!error)
 			// Success
@@ -30,7 +30,7 @@ exports.registerV1 = async (event) => {
 			return {
 					statusCode: 400,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: JSON.stringify({error: error})
+					body: JSON.stringify({error: error.toString()})
 			};
 	} catch (error) {
 		// Error
@@ -42,7 +42,7 @@ exports.registerV1 = async (event) => {
 				body: '{"error": "Internal error"}',
 		};
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Update
@@ -54,7 +54,7 @@ exports.updateV1 = async (event) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Update association
 		let	error = await documentStorage.associationUpdate(documentStorageID, name, infos);
 		if (!error)
 			// Success
@@ -67,7 +67,7 @@ exports.updateV1 = async (event) => {
 			return {
 					statusCode: 400,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: JSON.stringify({error: error})
+					body: JSON.stringify({error: error.toString()})
 			};
 	} catch (error) {
 		// Error
@@ -79,7 +79,7 @@ exports.updateV1 = async (event) => {
 				body: '{"error": "Internal error"}',
 		};
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Document Infos
@@ -97,7 +97,7 @@ exports.getDocumentsV1 = async (event) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Get document infos
 		let	[totalCount, results, error] =
 					await documentStorage.associationGetDocumentInfos(documentStorageID, name, fromDocumentID,
 							toDocumentID, startIndex, count, fullInfo == 1);
@@ -123,7 +123,7 @@ exports.getDocumentsV1 = async (event) => {
 			return {
 					statusCode: 400,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: JSON.stringify({error: error})
+					body: JSON.stringify({error: error.toString()})
 			};
 	} catch (error) {
 		// Error
@@ -135,7 +135,7 @@ exports.getDocumentsV1 = async (event) => {
 				body: '{"error": "Internal error"}',
 		};
 	}
-};
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Association Value
@@ -152,7 +152,7 @@ exports.getValueV1 = async (event) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Get Association value
 		let	[upToDate, value, error] =
 					await documentStorage.associationGetValue(documentStorageID, name, action, fromDocumentID,
 							cacheName, cachedValueName);
@@ -174,7 +174,7 @@ exports.getValueV1 = async (event) => {
 			return {
 					statusCode: 400,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: JSON.stringify({error: error})
+					body: JSON.stringify({error: error.toString()})
 			};
 	} catch (error) {
 		// Error
@@ -186,4 +186,4 @@ exports.getValueV1 = async (event) => {
 				body: '{"error": "Internal error"}',
 		};
 	}
-}; 
+}

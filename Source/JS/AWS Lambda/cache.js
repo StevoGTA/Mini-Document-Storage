@@ -17,7 +17,7 @@ exports.registerV1 = async (event) => {
 
 	// Catch errors
 	try {
-		// Get info
+		// Register cache
 		let	error = await documentStorage.cacheRegister(documentStorageID, info);
 		if (!error)
 			// Success
@@ -30,7 +30,7 @@ exports.registerV1 = async (event) => {
 			return {
 					statusCode: 400,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: JSON.stringify({error: error})
+					body: JSON.stringify({error: error.toString()})
 			};
 	} catch (error) {
 		// Error
@@ -42,4 +42,4 @@ exports.registerV1 = async (event) => {
 				body: '{"error": "Internal error"}',
 		};
 	}
-};
+}

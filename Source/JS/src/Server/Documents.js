@@ -108,15 +108,16 @@ module.exports = class Documents {
 											]);
 									statementPerformer.queueSet(idVariableName, 'LAST_INSERT_ID()');
 									statementPerformer.queueInsertInto(tablesInfo.contentTable,
-									[
-										{tableColumn: tablesInfo.contentTable.idTableColumn, variable: idVariableName},
-										{tableColumn: tablesInfo.contentTable.creationDateTableColumn,
-												value: creationDate},
-										{tableColumn: tablesInfo.contentTable.modificationDateTableColumn,
-												value: modificationDate},
-										{tableColumn: tablesInfo.contentTable.jsonTableColumn,
-												value: JSON.stringify(json)},
-									]);
+											[
+												{tableColumn: tablesInfo.contentTable.idTableColumn,
+														variable: idVariableName},
+												{tableColumn: tablesInfo.contentTable.creationDateTableColumn,
+														value: creationDate},
+												{tableColumn: tablesInfo.contentTable.modificationDateTableColumn,
+														value: modificationDate},
+												{tableColumn: tablesInfo.contentTable.jsonTableColumn,
+														value: JSON.stringify(json)},
+											]);
 									
 									// Update
 									lastRevision += 1;
@@ -133,8 +134,10 @@ module.exports = class Documents {
 	//------------------------------------------------------------------------------------------------------------------
 	async getSinceRevision(statementPerformer, documentType, sinceRevision, count) {
 		// Validate
-		if (!sinceRevision)
+		if (typeof(sinceRevision) != 'number')
 			return [null, null, 'Missing sinceRevision'];
+		if (sinceRevision < 0)
+			return [null, null, 'Invalid sinceRevision'];
 
 		// Setup
 		let	tablesInfo = this.tablesInfo(statementPerformer, documentType);
@@ -382,7 +385,7 @@ module.exports = class Documents {
 
 										let	updated = info.updated || {};
 										let	removed = info.removed || [];
-										let	active = info.active || currentDocument.active;
+										let	active = (info.active != null) ? info.active : currentDocument.active;
 
 										var	jsonObject =
 													Object.assign(JSON.parse(currentDocument.json.toString()),
@@ -578,7 +581,8 @@ module.exports = class Documents {
 									[
 										{tableColumn: tablesInfo.attachmentTable.revisionTableColumn,
 												value: attachmentRevision},
-										{tableColumn: tablesInfo.attachmentTable.infoTableColumn, value: info},
+										{tableColumn: tablesInfo.attachmentTable.infoTableColumn,
+												value: JSON.stringify(info)},
 										{tableColumn: tablesInfo.attachmentTable.contentTableColumn, value: content},
 									],
 									statementPerformer.where(tablesInfo.attachmentTable.attachmentIDTableColumn,
