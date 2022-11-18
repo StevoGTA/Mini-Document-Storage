@@ -15,8 +15,9 @@ class Config {
 	static	let	shared = Config()
 
 			let	httpEndpointClient :HTTPEndpointClient = {
-						// Setup
-						let	httpEndpointClient = HTTPEndpointClient(scheme: "http", hostName: "localhost", port: 1138)
+						// Setup as needed
+//						let	httpEndpointClient = HTTPEndpointClient(scheme: "http", hostName: "localhost", port: 1138)
+						let	httpEndpointClient = HTTPEndpointClient(scheme: "http", hostName: "localhost", port: 34343)
 //						let	httpEndpointClient =
 //									HTTPEndpointClient(scheme: "https",
 //											hostName: "g7j7adblvc.execute-api.us-east-1.amazonaws.com/dev")

@@ -30,18 +30,16 @@ struct Server : ParsableCommand {
 	// MARK: Instance Methods
 	//--------------------------------------------------------------------------------------------------------------
 	func run() {
-		// Setup HTTP server manager
+		// Setup HTTP Server
 		let	httpServer = VaporHTTPServer(port: 34343, maxBodySize: 1_000_000_000)
 
-		// Setup document storage server
-		let	httpServicesAdapter = MDSHTTPServicesAdapter(httpServer: httpServer)
-
-		// Setup document storage
+		// Setup MDS
+		httpServer.setupMDSEndpoints()
 		if self.ephemeral {
 			// Ephemeral
 			let	documentStorage = MDSEphemeral()
 
-			httpServicesAdapter.add(documentStorageServerHandler: documentStorage, for: "Sandbox")
+			MDSHTTPServices.register(documentStorage: documentStorage, for: "Sandbox")
 		} else if self.sqlite {
 			// SQLite
 			let	libraryFolder = FileManager.default.folder(for: .libraryDirectory)
@@ -50,7 +48,7 @@ struct Server : ParsableCommand {
 
 			let	documentStorage = try! MDSSQLite(in: applicationFolder)
 
-			httpServicesAdapter.add(documentStorageServerHandler: documentStorage, for: "Sandbox")
+			MDSHTTPServices.register(documentStorage: documentStorage, for: "Sandbox")
 		} else {
 			// You fool!
 			print("Must specify one of --ephemeral or --sqlite")

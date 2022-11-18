@@ -11,8 +11,10 @@ import Foundation
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: MDSSQLiteDocumentBacking
 class MDSSQLiteDocumentBacking {
+
 	// MARK: Properties
 			let	id :Int64
+//			let	documentID :String
 			let	creationDate :Date
 
 			var	revision :Int
@@ -21,15 +23,21 @@ class MDSSQLiteDocumentBacking {
 			var	propertyMap :[String : Any] { self.propertiesLock.read({ self.propertyMapInternal }) }
 			var	attachmentInfoMap :MDSDocument.AttachmentInfoMap
 
+//			var	documentFullInfo :MDSDocument.FullInfo
+//					{ MDSDocument.FullInfo(documentID: self.documentID, revision: self.revision, active: self.active,
+//						creationDate: self.creationDate, modificationDate: self.modificationDate,
+//						propertyMap: self.propertyMap, attachmentInfoMap: self.attachmentInfoMap) }
+
 	private	var	propertyMapInternal :[String : Any]
 	private	let	propertiesLock = ReadPreferringReadWriteLock()
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	init(id :Int64, revision :Int, active :Bool, creationDate :Date, modificationDate :Date,
+	init(id :Int64, documentID :String, revision :Int, active :Bool, creationDate :Date, modificationDate :Date,
 			propertyMap :[String : Any], attachmentInfoMap :MDSDocument.AttachmentInfoMap) {
 		// Store
 		self.id = id
+//		self.documentID = documentID
 		self.creationDate = creationDate
 
 		self.revision = revision
@@ -49,6 +57,7 @@ class MDSSQLiteDocumentBacking {
 
 		// Store
 		self.id = id
+//		self.documentID = documentID
 		self.creationDate = creationDate
 
 		self.revision = revision

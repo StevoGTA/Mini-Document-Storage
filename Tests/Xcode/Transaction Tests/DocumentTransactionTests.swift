@@ -91,8 +91,8 @@ class DocumentTransactionTests : XCTestCase {
 							documentType: config.documentType,
 							documentUpdateInfos:
 									[
-										MDSDocument.UpdateInfo(documentID: documentID!, active: true,
-												updated: ["key1": "value2"], removed: Set<String>(["key2"]))
+										MDSDocument.UpdateInfo(documentID: documentID!, updated: ["key1": "value2"],
+												removed: Set<String>(["key2"]), active: true)
 									])
 		XCTAssertNotNil(updateDocumentInfos, "update did not receive documentInfos")
 		if updateDocumentInfos != nil {
@@ -180,7 +180,7 @@ class DocumentTransactionTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testCreateRetrieveUpdateRemoveAttachment() throws {
+	func testCreateRetrieveUpdateAttachmentRemove() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -208,7 +208,7 @@ class DocumentTransactionTests : XCTestCase {
 
 		// Add attachment
 		let	(addAttachmentInfo, addAttachmentError) =
-					config.httpEndpointClient.documentAddAttachment(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.documentAttachmentAdd(documentStorageID: config.documentStorageID,
 							documentType: config.documentType, documentID: documentID!,
 							info: ["key1": "value1"], content: "content1".data(using: .utf8)!)
 		XCTAssertNotNil(addAttachmentInfo, "add attachment did not receive info")
@@ -224,14 +224,14 @@ class DocumentTransactionTests : XCTestCase {
 
 		// Update attachment
 		let	(_, updateAttachmentError) =
-					config.httpEndpointClient.documentUpdateAttachment(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.documentAttachmentUpdate(documentStorageID: config.documentStorageID,
 							documentType: config.documentType, documentID: documentID!, attachmentID: attachmentID!,
 							info: ["key2": "value2"], content: "content2".data(using: .utf8)!)
 		XCTAssertNil(updateAttachmentError, "update attachment received error \(updateAttachmentError!)")
 
 		// Get attachment
 		let	(getAttachmentContent, getAttachmentError) =
-					config.httpEndpointClient.documentGetAttachment(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.documentAttachmentGet(documentStorageID: config.documentStorageID,
 							documentType: config.documentType, documentID: documentID!, attachmentID: attachmentID!)
 		XCTAssertNotNil(getAttachmentContent, "get attachment did not receive content")
 		if getAttachmentContent != nil {
@@ -245,7 +245,7 @@ class DocumentTransactionTests : XCTestCase {
 
 		// Remove attachment
 		let	removeAttachmentError =
-					config.httpEndpointClient.documentRemoveAttachment(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.documentAttachmentRemove(documentStorageID: config.documentStorageID,
 							documentType: config.documentType, documentID: documentID!, attachmentID: attachmentID!)
 		XCTAssertNil(removeAttachmentError, "remove attachment received error \(removeAttachmentError!)")
 	}

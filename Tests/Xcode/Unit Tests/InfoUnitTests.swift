@@ -13,7 +13,7 @@ class InfoUnitTests : XCTestCase {
 
 	// MARK: Test methods
 	//------------------------------------------------------------------------------------------------------------------
-	func testGetFailInvalidDocumentStorageID() throws {
+	func testGetInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -38,13 +38,14 @@ class InfoUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testFailGet0() throws {
+	func testGetNoKeys() throws {
 		// Setup
 		let	config = Config.shared
 
 		// Perform
 		let	(info, error) = config.httpEndpointClient.infoGet(documentStorageID: config.documentStorageID, keys: [])
 
+		// Evaluate results
 		XCTAssertNil(info, "received info")
 
 		XCTAssertNotNil(error, "did not receive error")
@@ -62,7 +63,22 @@ class InfoUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testSetFailInvalidDocumentStorageID() throws {
+	func testGetInvalidKeys() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	(info, error) =
+					config.httpEndpointClient.infoGet(documentStorageID: config.documentStorageID,
+							keys: ["AaBb", "CcDd"])
+
+		// Evaluate results
+		XCTAssertNotNil(info, "did not receive info")
+		XCTAssertNil(error, "received error")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testSetInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -85,7 +101,7 @@ class InfoUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testSet0() throws {
+	func testSetNoInfo() throws {
 		// Setup
 		let	config = Config.shared
 

@@ -70,31 +70,42 @@ class CollectionTransactionTests : XCTestCase {
 		XCTAssertNil(registerError2, "register (2) received error \(registerError2!)")
 		guard registerError2 == nil else { return }
 
-		// Retrieve documents (should be not up to date)
+		// Retrieve documents (may not be up to date - depends on server implementation)
 		let	(getDocumentsIsUpToDate1, getDocumentsInfo1, getDocumentsError1) =
 					config.httpEndpointClient.collectionGetDocument(documentStorageID: config.documentStorageID,
 							name: collectionName)
 		XCTAssertNotNil(getDocumentsIsUpToDate1, "get documents (1) did not return isUpToDate")
 		if getDocumentsIsUpToDate1 != nil {
-			XCTAssertFalse(getDocumentsIsUpToDate1!, "get documents (1) isUpToDate is not false")
-		}
-		XCTAssertNil(getDocumentsInfo1, "get documents (1) returned info")
-		XCTAssertNil(getDocumentsError1, "get documents (1) received error \(getDocumentsError1!)")
-		guard getDocumentsError1 == nil else { return }
+			// Check if up to date
+			if getDocumentsIsUpToDate1! {
+				// Collection is up to date
+				XCTAssertNotNil(getDocumentsInfo1, "get documents (1) did not return info")
+				let	getDocumentsDocumentIDs = Set<String>((getDocumentsInfo1?.documentFullInfos ?? []).map({ $0.documentID }))
+				XCTAssertEqual(getDocumentsDocumentIDs, Set<String>([document2ID!]),
+						"get documents (1) did not return expected document")
+				XCTAssertNil(getDocumentsError1, "get documents (1) received error \(getDocumentsError1!)")
+				guard getDocumentsError1 == nil else { return }
+			} else {
+				// Collection is not up to date
+				XCTAssertNil(getDocumentsInfo1, "get documents (1) returned info")
+				XCTAssertNil(getDocumentsError1, "get documents (1) received error \(getDocumentsError1!)")
+				guard getDocumentsError1 == nil else { return }
 
-		// Retrieve documents again
-		let	(getDocumentsIsUpToDate2, getDocumentsInfo2, getDocumentsError2) =
-					config.httpEndpointClient.collectionGetDocument(documentStorageID: config.documentStorageID,
-							name: collectionName)
-		XCTAssertNotNil(getDocumentsIsUpToDate2, "get documents (2) did not return isUpToDate")
-		if getDocumentsIsUpToDate2 != nil {
-			XCTAssertTrue(getDocumentsIsUpToDate2!, "get documents (2) isUpToDate is not true")
+				// Retrieve documents again
+				let	(getDocumentsIsUpToDate2, getDocumentsInfo2, getDocumentsError2) =
+							config.httpEndpointClient.collectionGetDocument(documentStorageID: config.documentStorageID,
+									name: collectionName)
+				XCTAssertNotNil(getDocumentsIsUpToDate2, "get documents (2) did not return isUpToDate")
+				if getDocumentsIsUpToDate2 != nil {
+					XCTAssertTrue(getDocumentsIsUpToDate2!, "get documents (2) isUpToDate is not true")
+				}
+				XCTAssertNotNil(getDocumentsInfo2, "get documents (2) did not return info")
+				let	getDocumentsDocumentIDs = Set<String>((getDocumentsInfo2?.documentFullInfos ?? []).map({ $0.documentID }))
+				XCTAssertEqual(getDocumentsDocumentIDs, Set<String>([document2ID!]),
+						"get documents (2) did not return expected document")
+				XCTAssertNil(getDocumentsError2, "get documents (2) received error \(getDocumentsError2!)")
+				guard getDocumentsError2 == nil else { return }
+			}
 		}
-		XCTAssertNotNil(getDocumentsInfo2, "get documents (2) did not return info")
-		let	getDocumentsDocumentIDs = Set<String>((getDocumentsInfo2?.documentFullInfos ?? []).map({ $0.documentID }))
-		XCTAssertEqual(getDocumentsDocumentIDs, Set<String>([document2ID!]),
-				"get documents (2) did not return expected document")
-		XCTAssertNil(getDocumentsError2, "get documents (2) received error \(getDocumentsError2!)")
-		guard getDocumentsError2 == nil else { return }
 	}
 }

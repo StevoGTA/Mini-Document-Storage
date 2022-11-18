@@ -13,7 +13,7 @@ class AssociationTransactionTests : XCTestCase {
 
 	// MARK: Test methods
 	//------------------------------------------------------------------------------------------------------------------
-	func testRegisterUpdateRetrieveRevisionInfo() throws {
+	func testRegisterUpdateRetrieveDocumentInfo() throws {
 		// Setup
 		let	associationName = "\(Parent.documentType)To\(Child.documentType.capitalizingFirstLetter)"
 		let	config = Config.shared
@@ -55,7 +55,7 @@ class AssociationTransactionTests : XCTestCase {
 		// Add
 		let	addErrors =
 					config.httpEndpointClient.associationUpdate(documentStorageID: config.documentStorageID,
-							name: associationName, updates: [(.add, parent.id, child.id)])
+							name: associationName, updates: [MDSAssociation.Update.add(from: parent, to: child)])
 		XCTAssertEqual(addErrors.count, 0, "update (add) received errors: \(addErrors)")
 		guard addErrors.isEmpty else { return }
 
@@ -97,7 +97,7 @@ class AssociationTransactionTests : XCTestCase {
 		// Remove
 		let	removeErrors =
 					config.httpEndpointClient.associationUpdate(documentStorageID: config.documentStorageID,
-							name: associationName, updates: [(.remove, parent.id, child.id)])
+							name: associationName, updates: [MDSAssociation.Update.remove(from: parent, to: child)])
 		XCTAssertEqual(removeErrors.count, 0, "update (remove) received errors: \(removeErrors)")
 		guard removeErrors.isEmpty else { return }
 
@@ -123,7 +123,7 @@ class AssociationTransactionTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testRegisterUpdateRetrieveFullInfo() throws {
+	func testRegisterUpdateRetrieveDocuments() throws {
 		// Setup
 		let	associationName = "\(Parent.documentType)To\(Child.documentType.capitalizingFirstLetter)"
 		let	config = Config.shared
@@ -165,9 +165,16 @@ class AssociationTransactionTests : XCTestCase {
 		// Add
 		let	addErrors =
 					config.httpEndpointClient.associationUpdate(documentStorageID: config.documentStorageID,
-							name: associationName, updates: [(.add, parent.id, child.id)])
+							name: associationName, updates: [MDSAssociation.Update.add(from: parent, to: child)])
 		XCTAssertEqual(addErrors.count, 0, "update (add) received errors: \(addErrors)")
 		guard addErrors.isEmpty else { return }
+
+		// Retrieve all
+		let	(getInfo1, getError1) =
+					config.httpEndpointClient.associationGet(documentStorageID: config.documentStorageID,
+							name: associationName)
+		XCTAssertNotNil(getInfo1, "get (1) did not receive info")
+		XCTAssertNil(getError1, "get (1) received error: \(getError1!)")
 
 		// Retrieve from
 		let	(fromInfo1, fromError1) =
@@ -200,7 +207,7 @@ class AssociationTransactionTests : XCTestCase {
 		// Remove
 		let	removeErrors =
 					config.httpEndpointClient.associationUpdate(documentStorageID: config.documentStorageID,
-							name: associationName, updates: [(.remove, parent.id, child.id)])
+							name: associationName, updates: [MDSAssociation.Update.remove(from: parent, to: child)])
 		XCTAssertEqual(removeErrors.count, 0, "update (remove) received errors: \(removeErrors)")
 		guard removeErrors.isEmpty else { return }
 
@@ -271,8 +278,8 @@ class AssociationTransactionTests : XCTestCase {
 							name: associationName,
 							updates:
 									[
-										(.add, parent.id, child1.id),
-										(.add, parent.id, child2.id),
+										MDSAssociation.Update.add(from: parent, to: child1),
+										MDSAssociation.Update.add(from: parent, to: child2),
 									])
 		XCTAssertEqual(addErrors1.count, 0, "update (add) (1) received errors: \(addErrors1)")
 		guard addErrors1.isEmpty else { return }
@@ -285,28 +292,33 @@ class AssociationTransactionTests : XCTestCase {
 		XCTAssertNil(cacheRegisterError, "cache register received error: \(cacheRegisterError!)")
 		guard cacheRegisterError == nil else { return }
 
-		// Get Association Value (not up to date)
+		// Get Association Value (may not be up to date - depends on server implementation)
 		let	(getValueInfo1, getValueError1) =
 					config.httpEndpointClient.associationGetIntegerValue(documentStorageID: config.documentStorageID,
-							name: associationName, fromID: parent.id, action: .sum, cacheName: cacheName,
-							cacheValueName: "size")
+							name: associationName, action: .sum, fromDocumentID: parent.id, cacheName: cacheName,
+							cachedValueName: "size")
 		XCTAssertNil(getValueError1, "get value (1) received error: \(getValueError1!)")
 		XCTAssertNotNil(getValueInfo1, "get value (1) did not receive info")
 		guard getValueInfo1 != nil else { return }
-		XCTAssertFalse(getValueInfo1!.isUpToDate, "get value (1) is up to date")
-		XCTAssertNil(getValueInfo1!.value, "get value (1) received value")
+		if getValueInfo1!.isUpToDate {
+			// Cache is up to date
+			XCTAssertEqual(getValueInfo1!.value, 123 + 456, "get value (1) did not receive correct value")
+		} else {
+			// Cache is not up to date
+			XCTAssertNil(getValueInfo1!.value, "get value (1) received value")
 
-		// Get Association Value (up to date)
-		let	(getValueInfo2, getValueError2) =
-					config.httpEndpointClient.associationGetIntegerValue(documentStorageID: config.documentStorageID,
-							name: associationName, fromID: parent.id, action: .sum, cacheName: cacheName,
-							cacheValueName: "size")
-		XCTAssertNil(getValueError2, "get value (2) received error: \(getValueError2!)")
-		XCTAssertNotNil(getValueInfo2, "get value (2) did not receive info")
-		guard getValueInfo2 != nil else { return }
-		XCTAssertTrue(getValueInfo2!.isUpToDate, "get value (2) is not up to date")
-		guard getValueInfo2!.isUpToDate else { return }
-		XCTAssertEqual(getValueInfo2!.value, 123 + 456, "get value (2) did not receive correct value")
+			// Get Association Value (up to date)
+			let	(getValueInfo2, getValueError2) =
+						config.httpEndpointClient.associationGetIntegerValue(documentStorageID: config.documentStorageID,
+								name: associationName, action: .sum, fromDocumentID: parent.id, cacheName: cacheName,
+								cachedValueName: "size")
+			XCTAssertNil(getValueError2, "get value (2) received error: \(getValueError2!)")
+			XCTAssertNotNil(getValueInfo2, "get value (2) did not receive info")
+			guard getValueInfo2 != nil else { return }
+			XCTAssertTrue(getValueInfo2!.isUpToDate, "get value (2) is not up to date")
+			guard getValueInfo2!.isUpToDate else { return }
+			XCTAssertEqual(getValueInfo2!.value, 123 + 456, "get value (2) did not receive correct value")
+		}
 
 		// Create another document
 		let	(childInfos2, childCreateError2) =
@@ -324,19 +336,15 @@ class AssociationTransactionTests : XCTestCase {
 		// Add Association (Parent -> 3)
 		let	addErrors2 =
 					config.httpEndpointClient.associationUpdate(documentStorageID: config.documentStorageID,
-							name: associationName,
-							updates:
-									[
-										(.add, parent.id, child3.id),
-									])
+							name: associationName, updates: [MDSAssociation.Update.add(from: parent, to: child3)])
 		XCTAssertEqual(addErrors2.count, 0, "update (add) (2) received errors: \(addErrors2)")
 		guard addErrors2.isEmpty else { return }
 
 		// Get Association Value (up to date)
 		let	(getValueInfo3, getValueError3) =
 					config.httpEndpointClient.associationGetIntegerValue(documentStorageID: config.documentStorageID,
-							name: associationName, fromID: parent.id, action: .sum, cacheName: cacheName,
-							cacheValueName: "size")
+							name: associationName, action: .sum, fromDocumentID: parent.id, cacheName: cacheName,
+							cachedValueName: "size")
 		XCTAssertNil(getValueError3, "get value (3) received error: \(getValueError3!)")
 		XCTAssertNotNil(getValueInfo3, "get value (3) did not receive info")
 		guard getValueInfo3 != nil else { return }

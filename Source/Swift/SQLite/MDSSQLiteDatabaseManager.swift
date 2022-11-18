@@ -247,8 +247,9 @@ class MDSSQLiteDatabaseManager {
 
 			return MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>(documentID: info.documentRevisionInfo.documentID,
 					documentBacking:
-							MDSSQLiteDocumentBacking(id: info.id, revision: info.documentRevisionInfo.revision,
-									active: info.active, creationDate: creationDate, modificationDate: modificationDate,
+							MDSSQLiteDocumentBacking(id: info.id, documentID: info.documentRevisionInfo.documentID,
+									revision: info.documentRevisionInfo.revision, active: info.active,
+									creationDate: creationDate, modificationDate: modificationDate,
 									propertyMap: propertyMap, attachmentInfoMap: [:]))
 		}
 
@@ -538,12 +539,12 @@ class MDSSQLiteDatabaseManager {
 	func note(documentType :String) { _ = documentTables(for: documentType) }
 
 	//------------------------------------------------------------------------------------------------------------------
-	func batch(_ proc :() -> Void) {
+	func batch<T>(_ proc :() -> T) -> T {
 		// Setup
 		self.batchInfoMap.set(BatchInfo(), for: Thread.current)
 
 		// Call proc
-		proc()
+		let	t = proc()
 
 		// Commit changes
 		let	batchInfo = self.batchInfoMap.value(for: Thread.current)!
@@ -564,6 +565,8 @@ class MDSSQLiteDatabaseManager {
 			self.updateIndex(name: $0.key, keysInfos: $0.value.keysInfos, removedIDs: $0.value.removedIDs,
 					lastRevision: $0.value.lastRevision)
 		}
+
+		return t
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -573,7 +576,7 @@ class MDSSQLiteDatabaseManager {
 		let	revision = nextRevision(for: documentType)
 		let	creationDateUse = creationDate ?? Date()
 		let	modificationDateUse = modificationDate ?? creationDateUse
-		let	(infoTable, contentTable) = documentTables(for: documentType)
+		let	(infoTable, contentTable) = documentTables(for: documentType)!
 
 		// Add to database
 		let	id = DocumentTypeInfoTable.add(documentID: documentID, revision: revision, to: infoTable)
@@ -584,10 +587,13 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func count(for documentType :String) -> Int? { self.documentTables(for: documentType, createIfNeeded: false)?.infoTable.count() }
+
+	//------------------------------------------------------------------------------------------------------------------
 	func iterate(documentType :String, innerJoin :SQLiteInnerJoin? = nil, where sqliteWhere :SQLiteWhere? = nil,
 			proc :(_ info :Info, _ resultsRow :SQLiteResultsRow) -> Void) {
 		// Setup
-		let	(infoTable, _) = self.documentTables(for: documentType)
+		let	(infoTable, _) = self.documentTables(for: documentType)!
 
 		// Retrieve and iterate
 		try! infoTable.select(innerJoin: innerJoin, where: sqliteWhere)
@@ -600,7 +606,7 @@ class MDSSQLiteDatabaseManager {
 		// Setup
 		let	revision = nextRevision(for: documentType)
 		let	modificationDate = Date()
-		let	(infoTable, contentTable) = documentTables(for: documentType)
+		let	(infoTable, contentTable) = documentTables(for: documentType)!
 
 		// Update
 		DocumentTypeInfoTable.update(id: id, to: revision, in: infoTable)
@@ -613,7 +619,7 @@ class MDSSQLiteDatabaseManager {
 	//------------------------------------------------------------------------------------------------------------------
 	func remove(documentType :String, id :Int64) {
 		// Setup
-		let	(infoTable, contentTable) = documentTables(for: documentType)
+		let	(infoTable, contentTable) = documentTables(for: documentType)!
 
 		// Remove
 		DocumentTypeInfoTable.remove(id: id, in: infoTable)
@@ -662,12 +668,12 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func collectionGetDocumentCount(for name :String) -> Int { self.collectionTablesMap.value(for: name)!.count() }
+	func collectionGetDocumentCount(for name :String) -> Int? { self.collectionTablesMap.value(for: name)?.count() }
 
 	//------------------------------------------------------------------------------------------------------------------
 	func collectionIterate(name :String, documentType :String, proc :(_ info :Info) -> Void) {
 		// Setup
-		let	(infoTable, _) = documentTables(for: documentType)
+		let	(infoTable, _) = documentTables(for: documentType)!
 		let	collectionContentsTable = self.collectionTablesMap.value(for: name)!
 
 		// Iterate
@@ -735,7 +741,7 @@ class MDSSQLiteDatabaseManager {
 	//------------------------------------------------------------------------------------------------------------------
 	func indexIterate(name :String, documentType :String, keys :[String], proc :(_ key :String, _ info :Info) -> Void) {
 		// Setup
-		let	(infoTable, _) = documentTables(for: documentType)
+		let	(infoTable, _) = documentTables(for: documentType)!
 		let	indexContentsTable = self.indexTablesMap.value(for: name)!
 
 		// Iterate
@@ -764,7 +770,7 @@ class MDSSQLiteDatabaseManager {
 	//------------------------------------------------------------------------------------------------------------------
 	func innerJoin(for documentType :String) -> SQLiteInnerJoin {
 		// Setup
-		let	(infoTable, contentTable) = self.documentTables(for: documentType)
+		let	(infoTable, contentTable) = self.documentTables(for: documentType)!
 
 		return SQLiteInnerJoin(infoTable, tableColumn: DocumentTypeInfoTable.idTableColumn, to: contentTable)
 	}
@@ -772,7 +778,7 @@ class MDSSQLiteDatabaseManager {
 	//------------------------------------------------------------------------------------------------------------------
 	func innerJoin(for documentType :String, collectionName :String) -> SQLiteInnerJoin {
 		// Setup
-		let	(infoTable, contentTable) = self.documentTables(for: documentType)
+		let	(infoTable, contentTable) = self.documentTables(for: documentType)!
 		let	collectionContentsTable = self.collectionTablesMap.value(for: collectionName)!
 
 		return SQLiteInnerJoin(infoTable, tableColumn: DocumentTypeInfoTable.idTableColumn, to: contentTable)
@@ -782,7 +788,7 @@ class MDSSQLiteDatabaseManager {
 	//------------------------------------------------------------------------------------------------------------------
 	func innerJoin(for documentType :String, indexName :String) -> SQLiteInnerJoin {
 		// Setup
-		let	(infoTable, contentTable) = self.documentTables(for: documentType)
+		let	(infoTable, contentTable) = self.documentTables(for: documentType)!
 		let	indexContentsTable = self.indexTablesMap.value(for: indexName)!
 
 		return SQLiteInnerJoin(infoTable, tableColumn: DocumentTypeInfoTable.idTableColumn, to: contentTable)
@@ -819,7 +825,7 @@ class MDSSQLiteDatabaseManager {
 
 	// MARK: Private methods
 	//------------------------------------------------------------------------------------------------------------------
-	private func documentTables(for documentType :String) -> DocumentTables {
+	private func documentTables(for documentType :String, createIfNeeded :Bool = true) -> DocumentTables? {
 		// Ensure we actually have a document type
 		guard !documentType.isEmpty else { fatalError("documentType is empty") }
 
@@ -827,7 +833,7 @@ class MDSSQLiteDatabaseManager {
 		if let documentTables = self.documentTablesMap.value(for: documentType) {
 			// Have tables
 			return documentTables
-		} else {
+		} else if createIfNeeded {
 			// Setup tables
 			let	nameRoot = documentType.prefix(1).uppercased() + documentType.dropFirst()
 			let	infoTable =
@@ -841,6 +847,9 @@ class MDSSQLiteDatabaseManager {
 			self.documentTablesMap.set((infoTable, contentTable), for: documentType)
 
 			return (infoTable, contentTable)
+		} else {
+			// Not found
+			return nil
 		}
 	}
 

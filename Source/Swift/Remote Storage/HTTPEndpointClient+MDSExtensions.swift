@@ -129,19 +129,80 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func queue(_ getDocumentInfosHTTPEndpointRequest :MDSHTTPServices.GetDocumentInfosHTTPEndpointRequest,
+			identifier :String = "", priority :Priority = .normal,
+			completionProc
+					:@escaping (_ info: (documentRevisionInfos :[MDSDocument.RevisionInfo], isComplete :Bool)?,
+							_ error :Error?) -> Void) {
+		// Setup
+		getDocumentInfosHTTPEndpointRequest.completionWithCountProc = { info, error in
+			// Handle results
+			if info != nil {
+				// Success
+				DispatchQueue.global().async() {
+					// Convert
+					let	documentRevisionInfos =
+								info!.info.compactMap({ MDSDocument.RevisionInfo(httpServicesInfo: $0) })
+
+					// Switch queues to minimize memory usage
+					DispatchQueue.global().async() {
+						// Call completion proc
+						completionProc((documentRevisionInfos, info!.isComplete), nil)
+					}
+				}
+			} else {
+				// Error
+				completionProc(nil, error)
+			}
+		}
+
+		// Queue
+		queue(getDocumentInfosHTTPEndpointRequest, identifier: identifier, priority: priority)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func queue(_ getDocumentsHTTPEndpointRequest :MDSHTTPServices.GetDocumentsHTTPEndpointRequest,
+			identifier :String = "", priority :Priority = .normal,
+			completionProc
+					:@escaping (_ info: (documentFullInfos :[MDSDocument.FullInfo], isComplete :Bool)?, _ error :Error?)
+							-> Void) {
+		// Setup
+		getDocumentsHTTPEndpointRequest.completionWithCountProc = { info, error in
+			// Handle results
+			if info != nil {
+				// Success
+				DispatchQueue.global().async() {
+					// Convert
+					let	documentFullInfos = info!.info.compactMap({ MDSDocument.FullInfo(httpServicesInfo: $0) })
+
+					// Switch queues to minimize memory usage
+					DispatchQueue.global().async() {
+						// Call completion proc
+						completionProc((documentFullInfos, info!.isComplete), nil)
+					}
+				}
+			} else {
+				// Error
+				completionProc(nil, error)
+			}
+		}
+
+		// Queue
+		queue(getDocumentsHTTPEndpointRequest, identifier: identifier, priority: priority)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func queue(_ associationGetHTTPEndpointRequest :MDSHTTPServices.AssociationGetHTTPEndpointRequest,
 			identifier :String = "", priority :Priority = .normal,
 			completionProc
-					:@escaping (
-							_ info :(associations :[(fromDocumentID :String, toDocumentID :String)],
-									isComplete :Bool)?,
-							_ error :Error?) -> Void) {
+					:@escaping (_ info :(associationItems :[MDSAssociation.Item], isComplete :Bool)?, _ error :Error?)
+							-> Void) {
 		// Setup
 		associationGetHTTPEndpointRequest.completionWithCountProc = { info, error in
 			// Handle results
 			if info != nil {
 				// Success
-				let	associations = info!.info.map({ ($0["fromDocumentID"]!, $0["toDocumentID"]!) })
+				let	associations = info!.info.compactMap({ MDSAssociation.Item(httpServicesInfo: $0) })
 
 				// Call completion
 				completionProc((associations, info!.isComplete), nil)
@@ -171,9 +232,7 @@ extension HTTPEndpointClient {
 				DispatchQueue.global().async() {
 					// Convert
 					let	documentRevisionInfos =
-								info!.info.map(
-										{ MDSDocument.RevisionInfo(documentID: $0["documentID"] as! String,
-												revision: $0["revision"] as! Int) })
+								info!.info.compactMap({ MDSDocument.RevisionInfo(httpServicesInfo: $0) })
 
 					// Switch queues to minimize memory usage
 					DispatchQueue.global().async() {
@@ -205,7 +264,7 @@ extension HTTPEndpointClient {
 				// Success
 				DispatchQueue.global().async() {
 					// Convert
-					let	documentFullInfos = info!.info.map({ MDSDocument.FullInfo(httpServicesInfo: $0) })
+					let	documentFullInfos = info!.info.compactMap({ MDSDocument.FullInfo(httpServicesInfo: $0) })
 
 					// Switch queues to minimize memory usage
 					DispatchQueue.global().async() {
@@ -224,74 +283,8 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func queue(_ getDocumentInfosHTTPEndpointRequest :MDSHTTPServices.GetDocumentInfosHTTPEndpointRequest,
-			identifier :String = "", priority :Priority = .normal,
-			completionProc
-					:@escaping (_ info: (documentRevisionInfos :[MDSDocument.RevisionInfo], isComplete :Bool)?,
-							_ error :Error?) -> Void) {
-		// Setup
-		getDocumentInfosHTTPEndpointRequest.completionWithCountProc = { info, error in
-			// Handle results
-			if info != nil {
-				// Success
-				DispatchQueue.global().async() {
-					// Convert
-					let	documentRevisionInfos =
-								info!.info.map(
-										{ MDSDocument.RevisionInfo(documentID: $0["documentID"] as! String,
-												revision: $0["revision"] as! Int) })
-
-					// Switch queues to minimize memory usage
-					DispatchQueue.global().async() {
-						// Call completion proc
-						completionProc((documentRevisionInfos, info!.isComplete), nil)
-					}
-				}
-			} else {
-				// Error
-				completionProc(nil, error)
-			}
-		}
-
-		// Queue
-		queue(getDocumentInfosHTTPEndpointRequest, identifier: identifier, priority: priority)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func queue(_ getDocumentsHTTPEndpointRequest :MDSHTTPServices.GetDocumentsHTTPEndpointRequest,
-			identifier :String = "", priority :Priority = .normal,
-			completionProc
-					:@escaping (_ info: (documentFullInfos :[MDSDocument.FullInfo], isComplete :Bool)?, _ error :Error?)
-							-> Void) {
-		// Setup
-		getDocumentsHTTPEndpointRequest.completionWithCountProc = { info, error in
-			// Handle results
-			if info != nil {
-				// Success
-				DispatchQueue.global().async() {
-					// Convert
-					let	documentFullInfos = info!.info.map({ MDSDocument.FullInfo(httpServicesInfo: $0) })
-
-					// Switch queues to minimize memory usage
-					DispatchQueue.global().async() {
-						// Call completion proc
-						completionProc((documentFullInfos, info!.isComplete), nil)
-					}
-				}
-			} else {
-				// Error
-				completionProc(nil, error)
-			}
-		}
-
-		// Queue
-		queue(getDocumentsHTTPEndpointRequest, identifier: identifier, priority: priority)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func queue(documentStorageID :String, name :String,
-			updates :[(action :MDSAssociationAction, fromDocumentID :String, toDocumentID :String)],
-			authorization :String? = nil, completionProc :@escaping(_ errors :[Error]) -> Void) {
+	func queue(documentStorageID :String, name :String, updates :[MDSAssociation.Update], authorization :String? = nil,
+			completionProc :@escaping(_ errors :[Error]) -> Void) {
 		// Setup
 		guard !updates.isEmpty else {
 			// No updates
@@ -308,7 +301,7 @@ extension HTTPEndpointClient {
 		updatesChunks.forEach() {
 			// Queue this chunk
 			queue(
-					MDSHTTPServices.httpEndpointRequestForAssocationUpdate(documentStorageID: documentStorageID,
+					MDSHTTPServices.httpEndpointRequestForAssociationUpdate(documentStorageID: documentStorageID,
 							name: name, updates: $0, authorization: authorization))
 					{ error in
 						// Handle results
@@ -383,7 +376,7 @@ extension HTTPEndpointClient {
 						// Run lean
 						autoreleasepool() {
 							// Call partial results proc
-							partialResultsProc(infos.map({ MDSDocument.FullInfo(httpServicesInfo: $0) }))
+							partialResultsProc(infos.compactMap({ MDSDocument.FullInfo(httpServicesInfo: $0) }))
 						}
 					}
 
@@ -411,7 +404,7 @@ extension HTTPEndpointClient {
 							MDSHTTPServices.DocumentGetForDocumentIDsHTTPEndpointRequest.MultiResponseCompletionProc) {
 		// Setup
 		documentGetForDocumentIDsHTTPEndpointRequest.multiResponsePartialResultsProc =
-			{ partialResultsProc($0?.map({ MDSDocument.FullInfo(httpServicesInfo: $0) }), $1) }
+			{ partialResultsProc($0?.compactMap({ MDSDocument.FullInfo(httpServicesInfo: $0) }), $1) }
 		documentGetForDocumentIDsHTTPEndpointRequest.multiResponseCompletionProc = completionProc
 
 		// Queue
@@ -506,7 +499,7 @@ extension HTTPEndpointClient {
 			// Handle results
 			if info != nil {
 				// Success
-				let	documentRevisionInfoMap = info!.mapValues({ MDSDocument.FullInfo(httpServicesInfo: $0) })
+				let	documentRevisionInfoMap = info!.compactMapValues({ MDSDocument.FullInfo(httpServicesInfo: $0) })
 
 				// Call completion proc
 				partialResultsProc(documentRevisionInfoMap, nil)
@@ -552,8 +545,7 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func associationUpdate(documentStorageID :String, name :String,
-			updates :[(action :MDSAssociationAction, fromDocumentID :String, toDocumentID :String)],
+	func associationUpdate(documentStorageID :String, name :String, updates :[MDSAssociation.Update],
 			authorization :String? = nil) -> [Error] {
 		// Perform
 		return DispatchQueue.performBlocking() { completionProc in
@@ -566,7 +558,7 @@ extension HTTPEndpointClient {
 	//------------------------------------------------------------------------------------------------------------------
 	func associationGet(documentStorageID :String, name :String, startIndex :Int = 0, count :Int? = nil,
 			authorization :String? = nil) ->
-			(info :(associations :[(fromDocumentID :String, toDocumentID :String)], isComplete :Bool)?, error :Error?) {
+			(info :(associationItems :[MDSAssociation.Item], isComplete :Bool)?, error :Error?) {
 		// Perform
 		return DispatchQueue.performBlocking() { completionProc in
 			// Queue
@@ -638,16 +630,18 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func associationGetIntegerValue(documentStorageID :String, name :String, fromID :String,
-			action :MDSHTTPServices.AssociationGetValueAction, cacheName :String, cacheValueName :String,
-			authorization :String? = nil) -> (info :(isUpToDate :Bool, value :Int?)?, error :Error?) {
+	func associationGetIntegerValue(documentStorageID :String, name :String,
+			action :MDSAssociation.GetIntegerValueAction, fromDocumentID :String, cacheName :String,
+			cachedValueName :String, authorization :String? = nil) ->
+			(info :(isUpToDate :Bool, value :Int?)?, error :Error?) {
 		// Perform
 		return DispatchQueue.performBlocking() { completionProc in
 			// Queue
 			self.queue(
-					MDSHTTPServices.httpEndpointRequestForAssocationGetIntegerValue(
-							documentStorageID: documentStorageID, name: name, fromID: fromID, action: action,
-							cacheName: cacheName, cacheValueName: cacheValueName, authorization: authorization))
+					MDSHTTPServices.httpEndpointRequestForAssociationGetIntegerValue(
+							documentStorageID: documentStorageID, name: name, action: action,
+							fromDocumentID: fromDocumentID, cacheName: cacheName, cachedValueName: cachedValueName,
+							authorization: authorization))
 					{ completionProc(($0, $1)) }
 		}
 	}
@@ -704,7 +698,7 @@ extension HTTPEndpointClient {
 		return DispatchQueue.performBlocking() { completionProc in
 			// Queue
 			self.queue(
-					MDSHTTPServices.httpEndpointRequestForCollectionGetDocumentInfo(
+					MDSHTTPServices.httpEndpointRequestForCollectionGetDocumentInfos(
 							documentStorageID: documentStorageID, name: name, startIndex: startIndex, count: count,
 							authorization: authorization))
 					{ completionProc(($0, $1, $2)) }
@@ -719,7 +713,7 @@ extension HTTPEndpointClient {
 		return DispatchQueue.performBlocking() { completionProc in
 			// Queue
 			self.queue(
-					MDSHTTPServices.httpEndpointRequestForCollectionGetDocument(documentStorageID: documentStorageID,
+					MDSHTTPServices.httpEndpointRequestForCollectionGetDocuments(documentStorageID: documentStorageID,
 							name: name, startIndex: startIndex, count: count, authorization: authorization))
 					{ completionProc(($0, $1, $2)) }
 		}
@@ -754,7 +748,7 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentGet(documentStorageID :String, documentType :String, sinceRevision :Int,
+	func documentGet(documentStorageID :String, documentType :String, sinceRevision :Int, count :Int? = nil,
 			authorization :String? = nil) ->
 			(info :(documentFullInfos :[MDSDocument.FullInfo], isComplete :Bool)?, error :Error?) {
 		// Perform
@@ -765,7 +759,8 @@ extension HTTPEndpointClient {
 			// Queue
 			self.queue(
 					MDSHTTPServices.httpEndpointRequestForDocumentGet(documentStorageID: documentStorageID,
-							documentType: documentType, sinceRevision: sinceRevision, authorization: authorization),
+							documentType: documentType, sinceRevision: sinceRevision, count: count,
+							authorization: authorization),
 					partialResultsProc: { documentFullInfos = $0 },
 					completionProc:
 							{ completionProc((($1 == nil) ? (documentFullInfos ?? [MDSDocument.FullInfo](), $0!) : nil,
@@ -801,7 +796,7 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentAddAttachment(documentStorageID :String, documentType :String, documentID :String,
+	func documentAttachmentAdd(documentStorageID :String, documentType :String, documentID :String,
 			info :[String : Any], content :Data, authorization :String? = nil) ->
 			(info :[String : Any]?, error :Error?) {
 		// Perform
@@ -816,7 +811,7 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentGetAttachment(documentStorageID :String, documentType :String, documentID :String,
+	func documentAttachmentGet(documentStorageID :String, documentType :String, documentID :String,
 			attachmentID :String, authorization :String? = nil) -> (content :Data?, error :Error?) {
 		// Perform
 		return DispatchQueue.performBlocking() { completionProc in
@@ -830,7 +825,7 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentUpdateAttachment(documentStorageID :String, documentType :String, documentID :String,
+	func documentAttachmentUpdate(documentStorageID :String, documentType :String, documentID :String,
 			attachmentID :String, info :[String : Any], content :Data, authorization :String? = nil) ->
 			(info :[String : Any]?, error :Error?) {
 		// Perform
@@ -845,7 +840,7 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentRemoveAttachment(documentStorageID :String, documentType :String, documentID :String,
+	func documentAttachmentRemove(documentStorageID :String, documentType :String, documentID :String,
 			attachmentID :String, authorization :String? = nil) -> Error? {
 		// Perform
 		return DispatchQueue.performBlocking() { completionProc in
@@ -885,7 +880,7 @@ extension HTTPEndpointClient {
 
 			// Queue
 			self.queue(
-					MDSHTTPServices.httpEndpointRequestForIndexGetDocumentInfo(documentStorageID: documentStorageID,
+					MDSHTTPServices.httpEndpointRequestForIndexGetDocumentInfos(documentStorageID: documentStorageID,
 							name: name, keys: keys, authorization: authorization),
 					partialResultsProc: { documentRevisionMap = $0; error = $1 },
 					completionProc: { completionProc(($0, documentRevisionMap, error)); _ = $1 })
@@ -903,7 +898,7 @@ extension HTTPEndpointClient {
 
 			// Queue
 			self.queue(
-					MDSHTTPServices.httpEndpointRequestForIndexGetDocument(documentStorageID: documentStorageID,
+					MDSHTTPServices.httpEndpointRequestForIndexGetDocuments(documentStorageID: documentStorageID,
 							name: name, keys: keys, authorization: authorization),
 					partialResultsProc: { documentFullInfosMap = $0; error = $1 },
 					completionProc: { completionProc(($0, documentFullInfosMap, error)); _ = $1 })

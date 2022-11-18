@@ -9,7 +9,28 @@
 import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: MDSRemoteStorageCache
+// MARK: MDSDocument.AttachmentInfoMap extension
+extension MDSDocument.AttachmentInfoMap {
+
+	// MARK: Properties
+	var	data :Data
+				{ try! JSONSerialization.data(
+						withJSONObject: self.mapValues({ ["revision": $0.revision, "info": $0.info] }), options: []) }
+
+	// MARK: Lifecycle methods
+	//------------------------------------------------------------------------------------------------------------------
+	init(_ data :Data) {
+		// Setup
+		self =
+				(try! JSONSerialization.jsonObject(with: data, options: []) as! [String : [String : Any]])
+						.mapPairs({ ($0.key,
+								MDSDocument.AttachmentInfo(id: $0.key, revision: $0.value["revision"] as! Int,
+										info: $0.value["info"] as! [String : Any])) })
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSRemoteStorageCache
 public class MDSRemoteStorageCache {
 
 	// MARK: Properties

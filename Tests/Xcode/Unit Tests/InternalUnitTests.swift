@@ -13,7 +13,7 @@ class InternalUnitTests : XCTestCase {
 
 	// MARK: Test methods
 	//------------------------------------------------------------------------------------------------------------------
-	func testSetFailInvalidDocumentStorageID() throws {
+	func testSetInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.shared
 
@@ -36,7 +36,7 @@ class InternalUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testSet0() throws {
+	func testSetNoInfo() throws {
 		// Setup
 		let	config = Config.shared
 
