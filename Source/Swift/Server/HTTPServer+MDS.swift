@@ -854,7 +854,7 @@ extension HTTPServer {
 		guard let (documentStorage, authorizationValidationProc) =
 				documentStorageInfosByDocumentStorageID[documentStorageID] else {
 			// Document storage not found
-			return (nil, (.badRequest, nil, .json(["error": "Invalid documentStorageID"])))
+			return (nil, (.badRequest, nil, .json(["error": "Invalid documentStorageID: \(documentStorageID)"])))
 		}
 
 		// Validate authorization

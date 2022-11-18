@@ -1,21 +1,21 @@
 //
-//  routes.js
+//  router.js
 //
 //  Created by Stevo on 1/20/2022.
 //  Copyright © 2022 Stevo Brock. All rights reserved.
 //
 
 // Imports
-let	association = require('./association');
-let	cache = require('./cache');
-let	collection = require('./collection');
-let	document = require('./document');
-let	express = require('express');
-let	index = require('./index');
-let	info = require('./info');
+import * as association from './association.js';
+import * as cache from './cache.js';
+import * as collection from './collection.js';
+import * as document from './document.js';
+import * as index from './index.js';
+import * as info from './info.js';
+import express from 'express';
 
 // Setup
-let	router = express.Router();
+export let router = express.Router();
 
 // Setup Association routes
 router.put('/v1/association/:documentStorageID', association.registerV1);
@@ -54,6 +54,3 @@ router.post('/v1/info/:documentStorageID', info.setV1);
 
 // Setup Intenral routes
 router.post('/v1/internal/:documentStorageID', info.setV1);
-
-// Export
-module.exports = router;

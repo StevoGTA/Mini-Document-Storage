@@ -32,12 +32,7 @@ module.exports = class Info {
 	//------------------------------------------------------------------------------------------------------------------
 	async get(statementPerformer, keys) {
 		// Validate
-		if (!keys)
-			return [null, 'Missing key(s)'];
-		if (typeof keys == 'string')
-			// Single key
-			keys = [keys];
-		else if (!Array.isArray(keys))
+		if ((keys == null) || !Array.isArray(keys) || (keys.length == 0))
 			return [null, 'Missing key(s)'];
 
 		// Catch errors

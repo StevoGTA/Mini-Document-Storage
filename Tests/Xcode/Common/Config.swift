@@ -15,18 +15,18 @@ class Config {
 	static	let	shared = Config()
 
 			let	httpEndpointClient :HTTPEndpointClient = {
-						// Setup as needed
+						// JS testing when running server in VS Code
 //						let	httpEndpointClient = HTTPEndpointClient(scheme: "http", hostName: "localhost", port: 1138)
+
+						// Swift testing when running server in Xcode project
 						let	httpEndpointClient = HTTPEndpointClient(scheme: "http", hostName: "localhost", port: 34343)
-//						let	httpEndpointClient =
-//									HTTPEndpointClient(scheme: "https",
-//											hostName: "g7j7adblvc.execute-api.us-east-1.amazonaws.com/dev")
+
+						// Finish setup
 						httpEndpointClient.logOptions = [.requestAndResponse]
 
 						return httpEndpointClient
 					}()
 			let	documentStorageID = "Sandbox"
-//			let	documentStorageID = "Testing"
 
 			let	documentType = "test"
 }

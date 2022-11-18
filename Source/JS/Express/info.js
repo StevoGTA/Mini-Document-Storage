@@ -10,7 +10,11 @@
 export async function getV1(request, response) {
 	// Setup
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
-	let	keys = request.query.key.map(key => decodeURIComponent(key));
+
+	var	keys = (request.query.key || []);
+	if (!Array.isArray(keys))
+		keys = [request.query.key];
+	keys = keys.map(key => decodeURIComponent(key));
 
 	// Catch errors
 	try {

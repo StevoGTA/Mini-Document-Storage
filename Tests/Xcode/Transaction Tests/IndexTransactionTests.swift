@@ -20,6 +20,13 @@ class IndexTransactionTests : XCTestCase {
 		let	property1 = UUID().base64EncodedString
 		let	property2 = UUID().base64EncodedString
 
+		// Create document
+		let	(_, childCreateError) =
+					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
+							documentType: Child.documentType,
+							documentCreateInfos: [MDSDocument.CreateInfo(propertyMap: [:])])
+		XCTAssertNil(childCreateError, "create child document received error: \(childCreateError!)")
+
 		// Register
 		let	registerError1 =
 					config.httpEndpointClient.indexRegister(documentStorageID: config.documentStorageID,

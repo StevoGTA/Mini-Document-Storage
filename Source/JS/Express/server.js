@@ -6,10 +6,10 @@
 //
 
 // Imports
-let	express = require('express');
-let {DocumentStorage} = require('mini-document-storage/src/Server/package');
-let	MySQLToolbox = require('mysql-toolbox');
-let	routes = require('./routes');
+import express from 'express';
+import {DocumentStorage} from 'mini-document-storage/src/Server/package';
+import MySQLToolbox from 'mysql-toolbox';
+import {router} from './router.js';
 
 // Setup
 let	port = process.env.PORT;
@@ -17,7 +17,7 @@ let	port = process.env.PORT;
 // Setup Express
 let	app = express();
 app.use(express.json());
-app.use('/', routes);
+app.use('/', router);
 app.listen(port, () => console.log(`listening on ${port}`));
 
 // Setup DocumentStorage

@@ -1,5 +1,6 @@
 {
   "version": "0.0.0",
+  "type": "module",
   "dependencies": {
     "mini-document-storage": "file:..",
     "mysql-toolbox": "file:../../../MySQLToolboxJS"

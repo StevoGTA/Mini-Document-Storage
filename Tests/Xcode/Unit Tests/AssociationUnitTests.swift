@@ -28,7 +28,7 @@ class AssociationUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+					XCTAssertEqual(message, "Invalid documentStorageID: ABC", "did not receive expected error message")
 
 				default:
 					// Other error
@@ -56,7 +56,7 @@ class AssociationUnitTests : XCTestCase {
 			switch errors.first! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+					XCTAssertEqual(message, "Invalid documentStorageID: ABC", "did not receive expected error message")
 
 				default:
 					// Other error
@@ -121,7 +121,7 @@ class AssociationUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+					XCTAssertEqual(message, "Invalid documentStorageID: ABC", "did not receive expected error message")
 
 				default:
 					// Other error
@@ -177,7 +177,7 @@ class AssociationUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+					XCTAssertEqual(message, "Invalid documentStorageID: ABC", "did not receive expected error message")
 
 				default:
 					// Other error
@@ -288,7 +288,7 @@ class AssociationUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+					XCTAssertEqual(message, "Invalid documentStorageID: ABC", "did not receive expected error message")
 
 				default:
 					// Other error
@@ -399,7 +399,7 @@ class AssociationUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+					XCTAssertEqual(message, "Invalid documentStorageID: ABC", "did not receive expected error message")
 
 				default:
 					// Other error
@@ -510,7 +510,7 @@ class AssociationUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+					XCTAssertEqual(message, "Invalid documentStorageID: ABC", "did not receive expected error message")
 
 				default:
 					// Other error
@@ -621,7 +621,7 @@ class AssociationUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Invalid documentStorageID", "did not receive expected error message")
+					XCTAssertEqual(message, "Invalid documentStorageID: ABC", "did not receive expected error message")
 
 				default:
 					// Other error

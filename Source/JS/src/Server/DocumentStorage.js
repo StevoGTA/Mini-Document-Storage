@@ -69,7 +69,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return 'Invalid documentStorageID';
+				return 'Invalid documentStorageID: ' + documentStorageID;
 			else
 				// Other
 				throw error;
@@ -96,7 +96,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return 'Invalid documentStorageID';
+				return 'Invalid documentStorageID: ' + documentStorageID;
 			else
 				// Other
 				throw error;
@@ -125,7 +125,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return [null, null, 'Invalid documentStorageID'];
+				return [null, null, 'Invalid documentStorageID: ' + documentStorageID];
 			else
 				// Other
 				throw error;
@@ -154,7 +154,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return [null, 'Invalid documentStorageID'];
+				return [null, 'Invalid documentStorageID: ' + documentStorageID];
 			else
 				// Other
 				throw error;
@@ -181,7 +181,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return 'Invalid documentStorageID';
+				return 'Invalid documentStorageID: ' + documentStorageID;
 			else
 				// Other
 				throw error;
@@ -208,7 +208,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return 'Invalid documentStorageID';
+				return 'Invalid documentStorageID: ' + documentStorageID;
 			else
 				// Other
 				throw error;
@@ -237,7 +237,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return [null, null, 'Invalid documentStorageID'];
+				return [null, null, 'Invalid documentStorageID: ' + documentStorageID];
 			else
 				// Other
 				throw error;
@@ -266,7 +266,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return [null, null, null, 'Invalid documentStorageID'];
+				return [null, null, null, 'Invalid documentStorageID: ' + documentStorageID];
 			else
 				// Other
 				throw error;
@@ -293,7 +293,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return [null, 'Invalid documentStorageID'];
+				return [null, 'Invalid documentStorageID: ' + documentStorageID];
 			else
 				// Other
 				throw error;
@@ -320,7 +320,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return [null, 'Invalid documentStorageID'];
+				return [null, 'Invalid documentStorageID: ' + documentStorageID];
 			else
 				// Other
 				throw error;
@@ -350,7 +350,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return [null, null, 'Invalid documentStorageID'];
+				return [null, null, 'Invalid documentStorageID: ' + documentStorageID];
 			else
 				// Other
 				throw error;
@@ -379,7 +379,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return [null, 'Invalid documentStorageID'];
+				return [null, 'Invalid documentStorageID: ' + documentStorageID];
 			else
 				// Other
 				throw error;
@@ -406,7 +406,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return [null, 'Invalid documentStorageID'];
+				return [null, 'Invalid documentStorageID: ' + documentStorageID];
 			else
 				// Other
 				throw error;
@@ -435,7 +435,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return [null, 'Invalid documentStorageID'];
+				return [null, 'Invalid documentStorageID: ' + documentStorageID];
 			else
 				// Other
 				throw error;
@@ -464,7 +464,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return [null, 'Invalid documentStorageID'];
+				return [null, 'Invalid documentStorageID: ' + documentStorageID];
 			else
 				// Other
 				throw error;
@@ -493,7 +493,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return [null, 'Invalid documentStorageID'];
+				return [null, 'Invalid documentStorageID: ' + documentStorageID];
 			else
 				// Other
 				throw error;
@@ -522,7 +522,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return 'Invalid documentStorageID';
+				return 'Invalid documentStorageID: ' + documentStorageID;
 			else
 				// Other
 				throw error;
@@ -549,7 +549,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return 'Invalid documentStorageID';
+				return 'Invalid documentStorageID: ' + documentStorageID;
 			else
 				// Other
 				throw error;
@@ -578,7 +578,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return [null, null, 'Invalid documentStorageID'];
+				return [null, null, 'Invalid documentStorageID: ' + documentStorageID];
 			else
 				// Other
 				throw error;
@@ -605,7 +605,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return [null, 'Invalid documentStorageID'];
+				return [null, 'Invalid documentStorageID: ' + documentStorageID];
 			else
 				// Other
 				throw error;
@@ -632,7 +632,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return 'Invalid documentStorageID';
+				return 'Invalid documentStorageID: ' + documentStorageID;
 			else
 				// Other
 				throw error;
@@ -659,7 +659,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return [null, 'Invalid documentStorageID'];
+				return [null, 'Invalid documentStorageID: ' + documentStorageID];
 			else
 				// Other
 				throw error;
@@ -686,7 +686,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return 'Invalid documentStorageID';
+				return 'Invalid documentStorageID: ' + documentStorageID;
 			else
 				// Other
 				throw error;
