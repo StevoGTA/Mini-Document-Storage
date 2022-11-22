@@ -204,7 +204,7 @@ module.exports = class Collections {
 		// Check if up to date
 		if (collection.lastDocumentRevision == documentTypeLastRevision) {
 			// Setup
-			let	count = await statementPerformer.count(collection.table);
+			let	totalCount = await statementPerformer.count(collection.table);
 
 			// Check for full info
 			if (fullInfo) {
@@ -217,7 +217,9 @@ module.exports = class Collections {
 									null, statementPerformer.limit(startIndex, count));
 				if (documentsByID)
 					// Success
-					return [true, (count >= startIndex) ? count - startIndex : 0, Object.values(documentsByID), null];
+					return [true,
+							(totalCount >= startIndex) ? totalCount - startIndex : 0, Object.values(documentsByID),
+							null];
 				else
 					// Error
 					return [null, null, null, resultsError];
@@ -231,7 +233,7 @@ module.exports = class Collections {
 									null, statementPerformer.limit(startIndex, count));
 				if (results)
 					// Success
-					return [true, count,
+					return [true, totalCount,
 							results.map(
 									result => { return {documentID: result.documentID, revision: result.revision}; }),
 							null];
