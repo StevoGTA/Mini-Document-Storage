@@ -136,7 +136,8 @@ struct AssociationPair {
 				TNLockingArrayDictionary<CMDSDocument::ChangedProcInfo>	mDocumentChangedProcInfosMap;
 				TNDictionary<TNSet<CString> >							mDocumentIDsByTypeMap;
 				TNLockingDictionary<CMDSDocument::Info>					mDocumentInfoMap;
-				TNLockingDictionary<TNumber<UInt32> >					mDocumentLastRevisionMap;
+				CDictionary												mDocumentLastRevisionByDocumentType;
+				CLock													mDocumentLastRevisionByDocumentTypeLock;
 				CReadPreferringLock										mDocumentMapsLock;
 				TNLockingDictionary<CDictionary>						mDocumentsBeingCreatedPropertyMapMap;
 
@@ -147,7 +148,8 @@ struct AssociationPair {
 		From
 			array of to
 */
-TNLockingArrayDictionary<AssociationPair>	mAssocationMap;
+TNArrayDictionary<AssociationPair>	mAssociationMap;
+CLock								mAssociationMapLock;
 
 				TNLockingDictionary<CMDSEphemeralCollection>			mCollectionsByNameMap;
 				TNLockingArrayDictionary<CMDSEphemeralCollection>		mCollectionsByDocumentTypeMap;
@@ -165,11 +167,10 @@ UInt32 CMDSEphemeralInternals::getNextRevision(const CString& documentType)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Compose next revision
-	const	OR<TNumber<UInt32> >	currentRevision = mDocumentLastRevisionMap[documentType];
-			UInt32					nextRevision = currentRevision.hasReference() ? **currentRevision + 1 : 1;
-
-	// Store
-	mDocumentLastRevisionMap.set(documentType, TNumber<UInt32>(nextRevision));
+	mDocumentLastRevisionByDocumentTypeLock.lock();
+	UInt32	nextRevision = mDocumentLastRevisionByDocumentType.getUInt32(documentType, 0) + 1;
+	mDocumentLastRevisionByDocumentType.set(documentType, nextRevision);
+	mDocumentLastRevisionByDocumentTypeLock.unlock();
 
 	return nextRevision;
 }
@@ -909,16 +910,18 @@ void CMDSEphemeral::updateAssociation(const CString& name, const TArray<Associat
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Iterate updates
+	mInternals->mAssociationMapLock.lock();
 	for (TIteratorD<AssociationUpdate> iterator = updates.getIterator(); iterator.hasValue(); iterator.advance()) {
 		// Check action
 		if (iterator->mAction == AssociationUpdate::kAdd)
 			// Add
-			mInternals->mAssocationMap.add(name,
+			mInternals->mAssociationMap.add(name,
 					CMDSEphemeralInternals::AssociationPair(iterator->mFromDocument.getID(),
 							iterator->mToDocument.getID()));
 //		else
 //			// Remove
 	}
+	mInternals->mAssociationMapLock.unlock();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -927,7 +930,8 @@ void CMDSEphemeral::iterateAssociationFrom(const CString& name, const CMDSDocume
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Retrieve association pairs
-	OR<TNArray<CMDSEphemeralInternals::AssociationPair> >	associationPairs = mInternals->mAssocationMap.get(name);
+	mInternals->mAssociationMapLock.lock();
+	OR<TNArray<CMDSEphemeralInternals::AssociationPair> >	associationPairs = mInternals->mAssociationMap.get(name);
 	if (associationPairs.hasReference()) {
 		// Iterate results
 		for (TIteratorD<CMDSEphemeralInternals::AssociationPair> iterator = associationPairs->getIterator();
@@ -945,6 +949,7 @@ void CMDSEphemeral::iterateAssociationFrom(const CString& name, const CMDSDocume
 			}
 		}
 	}
+	mInternals->mAssociationMapLock.unlock();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -953,7 +958,8 @@ void CMDSEphemeral::iterateAssociationTo(const CString& name, const CMDSDocument
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Retrieve association pairs
-	OR<TNArray<CMDSEphemeralInternals::AssociationPair> >	associationPairs = mInternals->mAssocationMap.get(name);
+	mInternals->mAssociationMapLock.lock();
+	OR<TNArray<CMDSEphemeralInternals::AssociationPair> >	associationPairs = mInternals->mAssociationMap.get(name);
 	if (associationPairs.hasReference()) {
 		// Iterate results
 		for (TIteratorD<CMDSEphemeralInternals::AssociationPair> iterator = associationPairs->getIterator();
@@ -971,6 +977,7 @@ void CMDSEphemeral::iterateAssociationTo(const CString& name, const CMDSDocument
 			}
 		}
 	}
+	mInternals->mAssociationMapLock.unlock();
 }
 
 ////----------------------------------------------------------------------------------------------------------------------
