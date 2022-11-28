@@ -253,8 +253,13 @@ public class MDSRemoteStorageCache {
 						if let data = $0.blob(for: attachmentInfoTableColumn) {
 							// Have info
 							attachmentInfoMap =
-									try! JSONSerialization.jsonObject(with: data, options: []) as!
-											MDSDocument.AttachmentInfoMap
+									(try! JSONSerialization.jsonObject(with: data, options: [])
+													as! [String : [String : Any]])
+											.mapValues({
+													MDSDocument.AttachmentInfo(id: ($0["id"] as? String) ?? "None",
+															revision: $0["revision"] as! Int,
+															info: $0["info"] as! [String : Any])
+											})
 						} else {
 							// Don't have info
 							attachmentInfoMap = [:]
