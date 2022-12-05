@@ -46,7 +46,7 @@ public protocol MDSDocumentStorage : AnyObject {
 	func newDocument<T : MDSDocument>(creationProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T) -> T
 
 	func document<T : MDSDocument>(for documentID :String) -> T?
-	func iterate<T : MDSDocument>(proc :(_ document : T) -> Void)
+	func iterate<T : MDSDocument>(activeOnly :Bool, proc :(_ document : T) -> Void)
 	func iterate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void)
 
 	func creationDate(for document :MDSDocument) -> Date
@@ -109,12 +109,12 @@ extension MDSDocumentStorage {
 	public func newDocument<T : MDSDocument>() -> T { newDocument() { T(id: $0, documentStorage: $1) } }
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documents<T :MDSDocument>() -> [T] {
+	public func documents<T :MDSDocument>(activeOnly :Bool = true) -> [T] {
 		// Setup
 		var	documents = [T]()
 
 		// Iterate all documents
-		iterate(proc: { (document :T) -> Void in documents.append(document) })
+		iterate(activeOnly: activeOnly, proc: { (document :T) -> Void in documents.append(document) })
 
 		return documents
 	}

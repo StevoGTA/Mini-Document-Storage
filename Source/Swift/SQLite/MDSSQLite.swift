@@ -183,14 +183,14 @@ public class MDSSQLite : MDSDocumentStorageServerHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func iterate<T : MDSDocument>(proc :(_ document : T) -> Void) {
+	public func iterate<T : MDSDocument>(activeOnly :Bool, proc :(_ document : T) -> Void) {
 		// Collect document IDs
 		var	documentIDs = [String]()
 		autoreleasepool() {
 			// Iterate document backing infos
 			iterateDocumentBackingInfos(documentType: T.documentType,
 					innerJoin: self.databaseManager.innerJoin(for: T.documentType),
-					where: self.databaseManager.where(forDocumentActive: true))
+					where:activeOnly ? self.databaseManager.where(forDocumentActive: true) : nil)
 					{ documentIDs.append($0.documentID); _ = $1 }
 		}
 

@@ -217,7 +217,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func iterate<T : MDSDocument>(proc :(_ document : T) -> Void) {
+	public func iterate<T : MDSDocument>(activeOnly :Bool, proc :(_ document : T) -> Void) {
 		// Setup
 		let	documentType = T.documentType
 		let	lastRevisionKey = "\(documentType)-lastRevision"
@@ -259,7 +259,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		self.remoteStorageCache.set(lastRevision, for: lastRevisionKey)
 
 		// Iterate document infos, again
-		self.remoteStorageCache.activeDocumentFullInfos(for: documentType).forEach()
+		self.remoteStorageCache.documentFullInfos(for: documentType, activeOnly: activeOnly).forEach()
 				{ proc(T(id: $0.documentID, documentStorage: self)) }
 	}
 

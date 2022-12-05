@@ -167,13 +167,13 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 	public func document<T : MDSDocument>(for documentID :String) -> T? { T(id: documentID, documentStorage: self) }
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func iterate<T : MDSDocument>(proc :(_ document : T) -> Void) {
+	public func iterate<T : MDSDocument>(activeOnly :Bool, proc :(_ document : T) -> Void) {
 		// Collect document IDs
 		let	documentIDs =
 					self.documentMapsLock.read() {
 						// Return IDs filtered by active
 						(self.documentIDsByTypeMap[T.documentType] ?? Set<String>())
-								.filter({ self.documentBackingByIDMap[$0]!.active })
+								.filter({ !activeOnly || self.documentBackingByIDMap[$0]!.active })
 					}
 
 		// Call proc on each document
