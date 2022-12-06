@@ -14,7 +14,7 @@ exports.createV1 = async (event) => {
 	// Setup
 	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
 	let	documentType = decodeURIComponent(event.pathParameters.documentType);
-	let	infos = (event.body) ? JSON.parse(event.body) : null;
+	let	infos = event.body ? JSON.parse(event.body) : null;
 
 	// Catch errors
 	try {
@@ -172,7 +172,7 @@ exports.updateV1 = async (event) => {
 	// Setup
 	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
 	let	documentType = decodeURIComponent(event.pathParameters.documentType);
-	let	infos = (event.body) ? JSON.parse(event.body) : null;
+	let	infos = event.body ? JSON.parse(event.body) : null;
 
 	// Catch errors
 	try {
@@ -221,7 +221,7 @@ exports.addAttachmentV1 = async (event) => {
 		// Add Document Attachment
 		let	[results, error] =
 					await documentStorage.documentAttachmentAdd(documentStorageID, documentType, documentID, info,
-							Buffer.from(content, 'base64'));
+							(content != null) ? Buffer.from(content, 'base64') : null);
 		if (results)
 			// Success
 			return {
@@ -307,7 +307,7 @@ exports.updateAttachmentV1 = async (event) => {
 		// Update Document Attachment
 		let	[results, error] =
 					await documentStorage.documentAttachmentUpdate(documentStorageID, documentType, documentID,
-							attachmentID, info, Buffer.from(content, 'base64'));
+							attachmentID, info, (content != null) ? Buffer.from(content, 'base64') : null);
 		if (results)
 			// Success
 			return {

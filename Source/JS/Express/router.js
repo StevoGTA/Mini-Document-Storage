@@ -21,7 +21,7 @@ export let router = express.Router();
 router.put('/v1/association/:documentStorageID', association.registerV1);
 router.put('/v1/association/:documentStorageID/:name', association.updateV1);
 router.get('/v1/association/:documentStorageID/:name', association.getDocumentsV1);
-router.get('/v1/association/:documentStorageID/:name/value', association.getValueV1);
+router.get('/v1/association/:documentStorageID/:name/:action', association.getValueV1);
 
 // Setup Cache routes
 router.put('/v1/cache/:documentStorageID', cache.registerV1);

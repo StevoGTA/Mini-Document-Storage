@@ -88,7 +88,7 @@ export async function getDocumentsV1(request, response) {
 	try {
 		// Get Association Document infos
 		let	[totalCount, results, error] =
-					await request.app.locals.documentStorage.associationGetDocumentInfos(documentStorageID, name,
+					await request.app.locals.documentStorage.associationGetDocuments(documentStorageID, name,
 							fromDocumentID, toDocumentID, startIndex, count, fullInfo == 1);
 		if (!error) {
 			// Success
@@ -130,9 +130,9 @@ export async function getValueV1(request, response) {
 	let	name = decodeURIComponent(request.params.name);
 	let	action = request.params.action;
 
-	let	fromDocumentID = decodeURIComponent(request.query.fromID);
-	let	cacheName = decodeURIComponent(request.query.cacheName);
-	let	cachedValueName = decodeURIComponent(request.query.cachedValueName);
+	let	fromDocumentID = request.query.fromID ? decodeURIComponent(request.query.fromID) : null;
+	let	cacheName = request.query.cacheName ? decodeURIComponent(request.query.cacheName) : null;
+	let	cachedValueName = request.query.cachedValueName ? decodeURIComponent(request.query.cachedValueName) : null;
 
 	// Catch errors
 	try {

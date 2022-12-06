@@ -20,7 +20,7 @@ class CollectionUnitTests : XCTestCase {
 		// Perform
 		let	error =
 					config.httpEndpointClient.collectionRegister(documentStorageID: "ABC", name: "ABC",
-							documentType: "ABC", isIncludedSelector: "ABC")
+							documentType: "ABC", isIncludedSelector: "documentPropertyIsValue()")
 
 		// Evaluate results
 		XCTAssertNotNil(error, "did not receive error")
@@ -228,7 +228,7 @@ class CollectionUnitTests : XCTestCase {
 										"documentType": config.documentType,
 										"relevantProperties": [],
 										"isUpToDate": 1,
-										"isIncludedSelector": "ABC",
+										"isIncludedSelector": "documentPropertyIsValue()",
 								  ])
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
@@ -308,7 +308,7 @@ class CollectionUnitTests : XCTestCase {
 		// Perform
 		let	(info, error) =
 					config.httpEndpointClient.collectionGetDocumentCount(documentStorageID: config.documentStorageID,
-							name: "ABC")
+							name: UUID().uuidString)
 
 		// Evaluate results
 		XCTAssertNil(info, "received info")
@@ -359,11 +359,12 @@ class CollectionUnitTests : XCTestCase {
 	func testGetDocumentInfosUnknownName() throws {
 		// Setup
 		let	config = Config.shared
+		let	name = UUID().uuidString
 
 		// Perform
 		let	(isUpToDate, info, error) =
 					config.httpEndpointClient.collectionGetDocumentInfo(documentStorageID: config.documentStorageID,
-							name: "ABC")
+							name: name)
 
 		// Evaluate results
 		XCTAssertNil(isUpToDate, "received isUpToDate")
@@ -375,7 +376,7 @@ class CollectionUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown collection: ABC",
+					XCTAssertEqual(message, "Unknown collection: \(name)",
 							"did not receive expected error message: \(message)")
 
 				default:
@@ -390,7 +391,7 @@ class CollectionUnitTests : XCTestCase {
 		// Setup
 		let	collectionName = UUID().uuidString
 		let	config = Config.shared
-		let	property1 = UUID().base64EncodedString
+		let	property1 = UUID().uuidString
 
 		// Create Test document
 		let	(_, createError) =
@@ -440,7 +441,7 @@ class CollectionUnitTests : XCTestCase {
 		// Setup
 		let	collectionName = UUID().uuidString
 		let	config = Config.shared
-		let	property1 = UUID().base64EncodedString
+		let	property1 = UUID().uuidString
 
 		// Create Test document
 		let	(_, createError) =
@@ -516,11 +517,12 @@ class CollectionUnitTests : XCTestCase {
 	func testGetDocumentsUnknownName() throws {
 		// Setup
 		let	config = Config.shared
+		let	name = UUID().uuidString
 
 		// Perform
 		let	(isUpToDate, info, error) =
 					config.httpEndpointClient.collectionGetDocument(documentStorageID: config.documentStorageID,
-							name: "ABC")
+							name: name)
 
 		// Evaluate results
 		XCTAssertNil(isUpToDate, "received isUpToDate")
@@ -532,7 +534,7 @@ class CollectionUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown collection: ABC",
+					XCTAssertEqual(message, "Unknown collection: \(name)",
 							"did not receive expected error message: \(message)")
 
 				default:
@@ -547,7 +549,7 @@ class CollectionUnitTests : XCTestCase {
 		// Setup
 		let	collectionName = UUID().uuidString
 		let	config = Config.shared
-		let	property1 = UUID().base64EncodedString
+		let	property1 = UUID().uuidString
 
 		// Create Test document
 		let	(_, createError) =
@@ -597,7 +599,7 @@ class CollectionUnitTests : XCTestCase {
 		// Setup
 		let	collectionName = UUID().uuidString
 		let	config = Config.shared
-		let	property1 = UUID().base64EncodedString
+		let	property1 = UUID().uuidString
 
 		// Create Test document
 		let	(_, createError) =

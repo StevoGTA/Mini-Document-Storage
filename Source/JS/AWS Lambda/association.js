@@ -13,7 +13,7 @@ let	{documentStorage} = require('./globals');
 exports.registerV1 = async (event) => {
 	// Setup
 	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
-	let	info = (event.body) ? JSON.parse(event.body) : null;
+	let	info = event.body ? JSON.parse(event.body) : null;
 
 	// Catch errors
 	try {
@@ -50,7 +50,7 @@ exports.updateV1 = async (event) => {
 	// Setup
 	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
 	let	name = decodeURIComponent(event.pathParameters.name);
-	let	infos = (event.body) ? JSON.parse(event.body) : null;
+	let	infos = event.body ? JSON.parse(event.body) : null;
 
 	// Catch errors
 	try {
@@ -99,8 +99,8 @@ exports.getDocumentsV1 = async (event) => {
 	try {
 		// Get document infos
 		let	[totalCount, results, error] =
-					await documentStorage.associationGetDocumentInfos(documentStorageID, name, fromDocumentID,
-							toDocumentID, startIndex, count, fullInfo == 1);
+					await documentStorage.associationGetDocuments(documentStorageID, name, fromDocumentID, toDocumentID,
+							startIndex, count, fullInfo == 1);
 		if (!error) {
 			// Success
 			let	endIndex = startIndex + Object.keys(results).length - 1;

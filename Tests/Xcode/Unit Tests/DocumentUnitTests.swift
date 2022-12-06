@@ -20,7 +20,8 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	(documentInfos, error) =
 					config.httpEndpointClient.documentCreate(documentStorageID: "ABC",
-							documentType: config.documentType, documentCreateInfos:[])
+							documentType: config.documentType,
+							documentCreateInfos: [MDSDocument.CreateInfo(propertyMap: ["key": "value"])])
 
 		// Evaluate results
 		XCTAssertNil(documentInfos, "received documentInfos")
@@ -47,7 +48,7 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	(documentInfos, error) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentCreateInfos:[])
+							documentType: config.documentType, documentCreateInfos: [])
 
 		// Evaluate results
 		XCTAssertNil(documentInfos, "received documentInfos")
@@ -208,11 +209,12 @@ class DocumentUnitTests : XCTestCase {
 	func testGetCountInvalidDocumentType() throws {
 		// Setup
 		let	config = Config.shared
+		let	documentType = UUID().uuidString
 
 		// Perform
 		let	(count, error) =
 					config.httpEndpointClient.documentGetCount(documentStorageID: config.documentStorageID,
-							documentType: "ABC")
+							documentType: documentType)
 
 		// Evaluate results
 		XCTAssertNil(count, "received count")
@@ -262,11 +264,12 @@ class DocumentUnitTests : XCTestCase {
 	func testGetSinceRevisionUnknownDocumentType() throws {
 		// Setup
 		let	config = Config.shared
+		let	documentType = UUID().uuidString
 
 		// Perform
 		let	(info, error) =
 					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
-							documentType: "ABC", sinceRevision: 0)
+							documentType: documentType, sinceRevision: 0)
 
 		// Evaluate results
 		XCTAssertNil(info, "received info")
@@ -276,7 +279,8 @@ class DocumentUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown documentType: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown documentType: \(documentType)",
+							"did not receive expected error message")
 
 				default:
 					// Other error
@@ -390,11 +394,12 @@ class DocumentUnitTests : XCTestCase {
 	func testGetIDsUnknownDocumentType() throws {
 		// Setup
 		let	config = Config.shared
+		let	documentType = UUID().uuidString
 
 		// Perform
 		let	(documentInfos, error) =
 					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
-							documentType: "ABC", documentIDs: ["ABC"])
+							documentType: documentType, documentIDs: ["ABC"])
 
 		// Evaluate results
 		XCTAssertNil(documentInfos, "received documentInfos")
@@ -404,7 +409,8 @@ class DocumentUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown documentType: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown documentType: \(documentType)",
+							"did not receive expected error message")
 
 				default:
 					// Other error
@@ -444,6 +450,7 @@ class DocumentUnitTests : XCTestCase {
 	func testGetIDsUnknownID() throws {
 		// Setup
 		let	config = Config.shared
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
 
 		// Create Test document
 		let	(_, createError) =
@@ -456,7 +463,7 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	(documentInfos, error) =
 					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentIDs: ["ABC"])
+							documentType: config.documentType, documentIDs: [documentID])
 
 		// Evaluate results
 		XCTAssertNil(documentInfos, "received documentInfos")
@@ -466,7 +473,8 @@ class DocumentUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown documentID: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown documentID: \(documentID)",
+							"did not receive expected error message")
 
 				default:
 					// Other error
@@ -506,11 +514,13 @@ class DocumentUnitTests : XCTestCase {
 	func testUpdateUnknownDocumentType() throws {
 		// Setup
 		let	config = Config.shared
+		let	documentType = UUID().uuidString
 
 		// Perform
 		let	(documentInfos, error) =
 					config.httpEndpointClient.documentUpdate(documentStorageID: config.documentStorageID,
-							documentType: "ABC", documentUpdateInfos: [])
+							documentType: documentType,
+							documentUpdateInfos: [MDSDocument.UpdateInfo(documentID: "ABC")])
 
 		// Evaluate results
 		XCTAssertNil(documentInfos, "received documentInfos")
@@ -520,7 +530,8 @@ class DocumentUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown documentType: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown documentType: \(documentType)",
+							"did not receive expected error message")
 
 				default:
 					// Other error
@@ -583,7 +594,7 @@ class DocumentUnitTests : XCTestCase {
 	func testUpdateMissingUpdated() throws {
 		// Setup
 		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
 
 		// Create document
 		let	(createDocumentInfos, createError) =
@@ -623,7 +634,7 @@ class DocumentUnitTests : XCTestCase {
 	func testUpdateMissingRemoved() throws {
 		// Setup
 		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
 
 		// Create document
 		let	(createDocumentInfos, createError) =
@@ -663,7 +674,7 @@ class DocumentUnitTests : XCTestCase {
 	func testUpdateMissingActive() throws {
 		// Setup
 		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
 
 		// Create document
 		let	(createDocumentInfos, createError) =
@@ -757,6 +768,7 @@ class DocumentUnitTests : XCTestCase {
 	func testAttachmentAddUnknownDocumentID() throws {
 		// Setup
 		let	config = Config.shared
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
 
 		// Create document
 		let	(createDocumentInfos, createError) =
@@ -771,7 +783,7 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	(info, error) =
 					config.httpEndpointClient.documentAttachmentAdd(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentID: "ABC", info: [:],
+							documentType: config.documentType, documentID: documentID, info: [:],
 							content: Data(capacity: 0))
 
 		// Evaluate results
@@ -782,7 +794,8 @@ class DocumentUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown documentID: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown documentID: \(documentID)",
+							"did not receive expected error message")
 
 				default:
 					// Other error
@@ -795,8 +808,7 @@ class DocumentUnitTests : XCTestCase {
 	func testAttachmentAddMissingInfo() throws {
 		// Setup
 		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString
-		let	documentIDUse = documentID.replacingOccurrences(of: "/", with: "_")
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
 
 		// Create document
 		let	(createDocumentInfos, createError) =
@@ -812,7 +824,7 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSJSONHTTPEndpointRequest<[String : Any]>(method: .post,
-							path: "/v1/document/\(config.documentStorageID)/\(config.documentType)/\(documentIDUse)/attachment",
+							path: "/v1/document/\(config.documentStorageID)/\(config.documentType)/\(documentID)/attachment",
 							jsonBody: ["content": Data(capacity: 0).base64EncodedString()])
 		let	(info, error) =
 					DispatchQueue.performBlocking() { completionProc in
@@ -841,8 +853,7 @@ class DocumentUnitTests : XCTestCase {
 	func testAttachmentAddMissingContent() throws {
 		// Setup
 		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString
-		let	documentIDUse = documentID.replacingOccurrences(of: "/", with: "_")
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
 
 		// Create document
 		let	(createDocumentInfos, createError) =
@@ -858,7 +869,7 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSJSONHTTPEndpointRequest<[String : Any]>(method: .post,
-							path: "/v1/document/\(config.documentStorageID)/\(config.documentType)/\(documentIDUse)/attachment",
+							path: "/v1/document/\(config.documentStorageID)/\(config.documentType)/\(documentID)/attachment",
 							jsonBody: ["info": [:]])
 		let	(info, error) =
 					DispatchQueue.performBlocking() { completionProc in
@@ -914,11 +925,12 @@ class DocumentUnitTests : XCTestCase {
 	func testAttachmentGetUnknownDocumentType() throws {
 		// Setup
 		let	config = Config.shared
+		let	documentType = UUID().uuidString
 
 		// Perform
 		let	(content, error) =
 					config.httpEndpointClient.documentAttachmentGet(documentStorageID: config.documentStorageID,
-							documentType: "ABC", documentID: "ABC", attachmentID: "ABC")
+							documentType: documentType, documentID: "ABC", attachmentID: "ABC")
 
 		// Evaluate results
 		XCTAssertNil(content, "received content")
@@ -928,7 +940,8 @@ class DocumentUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown documentType: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown documentType: \(documentType)",
+							"did not receive expected error message")
 
 				default:
 					// Other error
@@ -941,6 +954,7 @@ class DocumentUnitTests : XCTestCase {
 	func testAttachmentGetUnknownDocumentID() throws {
 		// Setup
 		let	config = Config.shared
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
 
 		// Document create
 		let	(_, createError) =
@@ -953,7 +967,7 @@ class DocumentUnitTests : XCTestCase {
 		// Document attachment get
 		let	(attachmentGetContent, attachmentGetError) =
 					config.httpEndpointClient.documentAttachmentGet(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentID: "ABC", attachmentID: "ABC")
+							documentType: config.documentType, documentID: documentID, attachmentID: "ABC")
 
 		// Evaluate results
 		XCTAssertNil(attachmentGetContent, "received content")
@@ -963,7 +977,8 @@ class DocumentUnitTests : XCTestCase {
 			switch attachmentGetError! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown documentID: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown documentID: \(documentID)",
+							"did not receive expected error message")
 
 				default:
 					// Other error
@@ -976,7 +991,7 @@ class DocumentUnitTests : XCTestCase {
 	func testAttachmentGetUnknownAttachmentID() throws {
 		// Setup
 		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
 
 		// Create document
 		let	(_, createError) =
@@ -1041,11 +1056,12 @@ class DocumentUnitTests : XCTestCase {
 	func testAttachmentUpdateUnknownDocumentType() throws {
 		// Setup
 		let	config = Config.shared
+		let	documentType = UUID().uuidString
 
 		// Perform
 		let	(info, error) =
 					config.httpEndpointClient.documentAttachmentUpdate(documentStorageID: config.documentStorageID,
-							documentType: "ABC", documentID: "ABC", attachmentID: "ABC", info: [:],
+							documentType: documentType, documentID: "ABC", attachmentID: "ABC", info: [:],
 							content: Data(capacity: 0))
 
 		// Evaluate results
@@ -1056,7 +1072,8 @@ class DocumentUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown documentType: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown documentType: \(documentType)",
+							"did not receive expected error message")
 
 				default:
 					// Other error
@@ -1069,51 +1086,13 @@ class DocumentUnitTests : XCTestCase {
 	func testAttachmentUpdateUnknownDocumentID() throws {
 		// Setup
 		let	config = Config.shared
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
 
 		// Create document
 		let	(_, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
 							documentType: config.documentType,
 							documentCreateInfos: [MDSDocument.CreateInfo(propertyMap: ["key": "value"])])
-		XCTAssertNil(createError, "create received error \(createError!)")
-		guard createError == nil else { return }
-
-		// Perform
-		let	(info, error) =
-					config.httpEndpointClient.documentAttachmentUpdate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentID: "ABC", attachmentID: "ABC", info: [:],
-							content: Data(capacity: 0))
-
-		// Evaluate results
-		XCTAssertNil(info, "received info")
-
-		XCTAssertNotNil(error, "did not receive error")
-		if error != nil {
-			switch error! {
-				case MDSError.invalidRequest(let message):
-					// Expected error
-					XCTAssertEqual(message, "Unknown documentID: ABC", "did not receive expected error message")
-
-				default:
-					// Other error
-					XCTFail("received unexpected error: \(error!)")
-			}
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func testAttachmentUpdateUnknownAttachmentID() throws {
-		// Setup
-		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString
-
-		// Create document
-		let	(createDocumentInfos, createError) =
-					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
-							documentCreateInfos:
-									[MDSDocument.CreateInfo(documentID: documentID, propertyMap: ["key": "value"])])
-		XCTAssertNotNil(createDocumentInfos, "create did not receive documentInfos")
 		XCTAssertNil(createError, "create received error \(createError!)")
 		guard createError == nil else { return }
 
@@ -1131,7 +1110,49 @@ class DocumentUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown attachmentID: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown documentID: \(documentID)",
+							"did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testAttachmentUpdateUnknownAttachmentID() throws {
+		// Setup
+		let	config = Config.shared
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	attachmentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+
+		// Create document
+		let	(createDocumentInfos, createError) =
+					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
+							documentType: config.documentType,
+							documentCreateInfos:
+									[MDSDocument.CreateInfo(documentID: documentID, propertyMap: ["key": "value"])])
+		XCTAssertNotNil(createDocumentInfos, "create did not receive documentInfos")
+		XCTAssertNil(createError, "create received error \(createError!)")
+		guard createError == nil else { return }
+
+		// Perform
+		let	(info, error) =
+					config.httpEndpointClient.documentAttachmentUpdate(documentStorageID: config.documentStorageID,
+							documentType: config.documentType, documentID: documentID, attachmentID: attachmentID,
+							info: [:], content: Data(capacity: 0))
+
+		// Evaluate results
+		XCTAssertNil(info, "received info")
+
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Unknown attachmentID: \(attachmentID)",
+							"did not receive expected error message")
 
 				default:
 					// Other error
@@ -1144,8 +1165,7 @@ class DocumentUnitTests : XCTestCase {
 	func testAttachmentUpdateMissingInfo() throws {
 		// Setup
 		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString
-		let	documentIDUse = documentID.replacingOccurrences(of: "/", with: "_")
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
 
 		// Create document
 		let	(createDocumentInfos, createError) =
@@ -1175,7 +1195,7 @@ class DocumentUnitTests : XCTestCase {
 		// Update attachment
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSJSONHTTPEndpointRequest<[String : Any]>(method: .patch,
-							path: "/v1/document/\(config.documentStorageID)/\(config.documentType)/\(documentIDUse)/attachment/\(attachmentIDUse)",
+							path: "/v1/document/\(config.documentStorageID)/\(config.documentType)/\(documentID)/attachment/\(attachmentIDUse)",
 							jsonBody: ["content": "content2".data(using: .utf8)!.base64EncodedString()])
 		let	(updateAttachmentInfo, updateAttachmentError) =
 					DispatchQueue.performBlocking() { completionProc in
@@ -1204,8 +1224,7 @@ class DocumentUnitTests : XCTestCase {
 	func testAttachmentUpdateMissingContent() throws {
 		// Setup
 		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString
-		let	documentIDUse = documentID.replacingOccurrences(of: "/", with: "_")
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
 
 		// Create document
 		let	(createDocumentInfos, createError) =
@@ -1235,7 +1254,7 @@ class DocumentUnitTests : XCTestCase {
 		// Update attachment
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSJSONHTTPEndpointRequest<[String : Any]>(method: .patch,
-							path: "/v1/document/\(config.documentStorageID)/\(config.documentType)/\(documentIDUse)/attachment/\(attachmentIDUse)",
+							path: "/v1/document/\(config.documentStorageID)/\(config.documentType)/\(documentID)/attachment/\(attachmentIDUse)",
 							jsonBody: ["info": [:]])
 		let	(updateAttachmentInfo, updateAttachmentError) =
 					DispatchQueue.performBlocking() { completionProc in
@@ -1289,11 +1308,12 @@ class DocumentUnitTests : XCTestCase {
 	func testAttachmentRemoveUnknownDocumentType() throws {
 		// Setup
 		let	config = Config.shared
+		let	documentType = UUID().uuidString
 
 		// Perform
 		let	error =
 					config.httpEndpointClient.documentAttachmentRemove(documentStorageID: config.documentStorageID,
-							documentType: "ABC", documentID: "ABC", attachmentID: "ABC")
+							documentType: documentType, documentID: "ABC", attachmentID: "ABC")
 
 		// Evaluate results
 		XCTAssertNotNil(error, "did not receive error")
@@ -1301,7 +1321,8 @@ class DocumentUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown documentType: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown documentType: \(documentType)",
+							"did not receive expected error message")
 
 				default:
 					// Other error
@@ -1314,6 +1335,7 @@ class DocumentUnitTests : XCTestCase {
 	func testAttachmentRemoveUnknownDocumentID() throws {
 		// Setup
 		let	config = Config.shared
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
 
 		// Create Test document
 		let	(_, createError) =
@@ -1325,7 +1347,7 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	error =
 					config.httpEndpointClient.documentAttachmentRemove(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentID: "ABC", attachmentID: "ABC")
+							documentType: config.documentType, documentID: documentID, attachmentID: "ABC")
 
 		// Evaluate results
 		XCTAssertNotNil(error, "did not receive error")
@@ -1333,7 +1355,8 @@ class DocumentUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown documentID: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown documentID: \(documentID)",
+							"did not receive expected error message")
 
 				default:
 					// Other error
@@ -1346,7 +1369,8 @@ class DocumentUnitTests : XCTestCase {
 	func testAttachmentRemoveUnknownAttachmentID() throws {
 		// Setup
 		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	attachmentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
 
 		// Create document
 		let	(createDocumentInfos, createError) =
@@ -1362,7 +1386,7 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	error =
 					config.httpEndpointClient.documentAttachmentRemove(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentID: documentID, attachmentID: "ABC")
+							documentType: config.documentType, documentID: documentID, attachmentID: attachmentID)
 
 		// Evaluate results
 		XCTAssertNotNil(error, "did not receive error")
@@ -1370,7 +1394,8 @@ class DocumentUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown attachmentID: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown attachmentID: \(attachmentID)",
+							"did not receive expected error message")
 
 				default:
 					// Other error

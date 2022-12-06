@@ -13,7 +13,7 @@ let	{documentStorage} = require('./globals');
 exports.setV1 = async (event) => {
 	// Setup
 	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
-	let	info = (event.body) ? JSON.parse(event.body) : null;
+	let	info = event.body ? JSON.parse(event.body) : null;
 
 	// Catch errors
 	try {

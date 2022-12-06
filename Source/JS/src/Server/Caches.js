@@ -59,6 +59,8 @@ module.exports = class Caches {
 		let	valueInfos = info.valueInfos;
 		if (!valueInfos)
 			return 'Missing valueInfos';
+		if (!Array.isArray(valueInfos))
+			return 'Invalid valueInfos';
 
 		for (let valueInfo of valueInfos) {
 			// Setup
@@ -75,10 +77,17 @@ module.exports = class Caches {
 			let	selector = valueInfo.selector;
 			if (!selector)
 				return 'Missing value selector';
+			if (!this.valueSelectorInfo[selector])
+				return 'Invalid value selector: ' + selector;
 		}
 
 		// Setup
 		let	internals = this.internals;
+
+		// Validate document type
+		let	lastDocumentRevision = await internals.documents.getLastRevision(statementPerformer, documentType);
+		if (lastDocumentRevision == null)
+			return 'Unknown documentType: ' + documentType;
 
 		// Check if need to create Caches table
 		await internals.createTableIfNeeded(statementPerformer, this.cachesTable);
@@ -106,9 +115,7 @@ module.exports = class Caches {
 			// Have existing
 			if (!util.isDeepStrictEqual(valueInfos, JSON.parse(results[0].info.toString()))) {
 				// Update
-				let	cache =
-							this.createCache(statementPerformer, name, documentType, relevantProperties, valueInfos,
-									0);
+				let	cache = this.createCache(statementPerformer, name, documentType, relevantProperties, valueInfos, 0);
 
 				statementPerformer.queueReplace(this.cachesTable,
 						[
@@ -174,7 +181,7 @@ module.exports = class Caches {
 				return [cache, null];
 			} else
 				// Don't have
-				return [null, 'No Cache found with name ' + name];
+				return [null, 'Unknown cache: ' + name];
 		} catch(error) {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))

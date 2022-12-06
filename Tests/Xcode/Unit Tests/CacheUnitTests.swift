@@ -20,7 +20,8 @@ class CacheUnitTests : XCTestCase {
 		// Perform
 		let	error =
 					config.httpEndpointClient.cacheRegister(documentStorageID: "ABC", name: "ABC",
-							documentType: Child.documentType, valueInfos: [("ABC", .integer, "ABC")])
+							documentType: Child.documentType,
+							valueInfos: [("ABC", .integer, "integerValueForProperty()")])
 
 		// Evaluate results
 		XCTAssertNotNil(error, "did not receive error")
@@ -127,7 +128,7 @@ class CacheUnitTests : XCTestCase {
 		// Perform
 		let	error =
 					config.httpEndpointClient.cacheRegister(documentStorageID: config.documentStorageID, name: "ABC",
-							documentType: documentType, valueInfos: [("ABC", .integer, "ABC")])
+							documentType: documentType, valueInfos: [("ABC", .integer, "integerValueForProperty()")])
 
 		// Evaluate results
 		XCTAssertNotNil(error, "did not receive error")
@@ -234,12 +235,7 @@ class CacheUnitTests : XCTestCase {
 										"name": "ABC",
 										"documentType": config.documentType,
 										"relevantProperties": [],
-										"valueInfos":
-												[
-													"name": "ABC",
-													"valueType": "ABC",
-													"selector": "ABC",
-												],
+										"valueInfos": [:],
 									  ])
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
@@ -253,7 +249,81 @@ class CacheUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Missing valueInfos", "did not receive expected error message: \(message)")
+					XCTAssertEqual(message, "Invalid valueInfos", "did not receive expected error message: \(message)")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testRegisterInvalidValueInfoValueType() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	httpEndpointRequest =
+					MDSHTTPServices.MDSSuccessHTTPEndpointRequest(method: .put,
+							path: "/v1/cache/\(config.documentStorageID)",
+							jsonBody: [
+										"name": "ABC",
+										"documentType": config.documentType,
+										"relevantProperties": [],
+										"valueInfos": [["name": "ABC", "valueType": "ABC", "selector": "ABC"]],
+									  ])
+		let	error =
+					DispatchQueue.performBlocking() { completionProc in
+						// Queue
+						config.httpEndpointClient.queue(httpEndpointRequest) { completionProc($0) }
+					}
+
+		// Evaluate results
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Unsupported value valueType: ABC",
+							"did not receive expected error message: \(message)")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testRegisterInvalidValueInfoSelector() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	httpEndpointRequest =
+					MDSHTTPServices.MDSSuccessHTTPEndpointRequest(method: .put,
+							path: "/v1/cache/\(config.documentStorageID)",
+							jsonBody: [
+										"name": "ABC",
+										"documentType": config.documentType,
+										"relevantProperties": [],
+										"valueInfos": [["name": "ABC", "valueType": "integer", "selector": "ABC"]],
+									  ])
+		let	error =
+					DispatchQueue.performBlocking() { completionProc in
+						// Queue
+						config.httpEndpointClient.queue(httpEndpointRequest) { completionProc($0) }
+					}
+
+		// Evaluate results
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Invalid value selector: ABC",
+							"did not receive expected error message: \(message)")
 
 				default:
 					// Other error
@@ -270,7 +340,8 @@ class CacheUnitTests : XCTestCase {
 		// Perform
 		let	error =
 					config.httpEndpointClient.cacheRegister(documentStorageID: config.documentStorageID, name: "ABC",
-							documentType: Child.documentType, valueInfos: [("ABC", .integer, "ABC")])
+							documentType: Child.documentType,
+							valueInfos: [("ABC", .integer, "integerValueForProperty()")])
 
 		// Evaluate results
 		XCTAssertNil(error, "received error")

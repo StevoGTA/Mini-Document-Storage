@@ -64,6 +64,8 @@ module.exports = class Collections {
 		let	isIncludedSelector = info.isIncludedSelector;
 		if (!isIncludedSelector)
 			return 'Missing isIncludedSelector';
+		if (!this.isIncludedSelectorInfo[isIncludedSelector])
+			return 'Invalid isIncludedSelector: ' + isIncludedSelector;
 
 		let	isIncludedSelectorInfo = info.isIncludedSelectorInfo;
 		if (!isIncludedSelectorInfo)
@@ -71,6 +73,11 @@ module.exports = class Collections {
 
 		// Setup
 		let	internals = this.internals;
+
+		// Validate document type
+		var	lastDocumentRevision = await internals.documents.getLastRevision(statementPerformer, documentType);
+		if (lastDocumentRevision == null)
+			return 'Unknown documentType: ' + documentType;
 
 		// Check if need to create Collections table
 		await internals.createTableIfNeeded(statementPerformer, this.collectionsTable);
@@ -86,10 +93,10 @@ module.exports = class Collections {
 							statementPerformer.where(this.collectionsTable.nameTableColumn, name));
 		if (results.length == 0) {
 			// Add
-			let	lastDocumentRevision =
-						isUpToDate ?
-								((await internals.documents.getLastRevision(statementPerformer, documentType)) || 0) :
-								0;
+			if (!isUpToDate)
+				// Reset last document revision
+				lastDocumentRevision = 0;
+			
 			let	collection =
 						new Collection(statementPerformer, name, documentType, relevantProperties,
 								this.isIncludedSelectorInfo[isIncludedSelector], isIncludedSelectorInfo,
@@ -110,7 +117,7 @@ module.exports = class Collections {
 			collection.queueCreate(statementPerformer);
 		} else if (isIncludedSelector != results[0].isIncludedSelector) {
 			// Update to new isIncludedSelector
-			let	lastDocumentRevision = isUpToDate ? results[0].lastDocumentRevision : 0;
+			lastDocumentRevision = isUpToDate ? results[0].lastDocumentRevision : 0;
 			let	collection =
 						new Collection(statementPerformer, name, documentType, relevantProperties,
 								this.isIncludedSelectorInfo[isIncludedSelector], isIncludedSelectorInfo,
@@ -189,6 +196,12 @@ module.exports = class Collections {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async getDocuments(statementPerformer, name, startIndex, count, fullInfo) {
+		// Validate
+		if (startIndex < 0)
+			return [null, null, null, 'Invalid startIndex: ' + startIndex];
+		if ((count != null) && (count < 1))
+			return [null, null, null, 'Invalid count: ' + count];
+
 		// Setup
 		let	internals = this.internals;
 
@@ -305,7 +318,7 @@ module.exports = class Collections {
 				return [collection, null];
 			} else
 				// Don't have
-				return [null, 'No Collection found with name ' + name];
+				return [null, 'Unknown collection: ' + name];
 		} catch(error) {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))

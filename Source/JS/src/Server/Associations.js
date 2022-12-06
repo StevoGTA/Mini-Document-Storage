@@ -57,6 +57,15 @@ module.exports = class Associations {
 		// Setup
 		let	internals = this.internals;
 
+		// Validate document types
+		var	lastDocumentRevision = await internals.documents.getLastRevision(statementPerformer, fromDocumentType);
+		if (lastDocumentRevision == null)
+			return 'Unknown documentType: ' + fromDocumentType;
+
+		lastDocumentRevision = await internals.documents.getLastRevision(statementPerformer, toDocumentType);
+		if (lastDocumentRevision == null)
+			return 'Unknown documentType: ' + toDocumentType;
+
 		// Check if need to create Associations table
 		await internals.createTableIfNeeded(statementPerformer, this.associationsTable);
 
@@ -254,7 +263,7 @@ module.exports = class Associations {
 		if (!action)
 			return [null, null, 'Missing action'];
 		if (action != 'sum')
-			return [null, null, 'Action ' + action + ' not supported.'];
+			return [null, null, 'Invalid action'];
 		if (!fromDocumentID)
 			return [null, null, 'Missing fromDocumentID'];
 		if (!cacheName)
@@ -265,23 +274,27 @@ module.exports = class Associations {
 		// Setup
 		let	internals = this.internals;
 		
+		// Get association
+		let	[association, associationError] = await this.getForName(statementPerformer, name);
+		if (associationError)
+			// Error
+			return [null, null, associationError];
+		
 		// Get cache
 		let	[cache, cacheError] = await internals.caches.getForName(statementPerformer, cacheName);
 		if (cacheError)
 			// Error
 			return [null, null, cacheError];
 		
+		if (!cache.tableColumn(cachedValueName))
+			// Unknown cache valueName
+			return [null, null, 'Unknown cache valueName: ' + cachedValueName];
+		
 		// Get document type last revision
 		let	documentTypeLastRevision = await internals.documents.getLastRevision(statementPerformer, cache.type);
 
 		// Check if up to date
 		if (cache.lastDocumentRevision == documentTypeLastRevision) {
-			// Get association
-			let	[association, associationError] = await this.getForName(statementPerformer, name);
-			if (associationError)
-				// Error
-				return [null, null, associationError];
-			
 			// Get from document info
 			let	[ids, idsError] =
 						await internals.documents.getIDsForDocumentIDs(statementPerformer, association.fromType,
@@ -334,7 +347,7 @@ module.exports = class Associations {
 				return [association, null];
 			} else
 				// Error
-				return [null, 'No Association found with name ' + name];
+				return [null, 'Unknown association: ' + name];
 		} catch (error) {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))

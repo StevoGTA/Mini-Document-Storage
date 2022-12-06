@@ -200,7 +200,7 @@ export async function addAttachmentV1(request, response) {
 		// Add Document Attachment
 		let	[results, error] =
 					await request.app.locals.documentStorage.documentAttachmentAdd(documentStorageID, documentType,
-							documentID, info, Buffer.from(content, 'base64'));
+							documentID, info, (content != null) ? Buffer.from(content, 'base64') : null);
 		if (results)
 			// Success
 			response
@@ -276,7 +276,7 @@ export async function updateAttachmentV1(request, response) {
 		// Update Document Attachment
 		let	[results, error] =
 					await request.app.locals.documentStorage.documentAttachmentUpdate(documentStorageID, documentType,
-							documentID, attachmentID, info, Buffer.from(content, 'base64'));
+							documentID, attachmentID, info, (content != null) ? Buffer.from(content, 'base64') : null);
 		if (results)
 			// Success
 			response

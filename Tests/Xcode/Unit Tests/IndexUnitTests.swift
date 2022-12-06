@@ -20,7 +20,7 @@ class IndexUnitTests : XCTestCase {
 		// Perform
 		let	error =
 					config.httpEndpointClient.indexRegister(documentStorageID: "ABC", name: "ABC", documentType: "ABC",
-							keysSelector: "ABC")
+							keysSelector: "keysForDocumentProperty()")
 
 		// Evaluate results
 		XCTAssertNotNil(error, "did not receive error")
@@ -229,7 +229,7 @@ class IndexUnitTests : XCTestCase {
 										"documentType": config.documentType,
 										"relevantProperties": [],
 										"isUpToDate": 1,
-										"keysSelector": "ABC",
+										"keysSelector": "keysForDocumentProperty()",
 									  ])
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
@@ -269,7 +269,8 @@ class IndexUnitTests : XCTestCase {
 		// Perform
 		let	error =
 					config.httpEndpointClient.indexRegister(documentStorageID: config.documentStorageID,
-							name: "ABC", documentType: config.documentType, keysSelector: "keysForDocumentProperty()")
+							name: UUID().uuidString, documentType: config.documentType,
+							keysSelector: "keysForDocumentProperty()")
 
 		// Evaluate results
 		XCTAssertNil(error, "received unexpected error: \(error!)")
@@ -307,11 +308,12 @@ class IndexUnitTests : XCTestCase {
 	func testGetDocumentInfosUnknownName() throws {
 		// Setup
 		let	config = Config.shared
+		let	name = UUID().uuidString
 
 		// Perform
 		let	(isUpToDate, info, error) =
 					config.httpEndpointClient.indexGetDocumentInfo(documentStorageID: config.documentStorageID,
-							name: "ABC", keys: ["ABC"])
+							name: name, keys: ["ABC"])
 
 		// Evaluate results
 		XCTAssertNil(isUpToDate, "received isUpToDate")
@@ -323,7 +325,8 @@ class IndexUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown index: ABC", "did not receive expected error message: \(message)")
+					XCTAssertEqual(message, "Unknown index: \(name)",
+							"did not receive expected error message: \(message)")
 
 				default:
 					// Other error
@@ -364,10 +367,11 @@ class IndexUnitTests : XCTestCase {
 	func testGetDocumentsUnknownName() throws {
 		// Setup
 		let	config = Config.shared
+		let	name = UUID().uuidString
 
 		// Perform
 		let	(isUpToDate, info, error) =
-					config.httpEndpointClient.indexGetDocument(documentStorageID: config.documentStorageID, name: "ABC",
+					config.httpEndpointClient.indexGetDocument(documentStorageID: config.documentStorageID, name: name,
 							keys: ["ABC"])
 
 		// Evaluate results
@@ -380,7 +384,8 @@ class IndexUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown index: ABC", "did not receive expected error message: \(message)")
+					XCTAssertEqual(message, "Unknown index: \(name)",
+							"did not receive expected error message: \(message)")
 
 				default:
 					// Other error

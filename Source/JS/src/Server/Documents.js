@@ -135,9 +135,11 @@ module.exports = class Documents {
 	async getSinceRevision(statementPerformer, documentType, sinceRevision, count) {
 		// Validate
 		if (typeof(sinceRevision) != 'number')
-			return [null, null, 'Missing sinceRevision'];
+			return [null, null, 'Missing revision'];
 		if (sinceRevision < 0)
-			return [null, null, 'Invalid sinceRevision'];
+			return [null, null, 'Invalid revision: ' + sinceRevision];
+		if ((count != null) && (count < 1))
+			return [null, null, 'Invalid count: ' + count];
 
 		// Setup
 		let	tablesInfo = this.tablesInfo(statementPerformer, documentType);
@@ -157,7 +159,7 @@ module.exports = class Documents {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
 				// No such table
-				return [0, [], null];
+				return [null, null, 'Unknown documentType: ' + documentType];
 			else
 				// Other error
 				throw error;
@@ -266,11 +268,8 @@ module.exports = class Documents {
 								statementPerformer.innerJoin(tablesInfo.contentTable,
 									tablesInfo.contentTable.idTableColumn),
 								statementPerformer.where(tablesInfo.infoTable.documentIDTableColumn, documentIDs));
-			if (results.length != documentIDs.length)
-				// Not all documents were found
-				return [null, 'Not all documentIDs were found'];
 
-			// Handle results
+			// Compose results
 			for (let result of results) {
 				// Update info
 				ids.push(result.id);
@@ -285,11 +284,19 @@ module.exports = class Documents {
 							attachments: {},
 						};
 			}
+
+			// Validate results
+			for (let documentID of documentIDs) {
+				// Check this documentID
+				if (!documentsByID[documentID])
+					// Not found
+					return [null, 'Unknown documentID: ' + documentID];
+		}
 		} catch (error) {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
 				// No such table
-				return [null, 'No Documents'];
+				return [null, 'Unknown documentType: ' + documentType];
 			else
 				// Other error
 				throw error;
@@ -328,6 +335,8 @@ module.exports = class Documents {
 		// Validate
 		if (!infos || !Array.isArray(infos) || (infos.length == 0))
 			return [null, 'Missing infos'];
+		if (infos.find(info => !info.documentID) != null)
+			return [null, 'Missing documentID'];
 
 		// Setup
 		let	internals = this.internals;
@@ -377,7 +386,7 @@ module.exports = class Documents {
 										let	documentID = info.documentID;
 										let	currentDocument = documentsByID[documentID];
 										if (!currentDocument)
-											return [null, 'Document for ' + documentID + ' not found.'];
+											return [null, 'Unknown documentID: ' + documentID];
 										
 										let	id = currentDocument.id;
 										let	revision = lastRevision + 1;
@@ -442,7 +451,7 @@ module.exports = class Documents {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
 				// No such table
-				return [null, 'No Documents'];
+				return [null, 'Unknown documentType: ' + documentType];
 			else
 				// Other error
 				throw error;
@@ -505,6 +514,11 @@ module.exports = class Documents {
 		// Setup
 		let	tablesInfo = this.tablesInfo(statementPerformer, documentType);
 
+		let	[id, error] = await this.getIDForDocumentID(statementPerformer, tablesInfo, documentID);
+		if (!id)
+			// Error
+			return [null, error];
+
 		// Catch errors
 		try {
 			// Perform
@@ -518,14 +532,12 @@ module.exports = class Documents {
 				return [results[0].content.toString(), null];
 			else
 				// Error
-				return [null,
-						'Attachment ' + attachmentID + ' for ' + documentID + ' of type ' + documentType +
-								' not found.'];
+				return [null, 'Unknown attachmentID: ' + attachmentID];
 		} catch (error) {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
 				// No such table
-				return [null, 'Invalid document type: ' + documentType];
+				return [null, 'Unknown documentType: ' + documentType];
 			else
 				// Other error
 				throw error;
@@ -572,9 +584,7 @@ module.exports = class Documents {
 								attachmentRevision = results[0].revision + 1;
 							else
 								// Error
-								return [null,
-										'Attachment ' + attachmentID + ' for ' + documentID + ' of type ' +
-												documentType + ' not found.'];
+								return [null, 'Unknown attachmentID: ' + attachmentID];
 
 							// Update
 							statementPerformer.queueUpdate(tablesInfo.attachmentTable,
@@ -597,9 +607,7 @@ module.exports = class Documents {
 							// Check error
 							if (error.message.startsWith('ER_NO_SUCH_TABLE'))
 								// No such table
-								return [null,
-										'Attachment ' + attachmentID + ' for ' + documentID + ' of type ' +
-												documentType + ' not found.'];
+								return [null, 'Unknown attachmentID: ' + attachmentID];
 							else
 								// Other error
 								throw error;
@@ -617,37 +625,46 @@ module.exports = class Documents {
 			// Error
 			return error;
 
+		// Catch errors
+		try {
+			// Perform
+			let	results =
+						await statementPerformer.select(true, tablesInfo.attachmentTable,
+								[tablesInfo.attachmentTable.contentTableColumn],
+								statementPerformer.where(tablesInfo.attachmentTable.attachmentIDTableColumn,
+										attachmentID));
+			if (results.length == 0)
+				// Error
+				return 'Unknown attachmentID: ' + attachmentID;
+		} catch (error) {
+			// Check error
+			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
+				// No such table
+				return 'Unknown documentType: ' + documentType;
+			else
+				// Other error
+				throw error;
+		}
+
 		// Perform with tables locked
 		let	tables = [this.documentsTable, tablesInfo.infoTable, tablesInfo.attachmentTable];
 
 		return await statementPerformer.batchLockedForWrite(tables,
 				() => { return (async() => {
-					// Catch errors
-					try {
-						// Setup
-						let	initialLastRevision = await this.getLastRevision(statementPerformer, documentType);
+					// Setup
+					let	initialLastRevision = await this.getLastRevision(statementPerformer, documentType);
 
-						// Update
-						let	revision = initialLastRevision + 1;
-						statementPerformer.queueDelete(tablesInfo.attachmentTable,
-								statementPerformer.where(tablesInfo.attachmentTable.attachmentIDTableColumn,
-										attachmentID));
-						statementPerformer.queueUpdate(tablesInfo.infoTable,
-								[{tableColumn: tablesInfo.infoTable.revisionTableColumn, value: revision}],
-								statementPerformer.where(tablesInfo.infoTable.idTableColumn, id));
-						this.queueUpdateLastRevision(statementPerformer, documentType, revision);
-						
-						return null;
-					} catch (error) {
-						// Check error
-						if (error.message.startsWith('ER_NO_SUCH_TABLE'))
-							// No such table
-							return 'Attachment ' + attachmentID + ' for ' + documentID + ' of type ' + documentType +
-									' not found.';
-						else
-							// Other error
-							throw error;
-					}
+					// Update
+					let	revision = initialLastRevision + 1;
+					statementPerformer.queueDelete(tablesInfo.attachmentTable,
+							statementPerformer.where(tablesInfo.attachmentTable.attachmentIDTableColumn,
+									attachmentID));
+					statementPerformer.queueUpdate(tablesInfo.infoTable,
+							[{tableColumn: tablesInfo.infoTable.revisionTableColumn, value: revision}],
+							statementPerformer.where(tablesInfo.infoTable.idTableColumn, id));
+					this.queueUpdateLastRevision(statementPerformer, documentType, revision);
+					
+					return null;
 				})()});
 	}
 
@@ -664,17 +681,22 @@ module.exports = class Documents {
 						await statementPerformer.select(true, tablesInfo.infoTable,
 								[tablesInfo.infoTable.idTableColumn, tablesInfo.infoTable.documentIDTableColumn],
 								statementPerformer.where(tablesInfo.infoTable.documentIDTableColumn, documentIDs));
-			if (results.length == documentIDs.length) {
-				// documentIDs found!
-				var	info = {};
-				for (let result of results)
-					// Update info
-					info[result.documentID] = result.id;
+			
+			// Compose results
+			var	info = {};
+			for (let result of results)
+				// Update info
+				info[result.documentID] = result.id;
+			
+			// Validate results
+			for (let documentID of documentIDs) {
+				// Check this documentID
+				if (!info[documentID])
+					// Not found
+					return [null, 'Unknown documentID: ' + documentID];
+			}
 
-				return [info, null];
-			} else
-				// Not all documentIDs not found
-				return [null, 'Not all documentIDs found'];
+			return [info, null];
 		} catch (error) {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
@@ -1069,12 +1091,12 @@ module.exports = class Documents {
 				return [results[0].id, null];
 			else
 				// documentID not found
-				return [null, 'Document for ' + documentID + ' not found'];
+				return [null, 'Unknown documentID: ' + documentID];
 		} catch (error) {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
 				// No such table
-				return [null, 'Invalid document type: ' + tablesInfo.documentType];
+				return [null, 'Unknown documentType: ' + tablesInfo.documentType];
 			else
 				// Other error
 				throw error;

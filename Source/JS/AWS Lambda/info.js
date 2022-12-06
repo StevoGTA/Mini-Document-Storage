@@ -52,7 +52,7 @@ exports.getV1 = async (event) => {
 exports.setV1 = async (event) => {
 	// Setup
 	let	documentStorageID = decodeURIComponent(event.pathParameters);
-	let	info = (event.body) ? JSON.parse(event.body) : null;
+	let	info = event.body ? JSON.parse(event.body) : null;
 
 	// Catch errors
 	try {

@@ -154,7 +154,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return [null, 'Invalid documentStorageID: ' + documentStorageID];
+				return [null, null, 'Invalid documentStorageID: ' + documentStorageID];
 			else
 				// Other
 				throw error;

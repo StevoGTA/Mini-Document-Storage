@@ -38,6 +38,74 @@ class AssociationUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func testRegisterInvalidFromDocumentType() throws {
+		// Setup
+		let	config = Config.shared
+		let	fromDocumentType = UUID().uuidString
+
+		// Create document
+		let	(_, childCreateError) =
+					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
+							documentType: Child.documentType,
+							documentCreateInfos: [MDSDocument.CreateInfo(propertyMap: [:])])
+		XCTAssertNil(childCreateError, "create child document received error: \(childCreateError!)")
+
+		// Perform
+		let	error =
+					config.httpEndpointClient.associationRegister(documentStorageID: config.documentStorageID,
+							name: "ABC", fromDocumentType: fromDocumentType, toDocumentType: Child.documentType)
+
+		// Evaluate results
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Unknown documentType: \(fromDocumentType)",
+							"did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testRegisterInvalidToDocumentType() throws {
+		// Setup
+		let	config = Config.shared
+		let	toDocumentType = UUID().uuidString
+
+		// Create document
+		let	(_, parentCreateError) =
+					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
+							documentType: Parent.documentType,
+							documentCreateInfos: [MDSDocument.CreateInfo(propertyMap: [:])])
+		XCTAssertNil(parentCreateError, "create parent document received error: \(parentCreateError!)")
+
+		// Perform
+		let	error =
+					config.httpEndpointClient.associationRegister(documentStorageID: config.documentStorageID,
+							name: "ABC", fromDocumentType: Parent.documentType, toDocumentType: toDocumentType)
+
+		// Evaluate results
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Unknown documentType: \(toDocumentType)",
+							"did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func testUpdateInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.shared
@@ -69,6 +137,7 @@ class AssociationUnitTests : XCTestCase {
 	func testUpdateUnknownName() throws {
 		// Setup
 		let	config = Config.shared
+		let	name = UUID().uuidString
 
 		// Perform
 		let	documentStorage = MDSEphemeral()
@@ -76,7 +145,7 @@ class AssociationUnitTests : XCTestCase {
 		let	child = Child(id: "ABC", documentStorage: documentStorage)
 		let	errors =
 					config.httpEndpointClient.associationUpdate(documentStorageID: config.documentStorageID,
-							name: "ABC", updates: [MDSAssociation.Update.add(from: parent, to: child)])
+							name: name, updates: [MDSAssociation.Update.add(from: parent, to: child)])
 
 		// Evaluate results
 		XCTAssertEqual(errors.count, 1, "did not receive 1 error")
@@ -84,7 +153,7 @@ class AssociationUnitTests : XCTestCase {
 			switch errors.first! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown association: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown association: \(name)", "did not receive expected error message")
 
 				default:
 					// Other error
@@ -103,6 +172,130 @@ class AssociationUnitTests : XCTestCase {
 
 		// Evaluate results
 		XCTAssertEqual(errors.count, 0, "received errors: \(errors)")
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testUpdateMissingAction() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	httpEndpointRequest =
+					MDSHTTPServices.MDSSuccessHTTPEndpointRequest(method: .put,
+							path: "/v1/association/\(config.documentStorageID)/ABC",
+							jsonBody: [["fromID": "ABC", "toID": "ABC"]])
+		let	error =
+					DispatchQueue.performBlocking() { completionProc in
+						// Queue
+						config.httpEndpointClient.queue(httpEndpointRequest) { completionProc($0) }
+					}
+
+		// Evaluate results
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Missing action", "did not receive expected error message: \(message)")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testUpdateInvalidAction() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	httpEndpointRequest =
+					MDSHTTPServices.MDSSuccessHTTPEndpointRequest(method: .put,
+							path: "/v1/association/\(config.documentStorageID)/ABC",
+							jsonBody: [["action": "ABC", "fromID": "ABC", "toID": "ABC"]])
+		let	error =
+					DispatchQueue.performBlocking() { completionProc in
+						// Queue
+						config.httpEndpointClient.queue(httpEndpointRequest) { completionProc($0) }
+					}
+
+		// Evaluate results
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Invalid action: ABC", "did not receive expected error message: \(message)")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testUpdateMissingFromID() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	httpEndpointRequest =
+					MDSHTTPServices.MDSSuccessHTTPEndpointRequest(method: .put,
+							path: "/v1/association/\(config.documentStorageID)/ABC",
+							jsonBody: [["action": "add", "toID": "ABC"]])
+		let	error =
+					DispatchQueue.performBlocking() { completionProc in
+						// Queue
+						config.httpEndpointClient.queue(httpEndpointRequest) { completionProc($0) }
+					}
+
+		// Evaluate results
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Missing fromID", "did not receive expected error message: \(message)")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testUpdateMissingToID() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	httpEndpointRequest =
+					MDSHTTPServices.MDSSuccessHTTPEndpointRequest(method: .put,
+							path: "/v1/association/\(config.documentStorageID)/ABC",
+							jsonBody: [["action": "add", "fromID": "ABC"]])
+		let	error =
+					DispatchQueue.performBlocking() { completionProc in
+						// Queue
+						config.httpEndpointClient.queue(httpEndpointRequest) { completionProc($0) }
+					}
+
+		// Evaluate results
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Missing toID", "did not receive expected error message: \(message)")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -134,10 +327,11 @@ class AssociationUnitTests : XCTestCase {
 	func testGetUnknownName() throws {
 		// Setup
 		let	config = Config.shared
+		let	name = UUID().uuidString
 
 		// Perform
 		let	(info, error) =
-					config.httpEndpointClient.associationGet(documentStorageID: config.documentStorageID, name: "ABC")
+					config.httpEndpointClient.associationGet(documentStorageID: config.documentStorageID, name: name)
 
 		// Evaluate results
 		XCTAssertNil(info, "did receive info")
@@ -147,7 +341,7 @@ class AssociationUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown association: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown association: \(name)", "did not receive expected error message")
 
 				default:
 					// Other error
@@ -190,6 +384,7 @@ class AssociationUnitTests : XCTestCase {
 	func testGetDocumentInfosFromUnknownName() throws {
 		// Setup
 		let	config = Config.shared
+		let	name = UUID().uuidString
 
 		// Perform
 		let	documentStorage = MDSEphemeral()
@@ -197,7 +392,7 @@ class AssociationUnitTests : XCTestCase {
 
 		let	(info, error) =
 					config.httpEndpointClient.associationGetDocumentInfo(documentStorageID: config.documentStorageID,
-							name: "ABC", fromDocumentID: parent.id)
+							name: name, fromDocumentID: parent.id)
 
 		// Evaluate results
 		XCTAssertNil(info, "did receive info")
@@ -207,7 +402,7 @@ class AssociationUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown association: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown association: \(name)", "did not receive expected error message")
 
 				default:
 					// Other error
@@ -244,7 +439,7 @@ class AssociationUnitTests : XCTestCase {
 		guard registerError == nil else { return }
 
 		// Perform
-		let	documentID = UUID().base64EncodedString
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
 		let	(info, error) =
 					config.httpEndpointClient.associationGetDocumentInfo(documentStorageID: config.documentStorageID,
 							name: associationName, fromDocumentID: documentID )
@@ -301,6 +496,7 @@ class AssociationUnitTests : XCTestCase {
 	func testGetDocumentsFromUnknownName() throws {
 		// Setup
 		let	config = Config.shared
+		let	name = UUID().uuidString
 
 		// Perform
 		let	documentStorage = MDSEphemeral()
@@ -308,7 +504,7 @@ class AssociationUnitTests : XCTestCase {
 
 		let	(info, error) =
 					config.httpEndpointClient.associationGetDocument(documentStorageID: config.documentStorageID,
-							name: "ABC", fromDocumentID: parent.id)
+							name: name, fromDocumentID: parent.id)
 
 		// Evaluate results
 		XCTAssertNil(info, "did receive info")
@@ -318,7 +514,7 @@ class AssociationUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown association: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown association: \(name)", "did not receive expected error message")
 
 				default:
 					// Other error
@@ -355,7 +551,7 @@ class AssociationUnitTests : XCTestCase {
 		guard registerError == nil else { return }
 
 		// Perform
-		let	documentID = UUID().base64EncodedString
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
 		let	(info, error) =
 					config.httpEndpointClient.associationGetDocument(documentStorageID: config.documentStorageID,
 							name: associationName, fromDocumentID: documentID )
@@ -412,6 +608,7 @@ class AssociationUnitTests : XCTestCase {
 	func testGetDocumentInfosToUnknownName() throws {
 		// Setup
 		let	config = Config.shared
+		let	name = UUID().uuidString
 
 		// Perform
 		let	documentStorage = MDSEphemeral()
@@ -419,7 +616,7 @@ class AssociationUnitTests : XCTestCase {
 
 		let	(info, error) =
 					config.httpEndpointClient.associationGetDocumentInfo(documentStorageID: config.documentStorageID,
-							name: "ABC", toDocumentID: child.id)
+							name: name, toDocumentID: child.id)
 
 		// Evaluate results
 		XCTAssertNil(info, "did receive info")
@@ -429,7 +626,7 @@ class AssociationUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown association: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown association: \(name)", "did not receive expected error message")
 
 				default:
 					// Other error
@@ -466,7 +663,7 @@ class AssociationUnitTests : XCTestCase {
 		guard registerError == nil else { return }
 
 		// Perform
-		let	documentID = UUID().base64EncodedString
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
 		let	(info, error) =
 					config.httpEndpointClient.associationGetDocumentInfo(documentStorageID: config.documentStorageID,
 							name: associationName, toDocumentID: documentID )
@@ -523,6 +720,7 @@ class AssociationUnitTests : XCTestCase {
 	func testGetDocumentsToUnknownName() throws {
 		// Setup
 		let	config = Config.shared
+		let	name = UUID().uuidString
 
 		// Perform
 		let	documentStorage = MDSEphemeral()
@@ -530,7 +728,7 @@ class AssociationUnitTests : XCTestCase {
 
 		let	(info, error) =
 					config.httpEndpointClient.associationGetDocument(documentStorageID: config.documentStorageID,
-							name: "ABC", toDocumentID: child.id)
+							name: name, toDocumentID: child.id)
 
 		// Evaluate results
 		XCTAssertNil(info, "did receive info")
@@ -540,7 +738,7 @@ class AssociationUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown association: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown association: \(name)", "did not receive expected error message")
 
 				default:
 					// Other error
@@ -577,7 +775,7 @@ class AssociationUnitTests : XCTestCase {
 		guard registerError == nil else { return }
 
 		// Perform
-		let	documentID = UUID().base64EncodedString
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
 		let	(info, error) =
 					config.httpEndpointClient.associationGetDocument(documentStorageID: config.documentStorageID,
 							name: associationName, toDocumentID: documentID )
@@ -634,6 +832,7 @@ class AssociationUnitTests : XCTestCase {
 	func testGetValueInvalidAssociationName() throws {
 		// Setup
 		let	config = Config.shared
+		let	associationName = UUID().uuidString
 
 		// Perform
 		let	documentStorage = MDSEphemeral()
@@ -641,7 +840,7 @@ class AssociationUnitTests : XCTestCase {
 
 		let	(info, error) =
 					config.httpEndpointClient.associationGetIntegerValue(documentStorageID: config.documentStorageID,
-							name: "ABC", action: .sum, fromDocumentID: parent.id, cacheName: "ABC",
+							name: associationName, action: .sum, fromDocumentID: parent.id, cacheName: "ABC",
 							cachedValueName: "ABC")
 
 		// Evaluate results
@@ -652,7 +851,8 @@ class AssociationUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown association: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown association: \(associationName)",
+							"did not receive expected error message")
 
 				default:
 					// Other error
@@ -721,6 +921,41 @@ class AssociationUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func testGetValueMissingFromID() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	httpEndpointRequest =
+					MDSHTTPServices.MDSIntegerWithUpToDateHTTPEndpointRequest(method: .get,
+							path: "/v1/association/\(config.documentStorageID)/ABC/sum",
+							queryComponents: [
+												"cacheName": "ABC",
+												"cachedValueName": "ABC",
+											 ])
+		let	(_, error) =
+					DispatchQueue.performBlocking() { completionProc in
+						// Queue
+						config.httpEndpointClient.queue(httpEndpointRequest) { completionProc(($0, $1)) }
+					}
+
+		// Evaluate results
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Missing fromDocumentID",
+							"did not receive expected error message: \(message)")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func testGetValueInvalidFromID() throws {
 		// Setup
 		let	associationName = "\(Parent.documentType)To\(Child.documentType.capitalizingFirstLetter)"
@@ -735,7 +970,7 @@ class AssociationUnitTests : XCTestCase {
 		guard registerError == nil else { return }
 
 		// Perform
-		let	documentID = UUID().base64EncodedString
+		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
 		let	(info, error) =
 					config.httpEndpointClient.associationGetIntegerValue(documentStorageID: config.documentStorageID,
 							name: associationName, action: .sum, fromDocumentID: documentID,
@@ -760,11 +995,47 @@ class AssociationUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func testGetValueMissingCacheName() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	httpEndpointRequest =
+					MDSHTTPServices.MDSIntegerWithUpToDateHTTPEndpointRequest(method: .get,
+							path: "/v1/association/\(config.documentStorageID)/ABC/sum",
+							queryComponents: [
+												"fromID": "ABC",
+												"cachedValueName": "ABC",
+											 ])
+		let	(_, error) =
+					DispatchQueue.performBlocking() { completionProc in
+						// Queue
+						config.httpEndpointClient.queue(httpEndpointRequest) { completionProc(($0, $1)) }
+					}
+
+		// Evaluate results
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Missing cacheName",
+							"did not receive expected error message: \(message)")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func testGetValueInvalidCacheName() throws {
 		// Setup
 		let	associationName = "\(Parent.documentType)To\(Child.documentType.capitalizingFirstLetter)"
 		let	config = Config.shared
 		let	documentStorage = MDSEphemeral()
+		let	cacheName = UUID().uuidString
 
 		// Create documents
 		let	(parentInfos, parentCreateError) =
@@ -813,7 +1084,7 @@ class AssociationUnitTests : XCTestCase {
 		// Get Association Value
 		let	(getValueInfo, getValueError) =
 					config.httpEndpointClient.associationGetIntegerValue(documentStorageID: config.documentStorageID,
-							name: associationName, action: .sum, fromDocumentID: parent.id, cacheName: "ABC",
+							name: associationName, action: .sum, fromDocumentID: parent.id, cacheName: cacheName,
 							cachedValueName: "ABC")
 
 		// Evaluate results
@@ -824,11 +1095,46 @@ class AssociationUnitTests : XCTestCase {
 			switch getValueError! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown cache: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown cache: \(cacheName)", "did not receive expected error message")
 
 				default:
 					// Other error
 					XCTFail("received unexpected error: \(getValueError!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testGetValueMissingCachedValueName() throws {
+		// Setup
+		let	config = Config.shared
+
+		// Perform
+		let	httpEndpointRequest =
+					MDSHTTPServices.MDSIntegerWithUpToDateHTTPEndpointRequest(method: .get,
+							path: "/v1/association/\(config.documentStorageID)/ABC/sum",
+							queryComponents: [
+												"fromID": "ABC",
+												"cacheName": "ABC",
+											 ])
+		let	(_, error) =
+					DispatchQueue.performBlocking() { completionProc in
+						// Queue
+						config.httpEndpointClient.queue(httpEndpointRequest) { completionProc(($0, $1)) }
+					}
+
+		// Evaluate results
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.invalidRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Missing cachedValueName",
+							"did not receive expected error message: \(message)")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
 			}
 		}
 	}
@@ -840,6 +1146,7 @@ class AssociationUnitTests : XCTestCase {
 		let	cacheName = UUID().uuidString
 		let	config = Config.shared
 		let	documentStorage = MDSEphemeral()
+		let	cachedValueName = UUID().uuidString
 
 		// Create documents
 		let	(parentInfos, parentCreateError) =
@@ -897,7 +1204,7 @@ class AssociationUnitTests : XCTestCase {
 		let	(getValueInfo, getValueError) =
 					config.httpEndpointClient.associationGetIntegerValue(documentStorageID: config.documentStorageID,
 							name: associationName, action: .sum, fromDocumentID: parent.id, cacheName: cacheName,
-							cachedValueName: "ABC")
+							cachedValueName: cachedValueName)
 
 		// Evaluate results
 		XCTAssertNil(getValueInfo, "did receive info")
@@ -907,7 +1214,8 @@ class AssociationUnitTests : XCTestCase {
 			switch getValueError! {
 				case MDSError.invalidRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown cache valueName: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown cache valueName: \(cachedValueName)",
+							"did not receive expected error message")
 
 				default:
 					// Other error

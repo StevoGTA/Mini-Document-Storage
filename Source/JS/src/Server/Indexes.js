@@ -64,6 +64,8 @@ module.exports = class Indexes {
 		let	keysSelector = info.keysSelector;
 		if (!keysSelector)
 			return 'Missing keysSelector';
+		if (!this.keysSelectorInfo[keysSelector])
+			return 'Invalid keysSelector: ' + keysSelector;
 
 		let	keysSelectorInfo = info.keysSelectorInfo;
 		if (!keysSelectorInfo)
@@ -71,6 +73,11 @@ module.exports = class Indexes {
 
 		// Setup
 		let	internals = this.internals;
+
+		// Validate document type
+		var	lastDocumentRevision = await internals.documents.getLastRevision(statementPerformer, documentType);
+		if (lastDocumentRevision == null)
+			return 'Unknown documentType: ' + documentType;
 
 		// Check if need to create Indexes table
 		await internals.createTableIfNeeded(statementPerformer, this.indexesTable);
@@ -86,14 +93,16 @@ module.exports = class Indexes {
 							statementPerformer.where(this.indexesTable.nameTableColumn, name));
 		if (results.length == 0) {
 			// Add
-			let	lastDocumentRevision =
-						isUpToDate ?
-								((await internals.documents.getLastRevision(statementPerformer, documentType)) || 0) :
-								0;
+			if (!isUpToDate)
+				// Reset last document revision
+				lastDocumentRevision = 0;
+			
+			// Create index
 			let	index =
 						new Index(statementPerformer, name, documentType, relevantProperties,
 								this.keysSelectorInfo[keysSelector], keysSelectorInfo, lastDocumentRevision);
 
+			// Update database
 			statementPerformer.queueInsertInto(this.indexesTable,
 					[
 						{tableColumn: this.indexesTable.nameTableColumn, value: name},
@@ -108,7 +117,7 @@ module.exports = class Indexes {
 			index.queueCreate(statementPerformer);
 		} else if (keysSelector != results[0].keysSelector) {
 			// Update to new keysSelector
-			let	lastDocumentRevision = isUpToDate ? results[0].lastDocumentRevision : 0;
+			lastDocumentRevision = isUpToDate ? results[0].lastDocumentRevision : 0;
 			let	index =
 						new Index(statementPerformer, name, documentType, relevantProperties,
 								this.keysSelectorInfo[keysSelector], keysSelectorInfo, lastDocumentRevision);
@@ -162,7 +171,7 @@ module.exports = class Indexes {
 		let	[index, indexError] = await this.getForName(statementPerformer, name);
 		if (indexError)
 			// Error
-			return [null, null, indexError];
+			return [null, null, 'Unknown index: ' + name];
 
 		// Get document type last revision
 		let	documentTypeLastRevision = await internals.documents.getLastRevision(statementPerformer, index.type);
