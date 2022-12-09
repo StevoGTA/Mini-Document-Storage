@@ -43,6 +43,17 @@ module.exports = class Documents {
 		if (!infos || !Array.isArray(infos) || (infos.length == 0))
 			return [null, 'Missing info(s)'];
 
+		for (let info of infos) {
+			// Setup
+			let	documentID = info.documentID;
+			if (documentID && (documentID.length > 22))
+				return [null, 'Invalid documentID: ' + documentID + ' (exceeds max length of 22)'];
+
+			let	json = info.json;
+			if (!json)
+				return [null, 'Missing info json'];
+		}
+	
 		// Setup
 		let	internals = this.internals;
 
@@ -252,6 +263,7 @@ module.exports = class Documents {
 		// Catch errors
 		var	ids = [];
 		var	documentsByID = {};
+		let	missingDocumentIDsSet = new Set(documentIDs);
 		try {
 			// Retrieve relevant documents
 			let	results =
@@ -283,15 +295,13 @@ module.exports = class Documents {
 							json: JSON.parse(result.json.toString()),
 							attachments: {},
 						};
+				missingDocumentIDsSet.delete(result.documentID);
 			}
 
 			// Validate results
-			for (let documentID of documentIDs) {
-				// Check this documentID
-				if (!documentsByID[documentID])
-					// Not found
-					return [null, 'Unknown documentID: ' + documentID];
-		}
+			if (missingDocumentIDsSet.size > 0)
+				// Not found
+				return [null, 'Unknown documentID: ' + [...missingDocumentIDsSet][0]];
 		} catch (error) {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))

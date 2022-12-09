@@ -332,12 +332,13 @@ class MDSClient {
 		let	url =
 					this.urlBase + '/v1/collection/' + encodeURIComponent(documentStorageIDUse) + '/' +
 							encodeURIComponent(name);
-
 		let	options = {method: 'HEAD', headers: this.headers};
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		await processResponse(response);
+		if (!response.ok)
+			// Some error, but no additional info
+			throw new Error('Unable to get count');
 
 		// Decode header
 		let	contentRange = response.headers.get('content-range');
@@ -442,7 +443,9 @@ class MDSClient {
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
-		await processResponse(response);
+		if (!response.ok)
+			// Some error, but no additional info
+			throw new Error('Unable to get count');
 
 		// Decode header
 		let	contentRange = response.headers.get('content-range');

@@ -57,10 +57,8 @@ module.exports = class Caches {
 			return 'Missing relevantProperties';
 
 		let	valueInfos = info.valueInfos;
-		if (!valueInfos)
+		if (!valueInfos || !Array.isArray(valueInfos))
 			return 'Missing valueInfos';
-		if (!Array.isArray(valueInfos))
-			return 'Invalid valueInfos';
 
 		for (let valueInfo of valueInfos) {
 			// Setup
@@ -72,7 +70,7 @@ module.exports = class Caches {
 			if (!valueType)
 				return 'Missing value valueType';
 			if (valueType != 'integer')
-				return 'Unsupported value valueType: ' + valueType;
+				return 'Invalid value valueType: ' + valueType;
 
 			let	selector = valueInfo.selector;
 			if (!selector)
