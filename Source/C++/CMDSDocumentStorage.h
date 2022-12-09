@@ -85,13 +85,13 @@ class CMDSDocumentStorage {
 		virtual			UniversalTime				getModificationUniversalTime(const CMDSDocument& document) const
 															= 0;
 
-		virtual			OI<SValue>					getValue(const CString& property, const CMDSDocument& document)
+		virtual			OV<SValue>					getValue(const CString& property, const CMDSDocument& document)
 															const = 0;
-		virtual			OI<CData>					getData(const CString& property, const CMDSDocument& document) const
+		virtual			OV<CData>					getData(const CString& property, const CMDSDocument& document) const
 															= 0;
 		virtual			OV<UniversalTime>			getUniversalTime(const CString& property,
 															const CMDSDocument& document) const = 0;
-		virtual			void						set(const CString& property, const OI<SValue>& value,
+		virtual			void						set(const CString& property, const OV<SValue>& value,
 															const CMDSDocument& document,
  															SetValueInfo setValueInfo = kNothingSpecial) = 0;
 
@@ -118,12 +118,15 @@ class CMDSDocumentStorage {
 						void						updateAssociation(const CMDSDocument::Info& fromDocumentInfo,
 															const CMDSDocument::Info& toDocumentInfo,
 															const TArray<AssociationUpdate>& updates);
-//		virtual			void						iterateAssociationFrom(const CString& name,
-//															const CMDSDocument& fromDocument, CMDSDocument::Proc proc,
-//															void* userData) const = 0;
+		virtual			void						iterateAssociationFrom(const CString& name,
+															const CMDSDocument& fromDocument,
+															const CMDSDocument::Info& toDocumentInfo,
+															CMDSDocument::Proc proc, void* userData) = 0;
 //						void						iterateAssociationFrom(const CMDSDocument& fromDocument,
 //															const CMDSDocument::Info& toDocumentInfo,
 //															CMDSDocument::Proc proc, void* userData) const;
+						TArray<CMDSDocument>		getDocumentsAssociatedFrom(const CMDSDocument& fromDocument,
+															const CMDSDocument::Info& toDocumentInfo);
 		virtual			void						iterateAssociationTo(const CString& name,
 															const CMDSDocument::Info& fromDocumentInfo,
 															const CMDSDocument& toDocument, CMDSDocument::Proc proc,

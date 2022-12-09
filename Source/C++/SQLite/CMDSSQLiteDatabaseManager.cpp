@@ -36,23 +36,23 @@
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Local types
 
-typedef	CMDSSQLiteCollection::UpdateInfo<TNumericArray<SInt64> >	CMDSSQLiteCollectionUpdateInfo;
+typedef	CMDSSQLiteCollection::UpdateInfo<TNumberArray<SInt64> >	CMDSSQLiteCollectionUpdateInfo;
 
-typedef	CMDSSQLiteCollectionUpdateInfo								SCollectionUpdateInfo;
+typedef	CMDSSQLiteCollectionUpdateInfo							SCollectionUpdateInfo;
 
-typedef	CMDSSQLiteDatabaseManager::DocumentBackingInfo				DocumentBackingInfo;
-typedef	CMDSSQLiteDatabaseManager::ExistingDocumentInfo				ExistingDocumentInfo;
-typedef	CMDSSQLiteDatabaseManager::ExistingDocumentInfoProc			ExistingDocumentInfoProc;
+typedef	CMDSSQLiteDatabaseManager::DocumentBackingInfo			DocumentBackingInfo;
+typedef	CMDSSQLiteDatabaseManager::ExistingDocumentInfo			ExistingDocumentInfo;
+typedef	CMDSSQLiteDatabaseManager::ExistingDocumentInfoProc		ExistingDocumentInfoProc;
 
-typedef	CSQLiteTable::TableColumnAndValue							TableColumnAndValue;
+typedef	CSQLiteTable::TableColumnAndValue						TableColumnAndValue;
 
-typedef	CSQLiteTableColumn::Reference								Reference;
+typedef	CSQLiteTableColumn::Reference							Reference;
 
-typedef	TMArray<SSQLiteValue>										SSQLiteValuesArray;
+typedef	TMArray<SSQLiteValue>									SSQLiteValuesArray;
 
 struct SIndexUpdateInfo {
 	// Lifecycle methods
-	SIndexUpdateInfo(const CMDSSQLiteIndexKeysInfos& keysInfos, const TNumericArray<SInt64>& removedIDs,
+	SIndexUpdateInfo(const CMDSSQLiteIndexKeysInfos& keysInfos, const TNumberArray<SInt64>& removedIDs,
 			UInt32 lastRevision) :
 		mKeysInfos(keysInfos), mRemovedIDs(removedIDs), mLastRevision(lastRevision)
 		{}
@@ -62,7 +62,7 @@ struct SIndexUpdateInfo {
 
 	// Properties
 	CMDSSQLiteIndexKeysInfos	mKeysInfos;
-	TNumericArray<SInt64>		mRemovedIDs;
+	TNumberArray<SInt64>		mRemovedIDs;
 	UInt32						mLastRevision;
 };
 
@@ -75,7 +75,7 @@ struct SBatchInfo {
 		{}
 
 	// Properties
-	TSet<CString>						mDocumentLastRevisionTypesNeedingWrite;
+	TNSet<CString>						mDocumentLastRevisionTypesNeedingWrite;
 	TNDictionary<SCollectionUpdateInfo>	mCollectionInfo;
 	TNDictionary<SIndexUpdateInfo>		mIndexInfo;
 };
@@ -93,23 +93,23 @@ class CInfoTable {
 									{
 										// Retrieve value
 										CSQLiteTableColumn	tableColumns[] = { mValueTableColumn };
-										OI<CString>			string;
+										OV<CString>			string;
 										table.select(tableColumns, 1, CSQLiteWhere(mKeyTableColumn, key),
 												(CSQLiteResultsRow::Proc) getInfoString, &string);
 
 										return string.hasInstance() ? OV<UInt32>(string->getUInt32()) : OV<UInt32>();
 									}
-		static	OI<CString>		getString(const CString& key, CSQLiteTable& table)
+		static	OV<CString>		getString(const CString& key, CSQLiteTable& table)
 									{
 										// Retrieve value
 										CSQLiteTableColumn	tableColumns[] = { mValueTableColumn };
-										OI<CString>			string;
+										OV<CString>			string;
 										table.select(tableColumns, 1, CSQLiteWhere(mKeyTableColumn, key),
 												(CSQLiteResultsRow::Proc) getInfoString, &string);
 
 										return string;
 									}
-		static	void			set(const CString& key, const OI<SValue>& value, CSQLiteTable& table)
+		static	void			set(const CString& key, const OV<SValue>& value, CSQLiteTable& table)
 									{
 										// Check if storing or removing
 										if (value.hasInstance()) {
@@ -127,7 +127,7 @@ class CInfoTable {
 									}
 
 	private:
-		static	void			getInfoString(const CSQLiteResultsRow& resultsRow, OI<CString>* string)
+		static	void			getInfoString(const CSQLiteResultsRow& resultsRow, OV<CString>* string)
 									{ *string = resultsRow.getString(mValueTableColumn); }
 
 	// Properties
@@ -306,18 +306,20 @@ class CDocumentTypeInfoTable {
 		static	const	CSQLiteTableColumn	mTableColumns[];
 };
 
-CSQLiteTableColumn	CDocumentTypeInfoTable::mIDTableColumn(CString(OSSTR("id")), CSQLiteTableColumn::kInteger,
-							(CSQLiteTableColumn::Options)
-									(CSQLiteTableColumn::kPrimaryKey | CSQLiteTableColumn::kAutoIncrement));
-CSQLiteTableColumn	CDocumentTypeInfoTable::mDocumentIDTableColumn(CString(OSSTR("documentID")),
-							CSQLiteTableColumn::kText,
-							(CSQLiteTableColumn::Options) (CSQLiteTableColumn::kNotNull | CSQLiteTableColumn::kUnique));
-CSQLiteTableColumn	CDocumentTypeInfoTable::mRevisionTableColumn(CString(OSSTR("revision")),
-							CSQLiteTableColumn::kInteger, CSQLiteTableColumn::kNotNull);
-CSQLiteTableColumn	CDocumentTypeInfoTable::mActiveTableColumn(CString(OSSTR("active")), CSQLiteTableColumn::kInteger,
-							CSQLiteTableColumn::kNotNull);
-CSQLiteTableColumn	CDocumentTypeInfoTable::mTableColumns[] =
-							{ mIDTableColumn, mDocumentIDTableColumn, mRevisionTableColumn, mActiveTableColumn };
+const	CSQLiteTableColumn	CDocumentTypeInfoTable::mIDTableColumn(CString(OSSTR("id")), CSQLiteTableColumn::kInteger,
+									(CSQLiteTableColumn::Options)
+											(CSQLiteTableColumn::kPrimaryKey | CSQLiteTableColumn::kAutoIncrement));
+const	CSQLiteTableColumn	CDocumentTypeInfoTable::mDocumentIDTableColumn(CString(OSSTR("documentID")),
+									CSQLiteTableColumn::kText,
+											(CSQLiteTableColumn::Options)
+													(CSQLiteTableColumn::kNotNull | CSQLiteTableColumn::kUnique));
+const	CSQLiteTableColumn	CDocumentTypeInfoTable::mRevisionTableColumn(CString(OSSTR("revision")),
+									CSQLiteTableColumn::kInteger, CSQLiteTableColumn::kNotNull);
+const	CSQLiteTableColumn	CDocumentTypeInfoTable::mActiveTableColumn(CString(OSSTR("active")),
+									CSQLiteTableColumn::kInteger, CSQLiteTableColumn::kNotNull);
+const	CSQLiteTableColumn	CDocumentTypeInfoTable::mTableColumns[] =
+									{ mIDTableColumn, mDocumentIDTableColumn, mRevisionTableColumn,
+											mActiveTableColumn };
 
 //----------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------
@@ -342,18 +344,23 @@ class CDocumentTypeContentTable {
 										{
 											// Process results
 													UniversalTime	creationUniversalTime =
-																			*SUniversalTime::getFromRFC3339Extended(
+																			SGregorianDate::getFrom(
 																					*resultsRow.getString(
-																							mCreationDateTableColumn));
+																							mCreationDateTableColumn),
+																					SGregorianDate::
+																							kStringStyleRFC339Extended)
+																					->getUniversalTime();
 													UniversalTime	modificationUniversalTime =
-																			*SUniversalTime::getFromRFC3339Extended(
+																			SGregorianDate::getFrom(
 																					*resultsRow.getString(
-																							mModificationDateTableColumn));
+																							mModificationDateTableColumn),
+																					SGregorianDate::
+																							kStringStyleRFC339Extended)
+																					->getUniversalTime();
 											const	CDictionary&	propertyMap =
-																			CJSON::dictionaryFrom(
+																			*CJSON::dictionaryFrom(
 																							*resultsRow.getData(
-																									mJSONTableColumn))
-																					.getValue();
+																									mJSONTableColumn));
 
 											return DocumentBackingInfo(
 													existingDocumentInfo.mDocumentRevisionInfo.mDocumentID,
@@ -367,7 +374,7 @@ class CDocumentTypeContentTable {
 											CSQLiteTable& table)
 										{
 											// Setup
-											const	CData&	data = CJSON::dataFrom(propertyMap).getValue();
+											const	CData&	data = *CJSON::dataFrom(propertyMap);
 
 											// Insert
 											TableColumnAndValue	contentTableColumnAndValues[] =
@@ -375,12 +382,18 @@ class CDocumentTypeContentTable {
 																			TableColumnAndValue(mIDTableColumn, id),
 																			TableColumnAndValue(
 																					mCreationDateTableColumn,
-																					SUniversalTime::getRFC339Extended(
-																							creationUniversalTime)),
+																					SGregorianDate(
+																							creationUniversalTime)
+																					.getString(
+																							SGregorianDate::
+																							kStringStyleRFC339Extended)),
 																			TableColumnAndValue(
 																					mModificationDateTableColumn,
-																					SUniversalTime::getRFC339Extended(
-																							modificationUniversalTime)),
+																					SGregorianDate(
+																							modificationUniversalTime)
+																					.getString(
+																							SGregorianDate::
+																							kStringStyleRFC339Extended)),
 																			TableColumnAndValue(mJSONTableColumn, data),
 																		};
 											table.insertRow(contentTableColumnAndValues, 4);
@@ -389,15 +402,18 @@ class CDocumentTypeContentTable {
 											const CDictionary& propertyMap, CSQLiteTable& table)
 										{
 											// Setup
-											const	CData&	data = CJSON::dataFrom(propertyMap).getValue();
+											const	CData&	data = *CJSON::dataFrom(propertyMap);
 
 											// Update
 											TableColumnAndValue	contentTableColumnAndValues[] =
 																		{
 																			TableColumnAndValue(
 																					mModificationDateTableColumn,
-																					SUniversalTime::getRFC339Extended(
-																							modificationUniversalTime)),
+																					SGregorianDate(
+																							modificationUniversalTime)
+																					.getString(
+																							SGregorianDate::
+																							kStringStyleRFC339Extended)),
 																			TableColumnAndValue(mJSONTableColumn, data),
 																		};
 											table.update(contentTableColumnAndValues, 2,
@@ -406,16 +422,17 @@ class CDocumentTypeContentTable {
 		static	void				remove(SInt64 id, CSQLiteTable& table)
 										{
 											// Setup
-											const	CData&	data = CJSON::dataFrom(CDictionary()).getValue();
+											const	CData&	data = *CJSON::dataFrom(CDictionary());
 
 											// Update
 											TableColumnAndValue	contentTableColumnAndValues[] =
 																		{
 																			TableColumnAndValue(
 																					mModificationDateTableColumn,
-																					SUniversalTime::getRFC339Extended(
-																							SUniversalTime::
-																									getCurrent())),
+																					SGregorianDate()
+																					.getString(
+																							SGregorianDate::
+																							kStringStyleRFC339Extended)),
 																			TableColumnAndValue(mJSONTableColumn, data),
 																		};
 											table.update(contentTableColumnAndValues, 2,
@@ -530,8 +547,8 @@ class CCollectionContentsTable {
 									{ return database.getTable(CString(OSSTR("Collection-")) + name,
 											CSQLiteTable::kWithoutRowID,
 											TSArray<CSQLiteTableColumn>(mTableColumns, 1)); }
-		static	void			update(const TNumericArray<SInt64>& includedIDs,
-										const TNumericArray<SInt64>& notIncludedIDs, CSQLiteTable& table)
+		static	void			update(const TNumberArray<SInt64>& includedIDs,
+										const TNumberArray<SInt64>& notIncludedIDs, CSQLiteTable& table)
 									{
 										// Update
 										if (!notIncludedIDs.isEmpty())
@@ -642,7 +659,7 @@ class CIndexContentsTable {
 		static	CString			getKey(const CSQLiteResultsRow& resultsRow)
 									{ return *resultsRow.getString(mKeyTableColumn); }
 		static	void			update(const CMDSSQLiteIndexKeysInfos& keysInfos,
-										const TNumericArray<SInt64>& removedIDs, CSQLiteTable& table)
+										const TNumberArray<SInt64>& removedIDs, CSQLiteTable& table)
 									{
 										// Setup
 										SSQLiteValuesArray	idsToRemove = SSQLiteValue::valuesFrom(removedIDs);
@@ -683,11 +700,11 @@ class CIndexContentsTable {
 		static	const	CSQLiteTableColumn	mTableColumns[];
 };
 
-CSQLiteTableColumn	CIndexContentsTable::mKeyTableColumn(CString(OSSTR("key")), CSQLiteTableColumn::kText,
-							CSQLiteTableColumn::kPrimaryKey);
-CSQLiteTableColumn	CIndexContentsTable::mIDTableColumn(CString(OSSTR("id")), CSQLiteTableColumn::kInteger,
-							CSQLiteTableColumn::kNotNull);
-CSQLiteTableColumn	CIndexContentsTable::mTableColumns[] = { mKeyTableColumn, mIDTableColumn };
+const	CSQLiteTableColumn	CIndexContentsTable::mKeyTableColumn(CString(OSSTR("key")), CSQLiteTableColumn::kText,
+									CSQLiteTableColumn::kPrimaryKey);
+const	CSQLiteTableColumn	CIndexContentsTable::mIDTableColumn(CString(OSSTR("id")), CSQLiteTableColumn::kInteger,
+									CSQLiteTableColumn::kNotNull);
+const	CSQLiteTableColumn	CIndexContentsTable::mTableColumns[] = { mKeyTableColumn, mIDTableColumn };
 
 //----------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------
@@ -728,7 +745,7 @@ class CMDSSQLiteDatabaseManagerInternals {
 												// Update version
 												mDatabaseVersion = OV<UInt32>(1);
 												CInfoTable::set(CString(OSSTR("version")),
-														OI<SValue>(*mDatabaseVersion), mInfoTable);
+														OV<SValue>(*mDatabaseVersion), mInfoTable);
 											}
 
 											// Finalize setup
@@ -766,14 +783,12 @@ class CMDSSQLiteDatabaseManagerInternals {
 				UInt32				getNextRevision(const CString& documentType)
 										{
 											// Compose next revision
-											const	OR<SNumberWrapper<UInt32> >	currentRevision =
-																						mDocumentLastRevisionMap.get(
-																								documentType);
-													UInt32						nextRevision =
-																						currentRevision.hasReference() ?
-																								currentRevision->mValue
-																										+ 1 :
-																								1;
+											const	OR<TNumber<UInt32> >	currentRevision =
+																					mDocumentLastRevisionMap.get(
+																							documentType);
+													UInt32					nextRevision =
+																					currentRevision.hasReference() ?
+																							**currentRevision + 1 : 1;
 
 											// Check for batch
 											const	OR<SBatchInfo>	batchInfo =
@@ -787,35 +802,33 @@ class CMDSSQLiteDatabaseManagerInternals {
 												CDocumentsTable::set(nextRevision, documentType, mDocumentsMasterTable);
 
 											// Store
-											mDocumentLastRevisionMap.set(documentType,
-													SNumberWrapper<UInt32>(nextRevision));
+											mDocumentLastRevisionMap.set(documentType, TNumber<UInt32>(nextRevision));
 
 											return nextRevision;
 										}
 
 	private:
 		static	void				setupDocumentsLastRevisionMap(const CString& documentType, UInt32 lastRevision,
-											TNLockingDictionary<SNumberWrapper<UInt32> >* documentLastRevisionMap)
-										{ documentLastRevisionMap->set(documentType,
-													SNumberWrapper<UInt32>(lastRevision)); }
+											TNLockingDictionary<TNumber<UInt32> >* documentLastRevisionMap)
+										{ documentLastRevisionMap->set(documentType, TNumber<UInt32>(lastRevision)); }
 
 	public:
-		CSQLiteDatabase& 								mDatabase;
-		OV<UInt32>										mDatabaseVersion;
+		CSQLiteDatabase& 						mDatabase;
+		OV<UInt32>								mDatabaseVersion;
 
-		CSQLiteTable									mInfoTable;
+		CSQLiteTable							mInfoTable;
 
-		CSQLiteTable									mDocumentsMasterTable;
-		TNLockingDictionary<DocumentTables>				mDocumentTablesMap;
-		TNLockingDictionary<SNumberWrapper<UInt32> >	mDocumentLastRevisionMap;
+		CSQLiteTable							mDocumentsMasterTable;
+		TNLockingDictionary<DocumentTables>		mDocumentTablesMap;
+		TNLockingDictionary<TNumber<UInt32> >	mDocumentLastRevisionMap;
 
-		CSQLiteTable									mCollectionsMasterTable;
-		TNLockingDictionary<CSQLiteTable>				mCollectionTablesMap;
+		CSQLiteTable							mCollectionsMasterTable;
+		TNLockingDictionary<CSQLiteTable>		mCollectionTablesMap;
 
-		CSQLiteTable									mIndexesMasterTable;
-		TNLockingDictionary<CSQLiteTable>				mIndexTablesMap;
+		CSQLiteTable							mIndexesMasterTable;
+		TNLockingDictionary<CSQLiteTable>		mIndexTablesMap;
 
-		TNLockingDictionary<SBatchInfo>					mBatchInfoMap;
+		TNLockingDictionary<SBatchInfo>			mBatchInfoMap;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -848,14 +861,14 @@ OV<UInt32> CMDSSQLiteDatabaseManager::getUInt32(const CString& key) const
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<CString> CMDSSQLiteDatabaseManager::getString(const CString& key) const
+OV<CString> CMDSSQLiteDatabaseManager::getString(const CString& key) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	return CInfoTable::getString(key, mInternals->mInfoTable);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteDatabaseManager::set(const CString& key, const OI<SValue>& value)
+void CMDSSQLiteDatabaseManager::set(const CString& key, const OV<SValue>& value)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	CInfoTable::set(key, value, mInternals->mInfoTable);
@@ -886,7 +899,7 @@ void CMDSSQLiteDatabaseManager::batch(BatchProc batchProc, void* userData)
 	for (TIteratorS<CString> iterator = batchInfo.mDocumentLastRevisionTypesNeedingWrite.getIterator();
 			iterator.hasValue(); iterator.advance())
 		// Update
-		CDocumentsTable::set(mInternals->mDocumentLastRevisionMap.get(*iterator)->mValue, *iterator,
+		CDocumentsTable::set(**mInternals->mDocumentLastRevisionMap.get(*iterator), *iterator,
 				mInternals->mDocumentsMasterTable);
 	for (TIteratorS<CDictionary::Item> iterator = batchInfo.mCollectionInfo.getIterator(); iterator.hasValue();
 			iterator.advance()) {
@@ -1003,8 +1016,8 @@ UInt32 CMDSSQLiteDatabaseManager::registerCollection(const CString& documentType
 	bool	updateMasterTable;
 	if (!collectionInfo.mStoredLastRevision.hasValue()) {
 		// New
-		OR<SNumberWrapper<UInt32> >	currentLastRevision = mInternals->mDocumentLastRevisionMap.get(documentType);
-		lastRevision = isUpToDate ? (currentLastRevision.hasReference() ? currentLastRevision->mValue : 0) : 0;
+		OR<TNumber<UInt32> >	currentLastRevision = mInternals->mDocumentLastRevisionMap.get(documentType);
+		lastRevision = isUpToDate ? (currentLastRevision.hasReference() ? **currentLastRevision : 0) : 0;
 		updateMasterTable = true;
 	} else if (version != *collectionInfo.mStoredLastRevision) {
 		// Updated version
@@ -1037,8 +1050,8 @@ UInt32 CMDSSQLiteDatabaseManager::getCollectionDocumentCount(const CString& name
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteDatabaseManager::updateCollection(const CString& name, const TNumericArray<SInt64>& includedIDs,
-		const TNumericArray<SInt64>& notIncludedIDs, UInt32 lastRevision)
+void CMDSSQLiteDatabaseManager::updateCollection(const CString& name, const TNumberArray<SInt64>& includedIDs,
+		const TNumberArray<SInt64>& notIncludedIDs, UInt32 lastRevision)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check if in batch
@@ -1078,8 +1091,8 @@ UInt32 CMDSSQLiteDatabaseManager::registerIndex(const CString& documentType, con
 	bool	updateMasterTable;
 	if (!indexInfo.mStoredLastRevision.hasValue()) {
 		// New
-		OR<SNumberWrapper<UInt32> >	currentLastRevision = mInternals->mDocumentLastRevisionMap.get(documentType);
-		lastRevision = isUpToDate ? (currentLastRevision.hasReference() ? currentLastRevision->mValue : 0) : 0;
+		OR<TNumber<UInt32> >	currentLastRevision = mInternals->mDocumentLastRevisionMap.get(documentType);
+		lastRevision = isUpToDate ? (currentLastRevision.hasReference() ? **currentLastRevision : 0) : 0;
 		updateMasterTable = true;
 	} else if (version != *indexInfo.mStoredLastRevision) {
 		// Updated version
@@ -1106,7 +1119,7 @@ UInt32 CMDSSQLiteDatabaseManager::registerIndex(const CString& documentType, con
 
 //----------------------------------------------------------------------------------------------------------------------
 void CMDSSQLiteDatabaseManager::updateIndex(const CString& name, const CMDSSQLiteIndexKeysInfos& keysInfos,
-		const TNumericArray<SInt64>& removedIDs, UInt32 lastRevision)
+		const TNumberArray<SInt64>& removedIDs, UInt32 lastRevision)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check if in batch

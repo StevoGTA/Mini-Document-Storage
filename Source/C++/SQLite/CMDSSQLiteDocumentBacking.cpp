@@ -100,21 +100,21 @@ UniversalTime CMDSSQLiteDocumentBacking::getModificationUniversalTime() const
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<SValue> CMDSSQLiteDocumentBacking::getValue(const CString& property) const
+OV<SValue> CMDSSQLiteDocumentBacking::getValue(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Retrieve value
 	mInternals->mPropertiesLock.lockForReading();
-	OI<SValue>	value =
+	OV<SValue>	value =
 						mInternals->mPropertyMap.contains(property) ?
-								OI<SValue>(mInternals->mPropertyMap.getValue(property)) : OI<SValue>();
+								OV<SValue>(mInternals->mPropertyMap.getValue(property)) : OV<SValue>();
 	mInternals->mPropertiesLock.unlockForReading();
 
 	return value;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteDocumentBacking::set(const CString& property, const OI<SValue>& value, const CString& documentType,
+void CMDSSQLiteDocumentBacking::set(const CString& property, const OV<SValue>& value, const CString& documentType,
 		CMDSSQLiteDatabaseManager& databaseManager, bool commitChange)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -124,10 +124,10 @@ void CMDSSQLiteDocumentBacking::set(const CString& property, const OI<SValue>& v
 		CDictionary	updatedPropertyMap;
 		updatedPropertyMap.set(property, *value);
 
-		update(documentType, updatedPropertyMap, TSet<CString>(), databaseManager, commitChange);
+		update(documentType, updatedPropertyMap, TNSet<CString>(), databaseManager, commitChange);
 	} else
 		// Remove
-		update(documentType, CDictionary(), TSet<CString>(property), databaseManager, commitChange);
+		update(documentType, CDictionary(), TNSet<CString>(property), databaseManager, commitChange);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -808,13 +808,13 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func `where`(forDocumentRevision revision :Int, comparison :String = ">", includeInactive :Bool) -> SQLiteWhere {
+	func `where`(forDocumentRevision revision :Int, comparison :String = ">", activeOnly :Bool) -> SQLiteWhere {
 		// Return SQLiteWhere
-		return includeInactive ?
-			SQLiteWhere(tableColumn: DocumentTypeInfoTable.revisionTableColumn, comparison: comparison,
-							value: revision) :
+		return activeOnly ?
 			SQLiteWhere(tableColumn: DocumentTypeInfoTable.revisionTableColumn, comparison: comparison, value: revision)
-					.and(tableColumn: DocumentTypeInfoTable.activeTableColumn, value: 1)
+					.and(tableColumn: DocumentTypeInfoTable.activeTableColumn, value: 1) :
+			SQLiteWhere(tableColumn: DocumentTypeInfoTable.revisionTableColumn, comparison: comparison,
+							value: revision)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

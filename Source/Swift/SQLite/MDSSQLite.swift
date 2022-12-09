@@ -301,7 +301,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentIterate(for documentType :String, sinceRevision :Int, count :Int?,
+	public func documentIterate(for documentType :String, sinceRevision :Int, count :Int?, activeOnly: Bool,
 			documentCreateProc :MDSDocument.CreateProc?,
 			proc :(_ document :MDSDocument?, _ documentFullInfo :MDSDocument.FullInfo) -> Void) throws {
 		// Check if have count
@@ -309,7 +309,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 			// Have count
 			var	documentBackingInfos = [MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>]()
 			iterateDocumentBackingInfos(documentType: documentType, sinceRevision: sinceRevision,
-					includeInactive: true) { documentBackingInfos.append($0) }
+					activeOnly: activeOnly) { documentBackingInfos.append($0) }
 
 			documentBackingInfos.sorted(by: { $0.documentBacking.revision < $1.documentBacking.revision })[..<count!]
 					.forEach() {
@@ -320,13 +320,12 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 		} else {
 			// Don't have count
 			iterateDocumentBackingInfos(documentType: documentType, sinceRevision: sinceRevision,
-					includeInactive: true) {
+					activeOnly: activeOnly) {
 				// Call proc
 				proc(documentCreateProc?($0.documentID, self), $0.documentBacking.documentFullInfo(with: $0.documentID))
 			}
 		}
 	}
-
 
 //	//------------------------------------------------------------------------------------------------------------------
 //	public func document<T : MDSDocument>(for documentID :String) -> T? {
@@ -1076,15 +1075,14 @@ return [:]
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func iterateDocumentBackingInfos(documentType :String, sinceRevision revision :Int,
-			includeInactive :Bool,
+	private func iterateDocumentBackingInfos(documentType :String, sinceRevision revision :Int, activeOnly: Bool,
 			proc :(_ documentBackingInfo :MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
 		// Iterate
 		iterateDocumentBackingInfos(documentType: documentType,
 				innerJoin: self.databaseManager.innerJoin(for: documentType),
 				where:
 						self.databaseManager.where(forDocumentRevision: revision, comparison: ">",
-								includeInactive: includeInactive))
+								activeOnly: activeOnly))
 				{ proc($0); _ = $1 }
 	}
 
@@ -1134,7 +1132,7 @@ return [:]
 		// Collect infos
 		var	updateInfos = [MDSUpdateInfo<Int64>]()
 		iterateDocumentBackingInfos(documentType: collection.documentType, sinceRevision: collection.lastRevision,
-				includeInactive: false) {
+				activeOnly: true) {
 					// Query batch info
 					let batchDocumentInfo = batchInfo?.documentGetInfo(for: $0.documentID)
 
@@ -1225,7 +1223,7 @@ return [:]
 		// Collect infos
 		var	updateInfos = [MDSUpdateInfo<Int64>]()
 		iterateDocumentBackingInfos(documentType: index.documentType, sinceRevision: index.lastRevision,
-				includeInactive: false) {
+				activeOnly: true) {
 					// Query batch info
 					let batchDocumentInfo = batchInfo?.documentGetInfo(for: $0.documentID)
 

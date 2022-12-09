@@ -488,7 +488,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentIterate(for documentType :String, sinceRevision :Int, count :Int?,
+	public func documentIterate(for documentType :String, sinceRevision :Int, count :Int?, activeOnly: Bool,
 			documentCreateProc :MDSDocument.CreateProc?,
 			proc :(_ document :MDSDocument?, _ documentFullInfo :MDSDocument.FullInfo) -> Void) throws {
 		// Retrieve document backings
@@ -501,7 +501,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 
 						return documentBackings
 								.map({ self.documentBackingByIDMap[$0]! })
-								.filter({ $0.revision > sinceRevision })
+								.filter({ ($0.revision > sinceRevision) && (!activeOnly || $0.active) })
 								.map({ $0 })
 					}
 

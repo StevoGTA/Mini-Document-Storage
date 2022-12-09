@@ -60,7 +60,7 @@ template <typename T> class TMDSIndex {
 										for (TIteratorD<TMDSUpdateInfo<T> > iterator = updateInfos.getIterator();
 												iterator.hasValue(); iterator.advance()) {
 											// Check if there is something to do
-											if (!iterator->mChangedProperties.hasInstance() ||
+											if (!iterator->mChangedProperties.hasValue() ||
 													(mRelevantProperties.intersects(*iterator->mChangedProperties))) {
 												// Update keys info
 												keysInfos +=
@@ -97,7 +97,7 @@ template <typename T> class TMDSIndex {
 	private:
 				CString					mName;
 		const	CString&				mDocumentType;
-				TSet<CString>			mRelevantProperties;
+				TNSet<CString>			mRelevantProperties;
 				UInt32					mLastRevision;
 
 				CMDSDocument::KeysProc	mKeysProc;

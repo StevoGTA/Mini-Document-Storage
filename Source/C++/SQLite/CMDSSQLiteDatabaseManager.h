@@ -13,7 +13,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Types
 
-typedef	TMDSCollection<SInt64, TNumericArray<SInt64> >	CMDSSQLiteCollection;
+typedef	TMDSCollection<SInt64, TNumberArray<SInt64> >	CMDSSQLiteCollection;
 
 typedef	TMDSIndex<SInt64>								CMDSSQLiteIndex;
 typedef	CMDSSQLiteIndex::KeysInfo<SInt64>				CMDSSQLiteIndexKeysInfo;
@@ -87,8 +87,8 @@ class CMDSSQLiteDatabaseManager {
 
 										// Instance methods
 				OV<UInt32>				getUInt32(const CString& key) const;
-				OI<CString>				getString(const CString& key) const;
-				void					set(const CString& key, const OI<SValue>& value);
+				OV<CString>				getString(const CString& key) const;
+				void					set(const CString& key, const OV<SValue>& value);
 
 				void					note(const CString& documentType);
 				void					batch(BatchProc batchProc, void* userData);
@@ -109,13 +109,13 @@ class CMDSSQLiteDatabaseManager {
 				UInt32					registerCollection(const CString& documentType, const CString& name,
 												UInt32 version, bool isUpToDate);
 				UInt32					getCollectionDocumentCount(const CString& name);
-				void					updateCollection(const CString& name, const TNumericArray<SInt64>& includedIDs,
-												const TNumericArray<SInt64>& notIncludedIDs, UInt32 lastRevision);
+				void					updateCollection(const CString& name, const TNumberArray<SInt64>& includedIDs,
+												const TNumberArray<SInt64>& notIncludedIDs, UInt32 lastRevision);
 
 				UInt32					registerIndex(const CString& documentType, const CString& name, UInt32 version,
 												bool isUpToDate);
 				void					updateIndex(const CString& name, const CMDSSQLiteIndexKeysInfos& keysInfos,
-												const TNumericArray<SInt64>& removedIDs, UInt32 lastRevision);
+												const TNumberArray<SInt64>& removedIDs, UInt32 lastRevision);
 
 				CSQLiteInnerJoin		getInnerJoin(const CString& documentType);
 				CSQLiteInnerJoin		getInnerJoinForCollection(const CString& documentType,

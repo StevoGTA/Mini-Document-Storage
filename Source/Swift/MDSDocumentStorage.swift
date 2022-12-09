@@ -102,7 +102,7 @@ public protocol MDSDocumentStorage : AnyObject {
 	func documentGetCount(for documentType :String) throws -> Int
 	func documentIterate(for documentType :String, documentIDs :[String], documentCreateProc :MDSDocument.CreateProc?,
 			proc :(_ document :MDSDocument?, _ documentFullInfo :MDSDocument.FullInfo) -> Void) throws
-	func documentIterate(for documentType :String, sinceRevision :Int, count :Int?,
+	func documentIterate(for documentType :String, sinceRevision :Int, count :Int?, activeOnly: Bool,
 			documentCreateProc :MDSDocument.CreateProc?,
 			proc :(_ document :MDSDocument?, _ documentFullInfo :MDSDocument.FullInfo) -> Void) throws
 
@@ -322,12 +322,12 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documents<T :MDSDocument>() throws -> [T] {
+	public func documents<T :MDSDocument>(activeOnly :Bool = true) throws -> [T] {
 		// Setup
 		var	documents = [T]()
 
 		// Iterate all documents
-		try documentIterate(for: T.documentType, sinceRevision: 0, count: nil,
+		try documentIterate(for: T.documentType, sinceRevision: 0, count: nil, activeOnly: activeOnly,
 				documentCreateProc: { T(id: $0, documentStorage: $1) }, proc: { documents.append($0 as! T); _ = $1 })
 
 		return documents
@@ -359,8 +359,8 @@ extension MDSDocumentStorage {
 			[MDSDocument.FullInfo] {
 		// Collect infos
 		var	documentFullInfos = [MDSDocument.FullInfo]()
-		try documentIterate(for: documentType, sinceRevision: sinceRevision, count: count, documentCreateProc: nil)
-				{ documentFullInfos.append($1) }
+		try documentIterate(for: documentType, sinceRevision: sinceRevision, count: count, activeOnly: false,
+				documentCreateProc: nil) { documentFullInfos.append($1) }
 
 		return documentFullInfos
 	}

@@ -6,6 +6,7 @@
 
 #include "CThread.h"
 #include "CUUID.h"
+#include "SError.h"
 #include "TLockingDictionary.h"
 #include "TMDSBatchInfo.h"
 #include "TMDSCollection.h"
@@ -104,22 +105,22 @@ struct AssociationPair {
 				void						notifyDocumentChanged(const CString& documentType,
 													const CMDSDocument& document, CMDSDocument::ChangeKind changeKind);
 
-		static	OI<TSet<CString> >			updateCollectionValues(const OR<TSet<CString> >& currentValues,
+		static	OV<TSet<CString> >			updateCollectionValues(const OR<TNSet<CString> >& currentValues,
 													const CMDSEphemeralCollectionUpdateInfo* updateInfo);
-		static	OI<TSet<CString> >			removeCollectionValues(const OR<TSet<CString> >& currentValues,
+		static	OV<TSet<CString> >			removeCollectionValues(const OR<TNSet<CString> >& currentValues,
 													const TSet<CString>* documentIDs);
-		static	OI<TDictionary<CString> >	updateIndexValues(const OR<TDictionary<CString> >& currentValue,
+		static	OV<TDictionary<CString> >	updateIndexValues(const OR<TDictionary<CString> >& currentValue,
 													const UpdateIndexValuesInfo* updateIndexValuesInfo);
-		static	OI<TDictionary<CString> >	removeIndexValues(const OR<TDictionary<CString> >& currentValue,
+		static	OV<TDictionary<CString> >	removeIndexValues(const OR<TDictionary<CString> >& currentValue,
 													const TSet<CString>* documentIDs);
 		static	CString						getValueFromKeysInfo(CMDSEphemeralIndex::KeysInfo<CString>* keysInfo);
 		static	bool						isItemNotInSet(const CDictionary::Item& item, const TSet<CString>* strings);
 		static	bool						isDocumentActive(const CString& documentID,
 													const TNDictionary<CMDSEphemeralDocumentBacking>*
 															documentBackingByIDMap);
-		static	const	OI<SValue>			getDocumentBackingPropertyValue(const CString& documentID,
+		static	const	OV<SValue>			getDocumentBackingPropertyValue(const CString& documentID,
 													const CString& property, CMDSEphemeralInternals* internals);
-		static	OI<SError>					batchMap(const CString& documentType,
+		static	OV<SError>					batchMap(const CString& documentType,
 													const TDictionary<CMDSEphemeralBatchDocumentInfo >&
 															documentInfosMap,
 													CMDSEphemeralInternals* internals);
@@ -133,9 +134,10 @@ struct AssociationPair {
 
 				TNDictionary<CMDSEphemeralDocumentBacking>				mDocumentBackingByIDMap;
 				TNLockingArrayDictionary<CMDSDocument::ChangedProcInfo>	mDocumentChangedProcInfosMap;
-				TNDictionary<TSet<CString> >							mDocumentIDsByTypeMap;
+				TNDictionary<TNSet<CString> >							mDocumentIDsByTypeMap;
 				TNLockingDictionary<CMDSDocument::Info>					mDocumentInfoMap;
-				TNLockingDictionary<SNumberWrapper<UInt32> >			mDocumentLastRevisionMap;
+				CDictionary												mDocumentLastRevisionByDocumentType;
+				CLock													mDocumentLastRevisionByDocumentTypeLock;
 				CReadPreferringLock										mDocumentMapsLock;
 				TNLockingDictionary<CDictionary>						mDocumentsBeingCreatedPropertyMapMap;
 
@@ -146,11 +148,12 @@ struct AssociationPair {
 		From
 			array of to
 */
-TNLockingArrayDictionary<AssociationPair>	mAssocationMap;
+TNArrayDictionary<AssociationPair>	mAssociationMap;
+CLock								mAssociationMapLock;
 
 				TNLockingDictionary<CMDSEphemeralCollection>			mCollectionsByNameMap;
 				TNLockingArrayDictionary<CMDSEphemeralCollection>		mCollectionsByDocumentTypeMap;
-				TNLockingDictionary<TSet<CString> >						mCollectionValuesMap;
+				TNLockingDictionary<TNSet<CString> >					mCollectionValuesMap;
 
 				TNLockingDictionary<CMDSEphemeralIndex>					mIndexesByNameMap;
 				TNLockingArrayDictionary<CMDSEphemeralIndex>			mIndexesByDocumentTypeMap;
@@ -164,11 +167,10 @@ UInt32 CMDSEphemeralInternals::getNextRevision(const CString& documentType)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Compose next revision
-	const	OR<SNumberWrapper<UInt32> >	currentRevision = mDocumentLastRevisionMap[documentType];
-			UInt32						nextRevision = currentRevision.hasReference() ? currentRevision->mValue + 1 : 1;
-
-	// Store
-	mDocumentLastRevisionMap.set(documentType, SNumberWrapper<UInt32>(nextRevision));
+	mDocumentLastRevisionByDocumentTypeLock.lock();
+	UInt32	nextRevision = mDocumentLastRevisionByDocumentType.getUInt32(documentType, 0) + 1;
+	mDocumentLastRevisionByDocumentType.set(documentType, nextRevision);
+	mDocumentLastRevisionByDocumentTypeLock.unlock();
 
 	return nextRevision;
 }
@@ -179,7 +181,7 @@ void CMDSEphemeralInternals::updateCollections(const CString& documentType,
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Retrieve collections for this document type
-	OR<TArray<CMDSEphemeralCollection> >	collections = mCollectionsByDocumentTypeMap.get(documentType);
+	OR<TNArray<CMDSEphemeralCollection> >	collections = mCollectionsByDocumentTypeMap[documentType];
 	if (!collections.hasReference()) return;
 
 	// Iterate collections
@@ -190,7 +192,7 @@ void CMDSEphemeralInternals::updateCollections(const CString& documentType,
 
 		// Update storage
 		mCollectionValuesMap.update(iterator->getName(),
-				(TNLockingDictionary<TSet<CString> >::UpdateProc) updateCollectionValues, &updateInfo);
+				(TNLockingDictionary<TNSet<CString> >::UpdateProc) updateCollectionValues, &updateInfo);
 	}
 }
 
@@ -203,7 +205,7 @@ void CMDSEphemeralInternals::updateCollections(const TSet<CString>& removedDocum
 	for (TIteratorS<CString> iterator = collectionNames.getIterator(); iterator.hasValue(); iterator.advance())
 		// Remove documents from this collection
 		mCollectionValuesMap.update(*iterator,
-				(TNLockingDictionary<TSet<CString> >::UpdateProc) CMDSEphemeralInternals::removeCollectionValues,
+				(TNLockingDictionary<TNSet<CString> >::UpdateProc) CMDSEphemeralInternals::removeCollectionValues,
 				(TSet<CString>*) &removedDocumentIDs);
 }
 
@@ -213,7 +215,7 @@ void CMDSEphemeralInternals::updateIndexes(const CString& documentType,
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Retrieve indexes for this document type
-	OR<TArray<CMDSEphemeralIndex> >	indexes = mIndexesByDocumentTypeMap.get(documentType);
+	OR<TNArray<CMDSEphemeralIndex> >	indexes = mIndexesByDocumentTypeMap.get(documentType);
 	if (!indexes.hasReference()) return;
 
 	// Iterate indexes
@@ -223,7 +225,7 @@ void CMDSEphemeralInternals::updateIndexes(const CString& documentType,
 		if (updateInfo.mKeysInfos.isEmpty()) continue;
 
 		// Update storage
-		TSet<CString>	documentIDs(updateInfo.mKeysInfos, (CString (*)(CArray::ItemRef)) getValueFromKeysInfo);
+		TNSet<CString>	documentIDs(updateInfo.mKeysInfos, (CString (*)(CArray::ItemRef)) getValueFromKeysInfo);
 		UpdateIndexValuesInfo	updateIndexValueInfos(updateInfo, documentIDs);
 		mIndexValuesMap.update(documentType, (TNLockingDictionary<TDictionary<CString> >::UpdateProc) updateIndexValues,
 				&updateIndexValueInfos);
@@ -249,7 +251,7 @@ void CMDSEphemeralInternals::notifyDocumentChanged(const CString& documentType, 
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Retrieve proc info array
-	OR<TArray<CMDSDocument::ChangedProcInfo> >	array = mDocumentChangedProcInfosMap.get(documentType);
+	OR<TNArray<CMDSDocument::ChangedProcInfo> >	array = mDocumentChangedProcInfosMap.get(documentType);
 	if (array.hasReference())
 		// Iterate all proc infos
 		for (TIteratorD<CMDSDocument::ChangedProcInfo> iterator = array->getIterator(); iterator.hasValue();
@@ -261,39 +263,39 @@ void CMDSEphemeralInternals::notifyDocumentChanged(const CString& documentType, 
 // MARK: Class methods
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<TSet<CString> > CMDSEphemeralInternals::updateCollectionValues(const OR<TSet<CString> >& currentValues,
+OV<TSet<CString> > CMDSEphemeralInternals::updateCollectionValues(const OR<TNSet<CString> >& currentValues,
 		const CMDSEphemeralCollectionUpdateInfo* updateInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check if have current values
-	TSet<CString>	updatedValues;
+	TNSet<CString>	updatedValues;
 	if (currentValues.hasReference())
 		// Have current values
-		updatedValues = currentValues->removeFrom(updateInfo->mNotIncludedValues)
-			.addFrom(updateInfo->mIncludedValues);
+		updatedValues =
+				currentValues->removeFrom(updateInfo->mNotIncludedValues).insertFrom(updateInfo->mIncludedValues);
 	else
 		// Don't have current values
-		updatedValues = TSet<CString>(updateInfo->mIncludedValues);
+		updatedValues = TNSet<CString>(updateInfo->mIncludedValues);
 
-	return !updatedValues.isEmpty() ? OI<TSet<CString> >(updatedValues) : OI<TSet<CString> >();
+	return !updatedValues.isEmpty() ? OV<TSet<CString> >(updatedValues) : OV<TSet<CString> >();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<TSet<CString> > CMDSEphemeralInternals::removeCollectionValues(const OR<TSet<CString> >& currentValues,
+OV<TSet<CString> > CMDSEphemeralInternals::removeCollectionValues(const OR<TNSet<CString> >& currentValues,
 		const TSet<CString>* documentIDs)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check if have current values
-	TSet<CString>	updatedValues;
+	TNSet<CString>	updatedValues;
 	if (currentValues.hasReference())
 		// Have current values
 		updatedValues = currentValues->removeFrom(*documentIDs);
 
-	return !updatedValues.isEmpty() ? OI<TSet<CString> >(updatedValues) : OI<TSet<CString> >();
+	return !updatedValues.isEmpty() ? OV<TSet<CString> >(updatedValues) : OV<TSet<CString> >();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<TDictionary<CString> > CMDSEphemeralInternals::updateIndexValues(const OR<TDictionary<CString> >& currentValue,
+OV<TDictionary<CString> > CMDSEphemeralInternals::updateIndexValues(const OR<TDictionary<CString> >& currentValue,
 		const UpdateIndexValuesInfo* updateIndexValuesInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -313,11 +315,11 @@ OI<TDictionary<CString> > CMDSEphemeralInternals::updateIndexValues(const OR<TDi
 			updatedValues.set(*keyIterator, keysInfoIterator->mValue);
 	}
 
-	return !updatedValues.isEmpty() ? OI<TDictionary<CString> >(updatedValues) : OI<TDictionary<CString> >();
+	return !updatedValues.isEmpty() ? OV<TDictionary<CString> >(updatedValues) : OV<TDictionary<CString> >();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<TDictionary<CString> > CMDSEphemeralInternals::removeIndexValues(const OR<TDictionary<CString> >& currentValue,
+OV<TDictionary<CString> > CMDSEphemeralInternals::removeIndexValues(const OR<TDictionary<CString> >& currentValue,
 		const TSet<CString>* documentIDs)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -325,7 +327,7 @@ OI<TDictionary<CString> > CMDSEphemeralInternals::removeIndexValues(const OR<TDi
 	TNDictionary<CString>	updatedValues(currentValue.hasReference() ? *currentValue : TNDictionary<CString>(),
 									(CDictionary::Item::IncludeProc) isItemNotInSet, (void*) documentIDs);
 
-	return !updatedValues.isEmpty() ? OI<TDictionary<CString> >(updatedValues) : OI<TDictionary<CString> >();
+	return !updatedValues.isEmpty() ? OV<TDictionary<CString> >(updatedValues) : OV<TDictionary<CString> >();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -351,26 +353,26 @@ bool CMDSEphemeralInternals::isDocumentActive(const CString& documentID,
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-const OI<SValue> CMDSEphemeralInternals::getDocumentBackingPropertyValue(const CString& documentID,
+const OV<SValue> CMDSEphemeralInternals::getDocumentBackingPropertyValue(const CString& documentID,
 		const CString& property, CMDSEphemeralInternals* internals)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
 	internals->mDocumentMapsLock.lockForReading();
 	const	OR<CMDSEphemeralDocumentBacking>	documentBacking = internals->mDocumentBackingByIDMap[documentID];
-	const	OI<SValue>							value =
+	const	OV<SValue>							value =
 														documentBacking.hasReference() ?
-																OI<SValue>(
+																OV<SValue>(
 																		documentBacking->mPropertyMap.getValue(
 																				property)) :
-																OI<SValue>();
+																OV<SValue>();
 	internals->mDocumentMapsLock.unlockForReading();
 
 	return value;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<SError> CMDSEphemeralInternals::batchMap(const CString& documentType,
+OV<SError> CMDSEphemeralInternals::batchMap(const CString& documentType,
 		const TDictionary<CMDSEphemeralBatchDocumentInfo >& documentInfosMap, CMDSEphemeralInternals* internals)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -378,7 +380,7 @@ OI<SError> CMDSEphemeralInternals::batchMap(const CString& documentType,
 	const	OR<CMDSDocument::Info>&				documentInfo = internals->mDocumentInfoMap[documentType];
 			TNArray<I<CMDSDocument> >			documents;
 			TNArray<CMDSEphemeralUpdateInfo>	updateInfos;
-			TSet<CString>						removedDocumentIDs;
+			TNSet<CString>						removedDocumentIDs;
 
 	// Prepare for write
 	internals->mDocumentMapsLock.lockForWriting();
@@ -411,9 +413,8 @@ OI<SError> CMDSEphemeralInternals::batchMap(const CString& documentType,
 					documents += I<CMDSDocument>(document);
 
 					// Update collections and indexes
-					TSet<CString>	changedProperties =
-											batchDocumentInfo.getUpdatedPropertyMap().getKeys()
-												.addFrom(batchDocumentInfo.getRemovedProperties());
+					TNSet<CString>	changedProperties = batchDocumentInfo.getUpdatedPropertyMap().getKeys();
+					changedProperties.insertFrom(batchDocumentInfo.getRemovedProperties());
 					updateInfos +=
 							CMDSEphemeralUpdateInfo(*document, existingDocumentBacking->mRevision, documentID,
 									changedProperties);
@@ -429,11 +430,11 @@ OI<SError> CMDSEphemeralInternals::batchMap(const CString& documentType,
 														batchDocumentInfo.getUpdatedPropertyMap());
 				internals->mDocumentBackingByIDMap.set(documentID, documentBacking);
 
-				OR<TSet<CString> >	set = internals->mDocumentIDsByTypeMap.get(documentType);
+				OR<TNSet<CString> >	set = internals->mDocumentIDsByTypeMap.get(documentType);
 				if (set.hasReference())
-					set->add(documentID);
+					set->insert(documentID);
 				else
-					internals->mDocumentIDsByTypeMap.set(documentType, TSet<CString>(documentID));
+					internals->mDocumentIDsByTypeMap.set(documentType, TNSet<CString>(documentID));
 
 				// Check if we have document info
 				if (documentInfo.hasReference()) {
@@ -483,7 +484,7 @@ OI<SError> CMDSEphemeralInternals::batchMap(const CString& documentType,
 	internals->updateIndexes(removedDocumentIDs);
 	internals->updateIndexes(documentType, updateInfos);
 
-	return OI<SError>();
+	return OV<SError>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -586,13 +587,13 @@ I<CMDSDocument> CMDSEphemeral::newDocument(const CMDSDocument::InfoForNew& infoF
 
 		mInternals->mDocumentBackingByIDMap.set(documentID, documentBacking);
 
-		OR<TSet<CString> >	set = mInternals->mDocumentIDsByTypeMap.get(infoForNew.getDocumentType());
+		OR<TNSet<CString> >	set = mInternals->mDocumentIDsByTypeMap.get(infoForNew.getDocumentType());
 		if (set.hasReference())
 			// Already have a document for this type
-			set->add(documentID);
+			set->insert(documentID);
 		else
 			// First document for this type
-			mInternals->mDocumentIDsByTypeMap.set(infoForNew.getDocumentType(), TSet<CString>(documentID));
+			mInternals->mDocumentIDsByTypeMap.set(infoForNew.getDocumentType(), TNSet<CString>(documentID));
 
 		mInternals->mDocumentMapsLock.unlockForWriting();
 
@@ -678,7 +679,7 @@ UniversalTime CMDSEphemeral::getModificationUniversalTime(const CMDSDocument& do
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<SValue> CMDSEphemeral::getValue(const CString& property, const CMDSDocument& document) const
+OV<SValue> CMDSEphemeral::getValue(const CString& property, const CMDSDocument& document) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check for batch
@@ -695,32 +696,32 @@ OI<SValue> CMDSEphemeral::getValue(const CString& property, const CMDSDocument& 
 	const	OR<CDictionary>	propertyMap = mInternals->mDocumentsBeingCreatedPropertyMapMap[document.getID()];
 	if (propertyMap.hasReference())
 		// Being created
-		return propertyMap->contains(property) ? OI<SValue>(propertyMap->getValue(property)) : OI<SValue>();
+		return propertyMap->contains(property) ? OV<SValue>(propertyMap->getValue(property)) : OV<SValue>();
 
 	// "Idle"
 	mInternals->mDocumentMapsLock.lockForReading();
 	const	OR<CMDSEphemeralDocumentBacking>	documentBacking =
 														mInternals->mDocumentBackingByIDMap[document.getID()];
-			OI<SValue>							value =
+			OV<SValue>							value =
 														(documentBacking.hasReference() &&
 																	documentBacking->mPropertyMap.contains(property)) ?
-																OI<SValue>(
+																OV<SValue>(
 																		documentBacking->mPropertyMap.getValue(
 																				property)) :
-																OI<SValue>();
+																OV<SValue>();
 	mInternals->mDocumentMapsLock.unlockForReading();
 
 	return value;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<CData> CMDSEphemeral::getData(const CString& property, const CMDSDocument& document) const
+OV<CData> CMDSEphemeral::getData(const CString& property, const CMDSDocument& document) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OI<SValue>	value = getValue(property, document);
+	OV<SValue>	value = getValue(property, document);
 
-	return value.hasInstance() ? OI<CData>(value->getData()) : OI<CData>();
+	return value.hasValue() ? OV<CData>(value->getData()) : OV<CData>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -728,13 +729,13 @@ OV<UniversalTime> CMDSEphemeral::getUniversalTime(const CString& property, const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OI<SValue>	value = getValue(property, document);
+	OV<SValue>	value = getValue(property, document);
 
-	return value.hasInstance() ? OV<UniversalTime>(value->getFloat64()) : OV<UniversalTime>();
+	return value.hasValue() ? OV<UniversalTime>(value->getFloat64()) : OV<UniversalTime>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSEphemeral::set(const CString& property, const OI<SValue>& value, const CMDSDocument& document,
+void CMDSEphemeral::set(const CString& property, const OV<SValue>& value, const CMDSDocument& document,
 		SetValueInfo setValueInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -816,7 +817,7 @@ void CMDSEphemeral::remove(const CMDSDocument& document)
 		mInternals->mDocumentMapsLock.unlockForWriting();
 
 		// Remove from collections and indexes
-		TSet<CString>	documentIDs(documentID);
+		TNSet<CString>	documentIDs(documentID);
 		mInternals->updateCollections(documentIDs);
 		mInternals->updateIndexes(documentIDs);
 
@@ -831,9 +832,9 @@ void CMDSEphemeral::iterate(const CMDSDocument::Info& documentInfo, CMDSDocument
 {
 	// Collect document IDs
 	mInternals->mDocumentMapsLock.lockForReading();
-	const	OR<TSet<CString> >	documentIDs = mInternals->mDocumentIDsByTypeMap[documentInfo.getDocumentType()];
-			TSet<CString>		filteredDocumentIDs(
-										documentIDs.hasReference() ? *documentIDs : TSet<CString>(),
+	const	OR<TNSet<CString> >	documentIDs = mInternals->mDocumentIDsByTypeMap[documentInfo.getDocumentType()];
+			TNSet<CString>		filteredDocumentIDs(
+										documentIDs.hasReference() ? *documentIDs : TNSet<CString>(),
 												(TSet<CString>::IsIncludedProc)
 														CMDSEphemeralInternals::isDocumentActive,
 										&mInternals->mDocumentBackingByIDMap);
@@ -909,33 +910,56 @@ void CMDSEphemeral::updateAssociation(const CString& name, const TArray<Associat
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Iterate updates
+	mInternals->mAssociationMapLock.lock();
 	for (TIteratorD<AssociationUpdate> iterator = updates.getIterator(); iterator.hasValue(); iterator.advance()) {
 		// Check action
 		if (iterator->mAction == AssociationUpdate::kAdd)
 			// Add
-			mInternals->mAssocationMap.add(name,
+			mInternals->mAssociationMap.add(name,
 					CMDSEphemeralInternals::AssociationPair(iterator->mFromDocument.getID(),
 							iterator->mToDocument.getID()));
 //		else
 //			// Remove
 	}
+	mInternals->mAssociationMapLock.unlock();
 }
 
-////----------------------------------------------------------------------------------------------------------------------
-//void CMDSEphemeral::iterateAssociationFrom(const CString& name, const CMDSDocument& fromDocument,
-//		CMDSDocument::Proc proc, void* userData) const
-////----------------------------------------------------------------------------------------------------------------------
-//{
-//	AssertFailUnimplemented();
-//}
-//
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSEphemeral::iterateAssociationFrom(const CString& name, const CMDSDocument& fromDocument,
+		const CMDSDocument::Info& toDocumentInfo, CMDSDocument::Proc proc, void* userData)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Retrieve association pairs
+	mInternals->mAssociationMapLock.lock();
+	OR<TNArray<CMDSEphemeralInternals::AssociationPair> >	associationPairs = mInternals->mAssociationMap.get(name);
+	if (associationPairs.hasReference()) {
+		// Iterate results
+		for (TIteratorD<CMDSEphemeralInternals::AssociationPair> iterator = associationPairs->getIterator();
+				iterator.hasValue(); iterator.advance()) {
+			// Check document ID
+			if (iterator->mFromDocumentID == fromDocument.getID()) {
+				// Create
+				CMDSDocument*	document = toDocumentInfo.create(iterator->mToDocumentID, *this);
+
+				// Call proc
+				proc(*document, userData);
+
+				// Cleanup
+				Delete(document);
+			}
+		}
+	}
+	mInternals->mAssociationMapLock.unlock();
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 void CMDSEphemeral::iterateAssociationTo(const CString& name, const CMDSDocument::Info& fromDocumentInfo,
 		const CMDSDocument& toDocument, CMDSDocument::Proc proc, void* userData)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Retrieve association pairs
-	OR<TArray<CMDSEphemeralInternals::AssociationPair> >	associationPairs = mInternals->mAssocationMap.get(name);
+	mInternals->mAssociationMapLock.lock();
+	OR<TNArray<CMDSEphemeralInternals::AssociationPair> >	associationPairs = mInternals->mAssociationMap.get(name);
 	if (associationPairs.hasReference()) {
 		// Iterate results
 		for (TIteratorD<CMDSEphemeralInternals::AssociationPair> iterator = associationPairs->getIterator();
@@ -953,6 +977,7 @@ void CMDSEphemeral::iterateAssociationTo(const CString& name, const CMDSDocument
 			}
 		}
 	}
+	mInternals->mAssociationMapLock.unlock();
 }
 
 ////----------------------------------------------------------------------------------------------------------------------
@@ -999,7 +1024,7 @@ UInt32 CMDSEphemeral::getCollectionDocumentCount(const CString& name) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get values
-	const	OR<TSet<CString> >	values = mInternals->mCollectionValuesMap[name];
+	const	OR<TNSet<CString> >	values = mInternals->mCollectionValuesMap[name];
 
 	return values.hasReference() ? values->getCount() : 0;
 }
@@ -1010,7 +1035,7 @@ void CMDSEphemeral::iterateCollection(const CString& name, const CMDSDocument::I
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get values
-	const	OR<TSet<CString> >	values = mInternals->mCollectionValuesMap[name];
+	const	OR<TNSet<CString> >	values = mInternals->mCollectionValuesMap[name];
 	if (!values.hasReference()) return;
 
 	// Iterate values

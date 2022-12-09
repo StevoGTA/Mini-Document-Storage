@@ -102,7 +102,7 @@ class CMDSDocument : public CHashable {
 			CString			mDocumentID;
 			bool			mActive;
 			CDictionary		mUpdated;
-			TSet<CString>	mRemoved;
+			TNSet<CString>	mRemoved;
 		};
 
 	// Procs
@@ -199,18 +199,18 @@ class CMDSDocument : public CHashable {
 						UniversalTime					getCreationUniversalTime() const;
 						UniversalTime					getModificationUniversalTime() const;
 
-						OI<TArray<CString> >			getArrayOfStrings(const CString& property) const;
+						OV<TArray<CString> >			getArrayOfStrings(const CString& property) const;
 						void							set(const CString& property, const TArray<CString>& value)
 																const;
 
 						OV<bool>						getBool(const CString& property) const;
 						OV<bool>						set(const CString& property, bool value) const;
 
-						OI<CData>						getData(const CString& property) const;
-						OI<CData>						set(const CString& property, const CData& value) const;
+						OV<CData>						getData(const CString& property) const;
+						OV<CData>						set(const CString& property, const CData& value) const;
 
-						OI<CDictionary>					getDictionary(const CString& property) const;
-						OI<CDictionary>					set(const CString& property, const CDictionary& value) const;
+						OV<CDictionary>					getDictionary(const CString& property) const;
+						OV<CDictionary>					set(const CString& property, const CDictionary& value) const;
 
 						OV<Float32>						getFloat32(const CString& property) const;
 						OV<Float32>						set(const CString& property, Float32 value) const;
@@ -224,8 +224,8 @@ class CMDSDocument : public CHashable {
 						OV<SInt64>						getSInt64(const CString& property) const;
 						OV<SInt64>						set(const CString& property, SInt64 value) const;
 
-						OI<CString>						getString(const CString& property) const;
-						OI<CString>						set(const CString& property, const CString& value) const;
+						OV<CString>						getString(const CString& property) const;
+						OV<CString>						set(const CString& property, const CString& value) const;
 
 						OV<UInt8>						getUInt8(const CString& property) const;
 						OV<UInt8>						set(const CString& property, UInt8 value) const;
@@ -246,12 +246,12 @@ class CMDSDocument : public CHashable {
 //						void							set(const CString& property, const CMDSDocument& document)
 //																const;
 
-						OI<TArray<CMDSDocument> >		getDocuments(const CString& property,
+						OV<TArray<CMDSDocument> >		getDocuments(const CString& property,
 																const CMDSDocument::Info& info) const;
 						void							set(const CString& property,
 																const TArray<CMDSDocument>& documents) const;
 
-//						OI<TDictionary<CMDSDocument> >	getDocumentMap(const CString& property,
+//						OV<TDictionary<CMDSDocument> >	getDocumentMap(const CString& property,
 //																const CMDSDocument::Info& info) const;
 //						void							set(const CString& property,
 //																const TDictionary<CMDSDocument> documentMap) const;
@@ -282,17 +282,17 @@ template <typename T> struct TMDSUpdateInfo {
 	TMDSUpdateInfo(const CMDSDocument& document, UInt32 revision, T value,
 			const TSet<CString> changedProperties) :
 		mDocument(document), mRevision(revision), mValue(value),
-				mChangedProperties(OI<TSet<CString> >(changedProperties))
+				mChangedProperties(OV<TSet<CString> >(changedProperties))
 		{}
 	TMDSUpdateInfo(const CMDSDocument& document, UInt32 revision, T value) :
-		mDocument(document), mRevision(revision), mValue(value), mChangedProperties(OI<TSet<CString> >())
+		mDocument(document), mRevision(revision), mValue(value), mChangedProperties(OV<TSet<CString> >())
 		{}
 
 	// Properties
 	const	CMDSDocument&		mDocument;
 			UInt32				mRevision;
 			T					mValue;
-			OI<TSet<CString> >	mChangedProperties;
+			OV<TSet<CString> >	mChangedProperties;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -190,7 +190,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			// Handle results
 			if let (documentRevisionInfos, isComplete) = info {
 				// Success
-				iterateDocumentIDs(documentType: toDocumentType, activeDocumentRevisionInfos: documentRevisionInfos)
+				documentIterateIDs(documentType: toDocumentType, activeDocumentRevisionInfos: documentRevisionInfos)
 					{ proc(documentCreateProc($0, self)) }
 
 				// Update
@@ -237,7 +237,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			// Handle results
 			if let (documentRevisionInfos, isComplete) = info {
 				// Success
-				iterateDocumentIDs(documentType: fromDocumentType, activeDocumentRevisionInfos: documentRevisionInfos)
+				documentIterateIDs(documentType: fromDocumentType, activeDocumentRevisionInfos: documentRevisionInfos)
 					{ proc(documentCreateProc($0, self)) }
 
 				// Update
@@ -295,7 +295,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func cacheRegister(named name :String, documentType :String, relevantProperties :[String],
-			valueInfos :[(name :String, valueType :MDSValue.`Type`, selector :String, proc :MDSDocument.ValueProc)]) {
+			valueInfos :[(name :String, valueType :MDSValue.Type_, selector :String, proc :MDSDocument.ValueProc)]) {
 		// Register cache
 		let	error =
 					self.httpEndpointClient.cacheRegister(documentStorageID: self.documentStorageID, name: name,
@@ -389,7 +389,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 				continue
 			} else if let (documentRevisionInfos, isComplete) = info {
 				// Success
-				iterateDocumentIDs(documentType: documentType, activeDocumentRevisionInfos: documentRevisionInfos)
+				documentIterateIDs(documentType: documentType, activeDocumentRevisionInfos: documentRevisionInfos)
 					{ proc(documentCreateProc($0, self)) }
 
 				// Update
@@ -461,7 +461,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 			// Create documents
 			let	documentOverviewInfos =
-						createDocuments(documentType: documentType, documentCreateInfos: updatedDocumentCreateInfos)
+						documentCreate(documentType: documentType, documentCreateInfos: updatedDocumentCreateInfos)
 
 			// Update infos
 			infos = documentOverviewInfos.map({ (documentsByDocumentID[$0.documentID]!, $0) })
@@ -494,79 +494,10 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentIterate(for documentType :String, sinceRevision :Int, count :Int?,
+	public func documentIterate(for documentType :String, sinceRevision :Int, count :Int?, activeOnly: Bool,
 			documentCreateProc :MDSDocument.CreateProc?,
 			proc :(_ document :MDSDocument?, _ documentFullInfo :MDSDocument.FullInfo) -> Void) {
 // TODO
-	}
-
-
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func document<T : MDSDocument>(for documentID :String) -> T? {
-		// Retrieve document
-		var	document :T?
-		iterate(documentIDs: [documentID], documentType: T.documentType,
-				documentCreateProc: { T(id: $0, documentStorage: $1) }, proc: { document = $0 })
-
-		return document
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func iterate<T : MDSDocument>(proc :(_ document : T) -> Void) {
-		// Setup
-		let	documentType = T.documentType
-		let	lastRevisionKey = "\(documentType)-lastRevision"
-		var	lastRevision = self.remoteStorageCache.int(for: lastRevisionKey) ?? 0
-
-		// May need to try this more than once
-		while true {
-			// Query documents
-			let	(isComplete, error) =
-						DispatchQueue.performBlocking() { completionProc in
-							// Call HTTP Endpoint Client
-							self.httpEndpointClient.queue(
-									MDSHTTPServices.httpEndpointRequestForDocumentGet(
-											documentStorageID: self.documentStorageID, documentType: documentType,
-											sinceRevision: lastRevision, authorization: self.authorization),
-									partialResultsProc: { self.updateCaches(for: documentType, with: $0) },
-									completionProc: { (isComplete :Bool?, error :Error?) in
-										// Call completion proc
-										completionProc((isComplete, error))
-									})
-						}
-
-			// Handle results
-			if (isComplete ?? false) {
-				// Done
-				break
-			} else if error != nil {
-				// Error
-				self.recentErrors.append(error!)
-
-				return
-			}
-		}
-
-		// Retrieve documentInfos
-		let	documentFullInfos = self.remoteStorageCache.activeDocumentFullInfos(for: documentType)
-
-		// Update document backing cache
-		updateDocumentBackingCache(for: documentType, with: documentFullInfos)
-			.forEach() { lastRevision = max(lastRevision, $0.documentBacking.revision) }
-
-		// Update last revision
-		self.remoteStorageCache.set(lastRevision, for: lastRevisionKey)
-
-		// Iterate document infos, again
-		documentFullInfos.forEach() { proc(T(id: $0.documentID, documentStorage: self)) }
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func iterate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void) {
-		// Iterate
-		iterate(documentIDs: documentIDs, documentType: T.documentType,
-				documentCreateProc: { T(id: $0, documentStorage: $1) }, proc: proc)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -700,8 +631,8 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			}
 		} else {
 			// Not in batch
-			return attachmentAdd(documentType: documentType, documentID: documentID, documentBacking: nil, info: info,
-					content: content) ?? MDSDocument.AttachmentInfo(id: "", revision: 0, info: [:])
+			return documentAttachmentAdd(documentType: documentType, documentID: documentID, documentBacking: nil,
+					info: info, content: content) ?? MDSDocument.AttachmentInfo(id: "", revision: 0, info: [:])
 		}
 	}
 
@@ -770,7 +701,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			}
 		} else {
 			// Not in batch
-			attachmentUpdate(documentType: documentType, documentID: documentID, documentBacking: nil,
+			documentAttachmentUpdate(documentType: documentType, documentID: documentID, documentBacking: nil,
 					attachmentID: attachmentID, info: updatedInfo, content: updatedContent)
 		}
 
@@ -797,7 +728,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			}
 		} else {
 			// Not in batch
-			attachmentRemove(documentType: documentType, documentID: documentID, documentBacking: nil,
+			documentAttachmentRemove(documentType: documentType, documentID: documentID, documentBacking: nil,
 					attachmentID: attachmentID)
 		}
 	}
@@ -855,16 +786,58 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		// Setup
 		let	documentCreateProc = self.documentCreateProcMap.value(for: documentType)!
 		var	keysRemaining = Set<String>(keys.filter({ !$0.isEmpty }))
-		var	isUpToDate = false
+		guard !keysRemaining.isEmpty else { return }
+
+		// Process first key to ensure index is up to date.  We need to only call the API one at a time to avoid the
+		//	server overlapping calls.  In the future would be great to figure a different way to make the client
+		//	simpler.
+		let	firstKey = keysRemaining.removeFirst()
+		let	documentRevisionInfoMap = LockingDictionary<String, MDSDocument.RevisionInfo>()
+		while true {
+			// Retrieve info
+			let	info =
+						DispatchQueue.performBlocking() { completionProc in
+							// Call network client
+							self.httpEndpointClient.queue(
+									MDSHTTPServices.httpEndpointRequestForIndexGetDocumentInfos(
+											documentStorageID: self.documentStorageID, name: name, keys: [firstKey],
+											authorization: self.authorization),
+									partialResultsProc: {
+										// Handle results
+										if $0 != nil {
+											// Add to dictionary
+											documentRevisionInfoMap.merge($0!)
+										}
+
+										// Ignore error (will collect via completionProc)
+										_ = $1
+									},
+									completionProc: {completionProc(($0, $1)) })
+						}
+
+			// Handle results
+			if let isUpToDate = info.0 {
+				// Success
+				if isUpToDate {
+					// All good
+					break
+				} else {
+					// Keep working
+					continue
+				}
+			} else {
+				// Error
+				self.recentErrors += info.1
+
+				return
+			}
+		}
+
+		// Check if have remaining keys
+		let	semaphore = DispatchSemaphore(value: 0)
 		var	errors = [Error]()
-
-		// Keep going until all keys are processed
-		while !isUpToDate && errors.isEmpty && !keysRemaining.isEmpty {
-			// Retrieve the rest of the info
-			let	documentRevisionInfoMap = LockingDictionary<String, MDSDocument.RevisionInfo>()
-			let	semaphore = DispatchSemaphore(value: 0)
-			var	requestHasCompleted = false
-
+		var	requestHasCompleted = keysRemaining.isEmpty
+		if !keysRemaining.isEmpty {
 			// Queue info retrieval
 			self.httpEndpointClient.queue(
 					MDSHTTPServices.httpEndpointRequestForIndexGetDocumentInfos(
@@ -883,10 +856,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						// Ignore error (will collect below)
 						_ = $1
 					}, completionProc: {
-						// Store
-						isUpToDate = $0 ?? false
-
-						// Add errors
+						// Note errors
 						errors += $1
 
 						// All done
@@ -896,24 +866,26 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						semaphore.signal()
 					})
 
-			// Process results
-			while !requestHasCompleted || !documentRevisionInfoMap.isEmpty {
-				// Check if waiting for more info
-				if documentRevisionInfoMap.isEmpty {
-					// Wait for signal
-					semaphore.wait()
-				}
+			// All keys submitted
+			keysRemaining.removeAll()
+		}
 
-				// Run lean
-				autoreleasepool() {
-					// Get queued document infos
-					let	documentRevisionInfoMapToProcess = documentRevisionInfoMap.removeAll()
+		// Keep going until all keys are processed
+		while errors.isEmpty && (!requestHasCompleted || !documentRevisionInfoMap.isEmpty) {
+			// Check if waiting for more info
+			if documentRevisionInfoMap.isEmpty {
+				// Wait for signal
+				semaphore.wait()
+			}
 
-					// Process
-					keysRemaining.formSymmetricDifference(documentRevisionInfoMapToProcess.keys)
-
-					let	map = Dictionary(documentRevisionInfoMapToProcess.map({ ($0.value.documentID, $0.key )}))
-					self.iterateDocumentIDs(documentType: documentType,
+			// Run lean
+			autoreleasepool() {
+				// Get queued document infos
+				let	documentRevisionInfoMapToProcess = documentRevisionInfoMap.removeAll()
+				let	map = Dictionary(documentRevisionInfoMapToProcess.map({ ($0.value.documentID, $0.key )}))
+				if !map.isEmpty {
+					// Iterate document IDs
+					self.documentIterateIDs(documentType: documentType,
 							activeDocumentRevisionInfos: Array(documentRevisionInfoMapToProcess.values))
 							{ proc(map[$0]!, documentCreateProc($0, self)) }
 				}
@@ -1021,17 +993,17 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						// Process attachments
 						batchInfoDocumentInfo.removeAttachmentInfos.forEach() {
 							// Remove attachment
-							self.attachmentRemove(documentType: documentType, documentID: documentID,
+							self.documentAttachmentRemove(documentType: documentType, documentID: documentID,
 									documentBacking: documentBacking, attachmentID: $0.attachmentID)
 						}
 						batchInfoDocumentInfo.addAttachmentInfos.forEach() {
 							// Add attachment
-							_ = self.attachmentAdd(documentType: documentType, documentID: documentID,
+							_ = self.documentAttachmentAdd(documentType: documentType, documentID: documentID,
 									documentBacking: documentBacking, info: $0.info, content: $0.content)
 						}
 						batchInfoDocumentInfo.updateAttachmentInfos.forEach() {
 							// Update attachment
-							self.attachmentUpdate(documentType: documentType, documentID: documentID,
+							self.documentAttachmentUpdate(documentType: documentType, documentID: documentID,
 									documentBacking: documentBacking, attachmentID: $0.attachmentID, info: $0.info,
 									content: $0.content)
 						}
@@ -1061,7 +1033,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 				}
 
 				// Create documents
-				_ = self.createDocuments(documentType: documentType, documentCreateInfos: documentCreateInfos)
+				_ = self.documentCreate(documentType: documentType, documentCreateInfos: documentCreateInfos)
 
 				// Process attachments
 				addAttachmentInfos.forEach() { documentID, addAttachmentInfos in
@@ -1071,7 +1043,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 					// Iterate add attachment infos
 					addAttachmentInfos.forEach() {
 						// Add attachment
-						_ = self.attachmentAdd(documentType: documentType, documentID: documentID,
+						_ = self.documentAttachmentAdd(documentType: documentType, documentID: documentID,
 								documentBacking: documentBacking, info: $0.info, content: $0.content)
 					}
 				}
@@ -1153,110 +1125,18 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		} else {
 			// Must retrieve from server
 			var	documentBackings = [DocumentBacking]()
-			retrieveDocuments(for: [documentID], documentType: documentType)
-					{ documentBackings.append($0.documentBacking) }
+			documentGet(for: [documentID], documentType: documentType) { documentBackings.append($0.documentBacking) }
 
 			return documentBackings.first!
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	private func documentBacking(forX document :MDSDocument) -> DocumentBacking {
-		// Check if in cache
-		if let documentBacking = self.documentBackingCache.documentBacking(for: document.id) {
-			// Have in cache
-			return documentBacking
-		} else {
-			// Must retrieve from server
-			var	documentBackings = [DocumentBacking]()
-			retrieveDocuments(for: [document.id], documentType: type(of: document).documentType)
-					{ documentBackings.append($0.documentBacking) }
-
-			return documentBackings.first!
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	private func iterate<T : MDSDocument>(documentIDs :[String], documentType :String,
-			documentCreateProc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T,
-			proc :(_ document : T) -> Void) {
-		// Check for batch
-		var	documentIDsToRetrieve = [String]()
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
-			// In batch
-			documentIDs.forEach() {
-				// Check if have in batch
-				if batchInfo.documentGetInfo(for: $0) != nil {
-					// Have in batch
-					proc(T(id: $0, documentStorage: self))
-				} else {
-					// Not in batch
-					documentIDsToRetrieve.append($0)
-				}
-			}
-		} else {
-			// Not in batch
-			documentIDsToRetrieve = documentIDs
-		}
-
-		// Retrieve documents and call proc
-		retrieveDocuments(for: documentIDsToRetrieve, documentType: documentType)
-				{ proc(documentCreateProc($0.documentID, self)) }
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	private func iterateDocumentIDs(documentType :String, activeDocumentRevisionInfos :[MDSDocument.RevisionInfo],
-			proc :(_ documentID :String) -> Void) {
-		// Preflight
-		guard !activeDocumentRevisionInfos.isEmpty else { return }
-		
-		// Iterate all infos
-		var	documentRevisionInfosPossiblyInCache = [MDSDocument.RevisionInfo]()
-		var	documentRevisionInfosToRetrieve = [MDSDocument.RevisionInfo]()
-		activeDocumentRevisionInfos.forEach() {
-			// Check if have in cache and is most recent
-			if let documentBacking = self.documentBackingCache.documentBacking(for: $0.documentID) {
-				// Check revision
-				if documentBacking.revision == $0.revision {
-					// Use from documents cache
-					proc($0.documentID)
-				} else {
-					// Must retrieve
-					documentRevisionInfosToRetrieve.append($0)
-				}
-			} else {
-				// Check cache
-				documentRevisionInfosPossiblyInCache.append($0)
-			}
-		}
-
-		// Retrieve from disk cache
-		let	(documentFullInfos, documentRevisionInfosNotResolved) =
-					self.remoteStorageCache.info(for: documentType, with: documentRevisionInfosPossiblyInCache)
-
-		// Update document backing cache
-		updateDocumentBackingCache(for: documentType, with: documentFullInfos).forEach() { proc($0.documentID) }
-
-		// Check if have documents to retrieve
-		documentRevisionInfosToRetrieve += documentRevisionInfosNotResolved
-		if !documentRevisionInfosToRetrieve.isEmpty {
-			// Retrieve from server
-			retrieveDocuments(for: documentRevisionInfosToRetrieve.map({ $0.documentID }), documentType: documentType)
-					{ _ in }
-
-			// Create documents
-			documentRevisionInfosToRetrieve
-					.map({ ($0.documentID, self.documentBackingCache.documentBacking(for: $0.documentID)!) })
-					.forEach() { proc($0.0) }
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	@discardableResult
-	private func updateCaches(for documentType :String, with documentFullInfos :[MDSDocument.FullInfo]) ->
+	private func cacheUpdate(for documentType :String, with documentFullInfos :[MDSDocument.FullInfo]) ->
 			[MDSDocument.BackingInfo<DocumentBacking>] {
 		// Update document backing cache
-		let	documentBackingInfos = updateDocumentBackingCache(for: documentType, with: documentFullInfos)
+		let	documentBackingInfos = documentBackingCacheUpdate(for: documentType, with: documentFullInfos)
 
 		// Update remote storage cache
 		self.remoteStorageCache.add(documentFullInfos, for: documentType)
@@ -1266,7 +1146,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	@discardableResult
-	private func updateDocumentBackingCache(for documentType :String, with documentFullInfos :[MDSDocument.FullInfo]) ->
+	private func documentBackingCacheUpdate(for documentType :String, with documentFullInfos :[MDSDocument.FullInfo]) ->
 			[MDSDocument.BackingInfo<DocumentBacking>] {
 		// Preflight
 		guard !documentFullInfos.isEmpty else { return [] }
@@ -1287,7 +1167,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func createDocuments(documentType :String, documentCreateInfos :[MDSDocument.CreateInfo]) ->
+	private func documentCreate(documentType :String, documentCreateInfos :[MDSDocument.CreateInfo]) ->
 			[MDSDocument.OverviewInfo] {
 		// Preflight
 		guard !documentCreateInfos.isEmpty else { return [] }
@@ -1339,7 +1219,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 											creationDate: $0.creationDate, modificationDate: $0.modificationDate,
 											propertyMap: documentCreateInfosMap[$0.documentID]!.propertyMap,
 											attachmentInfoMap: [:]) })
-				updateCaches(for: documentType, with: documentFullInfos)
+				cacheUpdate(for: documentType, with: documentFullInfos)
 
 				// Update overview infos
 				documentOverviewInfos +=
@@ -1356,7 +1236,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func retrieveDocuments(for documentIDs :[String], documentType :String,
+	private func documentGet(for documentIDs :[String], documentType :String,
 			proc :(_ documentBackingInfo :MDSDocument.BackingInfo<DocumentBacking>) -> Void ) {
 		// Preflight
 		guard !documentIDs.isEmpty else { return }
@@ -1407,8 +1287,55 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 				let	documentFullInfosToProcess = documentFullInfos.removeAll()
 
 				// Update caches
-				updateCaches(for: documentType, with: documentFullInfosToProcess).forEach() { proc($0) }
+				cacheUpdate(for: documentType, with: documentFullInfosToProcess).forEach() { proc($0) }
 			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func documentIterateIDs(documentType :String, activeDocumentRevisionInfos :[MDSDocument.RevisionInfo],
+			proc :(_ documentID :String) -> Void) {
+		// Preflight
+		guard !activeDocumentRevisionInfos.isEmpty else { return }
+
+		// Iterate all infos
+		var	documentRevisionInfosPossiblyInCache = [MDSDocument.RevisionInfo]()
+		var	documentRevisionInfosToRetrieve = [MDSDocument.RevisionInfo]()
+		activeDocumentRevisionInfos.forEach() {
+			// Check if have in cache and is most recent
+			if let documentBacking = self.documentBackingCache.documentBacking(for: $0.documentID) {
+				// Check revision
+				if documentBacking.revision == $0.revision {
+					// Use from documents cache
+					proc($0.documentID)
+				} else {
+					// Must retrieve
+					documentRevisionInfosToRetrieve.append($0)
+				}
+			} else {
+				// Check cache
+				documentRevisionInfosPossiblyInCache.append($0)
+			}
+		}
+
+		// Retrieve from disk cache
+		let	(documentFullInfos, documentRevisionInfosNotResolved) =
+					self.remoteStorageCache.info(for: documentType, with: documentRevisionInfosPossiblyInCache)
+
+		// Update document backing cache
+		documentBackingCacheUpdate(for: documentType, with: documentFullInfos).forEach() { proc($0.documentID) }
+
+		// Check if have documents to retrieve
+		documentRevisionInfosToRetrieve += documentRevisionInfosNotResolved
+		if !documentRevisionInfosToRetrieve.isEmpty {
+			// Retrieve from server
+			documentGet(for: documentRevisionInfosToRetrieve.map({ $0.documentID }), documentType: documentType)
+					{ _ in }
+
+			// Create documents
+			documentRevisionInfosToRetrieve
+					.map({ ($0.documentID, self.documentBackingCache.documentBacking(for: $0.documentID)!) })
+					.forEach() { proc($0.0) }
 		}
 	}
 
@@ -1472,13 +1399,13 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 										propertyMap: documentUpdateReturnInfo.propertyMap,
 										attachmentInfoMap: documentBacking.attachmentInfoMap)
 							})
-				updateCaches(for: documentType, with: documentFullInfos)
+				cacheUpdate(for: documentType, with: documentFullInfos)
 			}
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func attachmentAdd(documentType :String, documentID :String, documentBacking :DocumentBacking?,
+	private func documentAttachmentAdd(documentType :String, documentID :String, documentBacking :DocumentBacking?,
 			info :[String : Any], content :Data) -> MDSDocument.AttachmentInfo? {
 		// Perform
 		let	(attachmentInfo, error) =
@@ -1519,7 +1446,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func attachmentUpdate(documentType :String, documentID :String, documentBacking :DocumentBacking?,
+	private func documentAttachmentUpdate(documentType :String, documentID :String, documentBacking :DocumentBacking?,
 			attachmentID :String, info :[String : Any], content :Data) {
 		// Perform
 		let	(attachmentInfo, error) =
@@ -1548,7 +1475,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func attachmentRemove(documentType :String, documentID :String, documentBacking :DocumentBacking?,
+	private func documentAttachmentRemove(documentType :String, documentID :String, documentBacking :DocumentBacking?,
 			attachmentID :String) {
 		// Perform
 		let	error =

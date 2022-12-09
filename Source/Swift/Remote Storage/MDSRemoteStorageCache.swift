@@ -191,7 +191,7 @@ public class MDSRemoteStorageCache {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func activeDocumentFullInfos(for documentType :String) -> [MDSDocument.FullInfo] {
+	public func documentFullInfos(for documentType :String, activeOnly :Bool = true) -> [MDSDocument.FullInfo] {
 		// Setup
 		let	sqliteTable = self.sqliteTable(for: documentType)
 		let	idTableColumn = sqliteTable.idTableColumn
@@ -207,7 +207,7 @@ public class MDSRemoteStorageCache {
 		try! sqliteTable.select() {
 			// Process results
 			let	active = Int($0.integer(for: activeTableColumn)!)
-			guard active == 1 else { return }
+			guard !activeOnly || (active == 1) else { return }
 
 			let	id = $0.text(for: idTableColumn)!
 			let	revision = Int($0.integer(for: revisionTableColumn)!)
@@ -274,8 +274,13 @@ public class MDSRemoteStorageCache {
 						if let data = $0.blob(for: attachmentInfoTableColumn) {
 							// Have info
 							attachmentInfoMap =
-									try! JSONSerialization.jsonObject(with: data, options: []) as!
-											MDSDocument.AttachmentInfoMap
+									(try! JSONSerialization.jsonObject(with: data, options: [])
+													as! [String : [String : Any]])
+											.mapValues({
+													MDSDocument.AttachmentInfo(id: ($0["id"] as? String) ?? "None",
+															revision: $0["revision"] as! Int,
+															info: $0["info"] as! [String : Any])
+											})
 						} else {
 							// Don't have info
 							attachmentInfoMap = [:]
