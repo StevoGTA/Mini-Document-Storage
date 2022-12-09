@@ -30,6 +30,7 @@ public enum MDSDocumentStorageError : Error {
 
 	case unknownCache(name :String)
 	case unknownCacheValueName(valueName :String)
+	case unknownCacheValueSelector(selector :String)
 
 	case unknownCollection(name :String)
 
@@ -57,6 +58,7 @@ extension MDSDocumentStorageError : CustomStringConvertible, LocalizedError {
 
 							case .unknownCache(let name):					return "Unknown cache: \(name)"
 							case .unknownCacheValueName(let valueName):		return "Unknown cache valueName: \(valueName)"
+							case .unknownCacheValueSelector(let selector):	return "Invalid value selector: \(selector)"
 
 							case .unknownCollection(let name):				return "Unknown collection: \(name)"
 
@@ -88,7 +90,7 @@ public protocol MDSDocumentStorage : AnyObject {
 			fromDocumentID :String, cacheName :String, cachedValueName :String) throws -> Int
 
 	func cacheRegister(named name :String, documentType :String, relevantProperties :[String],
-			valueInfos :[(name :String, valueType :MDSValue.`Type`, selector :String, proc :MDSDocument.ValueProc)])
+			valueInfos :[(name :String, valueType :MDSValue.Type_, selector :String, proc :MDSDocument.ValueProc)])
 			throws
 
 	func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
@@ -251,7 +253,7 @@ extension MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func cacheRegister<T : MDSDocument>(named name :String? = nil, relevantProperties :[String] = [],
 			valueInfos
-					:[(name :String, valueType :MDSValue.`Type`, selector :String,
+					:[(name :String, valueType :MDSValue.Type_, selector :String,
 							proc :(_ document :T, _ name :String) -> MDSValue.Value?)]) throws {
 		// Register creation proc
 		registerDocumentCreateProc() { T(id: $0, documentStorage: $1) }

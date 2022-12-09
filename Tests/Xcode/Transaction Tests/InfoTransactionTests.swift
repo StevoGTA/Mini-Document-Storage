@@ -15,7 +15,7 @@ class InfoTransactionTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testSetThenGet1() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Set some info
 		let	infoSetError =
@@ -41,7 +41,7 @@ class InfoTransactionTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testSetThenGet2() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Set some info
 		let	infoSetError =

@@ -15,7 +15,7 @@ class DocumentTransactionTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testCreateRetrieveUpdate() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		var	documentID :String?
 		var	revision :Int?
@@ -25,7 +25,7 @@ class DocumentTransactionTests : XCTestCase {
 		// Create document
 		let	(createDocumentInfos, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos:
 									[MDSDocument.CreateInfo(propertyMap: ["key1": "value1", "key2": "value2"])])
 		XCTAssertNotNil(createDocumentInfos, "create did not receive documentInfos")
@@ -63,7 +63,7 @@ class DocumentTransactionTests : XCTestCase {
 		// Get document count
 		let	(getDocumentCount, getDocumentCountError) =
 					config.httpEndpointClient.documentGetCount(documentStorageID: config.documentStorageID,
-							documentType: config.documentType)
+							documentType: config.defaultDocumentType)
 		XCTAssertNotNil(getDocumentCount, "get document count did not receive count")
 		if getDocumentCount != nil {
 			XCTAssertGreaterThan(getDocumentCount!, 0, "get document count returned count of 0")
@@ -73,7 +73,7 @@ class DocumentTransactionTests : XCTestCase {
 		// Get documents since revision 0
 		let	(getSinceRevisionDocumentInfo, getSinceRevisionError) =
 					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, sinceRevision: 0)
+							documentType: config.defaultDocumentType, sinceRevision: 0)
 		XCTAssertNotNil(getSinceRevisionDocumentInfo, "get since revision did not receive info")
 		if getSinceRevisionDocumentInfo != nil {
 			XCTAssert(getSinceRevisionDocumentInfo!.documentFullInfos.count > 0,
@@ -88,7 +88,7 @@ class DocumentTransactionTests : XCTestCase {
 		// Update document
 		let	(updateDocumentInfos, updateError) =
 					config.httpEndpointClient.documentUpdate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentUpdateInfos:
 									[
 										MDSDocument.UpdateInfo(documentID: documentID!, updated: ["key1": "value2"],
@@ -136,7 +136,7 @@ class DocumentTransactionTests : XCTestCase {
 		// Get documents by ID
 		let	(getDocumentIDsDocumentInfos, getDocumentIDsError) =
 					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentIDs: [documentID!])
+							documentType: config.defaultDocumentType, documentIDs: [documentID!])
 		XCTAssertNotNil(getDocumentIDsDocumentInfos, "get documents by ID did not receive documentInfos")
 		if getDocumentIDsDocumentInfos != nil {
 			XCTAssertEqual(getDocumentIDsDocumentInfos!.count, 1, "get documents by ID did not receive 1 documentInfos")
@@ -182,7 +182,7 @@ class DocumentTransactionTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testCreateRetrieveUpdateAttachmentRemove() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		var	documentID :String?
 		var	attachmentID :String?
@@ -190,7 +190,7 @@ class DocumentTransactionTests : XCTestCase {
 		// Create document
 		let	(createDocumentInfos, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos: [MDSDocument.CreateInfo(propertyMap: [:])])
 		XCTAssertNotNil(createDocumentInfos, "create did not receive documentInfos")
 		if createDocumentInfos != nil {
@@ -209,7 +209,7 @@ class DocumentTransactionTests : XCTestCase {
 		// Add attachment
 		let	(addAttachmentInfo, addAttachmentError) =
 					config.httpEndpointClient.documentAttachmentAdd(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentID: documentID!,
+							documentType: config.defaultDocumentType, documentID: documentID!,
 							info: ["key1": "value1"], content: "content1".data(using: .utf8)!)
 		XCTAssertNotNil(addAttachmentInfo, "add attachment did not receive info")
 		if addAttachmentInfo != nil {
@@ -225,14 +225,16 @@ class DocumentTransactionTests : XCTestCase {
 		// Update attachment
 		let	(_, updateAttachmentError) =
 					config.httpEndpointClient.documentAttachmentUpdate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentID: documentID!, attachmentID: attachmentID!,
+							documentType: config.defaultDocumentType, documentID: documentID!,
+							attachmentID: attachmentID!,
 							info: ["key2": "value2"], content: "content2".data(using: .utf8)!)
 		XCTAssertNil(updateAttachmentError, "update attachment received error \(updateAttachmentError!)")
 
 		// Get attachment
 		let	(getAttachmentContent, getAttachmentError) =
 					config.httpEndpointClient.documentAttachmentGet(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentID: documentID!, attachmentID: attachmentID!)
+							documentType: config.defaultDocumentType, documentID: documentID!,
+							attachmentID: attachmentID!)
 		XCTAssertNotNil(getAttachmentContent, "get attachment did not receive content")
 		if getAttachmentContent != nil {
 			XCTAssertNotNil(String(data: getAttachmentContent!, encoding: .utf8),
@@ -246,7 +248,8 @@ class DocumentTransactionTests : XCTestCase {
 		// Remove attachment
 		let	removeAttachmentError =
 					config.httpEndpointClient.documentAttachmentRemove(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentID: documentID!, attachmentID: attachmentID!)
+							documentType: config.defaultDocumentType, documentID: documentID!,
+							attachmentID: attachmentID!)
 		XCTAssertNil(removeAttachmentError, "remove attachment received error \(removeAttachmentError!)")
 	}
 }

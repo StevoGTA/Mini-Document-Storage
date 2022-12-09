@@ -15,7 +15,7 @@ class MDSCache : Equatable {
 
 		// MARK: Properties
 		let	name :String
-		let	type :MDSValue.`Type`
+		let	type :MDSValue.Type_
 		let	proc :MDSDocument.ValueProc
 
 		// MARK: Lifecycle methods

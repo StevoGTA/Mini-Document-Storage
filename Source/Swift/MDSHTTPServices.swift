@@ -43,6 +43,7 @@ extension MDSDocument.AttachmentInfo {
 				[
 					"id": self.id,
 					"revision": self.revision,
+					"info": self.info,
 				]
 			}
 }
@@ -121,7 +122,7 @@ extension MDSDocument.FullInfo {
 					"creationDate": self.creationDate.rfc3339Extended,
 					"modificationDate": self.modificationDate.rfc3339Extended,
 					"json": self.propertyMap,
-					"attachments": self.attachmentInfoMap,
+					"attachments": self.attachmentInfoMap.mapValues({ $0.httpServicesInfo }),
 				]
 			}
 
@@ -263,8 +264,8 @@ protocol MDSHTTPServicesHandler : MDSDocumentStorage {
 	func indexGetDocumentFullInfos(name :String, keys :[String]) throws -> [String : MDSDocument.FullInfo]
 }
 
-// MARK: - String extension
 //----------------------------------------------------------------------------------------------------------------------
+// MARK: - String extension
 extension String {
 
 	// MARK: Properties
@@ -727,7 +728,7 @@ class MDSHTTPServices {
 
 	// MARK: - Association Update
 	typealias AssociationUpdateEndpointInfo =
-				(documentStorageID :String, name :String, updates :[MDSAssociation.Update], authorization :String?)
+				(documentStorageID :String, name :String, updateInfos :[[String : Any]], authorization :String?)
 	static	let	associationUpdateEndpoint =
 						JSONHTTPEndpoint<[[String : Any]], AssociationUpdateEndpointInfo>(method: .put,
 								path: "/v1/association/:documentStorageID/:name")
@@ -737,20 +738,7 @@ class MDSHTTPServices {
 									let	documentStorageID = pathComponents[2].removingPercentEncoding!
 									let	name = pathComponents[3].removingPercentEncoding!
 
-									let	updates :[MDSAssociation.Update] =
-												infos.compactMap() {
-													// Get info
-													guard let action =
-															MDSAssociation.Update.Action(
-																	rawValue: ($0["action"] as? String) ?? ""),
-															let fromDocumentID = $0["fromID"] as? String,
-															let toDocumentID = $0["toID"] as? String else { return nil }
-
-													return MDSAssociation.Update(action: action,
-															fromDocumentID: fromDocumentID, toDocumentID: toDocumentID)
-												}
-
-									return (documentStorageID, name, updates, headers["Authorization"])
+									return (documentStorageID, name, infos, headers["Authorization"])
 								}
 	static func httpEndpointRequestForAssociationUpdate(documentStorageID :String, name :String,
 			updates :[MDSAssociation.Update], authorization :String? = nil) -> MDSSuccessHTTPEndpointRequest {
@@ -769,6 +757,17 @@ class MDSHTTPServices {
 								"toID": $0.item.toDocumentID,
 							]
 						})
+	}
+	static func associationUpdateGetUpdate(for info :[String : Any]) ->
+			(update :MDSAssociation.Update?, error :String?) {
+		// Get values
+		guard let actionRawValue = info["action"] as? String else { return (nil, "Missing action") }
+		guard let action = MDSAssociation.Update.Action(rawValue: actionRawValue) else
+				{ return (nil, "Invalid action: \(actionRawValue)") }
+		guard let fromDocumentID = info["fromID"] as? String else { return (nil, "Missing fromID") }
+		guard let toDocumentID = info["toID"] as? String else { return (nil, "Missing toID") }
+
+		return (MDSAssociation.Update(action: action, fromDocumentID: fromDocumentID, toDocumentID: toDocumentID), nil)
 	}
 
 	// MARK: - Association Get
@@ -931,10 +930,10 @@ class MDSHTTPServices {
 	}
 
 	// MARK: - Cache Register
-	typealias CacheRegisterEndpointValueInfo = (name :String, valueType :MDSValue.`Type`, selector :String)
+	typealias CacheRegisterEndpointValueInfo = (name :String, valueType :MDSValue.Type_, selector :String)
 	typealias CacheRegisterEndpointInfo =
 				(documentStorageID :String, name :String?, documentType :String?, relevantProperties :[String]?,
-						valueInfos :[CacheRegisterEndpointValueInfo]?, authorization :String?)
+						valueInfos :[[String : Any]]?, authorization :String?)
 	static	let	cacheRegisterEndpoint =
 						JSONHTTPEndpoint<[String : Any], CacheRegisterEndpointInfo>(method: .put,
 								path: "/v1/cache/:documentStorageID")
@@ -944,20 +943,9 @@ class MDSHTTPServices {
 									let	documentStorageID = pathComponents[2].removingPercentEncoding!
 
 									let valueInfosInfo = info["valueInfos"] as? [[String : Any]]
-									let	valueInfos =
-												valueInfosInfo?.compactMap({ info -> CacheRegisterEndpointValueInfo? in
-													// Setup
-													guard let name = info["name"] as? String,
-															let valueType = info["valueType"] as? String,
-															valueType == "integer",
-															let selector = info["selector"] as? String else
-														{ return nil }
-
-													return CacheRegisterEndpointValueInfo(name, .integer, selector)
-												})
 
 									return (documentStorageID, info["name"] as? String, info["documentType"] as? String,
-											info["relevantProperties"] as? [String], valueInfos,
+											info["relevantProperties"] as? [String], valueInfosInfo,
 											headers["Authorization"])
 								}
 	static func httpEndpointRequestForCacheRegister(documentStorageID :String, name :String, documentType :String,
@@ -980,6 +968,17 @@ class MDSHTTPServices {
 							"relevantProperties": relevantProperties,
 							"valueInfos": valueInfosTransformed,
 						  ])
+	}
+	static func cacheRegisterGetValueInfo(for info :[String : Any]) ->
+			(valueInfo :CacheRegisterEndpointValueInfo?, error :String?) {
+		// Get values
+		guard let name = info["name"] as? String else { return (nil, "Missing value name") }
+		guard let valueTypeRawValue = info["valueType"] as? String else { return (nil, "Missing value valueType") }
+		guard let valueType = MDSValue.Type_(rawValue: valueTypeRawValue) else
+				{ return (nil, "Invalid value valueType: \(valueTypeRawValue)") }
+		guard let selector = info["selector"] as? String else { return (nil, "Missing value selector") }
+
+		return (CacheRegisterEndpointValueInfo(name, valueType, selector), nil)
 	}
 
 	// MARK: - Collection Register
@@ -1144,8 +1143,8 @@ class MDSHTTPServices {
 								{ (urlComponents, headers) -> DocumentGetCountEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
-									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
-									let	documentType = pathComponents[3]
+									let	documentStorageID = pathComponents[2].removingPercentEncoding!
+									let	documentType = pathComponents[3].removingPercentEncoding!
 
 									return (documentStorageID, documentType, headers["Authorization"])
 								}
@@ -1251,9 +1250,9 @@ class MDSHTTPServices {
 								{ (urlComponents, headers, info) -> DocumentAttachmentAddEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
-									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
-									let	documentType = pathComponents[3]
-									let	documentID = pathComponents[4].replacingOccurrences(of: "_", with: "/")
+									let	documentStorageID = pathComponents[2].removingPercentEncoding!
+									let	documentType = pathComponents[3].removingPercentEncoding!
+									let	documentID = pathComponents[4].removingPercentEncoding!
 
 									return (documentStorageID, documentType, documentID,
 											info["info"] as? [String : Any],
@@ -1284,10 +1283,10 @@ class MDSHTTPServices {
 								{ (urlComponents, headers) -> DocumentAttachmentGetEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
-									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
-									let	documentType = pathComponents[3]
-									let	documentID = pathComponents[4].replacingOccurrences(of: "_", with: "/")
-									let	attachmentID = pathComponents[6].replacingOccurrences(of: "_", with: "/")
+									let	documentStorageID = pathComponents[2].removingPercentEncoding!
+									let	documentType = pathComponents[3].removingPercentEncoding!
+									let	documentID = pathComponents[4].removingPercentEncoding!
+									let	attachmentID = pathComponents[6].removingPercentEncoding!
 
 									return (documentStorageID, documentType, documentID, attachmentID,
 											headers["Authorization"])
@@ -1316,10 +1315,10 @@ class MDSHTTPServices {
 								{ (urlComponents, headers, info) -> DocumentAttachmentUpdateEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
-									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
-									let	documentType = pathComponents[3]
-									let	documentID = pathComponents[4].replacingOccurrences(of: "_", with: "/")
-									let	attachmentID = pathComponents[6].replacingOccurrences(of: "_", with: "/")
+									let	documentStorageID = pathComponents[2].removingPercentEncoding!
+									let	documentType = pathComponents[3].removingPercentEncoding!
+									let	documentID = pathComponents[4].removingPercentEncoding!
+									let	attachmentID = pathComponents[6].removingPercentEncoding!
 
 									return (documentStorageID, documentType, documentID, attachmentID,
 											info["info"] as? [String : Any],
@@ -1351,10 +1350,10 @@ class MDSHTTPServices {
 								{ (urlComponents, headers) -> DocumentAttachmentRemoveEndpointInfo in
 									// Retrieve and validate
 									let	pathComponents = urlComponents.path.pathComponents
-									let	documentStorageID = pathComponents[2].replacingOccurrences(of: "_", with: "/")
-									let	documentType = pathComponents[3]
-									let	documentID = pathComponents[4].replacingOccurrences(of: "_", with: "/")
-									let	attachmentID = pathComponents[6].replacingOccurrences(of: "_", with: "/")
+									let	documentStorageID = pathComponents[2].removingPercentEncoding!
+									let	documentType = pathComponents[3].removingPercentEncoding!
+									let	documentID = pathComponents[4].removingPercentEncoding!
+									let	attachmentID = pathComponents[6].removingPercentEncoding!
 
 									return (documentStorageID, documentType, documentID, attachmentID,
 											headers["Authorization"])

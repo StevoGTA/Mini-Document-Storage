@@ -139,11 +139,26 @@ extension HTTPServer {
 						self.preflight(documentStorageID: info.documentStorageID, authorization: info.authorization)
 			guard performResult == nil else { return performResult! }
 
+			// Compose updates
+			var	updates = [MDSAssociation.Update]()
+			for updateInfo in info.updateInfos {
+				// Get update
+				let	(update, error) = MDSHTTPServices.associationUpdateGetUpdate(for: updateInfo)
+
+				// Check results
+				if update != nil {
+					// Success
+					updates.append(update!)
+				} else {
+					// Error
+					return (.badRequest, nil, .json(["error": "\(error!)"]))
+				}
+			}
 
 			// Catch errors
 			do {
 				// Update association
-				try documentStorage!.associationUpdate(for: info.name, updates: info.updates)
+				try documentStorage!.associationUpdate(for: info.name, updates: updates)
 
 				return (.ok, nil, nil)
 			} catch {
@@ -296,21 +311,48 @@ extension HTTPServer {
 				// relevantProperties missing
 				return (.badRequest, nil, .json(["error": "Missing relevantProperties"]))
 			}
-			guard let valueInfos = info.valueInfos else {
-				// valueInfos missing
+			guard let valueInfoInfos = info.valueInfos else {
+				// valueInfoInfos empty
 				return (.badRequest, nil, .json(["error": "Missing valueInfos"]))
 			}
-			guard !valueInfos.isEmpty else {
-				// valueInfos empty
+			guard !valueInfoInfos.isEmpty else {
+				// valueInfoInfos empty
 				return (.badRequest, nil, .json(["error": "Missing valueInfos"]))
+			}
+
+			// Compose valueInfos
+			var	valueInfos =
+						[(name :String, valueType :MDSValue.Type_, selector :String, proc :MDSDocument.ValueProc)]()
+			for valueInfoInfo in valueInfoInfos {
+				// Get update
+				let	(valueInfo, error) = MDSHTTPServices.cacheRegisterGetValueInfo(for: valueInfoInfo)
+
+				// Check results
+				if valueInfo != nil {
+					// Success
+					switch valueInfo!.valueType {
+						case .integer:
+							// Integer
+							guard valueInfo!.selector == "integerValueForProperty()" else
+									{ return (.badRequest, nil,
+											.json(["error": "Invalid value selector: \(valueInfo!.selector)"])) }
+
+							// Append info
+							valueInfos.append(
+									(valueInfo!.name, .integer, valueInfo!.selector,
+											{ MDSValue.Value.integer(for: $0.int(for: $1)) }))
+					}
+				} else {
+					// Error
+					return (.badRequest, nil, .json(["error": "\(error!)"]))
+				}
 			}
 
 			// Catch errors
 			do {
 				// Register cache
 				try documentStorage!.cacheRegister(named: name, documentType: documentType,
-						relevantProperties: relevantProperties,
-						valueInfos: valueInfos.map({ ($0, $1, $2, { MDSValue.Value.integer(for: $0.int(for: $1)) }) }))
+						relevantProperties: relevantProperties, valueInfos: valueInfos)
 
 				return (.ok, nil, nil)
 			} catch {

@@ -15,12 +15,12 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testCreateInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(documentInfos, error) =
 					config.httpEndpointClient.documentCreate(documentStorageID: "ABC",
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos: [MDSDocument.CreateInfo(propertyMap: ["key": "value"])])
 
 		// Evaluate results
@@ -43,12 +43,12 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testCreateMissingInfos() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(documentInfos, error) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentCreateInfos: [])
+							documentType: config.defaultDocumentType, documentCreateInfos: [])
 
 		// Evaluate results
 		XCTAssertNil(documentInfos, "received documentInfos")
@@ -68,14 +68,51 @@ class DocumentUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func testCreateLongDocumentID() throws {
+		// Setup
+		let	config = Config.current
+		let	documentID = UUID().uuidString
+
+		// Create document
+		let	(documentInfos, error) =
+					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
+							documentType: Child.documentType,
+							documentCreateInfos: [MDSDocument.CreateInfo(documentID: documentID, propertyMap: [:])])
+
+		// Evaluate results
+		if config.supportsLongDocumentIDs {
+			// Should not get error
+			XCTAssertNotNil(documentInfos, "did not receive documentInfos")
+			XCTAssertNil(error, "received error \(error!)")
+		} else {
+			// Should get error
+			XCTAssertNil(documentInfos, "received documentInfos")
+
+			XCTAssertNotNil(error, "did not receive error")
+			if error != nil {
+				switch error! {
+					case MDSError.invalidRequest(let message):
+						// Expected error
+						XCTAssertEqual(message, "Invalid documentID: \(documentID) (exceeds max length of 22)",
+								"did not receive expected error message")
+
+					default:
+						// Other error
+						XCTFail("received unexpected error: \(error!)")
+				}
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func testCreate1() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(documentInfos, error) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos: [MDSDocument.CreateInfo(propertyMap: ["key": "value"])])
 
 		// Evaluate results
@@ -112,12 +149,12 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testCreate2() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(documentInfos, error) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos:
 									[
 										MDSDocument.CreateInfo(propertyMap: ["key": "value1"]),
@@ -181,12 +218,12 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetCountInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(count, error) =
 					config.httpEndpointClient.documentGetCount(documentStorageID: "ABC",
-							documentType: config.documentType)
+							documentType: config.defaultDocumentType)
 
 		// Evaluate results
 		XCTAssertNil(count, "received count")
@@ -208,7 +245,7 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetCountInvalidDocumentType() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	documentType = UUID().uuidString
 
 		// Perform
@@ -236,12 +273,12 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetSinceRevisionInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(info, error) =
-					config.httpEndpointClient.documentGet(documentStorageID: "ABC", documentType: config.documentType,
-							sinceRevision: 0)
+					config.httpEndpointClient.documentGet(documentStorageID: "ABC",
+							documentType: config.defaultDocumentType, sinceRevision: 0)
 
 		// Evaluate results
 		XCTAssertNil(info, "received info")
@@ -263,7 +300,7 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetSinceRevisionUnknownDocumentType() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	documentType = UUID().uuidString
 
 		// Perform
@@ -292,12 +329,12 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetSinceRevisionInvalidRevision() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Create document
 		let	(createDocumentInfos, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos:
 									[MDSDocument.CreateInfo(propertyMap: ["key1": "value1", "key2": "value2"])])
 		XCTAssertNotNil(createDocumentInfos, "create did not receive documentInfos")
@@ -307,7 +344,7 @@ class DocumentUnitTests : XCTestCase {
 		// Get since revision
 		let	(info, error) =
 					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, sinceRevision: -1)
+							documentType: config.defaultDocumentType, sinceRevision: -1)
 
 		// Evaluate results
 		XCTAssertNil(info, "received info")
@@ -329,12 +366,12 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetSinceRevisionInvalidCount() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Create document
 		let	(createDocumentInfos, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos:
 									[MDSDocument.CreateInfo(propertyMap: ["key1": "value1", "key2": "value2"])])
 		XCTAssertNotNil(createDocumentInfos, "create did not receive documentInfos")
@@ -344,7 +381,7 @@ class DocumentUnitTests : XCTestCase {
 		// Get since revision
 		let	(info, error) =
 					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, sinceRevision: 0, count: -1)
+							documentType: config.defaultDocumentType, sinceRevision: 0, count: -1)
 
 		// Evaluate results
 		XCTAssertNil(info, "received info")
@@ -366,12 +403,12 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetIDsInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(documentInfos, error) =
 					config.httpEndpointClient.documentGet(documentStorageID: "ABC",
-							documentType: config.documentType, documentIDs: ["ABC"])
+							documentType: config.defaultDocumentType, documentIDs: ["ABC"])
 
 		// Evaluate results
 		XCTAssertNil(documentInfos, "received documentInfos")
@@ -393,7 +430,7 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetIDsUnknownDocumentType() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	documentType = UUID().uuidString
 
 		// Perform
@@ -422,12 +459,12 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetIDsNoIDs() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(documentInfos, error) =
 					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentIDs: [])
+							documentType: config.defaultDocumentType, documentIDs: [])
 
 		// Evaluate results
 		XCTAssertNil(documentInfos, "received documentInfos")
@@ -449,13 +486,13 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetIDsUnknownID() throws {
 		// Setup
-		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	config = Config.current
+		let	documentID = UUID().base64EncodedString
 
 		// Create Test document
 		let	(_, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos: [MDSDocument.CreateInfo(propertyMap: [:])])
 		XCTAssertNil(createError, "create document received error: \(createError!)")
 		guard createError == nil else { return }
@@ -463,7 +500,7 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	(documentInfos, error) =
 					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentIDs: [documentID])
+							documentType: config.defaultDocumentType, documentIDs: [documentID])
 
 		// Evaluate results
 		XCTAssertNil(documentInfos, "received documentInfos")
@@ -486,7 +523,7 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testUpdateInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(documentInfos, error) =
@@ -513,7 +550,7 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testUpdateUnknownDocumentType() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	documentType = UUID().uuidString
 
 		// Perform
@@ -543,12 +580,12 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testUpdateMissingDocumentID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Create document
 		let	(createDocumentInfos, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos:
 									[MDSDocument.CreateInfo(propertyMap: ["key1": "value1", "key2": "value2"])])
 		XCTAssertNotNil(createDocumentInfos, "create did not receive documentInfos")
@@ -558,7 +595,7 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSJSONHTTPEndpointRequest<[[String : Any]]>(method: .patch,
-							path: "/v1/document/\(config.documentStorageID)/\(config.documentType)",
+							path: "/v1/document/\(config.documentStorageID)/\(config.defaultDocumentType)",
 							jsonBody:
 									[
 										[
@@ -593,13 +630,13 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testUpdateMissingUpdated() throws {
 		// Setup
-		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	config = Config.current
+		let	documentID = UUID().base64EncodedString
 
 		// Create document
 		let	(createDocumentInfos, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos:
 									[MDSDocument.CreateInfo(documentID: documentID,
 											propertyMap: ["key1": "value1", "key2": "value2"])])
@@ -610,7 +647,7 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSJSONHTTPEndpointRequest<[[String : Any]]>(method: .patch,
-							path: "/v1/document/\(config.documentStorageID)/\(config.documentType)",
+							path: "/v1/document/\(config.documentStorageID)/\(config.defaultDocumentType)",
 							jsonBody:
 									[
 										[
@@ -633,13 +670,13 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testUpdateMissingRemoved() throws {
 		// Setup
-		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	config = Config.current
+		let	documentID = UUID().base64EncodedString
 
 		// Create document
 		let	(createDocumentInfos, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos:
 									[MDSDocument.CreateInfo(documentID: documentID,
 											propertyMap: ["key1": "value1", "key2": "value2"])])
@@ -650,7 +687,7 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSJSONHTTPEndpointRequest<[[String : Any]]>(method: .patch,
-							path: "/v1/document/\(config.documentStorageID)/\(config.documentType)",
+							path: "/v1/document/\(config.documentStorageID)/\(config.defaultDocumentType)",
 							jsonBody:
 									[
 										[
@@ -673,13 +710,13 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testUpdateMissingActive() throws {
 		// Setup
-		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	config = Config.current
+		let	documentID = UUID().base64EncodedString
 
 		// Create document
 		let	(createDocumentInfos, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos:
 									[MDSDocument.CreateInfo(documentID: documentID,
 											propertyMap: ["key1": "value1", "key2": "value2"])])
@@ -690,7 +727,7 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSJSONHTTPEndpointRequest<[[String : Any]]>(method: .patch,
-							path: "/v1/document/\(config.documentStorageID)/\(config.documentType)",
+							path: "/v1/document/\(config.documentStorageID)/\(config.defaultDocumentType)",
 							jsonBody:
 									[
 										[
@@ -713,12 +750,13 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testAttachmentAddInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(info, error) =
 					config.httpEndpointClient.documentAttachmentAdd(documentStorageID: "ABC",
-							documentType: config.documentType, documentID: "ABC", info: [:], content: Data(capacity: 0))
+							documentType: config.defaultDocumentType, documentID: "ABC", info: [:],
+							content: Data(capacity: 0))
 
 		// Evaluate results
 		XCTAssertNil(info, "received info")
@@ -740,7 +778,7 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testAttachmentAddUnknownDocumentType() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(info, error) =
@@ -767,13 +805,13 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testAttachmentAddUnknownDocumentID() throws {
 		// Setup
-		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	config = Config.current
+		let	documentID = UUID().base64EncodedString
 
 		// Create document
 		let	(createDocumentInfos, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos:
 									[MDSDocument.CreateInfo(propertyMap: ["key1": "value1", "key2": "value2"])])
 		XCTAssertNotNil(createDocumentInfos, "create did not receive documentInfos")
@@ -783,7 +821,7 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	(info, error) =
 					config.httpEndpointClient.documentAttachmentAdd(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentID: documentID, info: [:],
+							documentType: config.defaultDocumentType, documentID: documentID, info: [:],
 							content: Data(capacity: 0))
 
 		// Evaluate results
@@ -807,13 +845,13 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testAttachmentAddMissingInfo() throws {
 		// Setup
-		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	config = Config.current
+		let	documentID = UUID().base64EncodedString
 
 		// Create document
 		let	(createDocumentInfos, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos:
 									[MDSDocument.CreateInfo(documentID: documentID,
 											propertyMap: ["key1": "value1", "key2": "value2"])])
@@ -822,9 +860,11 @@ class DocumentUnitTests : XCTestCase {
 		guard createError == nil else { return }
 
 		// Perform
+		let	documentIDUse =
+					documentID.addingPercentEncoding(withAllowedCharacters: CharacterSet(charactersIn: "/").inverted)!
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSJSONHTTPEndpointRequest<[String : Any]>(method: .post,
-							path: "/v1/document/\(config.documentStorageID)/\(config.documentType)/\(documentID)/attachment",
+							path: "/v1/document/\(config.documentStorageID)/\(config.defaultDocumentType)/\(documentIDUse)/attachment",
 							jsonBody: ["content": Data(capacity: 0).base64EncodedString()])
 		let	(info, error) =
 					DispatchQueue.performBlocking() { completionProc in
@@ -852,13 +892,13 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testAttachmentAddMissingContent() throws {
 		// Setup
-		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	config = Config.current
+		let	documentID = UUID().base64EncodedString
 
 		// Create document
 		let	(createDocumentInfos, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos:
 									[MDSDocument.CreateInfo(documentID: documentID,
 											propertyMap: ["key1": "value1", "key2": "value2"])])
@@ -867,9 +907,11 @@ class DocumentUnitTests : XCTestCase {
 		guard createError == nil else { return }
 
 		// Perform
+		let	documentIDUse =
+					documentID.addingPercentEncoding(withAllowedCharacters: CharacterSet(charactersIn: "/").inverted)!
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSJSONHTTPEndpointRequest<[String : Any]>(method: .post,
-							path: "/v1/document/\(config.documentStorageID)/\(config.documentType)/\(documentID)/attachment",
+							path: "/v1/document/\(config.documentStorageID)/\(config.defaultDocumentType)/\(documentIDUse)/attachment",
 							jsonBody: ["info": [:]])
 		let	(info, error) =
 					DispatchQueue.performBlocking() { completionProc in
@@ -897,12 +939,12 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testAttachmentGetInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(content, error) =
 					config.httpEndpointClient.documentAttachmentGet(documentStorageID: "ABC",
-							documentType: config.documentType, documentID: "ABC", attachmentID: "ABC")
+							documentType: config.defaultDocumentType, documentID: "ABC", attachmentID: "ABC")
 
 		// Evaluate results
 		XCTAssertNil(content, "received content")
@@ -924,7 +966,7 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testAttachmentGetUnknownDocumentType() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	documentType = UUID().uuidString
 
 		// Perform
@@ -953,13 +995,13 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testAttachmentGetUnknownDocumentID() throws {
 		// Setup
-		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	config = Config.current
+		let	documentID = UUID().base64EncodedString
 
 		// Document create
 		let	(_, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos: [MDSDocument.CreateInfo(propertyMap: ["key": "value"])])
 		XCTAssertNil(createError, "received unexpected error: \(createError!)")
 		guard createError == nil else { return }
@@ -967,7 +1009,7 @@ class DocumentUnitTests : XCTestCase {
 		// Document attachment get
 		let	(attachmentGetContent, attachmentGetError) =
 					config.httpEndpointClient.documentAttachmentGet(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentID: documentID, attachmentID: "ABC")
+							documentType: config.defaultDocumentType, documentID: documentID, attachmentID: "ABC")
 
 		// Evaluate results
 		XCTAssertNil(attachmentGetContent, "received content")
@@ -990,13 +1032,13 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testAttachmentGetUnknownAttachmentID() throws {
 		// Setup
-		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	config = Config.current
+		let	documentID = UUID().base64EncodedString
 
 		// Create document
 		let	(_, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos:
 									[MDSDocument.CreateInfo(documentID: documentID, propertyMap: ["key": "value"])])
 		XCTAssertNil(createError, "create received error \(createError!)")
@@ -1005,7 +1047,7 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	(content, error) =
 					config.httpEndpointClient.documentAttachmentGet(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentID: documentID, attachmentID: "ABC")
+							documentType: config.defaultDocumentType, documentID: documentID, attachmentID: "ABC")
 
 		// Evaluate results
 		XCTAssertNil(content, "received content")
@@ -1027,12 +1069,12 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testAttachmentUpdateInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(info, error) =
 					config.httpEndpointClient.documentAttachmentUpdate(documentStorageID: "ABC",
-							documentType: config.documentType, documentID: "ABC", attachmentID: "ABC", info: [:],
+							documentType: config.defaultDocumentType, documentID: "ABC", attachmentID: "ABC", info: [:],
 							content: Data(capacity: 0))
 
 		// Evaluate results
@@ -1055,7 +1097,7 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testAttachmentUpdateUnknownDocumentType() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	documentType = UUID().uuidString
 
 		// Perform
@@ -1085,13 +1127,13 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testAttachmentUpdateUnknownDocumentID() throws {
 		// Setup
-		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	config = Config.current
+		let	documentID = UUID().base64EncodedString
 
 		// Create document
 		let	(_, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos: [MDSDocument.CreateInfo(propertyMap: ["key": "value"])])
 		XCTAssertNil(createError, "create received error \(createError!)")
 		guard createError == nil else { return }
@@ -1099,8 +1141,8 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	(info, error) =
 					config.httpEndpointClient.documentAttachmentUpdate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentID: documentID, attachmentID: "ABC", info: [:],
-							content: Data(capacity: 0))
+							documentType: config.defaultDocumentType, documentID: documentID, attachmentID: "ABC",
+							info: [:], content: Data(capacity: 0))
 
 		// Evaluate results
 		XCTAssertNil(info, "received info")
@@ -1123,14 +1165,14 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testAttachmentUpdateUnknownAttachmentID() throws {
 		// Setup
-		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
-		let	attachmentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	config = Config.current
+		let	documentID = UUID().base64EncodedString
+		let	attachmentID = UUID().base64EncodedString
 
 		// Create document
 		let	(createDocumentInfos, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos:
 									[MDSDocument.CreateInfo(documentID: documentID, propertyMap: ["key": "value"])])
 		XCTAssertNotNil(createDocumentInfos, "create did not receive documentInfos")
@@ -1140,8 +1182,8 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	(info, error) =
 					config.httpEndpointClient.documentAttachmentUpdate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentID: documentID, attachmentID: attachmentID,
-							info: [:], content: Data(capacity: 0))
+							documentType: config.defaultDocumentType, documentID: documentID,
+							attachmentID: attachmentID, info: [:], content: Data(capacity: 0))
 
 		// Evaluate results
 		XCTAssertNil(info, "received info")
@@ -1164,13 +1206,13 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testAttachmentUpdateMissingInfo() throws {
 		// Setup
-		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	config = Config.current
+		let	documentID = UUID().base64EncodedString
 
 		// Create document
 		let	(createDocumentInfos, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos:
 									[MDSDocument.CreateInfo(documentID: documentID,
 											propertyMap: ["key1": "value1", "key2": "value2"])])
@@ -1181,7 +1223,7 @@ class DocumentUnitTests : XCTestCase {
 		// Add attachment
 		let	(addAttachmentInfo, addAttachmentError) =
 					config.httpEndpointClient.documentAttachmentAdd(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentID: documentID,
+							documentType: config.defaultDocumentType, documentID: documentID,
 							info: ["key1": "value1"], content: "content1".data(using: .utf8)!)
 		XCTAssertNotNil(addAttachmentInfo, "add attachment did not receive info")
 		XCTAssertNil(addAttachmentError, "add attachment received error \(addAttachmentError!)")
@@ -1190,12 +1232,16 @@ class DocumentUnitTests : XCTestCase {
 		let	attachmentID = addAttachmentInfo!["id"] as? String
 		XCTAssertNotNil(attachmentID, "add attachment did not receive attachment ID")
 		guard attachmentID != nil else { return }
-		let	attachmentIDUse = attachmentID!.replacingOccurrences(of: "/", with: "_")
 
 		// Update attachment
+		let	documentIDUse =
+					documentID.addingPercentEncoding(withAllowedCharacters: CharacterSet(charactersIn: "/").inverted)!
+		let	attachmentIDUse =
+					attachmentID!.addingPercentEncoding(
+							withAllowedCharacters: CharacterSet(charactersIn: "/").inverted)!
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSJSONHTTPEndpointRequest<[String : Any]>(method: .patch,
-							path: "/v1/document/\(config.documentStorageID)/\(config.documentType)/\(documentID)/attachment/\(attachmentIDUse)",
+							path: "/v1/document/\(config.documentStorageID)/\(config.defaultDocumentType)/\(documentIDUse)/attachment/\(attachmentIDUse)",
 							jsonBody: ["content": "content2".data(using: .utf8)!.base64EncodedString()])
 		let	(updateAttachmentInfo, updateAttachmentError) =
 					DispatchQueue.performBlocking() { completionProc in
@@ -1223,13 +1269,13 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testAttachmentUpdateMissingContent() throws {
 		// Setup
-		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	config = Config.current
+		let	documentID = UUID().base64EncodedString
 
 		// Create document
 		let	(createDocumentInfos, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos:
 									[MDSDocument.CreateInfo(documentID: documentID,
 											propertyMap: ["key1": "value1", "key2": "value2"])])
@@ -1240,7 +1286,7 @@ class DocumentUnitTests : XCTestCase {
 		// Add attachment
 		let	(addAttachmentInfo, addAttachmentError) =
 					config.httpEndpointClient.documentAttachmentAdd(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentID: documentID,
+							documentType: config.defaultDocumentType, documentID: documentID,
 							info: ["key1": "value1"], content: "content1".data(using: .utf8)!)
 		XCTAssertNotNil(addAttachmentInfo, "add attachment did not receive info")
 		XCTAssertNil(addAttachmentError, "add attachment received error \(addAttachmentError!)")
@@ -1249,12 +1295,16 @@ class DocumentUnitTests : XCTestCase {
 		let	attachmentID = addAttachmentInfo!["id"] as? String
 		XCTAssertNotNil(attachmentID, "add attachment did not receive attachment ID")
 		guard attachmentID != nil else { return }
-		let	attachmentIDUse = attachmentID!.replacingOccurrences(of: "/", with: "_")
 
 		// Update attachment
+		let	documentIDUse =
+					documentID.addingPercentEncoding(withAllowedCharacters: CharacterSet(charactersIn: "/").inverted)!
+		let	attachmentIDUse =
+					attachmentID!.addingPercentEncoding(
+							withAllowedCharacters: CharacterSet(charactersIn: "/").inverted)!
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSJSONHTTPEndpointRequest<[String : Any]>(method: .patch,
-							path: "/v1/document/\(config.documentStorageID)/\(config.documentType)/\(documentID)/attachment/\(attachmentIDUse)",
+							path: "/v1/document/\(config.documentStorageID)/\(config.defaultDocumentType)/\(documentIDUse)/attachment/\(attachmentIDUse)",
 							jsonBody: ["info": [:]])
 		let	(updateAttachmentInfo, updateAttachmentError) =
 					DispatchQueue.performBlocking() { completionProc in
@@ -1282,12 +1332,12 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testAttachmentRemoveInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	error =
 					config.httpEndpointClient.documentAttachmentRemove(documentStorageID: "ABC",
-							documentType: config.documentType, documentID: "ABC", attachmentID: "ABC")
+							documentType: config.defaultDocumentType, documentID: "ABC", attachmentID: "ABC")
 
 		// Evaluate results
 		XCTAssertNotNil(error, "did not receive error")
@@ -1307,7 +1357,7 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testAttachmentRemoveUnknownDocumentType() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	documentType = UUID().uuidString
 
 		// Perform
@@ -1334,20 +1384,20 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testAttachmentRemoveUnknownDocumentID() throws {
 		// Setup
-		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	config = Config.current
+		let	documentID = UUID().base64EncodedString
 
 		// Create Test document
 		let	(_, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos: [MDSDocument.CreateInfo(propertyMap: [:])])
 		XCTAssertNil(createError, "create document received error: \(createError!)")
 		guard createError == nil else { return }
 		// Perform
 		let	error =
 					config.httpEndpointClient.documentAttachmentRemove(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentID: documentID, attachmentID: "ABC")
+							documentType: config.defaultDocumentType, documentID: documentID, attachmentID: "ABC")
 
 		// Evaluate results
 		XCTAssertNotNil(error, "did not receive error")
@@ -1368,14 +1418,14 @@ class DocumentUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testAttachmentRemoveUnknownAttachmentID() throws {
 		// Setup
-		let	config = Config.shared
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
-		let	attachmentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	config = Config.current
+		let	documentID = UUID().base64EncodedString
+		let	attachmentID = UUID().base64EncodedString
 
 		// Create document
 		let	(createDocumentInfos, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos:
 									[MDSDocument.CreateInfo(documentID: documentID,
 											propertyMap: ["key1": "value1", "key2": "value2"])])
@@ -1386,7 +1436,8 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	error =
 					config.httpEndpointClient.documentAttachmentRemove(documentStorageID: config.documentStorageID,
-							documentType: config.documentType, documentID: documentID, attachmentID: attachmentID)
+							documentType: config.defaultDocumentType, documentID: documentID,
+							attachmentID: attachmentID)
 
 		// Evaluate results
 		XCTAssertNotNil(error, "did not receive error")

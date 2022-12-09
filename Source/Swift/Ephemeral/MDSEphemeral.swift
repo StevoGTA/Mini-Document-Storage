@@ -295,7 +295,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func cacheRegister(named name :String, documentType :String, relevantProperties :[String],
-			valueInfos :[(name :String, valueType :MDSValue.`Type`, selector :String, proc :MDSDocument.ValueProc)])
+			valueInfos :[(name :String, valueType :MDSValue.Type_, selector :String, proc :MDSDocument.ValueProc)])
 			throws {
 		// Validate
 		guard self.documentIDsByTypeMap[documentType] != nil else {
@@ -1451,8 +1451,8 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 		let	documentCreateProc =
 				self.documentCreateProcMap.value(for: documentType) ?? { MDSDocument(id: $0, documentStorage: $1) }
 		var	updateInfos = [MDSUpdateInfo<String>]()
-		try! documentIterate(for: documentType, sinceRevision: 0, count: nil, documentCreateProc: documentCreateProc,
-				proc: {
+		try! documentIterate(for: documentType, sinceRevision: 0, count: nil, activeOnly: false,
+				documentCreateProc: documentCreateProc, proc: {
 					// Append MDSUpdateInfo
 					updateInfos.append(
 							MDSUpdateInfo<String>(document: $0!, revision: $1.revision, value: $1.documentID))

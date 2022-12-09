@@ -12,23 +12,40 @@ import Foundation
 class Config {
 
 	// MARK: Properties
-	static	let	shared = Config()
+	static	let	current = swift
 
-			let	httpEndpointClient :HTTPEndpointClient = {
-						// JS testing when running server in VS Code
-//						let	httpEndpointClient =
-//									HTTPEndpointClient(scheme: "http", hostName: "localhost", port: 1138,
-//											options: [.percentEncodePlusCharacter])
+	// JS testing when running server in VS Code
+	static	let	js =
+						Config(
+								httpEndpointClient:
+										HTTPEndpointClient(scheme: "http", hostName: "localhost", port: 1138,
+												options: [.percentEncodePlusCharacter]),
+								documentStorageID: "Sandbox", defaultDocumentType: "test",
+								supportsLongDocumentIDs: false)
 
-						// Swift testing when running server in Xcode project
-						let	httpEndpointClient = HTTPEndpointClient(scheme: "http", hostName: "localhost", port: 34343)
+	// Swift testing when running server in Xcode project
+	static	let	swift =
+						Config(
+								httpEndpointClient:
+										HTTPEndpointClient(scheme: "http", hostName: "localhost", port: 34343),
+								documentStorageID: "Sandbox", defaultDocumentType: "test",
+								supportsLongDocumentIDs: true)
 
-						// Finish setup
-						httpEndpointClient.logOptions = [.requestAndResponse]
+			let	httpEndpointClient :HTTPEndpointClient
+			let	documentStorageID :String
+			let	defaultDocumentType :String
+			let	supportsLongDocumentIDs :Bool
 
-						return httpEndpointClient
-					}()
-			let	documentStorageID = "Sandbox"
+	// MARK: Lifecycle methods
+	//------------------------------------------------------------------------------------------------------------------
+	init(httpEndpointClient :HTTPEndpointClient, documentStorageID :String, defaultDocumentType :String,
+			supportsLongDocumentIDs :Bool) {
+		// Store
+		self.httpEndpointClient = httpEndpointClient
+		self.httpEndpointClient.logOptions = [.requestAndResponse]
 
-			let	documentType = "test"
+		self.documentStorageID = documentStorageID
+		self.defaultDocumentType = defaultDocumentType
+		self.supportsLongDocumentIDs = supportsLongDocumentIDs
+	}
 }

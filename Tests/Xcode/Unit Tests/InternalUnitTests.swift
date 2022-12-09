@@ -15,7 +15,7 @@ class InternalUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testSetInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	error = config.httpEndpointClient.internalSet(documentStorageID: "ABC", info: ["abc": "abc"])
@@ -38,7 +38,7 @@ class InternalUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testSetNoInfo() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	error = config.httpEndpointClient.internalSet(documentStorageID: config.documentStorageID, info: [:])
@@ -61,7 +61,7 @@ class InternalUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testSet3() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	error =

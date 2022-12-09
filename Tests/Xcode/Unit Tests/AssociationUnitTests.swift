@@ -15,7 +15,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testRegisterInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	error =
@@ -40,7 +40,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testRegisterInvalidFromDocumentType() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	fromDocumentType = UUID().uuidString
 
 		// Create document
@@ -74,7 +74,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testRegisterInvalidToDocumentType() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	toDocumentType = UUID().uuidString
 
 		// Create document
@@ -108,7 +108,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testUpdateInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	documentStorage = MDSEphemeral()
@@ -136,7 +136,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testUpdateUnknownName() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	name = UUID().uuidString
 
 		// Perform
@@ -165,7 +165,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testUpdateNoUpdates() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	errors = config.httpEndpointClient.associationUpdate(documentStorageID: "ABC", name: "ABC", updates: [])
@@ -177,7 +177,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testUpdateMissingAction() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	httpEndpointRequest =
@@ -208,7 +208,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testUpdateInvalidAction() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	httpEndpointRequest =
@@ -239,7 +239,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testUpdateMissingFromID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	httpEndpointRequest =
@@ -270,7 +270,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testUpdateMissingToID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	httpEndpointRequest =
@@ -301,7 +301,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(info, error) = config.httpEndpointClient.associationGet(documentStorageID: "ABC", name: "ABC")
@@ -326,7 +326,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetUnknownName() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	name = UUID().uuidString
 
 		// Perform
@@ -353,7 +353,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetDocumentInfosFromInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	documentStorage = MDSEphemeral()
@@ -383,7 +383,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetDocumentInfosFromUnknownName() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	name = UUID().uuidString
 
 		// Perform
@@ -415,7 +415,7 @@ class AssociationUnitTests : XCTestCase {
 	func testGetDocumentInfosFromInvalidFromID() throws {
 		// Setup
 		let	associationName = "\(Parent.documentType)To\(Child.documentType.capitalizingFirstLetter)"
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Create documents
 		let	(_, parentCreateError) =
@@ -439,7 +439,7 @@ class AssociationUnitTests : XCTestCase {
 		guard registerError == nil else { return }
 
 		// Perform
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	documentID = UUID().base64EncodedString
 		let	(info, error) =
 					config.httpEndpointClient.associationGetDocumentInfo(documentStorageID: config.documentStorageID,
 							name: associationName, fromDocumentID: documentID )
@@ -465,7 +465,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetDocumentsFromInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	documentStorage = MDSEphemeral()
@@ -495,7 +495,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetDocumentsFromUnknownName() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	name = UUID().uuidString
 
 		// Perform
@@ -527,7 +527,7 @@ class AssociationUnitTests : XCTestCase {
 	func testGetDocumentsFromInvalidFromID() throws {
 		// Setup
 		let	associationName = "\(Parent.documentType)To\(Child.documentType.capitalizingFirstLetter)"
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Create documents
 		let	(_, parentCreateError) =
@@ -551,7 +551,7 @@ class AssociationUnitTests : XCTestCase {
 		guard registerError == nil else { return }
 
 		// Perform
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	documentID = UUID().base64EncodedString
 		let	(info, error) =
 					config.httpEndpointClient.associationGetDocument(documentStorageID: config.documentStorageID,
 							name: associationName, fromDocumentID: documentID )
@@ -577,7 +577,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetDocumentInfosToInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	documentStorage = MDSEphemeral()
@@ -607,7 +607,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetDocumentInfosToUnknownName() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	name = UUID().uuidString
 
 		// Perform
@@ -639,7 +639,7 @@ class AssociationUnitTests : XCTestCase {
 	func testGetDocumentInfosToInvalidToID() throws {
 		// Setup
 		let	associationName = "\(Parent.documentType)To\(Child.documentType.capitalizingFirstLetter)"
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Create documents
 		let	(_, parentCreateError) =
@@ -663,7 +663,7 @@ class AssociationUnitTests : XCTestCase {
 		guard registerError == nil else { return }
 
 		// Perform
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	documentID = UUID().base64EncodedString
 		let	(info, error) =
 					config.httpEndpointClient.associationGetDocumentInfo(documentStorageID: config.documentStorageID,
 							name: associationName, toDocumentID: documentID )
@@ -689,7 +689,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetDocumentsToInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	documentStorage = MDSEphemeral()
@@ -719,7 +719,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetDocumentsToUnknownName() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	name = UUID().uuidString
 
 		// Perform
@@ -751,7 +751,7 @@ class AssociationUnitTests : XCTestCase {
 	func testGetDocumentsToInvalidToID() throws {
 		// Setup
 		let	associationName = "\(Parent.documentType)To\(Child.documentType.capitalizingFirstLetter)"
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Create documents
 		let	(_, parentCreateError) =
@@ -775,7 +775,7 @@ class AssociationUnitTests : XCTestCase {
 		guard registerError == nil else { return }
 
 		// Perform
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	documentID = UUID().base64EncodedString
 		let	(info, error) =
 					config.httpEndpointClient.associationGetDocument(documentStorageID: config.documentStorageID,
 							name: associationName, toDocumentID: documentID )
@@ -801,7 +801,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetValueInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	documentStorage = MDSEphemeral()
@@ -831,7 +831,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetValueInvalidAssociationName() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	associationName = UUID().uuidString
 
 		// Perform
@@ -865,7 +865,7 @@ class AssociationUnitTests : XCTestCase {
 	func testGetValueInvalidAction() throws {
 		// Setup
 		let	associationName = "\(Parent.documentType)To\(Child.documentType.capitalizingFirstLetter)"
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Create documents
 		let	(_, parentCreateError) =
@@ -923,7 +923,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetValueMissingFromID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	httpEndpointRequest =
@@ -959,7 +959,7 @@ class AssociationUnitTests : XCTestCase {
 	func testGetValueInvalidFromID() throws {
 		// Setup
 		let	associationName = "\(Parent.documentType)To\(Child.documentType.capitalizingFirstLetter)"
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Register
 		let	registerError =
@@ -970,7 +970,7 @@ class AssociationUnitTests : XCTestCase {
 		guard registerError == nil else { return }
 
 		// Perform
-		let	documentID = UUID().base64EncodedString.replacingOccurrences(of: "/", with: "_")
+		let	documentID = UUID().base64EncodedString
 		let	(info, error) =
 					config.httpEndpointClient.associationGetIntegerValue(documentStorageID: config.documentStorageID,
 							name: associationName, action: .sum, fromDocumentID: documentID,
@@ -997,7 +997,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetValueMissingCacheName() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	httpEndpointRequest =
@@ -1033,7 +1033,7 @@ class AssociationUnitTests : XCTestCase {
 	func testGetValueInvalidCacheName() throws {
 		// Setup
 		let	associationName = "\(Parent.documentType)To\(Child.documentType.capitalizingFirstLetter)"
-		let	config = Config.shared
+		let	config = Config.current
 		let	documentStorage = MDSEphemeral()
 		let	cacheName = UUID().uuidString
 
@@ -1107,7 +1107,7 @@ class AssociationUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetValueMissingCachedValueName() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	httpEndpointRequest =
@@ -1144,7 +1144,7 @@ class AssociationUnitTests : XCTestCase {
 		// Setup
 		let	associationName = "\(Parent.documentType)To\(Child.documentType.capitalizingFirstLetter)"
 		let	cacheName = UUID().uuidString
-		let	config = Config.shared
+		let	config = Config.current
 		let	documentStorage = MDSEphemeral()
 		let	cachedValueName = UUID().uuidString
 

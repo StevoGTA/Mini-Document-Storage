@@ -128,7 +128,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func cacheRegister(named name :String, documentType :String, relevantProperties :[String],
-			valueInfos :[(name :String, valueType :MDSValue.`Type`, selector :String, proc :MDSDocument.ValueProc)])
+			valueInfos :[(name :String, valueType :MDSValue.Type_, selector :String, proc :MDSDocument.ValueProc)])
 			throws {
 		// Unimplemented
 		fatalError("Unimplemented")

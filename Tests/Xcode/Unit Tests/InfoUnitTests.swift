@@ -15,7 +15,7 @@ class InfoUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(info, error) = config.httpEndpointClient.infoGet(documentStorageID: "ABC", keys: ["abc"])
@@ -40,7 +40,7 @@ class InfoUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetNoKeys() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(info, error) = config.httpEndpointClient.infoGet(documentStorageID: config.documentStorageID, keys: [])
@@ -65,7 +65,7 @@ class InfoUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetInvalidKeys() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(info, error) =
@@ -80,7 +80,7 @@ class InfoUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testSetInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	error = config.httpEndpointClient.infoSet(documentStorageID: "ABC", info: ["abc": "abc"])
@@ -103,7 +103,7 @@ class InfoUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testSetNoInfo() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	error = config.httpEndpointClient.infoSet(documentStorageID: config.documentStorageID, info: [:])
@@ -126,7 +126,7 @@ class InfoUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testSet3() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	error =

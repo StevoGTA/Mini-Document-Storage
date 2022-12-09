@@ -15,7 +15,7 @@ class IndexUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testRegisterInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	error =
@@ -40,14 +40,14 @@ class IndexUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testRegisterMissingName() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSSuccessHTTPEndpointRequest(method: .put,
 							path: "/v1/index/\(config.documentStorageID)",
 							jsonBody: [
-										"documentType": config.documentType,
+										"documentType": config.defaultDocumentType,
 										"relevantProperties": [],
 										"isUpToDate": 1,
 										"keysSelector": "ABC",
@@ -77,7 +77,7 @@ class IndexUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testRegisterMissingDocumentType() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	httpEndpointRequest =
@@ -115,7 +115,7 @@ class IndexUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testRegisterUnknownDocumentType() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	documentType = UUID().uuidString
 
 		// Perform
@@ -142,7 +142,7 @@ class IndexUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testRegisterMissingRelevantProperties() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	httpEndpointRequest =
@@ -150,7 +150,7 @@ class IndexUnitTests : XCTestCase {
 							path: "/v1/index/\(config.documentStorageID)",
 							jsonBody: [
 										"name": "ABC",
-										"documentType": config.documentType,
+										"documentType": config.defaultDocumentType,
 										"isUpToDate": 1,
 										"keysSelector": "ABC",
 										"keysSelectorInfo": [:],
@@ -180,7 +180,7 @@ class IndexUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testRegisterMissingKeysSelector() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	httpEndpointRequest =
@@ -188,7 +188,7 @@ class IndexUnitTests : XCTestCase {
 							path: "/v1/index/\(config.documentStorageID)",
 							jsonBody: [
 										"name": "ABC",
-										"documentType": config.documentType,
+										"documentType": config.defaultDocumentType,
 										"relevantProperties": [],
 										"isUpToDate": 1,
 										"keysSelectorInfo": [:],
@@ -218,7 +218,7 @@ class IndexUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testRegisterMissingKeysSelectorInfo() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	httpEndpointRequest =
@@ -226,7 +226,7 @@ class IndexUnitTests : XCTestCase {
 							path: "/v1/index/\(config.documentStorageID)",
 							jsonBody: [
 										"name": "ABC",
-										"documentType": config.documentType,
+										"documentType": config.defaultDocumentType,
 										"relevantProperties": [],
 										"isUpToDate": 1,
 										"keysSelector": "keysForDocumentProperty()",
@@ -256,12 +256,12 @@ class IndexUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testRegister() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Create Test document
 		let	(_, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos: [MDSDocument.CreateInfo(propertyMap: [:])])
 		XCTAssertNil(createError, "create document received error: \(createError!)")
 		guard createError == nil else { return }
@@ -269,7 +269,7 @@ class IndexUnitTests : XCTestCase {
 		// Perform
 		let	error =
 					config.httpEndpointClient.indexRegister(documentStorageID: config.documentStorageID,
-							name: UUID().uuidString, documentType: config.documentType,
+							name: UUID().uuidString, documentType: config.defaultDocumentType,
 							keysSelector: "keysForDocumentProperty()")
 
 		// Evaluate results
@@ -279,7 +279,7 @@ class IndexUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetDocumentInfosInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(isUpToDate, info, error) =
@@ -307,7 +307,7 @@ class IndexUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetDocumentInfosUnknownName() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	name = UUID().uuidString
 
 		// Perform
@@ -338,7 +338,7 @@ class IndexUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetDocumentsInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(isUpToDate, info, error) =
@@ -366,7 +366,7 @@ class IndexUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetDocumentsUnknownName() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	name = UUID().uuidString
 
 		// Perform

@@ -15,7 +15,7 @@ class CollectionUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testRegisterInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	error =
@@ -40,13 +40,13 @@ class CollectionUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testRegisterMissingName() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSSuccessHTTPEndpointRequest(method: .put, path: "/v1/collection/\(config.documentStorageID)",
 							jsonBody: [
-										"documentType": config.documentType,
+										"documentType": config.defaultDocumentType,
 										"relevantProperties": [],
 										"isUpToDate": 1,
 										"isIncludedSelector": "ABC",
@@ -76,7 +76,7 @@ class CollectionUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testRegisterMissingDocumentType() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	httpEndpointRequest =
@@ -114,7 +114,7 @@ class CollectionUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------	//------------------------------------------------------------------------------------------------------------------
 	func testRegisterUnknownDocumentType() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	documentType = UUID().uuidString
 
 		// Perform
@@ -141,7 +141,7 @@ class CollectionUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testRegisterMissingRelevantProperties() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	httpEndpointRequest =
@@ -149,7 +149,7 @@ class CollectionUnitTests : XCTestCase {
 							path: "/v1/collection/\(config.documentStorageID)",
 							jsonBody: [
 										"name": "ABC",
-										"documentType": config.documentType,
+										"documentType": config.defaultDocumentType,
 										"isUpToDate": 1,
 										"isIncludedSelector": "ABC",
 										"isIncludedSelectorInfo": [:],
@@ -179,7 +179,7 @@ class CollectionUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testRegisterMissingIsIncludedSelector() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	httpEndpointRequest =
@@ -187,7 +187,7 @@ class CollectionUnitTests : XCTestCase {
 							path: "/v1/collection/\(config.documentStorageID)",
 							jsonBody: [
 										"name": "ABC",
-										"documentType": config.documentType,
+										"documentType": config.defaultDocumentType,
 										"relevantProperties": [],
 										"isUpToDate": 1,
 										"isIncludedSelectorInfo": [:],
@@ -217,7 +217,7 @@ class CollectionUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testRegisterMissingIsIncludedSelectorInfo() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	httpEndpointRequest =
@@ -225,7 +225,7 @@ class CollectionUnitTests : XCTestCase {
 							path: "/v1/collection/\(config.documentStorageID)",
 							jsonBody: [
 										"name": "ABC",
-										"documentType": config.documentType,
+										"documentType": config.defaultDocumentType,
 										"relevantProperties": [],
 										"isUpToDate": 1,
 										"isIncludedSelector": "documentPropertyIsValue()",
@@ -255,12 +255,12 @@ class CollectionUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testRegister() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Create Test document
 		let	(_, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos: [MDSDocument.CreateInfo(propertyMap: [:])])
 		XCTAssertNil(createError, "create document received error: \(createError!)")
 		guard createError == nil else { return }
@@ -268,7 +268,7 @@ class CollectionUnitTests : XCTestCase {
 		// Perform
 		let	error =
 					config.httpEndpointClient.collectionRegister(documentStorageID: config.documentStorageID,
-							name: "ABC", documentType: config.documentType,
+							name: "ABC", documentType: config.defaultDocumentType,
 							isIncludedSelector: "documentPropertyIsValue()")
 
 		// Evaluate results
@@ -278,7 +278,7 @@ class CollectionUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------	//------------------------------------------------------------------------------------------------------------------
 	func testGetDocumentCountInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(info, error) = config.httpEndpointClient.collectionGetDocumentCount(documentStorageID: "ABC", name: "ABC")
@@ -303,7 +303,7 @@ class CollectionUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetDocumentCountInvalidName() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(info, error) =
@@ -330,7 +330,7 @@ class CollectionUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetDocumentInfosInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(isUpToDate, info, error) =
@@ -358,7 +358,7 @@ class CollectionUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetDocumentInfosUnknownName() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	name = UUID().uuidString
 
 		// Perform
@@ -390,13 +390,13 @@ class CollectionUnitTests : XCTestCase {
 	func testGetDocumentInfosInvalidStartIndex() throws {
 		// Setup
 		let	collectionName = UUID().uuidString
-		let	config = Config.shared
+		let	config = Config.current
 		let	property1 = UUID().uuidString
 
 		// Create Test document
 		let	(_, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos: [MDSDocument.CreateInfo(propertyMap: [:])])
 		XCTAssertNil(createError, "create document received error: \(createError!)")
 		guard createError == nil else { return }
@@ -404,7 +404,7 @@ class CollectionUnitTests : XCTestCase {
 		// Register
 		let	registerError1 =
 					config.httpEndpointClient.collectionRegister(documentStorageID: config.documentStorageID,
-							name: collectionName, documentType: config.documentType,
+							name: collectionName, documentType: config.defaultDocumentType,
 							relevantProperties: [property1], isUpToDate: true,
 							isIncludedSelector: "documentPropertyIsValue()",
 							isIncludedSelectorInfo: ["property": property1, "value": "111"])
@@ -440,13 +440,13 @@ class CollectionUnitTests : XCTestCase {
 	func testGetDocumentInfosInvalidCount() throws {
 		// Setup
 		let	collectionName = UUID().uuidString
-		let	config = Config.shared
+		let	config = Config.current
 		let	property1 = UUID().uuidString
 
 		// Create Test document
 		let	(_, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos: [MDSDocument.CreateInfo(propertyMap: [:])])
 		XCTAssertNil(createError, "create document received error: \(createError!)")
 		guard createError == nil else { return }
@@ -454,7 +454,7 @@ class CollectionUnitTests : XCTestCase {
 		// Register
 		let	registerError1 =
 					config.httpEndpointClient.collectionRegister(documentStorageID: config.documentStorageID,
-							name: collectionName, documentType: config.documentType,
+							name: collectionName, documentType: config.defaultDocumentType,
 							relevantProperties: [property1], isUpToDate: true,
 							isIncludedSelector: "documentPropertyIsValue()",
 							isIncludedSelectorInfo: ["property": property1, "value": "111"])
@@ -488,7 +488,7 @@ class CollectionUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetDocumentsInvalidDocumentStorageID() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 
 		// Perform
 		let	(isUpToDate, info, error) =
@@ -516,7 +516,7 @@ class CollectionUnitTests : XCTestCase {
 	//------------------------------------------------------------------------------------------------------------------
 	func testGetDocumentsUnknownName() throws {
 		// Setup
-		let	config = Config.shared
+		let	config = Config.current
 		let	name = UUID().uuidString
 
 		// Perform
@@ -548,13 +548,13 @@ class CollectionUnitTests : XCTestCase {
 	func testGetDocumentsInvalidStartIndex() throws {
 		// Setup
 		let	collectionName = UUID().uuidString
-		let	config = Config.shared
+		let	config = Config.current
 		let	property1 = UUID().uuidString
 
 		// Create Test document
 		let	(_, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos: [MDSDocument.CreateInfo(propertyMap: [:])])
 		XCTAssertNil(createError, "create document received error: \(createError!)")
 		guard createError == nil else { return }
@@ -562,7 +562,7 @@ class CollectionUnitTests : XCTestCase {
 		// Register
 		let	registerError1 =
 					config.httpEndpointClient.collectionRegister(documentStorageID: config.documentStorageID,
-							name: collectionName, documentType: config.documentType,
+							name: collectionName, documentType: config.defaultDocumentType,
 							relevantProperties: [property1], isUpToDate: true,
 							isIncludedSelector: "documentPropertyIsValue()",
 							isIncludedSelectorInfo: ["property": property1, "value": "111"])
@@ -598,13 +598,13 @@ class CollectionUnitTests : XCTestCase {
 	func testGetDocumentsInvalidCount() throws {
 		// Setup
 		let	collectionName = UUID().uuidString
-		let	config = Config.shared
+		let	config = Config.current
 		let	property1 = UUID().uuidString
 
 		// Create Test document
 		let	(_, createError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
-							documentType: config.documentType,
+							documentType: config.defaultDocumentType,
 							documentCreateInfos: [MDSDocument.CreateInfo(propertyMap: [:])])
 		XCTAssertNil(createError, "create document received error: \(createError!)")
 		guard createError == nil else { return }
@@ -612,7 +612,7 @@ class CollectionUnitTests : XCTestCase {
 		// Register
 		let	registerError1 =
 					config.httpEndpointClient.collectionRegister(documentStorageID: config.documentStorageID,
-							name: collectionName, documentType: config.documentType,
+							name: collectionName, documentType: config.defaultDocumentType,
 							relevantProperties: [property1], isUpToDate: true,
 							isIncludedSelector: "documentPropertyIsValue()",
 							isIncludedSelectorInfo: ["property": property1, "value": "111"])

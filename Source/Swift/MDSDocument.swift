@@ -22,8 +22,8 @@ public struct MDSValue {
 		static func integer(for value :Int?) -> Value? { return (value != nil) ? .integer(value: value!) : nil }
 	}
 
-	// MARK: Kind
-	public enum `Type` : String {
+	// MARK: Type
+	public enum Type_ : String {
 		case integer = "integer"
 	}
 }
@@ -34,7 +34,7 @@ public struct MDSValueInfo {
 
 	// MARK: Properties
 	let	name :String
-	let	type :MDSValue.`Type`
+	let	type :MDSValue.Type_
 }
 
 //----------------------------------------------------------------------------------------------------------------------

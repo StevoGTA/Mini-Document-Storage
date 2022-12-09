@@ -16,7 +16,7 @@ class CollectionTransactionTests : XCTestCase {
 	func testRegisterUpdateRetrieveRevisionInfo() throws {
 		// Setup
 		let	collectionName = UUID().uuidString
-		let	config = Config.shared
+		let	config = Config.current
 		let	property1 = UUID().base64EncodedString
 		let	property2 = UUID().base64EncodedString
 

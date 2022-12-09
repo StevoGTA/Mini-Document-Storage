@@ -16,7 +16,7 @@ class AssociationTransactionTests : XCTestCase {
 	func testRegisterUpdateRetrieveDocumentInfo() throws {
 		// Setup
 		let	associationName = "\(Parent.documentType)To\(Child.documentType.capitalizingFirstLetter)"
-		let	config = Config.shared
+		let	config = Config.current
 		let	documentStorage = MDSEphemeral()
 
 		// Create documents
@@ -126,7 +126,7 @@ class AssociationTransactionTests : XCTestCase {
 	func testRegisterUpdateRetrieveDocuments() throws {
 		// Setup
 		let	associationName = "\(Parent.documentType)To\(Child.documentType.capitalizingFirstLetter)"
-		let	config = Config.shared
+		let	config = Config.current
 		let	documentStorage = MDSEphemeral()
 
 		// Create documents
@@ -237,7 +237,7 @@ class AssociationTransactionTests : XCTestCase {
 		// Setup
 		let	associationName = "\(Parent.documentType)To\(Child.documentType.capitalizingFirstLetter)"
 		let	cacheName = UUID().uuidString
-		let	config = Config.shared
+		let	config = Config.current
 		let	documentStorage = MDSEphemeral()
 
 		// Create documents
