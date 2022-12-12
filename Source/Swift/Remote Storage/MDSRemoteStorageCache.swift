@@ -20,12 +20,12 @@ public class MDSRemoteStorageCache {
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	public init(storageFolder :Folder, uniqueID :String = "MDSRemoteStorageCache") throws {
+	public init(storageFolder :Folder, databaseName :String = "MDSRemoteStorageCache") throws {
 		// Create folder if needed
 		try FileManager.default.create(storageFolder)
 
 		// Setup SQLite database
-		self.sqliteDatabase = try SQLiteDatabase(in: storageFolder, with: uniqueID)
+		self.sqliteDatabase = try SQLiteDatabase(in: storageFolder, with: databaseName)
 
 		self.attachmentsTable =
 				self.sqliteDatabase.table(name: "Attachments", options: [.withoutRowID],
