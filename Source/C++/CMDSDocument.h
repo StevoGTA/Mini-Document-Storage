@@ -237,6 +237,9 @@ class CMDSDocument : public CHashable {
 						OV<UInt32>						getUInt32(const CString& property) const;
 						OV<UInt32>						set(const CString& property, UInt32 value) const;
 
+						OV<UInt64>						getUInt64(const CString& property) const;
+						OV<UInt64>						set(const CString& property, UInt64 value) const;
+
 						OV<UniversalTime>				getUniversalTime(const CString& property) const;
 						OV<UniversalTime>				setUniversalTime(const CString& property, UniversalTime value)
 																const;

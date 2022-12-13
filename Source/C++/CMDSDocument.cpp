@@ -370,6 +370,30 @@ OV<UInt32> CMDSDocument::set(const CString& property, UInt32 value) const
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+OV<UInt64> CMDSDocument::getUInt64(const CString& property) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Get value
+	OV<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	AssertFailIf(value.hasValue() && (value->getType() != SValue::kUInt64));
+
+	return value.hasValue() ? OV<UInt64>(value->getUInt64()) : OV<UInt64>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<UInt64> CMDSDocument::set(const CString& property, UInt64 value) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Check if different
+	OV<UInt64>	previousValue = getUInt64(property);
+	if (!previousValue.hasValue() || (value != *previousValue))
+		// Set value
+		mInternals->mDocumentStorage.set(property, OV<SValue>(value), *this);
+
+	return previousValue;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 OV<UniversalTime> CMDSDocument::getUniversalTime(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
