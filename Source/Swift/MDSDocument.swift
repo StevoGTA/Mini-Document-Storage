@@ -9,36 +9,7 @@
 import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: MDSValue {
-public struct MDSValue {
-
-	// MARK: Value
-	public enum Value {
-		// Values
-		case integer(value :Int)
-
-		// Class methods
-		//--------------------------------------------------------------------------------------------------------------
-		static func integer(for value :Int?) -> Value? { return (value != nil) ? .integer(value: value!) : nil }
-	}
-
-	// MARK: Type
-	public enum Type_ : String {
-		case integer = "integer"
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSValueInfo
-public struct MDSValueInfo {
-
-	// MARK: Properties
-	let	name :String
-	let	type :MDSValue.Type_
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSDocument
+// MARK: MDSDocument
 open class MDSDocument : Hashable {
 
 	// MARK: ChangeKind
@@ -46,14 +17,6 @@ open class MDSDocument : Hashable {
 		case created
 		case updated
 		case removed
-	}
-
-	// MARK: BackingInfo
-	struct BackingInfo<T> {
-
-		// MARK: Properties
-		let	documentID :String
-		let	documentBacking :T
 	}
 
 	// MARK: AttachmentInfo
@@ -95,7 +58,6 @@ open class MDSDocument : Hashable {
 		// MARK: Properties
 		let	documentID :String
 		let	revision :Int
-		let	active :Bool
 		let	creationDate :Date
 		let	modificationDate :Date
 	}
@@ -547,6 +509,14 @@ open class MDSDocument : Hashable {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSDocumentBacking
+protocol MDSDocumentBacking {
+
+	// MARK: Properties
+	var	documentID :String { get }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSUpdateInfo
 struct MDSUpdateInfo<T> {
 
@@ -565,4 +535,33 @@ struct MDSUpdateInfo<T> {
 		self.value = value
 		self.changedProperties = changedProperties
 	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSValue {
+public struct MDSValue {
+
+	// MARK: Value
+	public enum Value {
+		// Values
+		case integer(value :Int)
+
+		// Class methods
+		//--------------------------------------------------------------------------------------------------------------
+		static func integer(for value :Int?) -> Value? { return (value != nil) ? .integer(value: value!) : nil }
+	}
+
+	// MARK: Type
+	public enum Type_ : String {
+		case integer = "integer"
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSValueInfo
+public struct MDSValueInfo {
+
+	// MARK: Properties
+	let	name :String
+	let	type :MDSValue.Type_
 }

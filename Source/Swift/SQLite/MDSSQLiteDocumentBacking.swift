@@ -10,11 +10,11 @@ import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: MDSSQLiteDocumentBacking
-class MDSSQLiteDocumentBacking {
+class MDSSQLiteDocumentBacking : MDSDocumentBacking {
 
 	// MARK: Properties
 			let	id :Int64
-//			let	documentID :String
+			let	documentID :String
 			let	creationDate :Date
 
 			var	revision :Int
@@ -23,10 +23,11 @@ class MDSSQLiteDocumentBacking {
 			var	propertyMap :[String : Any] { self.propertiesLock.read({ self.propertyMapInternal }) }
 			var	attachmentInfoMap :MDSDocument.AttachmentInfoMap
 
-//			var	documentFullInfo :MDSDocument.FullInfo
-//					{ MDSDocument.FullInfo(documentID: self.documentID, revision: self.revision, active: self.active,
-//						creationDate: self.creationDate, modificationDate: self.modificationDate,
-//						propertyMap: self.propertyMap, attachmentInfoMap: self.attachmentInfoMap) }
+			var	documentFullInfo :MDSDocument.FullInfo
+					{ MDSDocument.FullInfo(documentID: self.documentID, revision: self.revision, active: self.active,
+						creationDate: self.creationDate, modificationDate: self.modificationDate,
+						propertyMap: self.propertyMap, attachmentInfoMap: self.attachmentInfoMap) }
+
 
 	private	var	propertyMapInternal :[String : Any]
 	private	let	propertiesLock = ReadPreferringReadWriteLock()
@@ -37,7 +38,7 @@ class MDSSQLiteDocumentBacking {
 			propertyMap :[String : Any], attachmentInfoMap :MDSDocument.AttachmentInfoMap) {
 		// Store
 		self.id = id
-//		self.documentID = documentID
+		self.documentID = documentID
 		self.creationDate = creationDate
 
 		self.revision = revision
@@ -52,12 +53,12 @@ class MDSSQLiteDocumentBacking {
 			propertyMap :[String : Any], with databaseManager :MDSSQLiteDatabaseManager) {
 		// Setup
 		let	(id, revision, creationDate, modificationDate) =
-					databaseManager.new(documentType: documentType, documentID: documentID, creationDate: creationDate,
-							modificationDate: modificationDate, propertyMap: propertyMap)
+					databaseManager.documentCreate(documentType: documentType, documentID: documentID,
+							creationDate: creationDate, modificationDate: modificationDate, propertyMap: propertyMap)
 
 		// Store
 		self.id = id
-//		self.documentID = documentID
+		self.documentID = documentID
 		self.creationDate = creationDate
 
 		self.revision = revision
@@ -94,7 +95,7 @@ class MDSSQLiteDocumentBacking {
 			if commitChange {
 				// Get info
 				let	(revision, modificationDate) =
-							databaseManager.update(documentType: documentType, id: self.id,
+							databaseManager.documentUpdate(documentType: documentType, id: self.id,
 									propertyMap: self.propertyMapInternal)
 
 				// Store
@@ -102,13 +103,5 @@ class MDSSQLiteDocumentBacking {
 				self.modificationDate = modificationDate
 			}
 		}
-	}
-
-	//--------------------------------------------------------------------------------------------------------------
-	func documentFullInfo(with documentID :String) -> MDSDocument.FullInfo {
-		// Return full info
-		return MDSDocument.FullInfo(documentID: documentID, revision: self.revision, active: self.active,
-				creationDate: self.creationDate, modificationDate: self.modificationDate,
-				propertyMap: self.propertyMap, attachmentInfoMap: self.attachmentInfoMap)
 	}
 }

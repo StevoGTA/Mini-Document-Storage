@@ -21,7 +21,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	typealias MDSEphemeralBatchInfo = MDSBatchInfo<[String : Any]>
 
 	// MARK: DocumentBacking
-	private class DocumentBacking {
+	private class DocumentBacking : MDSDocumentBacking {
 
 		// MARK: Properties
 		let	documentID :String
@@ -112,21 +112,20 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	// MARK: Properties
 	public	let	id :String = UUID().uuidString
 
-	private	var	info = [String : String]()
-	private	var	`internal` = [String : String]()
-
-	private	var	ephemeralValues :[/* Key */ String : Any]?
-
-	private	let	batchInfoMap = LockingDictionary<Thread, MDSEphemeralBatchInfo>()
-
 	private	var	associationsByNameMap = LockingDictionary</* Name */ String, MDSAssociation>()
 	private	var	associationItemsByNameMap = LockingArrayDictionary</* Name */ String, MDSAssociation.Item>()
+
+	private	let	batchInfoMap = LockingDictionary<Thread, MDSEphemeralBatchInfo>()
 
 	private	let	cachesByNameMap = LockingDictionary</* Name */ String, MDSCache>()
 	private	let	cachesByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSCache>()
 	private	let	cacheValuesMap =
 						LockingDictionary</* Cache Name */ String,
 								[/* Document ID */ String : [/* Value Name */ String : /* Value */ MDSValue.Value?]]>()
+
+	private	let	collectionsByNameMap = LockingDictionary</* Name */ String, MDSCollection>()
+	private	let	collectionsByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSCollection>()
+	private	let	collectionValuesMap = LockingDictionary</* Name */ String, /* Document IDs */ [String]>()
 
 	private	var	documentBackingByIDMap = [/* Document ID */ String : DocumentBacking]()
 	private	let	documentCreateProcMap = LockingDictionary<String, MDSDocument.CreateProc>()
@@ -136,13 +135,14 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	private	let	documentMapsLock = ReadPreferringReadWriteLock()
 	private	let	documentsBeingCreatedPropertyMapMap = LockingDictionary<String, [String : Any]>()
 
-	private	let	collectionsByNameMap = LockingDictionary</* Name */ String, MDSCollection>()
-	private	let	collectionsByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSCollection>()
-	private	let	collectionValuesMap = LockingDictionary</* Name */ String, /* Document IDs */ [String]>()
+	private	var	ephemeralValues :[/* Key */ String : Any]?
 
 	private	let	indexesByNameMap = LockingDictionary</* Name */ String, MDSIndex>()
 	private	let	indexesByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSIndex>()
 	private	let	indexValuesMap = LockingDictionary</* Name */ String, [/* Key */ String : /* Document ID */ String]>()
+
+	private	var	info = [String : String]()
+	private	var	`internal` = [String : String]()
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -302,7 +302,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
 		}
 
-		// Get current cache
+		// Remove current cache if found
 		if let cache = self.cachesByNameMap.value(for: name) {
 			// Remove
 			self.cachesByDocumentTypeMap.remove(cache, for: documentType)
@@ -318,7 +318,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 		self.cachesByDocumentTypeMap.append(cache, for: documentType)
 
 		// Bring up to date
-		update(cache: cache, updateInfos: self.updateInfos(for: documentType, sinceRevision: 0))
+		cacheUpdate(cache, updateInfos: self.updateInfos(for: documentType, sinceRevision: 0))
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -330,7 +330,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
 		}
 
-		// Get current collection
+		// Remove current collection if found
 		if let collection = self.collectionsByNameMap.value(for: name) {
 			// Remove
 			self.collectionsByDocumentTypeMap.remove(collection, for: documentType)
@@ -349,7 +349,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 		// Check if is up to date
 		if !isUpToDate {
 			// Bring up to date
-			update(collection: collection, updateInfos: self.updateInfos(for: documentType, sinceRevision: 0))
+			collectionUpdate(collection, updateInfos: self.updateInfos(for: documentType, sinceRevision: 0))
 		}
 	}
 
@@ -434,7 +434,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 				}
 				infos.append(
 						(document,
-								MDSDocument.OverviewInfo(documentID: documentID, revision: revision, active: true,
+								MDSDocument.OverviewInfo(documentID: documentID, revision: revision,
 										creationDate: creationDate, modificationDate: modificationDate)))
 
 				// Call document changed procs
@@ -884,7 +884,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
 		}
 
-		// Get current index
+		// Remove current index if found
 		if let index = self.indexesByNameMap.value(for: name) {
 			// Remove
 			self.indexesByDocumentTypeMap.remove(index, for: documentType)
@@ -903,7 +903,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 		// Check if is up to date
 		if !isUpToDate {
 			// Bring up to date
-			update(index: index, updateInfos: self.updateInfos(for: documentType, sinceRevision: 0))
+			indexUpdate(index, updateInfos: self.updateInfos(for: documentType, sinceRevision: 0))
 		}
 	}
 
@@ -1162,8 +1162,8 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func associationGetDocumentRevisionInfos(name :String, to toDocumentID :String, startIndex :Int, count :Int?)
-			throws -> (totalCount :Int, documentRevisionInfos :[MDSDocument.RevisionInfo]) {
+	func associationGetDocumentRevisionInfos(name :String, to toDocumentID :String, startIndex :Int, count :Int?) throws
+			-> (totalCount :Int, documentRevisionInfos :[MDSDocument.RevisionInfo]) {
 		// Setup
 		let	associationItems = try associationItems(for: name)
 
@@ -1196,8 +1196,8 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func associationGetDocumentFullInfos(name :String, from fromDocumentID :String, startIndex :Int, count :Int?)
-			throws -> (totalCount :Int, documentFullInfos :[MDSDocument.FullInfo]) {
+	func associationGetDocumentFullInfos(name :String, from fromDocumentID :String, startIndex :Int, count :Int?) throws
+			-> (totalCount :Int, documentFullInfos :[MDSDocument.FullInfo]) {
 		// Setup
 		let	associationItems = try associationItems(for: name)
 
@@ -1435,6 +1435,47 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	private func cacheUpdate(_ cache :MDSCache, updateInfos :[MDSUpdateInfo<String>]) {
+		// Get infos
+		let	infos = cache.update(updateInfos)
+
+		// Update
+		self.cacheValuesMap.update(for: cache.name, with: { ($0 ?? [:]).merging(infos, uniquingKeysWith: { $1 }) })
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func collectionUpdate(_ collection :MDSCollection, updateInfos :[MDSUpdateInfo<String>]) {
+		// Update
+		if let (includedIDs, notIncludedIDs, _) = collection.update(updateInfos) {
+			// Update storage
+			self.collectionValuesMap.update(for: collection.name) {
+				// Compose updated values
+				let	updatedValues = ($0 ?? []).filter({ !notIncludedIDs.contains($0) }) + Array(includedIDs)
+
+				return !updatedValues.isEmpty ? updatedValues : nil
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func indexUpdate(_ index :MDSIndex, updateInfos :[MDSUpdateInfo<String>]) {
+		// Update
+		if let (keysInfos, _) = index.update(updateInfos) {
+			// Update storage
+			let	documentIDs = Set<String>(keysInfos.map({ $0.value }))
+			self.indexValuesMap.update(for: index.name) {
+				// Filter out document IDs included in update
+				var	updatedValueInfo = ($0 ?? [:]).filter({ !documentIDs.contains($0.value) })
+
+				// Add/Update keys => document IDs
+				keysInfos.forEach() { keys, value in keys.forEach() { updatedValueInfo[$0] = value } }
+
+				return !updatedValueInfo.isEmpty ? updatedValueInfo : nil
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	private func nextRevision(for documentType :String) -> Int {
 		// Compose next revision
 		let	nextRevision = (self.documentLastRevisionMap.value(for: documentType) ?? 0) + 1
@@ -1462,59 +1503,18 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func update(cache :MDSCache, updateInfos :[MDSUpdateInfo<String>]) {
-		// Get infos
-		let	infos = cache.update(updateInfos)
-
-		// Update
-		self.cacheValuesMap.update(for: cache.name, with: { ($0 ?? [:]).merging(infos, uniquingKeysWith: { $1 }) })
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	private func update(collection :MDSCollection, updateInfos :[MDSUpdateInfo<String>]) {
-		// Update
-		if let (includedIDs, notIncludedIDs, _) = collection.update(updateInfos) {
-			// Update storage
-			self.collectionValuesMap.update(for: collection.name) {
-				// Compose updated values
-				let	updatedValues = ($0 ?? []).filter({ !notIncludedIDs.contains($0) }) + Array(includedIDs)
-
-				return !updatedValues.isEmpty ? updatedValues : nil
-			}
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	private func update<I : MDSIndex>(index :I, updateInfos :[MDSUpdateInfo<String>]) {
-		// Update
-		if let (keysInfos, _) = index.update(updateInfos) {
-			// Update storage
-			let	documentIDs = Set<String>(keysInfos.map({ $0.value }))
-			self.indexValuesMap.update(for: index.name) {
-				// Filter out document IDs included in update
-				var	updatedValueInfo = ($0 ?? [:]).filter({ !documentIDs.contains($0.value) })
-
-				// Add/Update keys => document IDs
-				keysInfos.forEach() { keys, value in keys.forEach() { updatedValueInfo[$0] = value } }
-
-				return !updatedValueInfo.isEmpty ? updatedValueInfo : nil
-			}
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
 	private func update(for documentType :String, updateInfos :[MDSUpdateInfo<String>]) {
 		// Update caches
 		self.cachesByDocumentTypeMap.values(for: documentType)?.forEach()
-				{ self.update(cache: $0, updateInfos: updateInfos) }
+				{ self.cacheUpdate($0, updateInfos: updateInfos) }
 
 		// Update collections
 		self.collectionsByDocumentTypeMap.values(for: documentType)?.forEach()
-				{ self.update(collection: $0, updateInfos: updateInfos) }
+				{ self.collectionUpdate($0, updateInfos: updateInfos) }
 
 		// Update indexes
 		self.indexesByDocumentTypeMap.values(for: documentType)?.forEach()
-			{ self.update(index: $0, updateInfos: updateInfos) }
+			{ self.indexUpdate($0, updateInfos: updateInfos) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

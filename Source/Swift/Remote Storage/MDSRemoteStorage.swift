@@ -31,10 +31,11 @@ extension MDSRemoteStorageError : CustomStringConvertible, LocalizedError {
 open class MDSRemoteStorage : MDSDocumentStorage {
 
 	// MARK: Types
-	class DocumentBacking {
+	class DocumentBacking : MDSDocumentBacking {
 
 		// MARK: Properties
 		let	type :String
+		let	documentID :String
 		let	active :Bool
 		let	creationDate :Date
 
@@ -45,10 +46,11 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
-		init(type :String, revision :Int, active :Bool, creationDate :Date, modificationDate :Date,
+		init(type :String, documentID :String, revision :Int, active :Bool, creationDate :Date, modificationDate :Date,
 				propertyMap :[String : Any], attachmentInfoMap :MDSDocument.AttachmentInfoMap) {
 			// Store
 			self.type = type
+			self.documentID = documentID
 			self.active = active
 			self.creationDate = creationDate
 
@@ -62,6 +64,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		init(type :String, documentFullInfo :MDSDocument.FullInfo) {
 			// Store
 			self.type = type
+			self.documentID = documentFullInfo.documentID
 			self.active = documentFullInfo.active
 			self.creationDate = documentFullInfo.creationDate
 
@@ -1125,7 +1128,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 		} else {
 			// Must retrieve from server
 			var	documentBackings = [DocumentBacking]()
-			documentGet(for: [documentID], documentType: documentType) { documentBackings.append($0.documentBacking) }
+			documentGet(for: [documentID], documentType: documentType) { documentBackings.append($0) }
 
 			return documentBackings.first!
 		}
@@ -1134,7 +1137,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	@discardableResult
 	private func cacheUpdate(for documentType :String, with documentFullInfos :[MDSDocument.FullInfo]) ->
-			[MDSDocument.BackingInfo<DocumentBacking>] {
+			[DocumentBacking] {
 		// Update document backing cache
 		let	documentBackingInfos = documentBackingCacheUpdate(for: documentType, with: documentFullInfos)
 
@@ -1147,23 +1150,21 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	@discardableResult
 	private func documentBackingCacheUpdate(for documentType :String, with documentFullInfos :[MDSDocument.FullInfo]) ->
-			[MDSDocument.BackingInfo<DocumentBacking>] {
+			[DocumentBacking] {
 		// Preflight
 		guard !documentFullInfos.isEmpty else { return [] }
 
 		// Update document backing cache
-		let	documentBackingInfos =
+		let	documentBackings =
 					documentFullInfos.map() {
-						MDSDocument.BackingInfo<DocumentBacking>(documentID: $0.documentID,
-								documentBacking:
-										DocumentBacking(type: documentType, revision: $0.revision,
-												active: $0.active, creationDate: $0.creationDate,
-												modificationDate: $0.modificationDate, propertyMap: $0.propertyMap,
-												attachmentInfoMap: $0.attachmentInfoMap))
+						DocumentBacking(type: documentType, documentID: $0.documentID, revision: $0.revision,
+								active: $0.active, creationDate: $0.creationDate,
+								modificationDate: $0.modificationDate, propertyMap: $0.propertyMap,
+								attachmentInfoMap: $0.attachmentInfoMap)
 					}
-		self.documentBackingCache.add(documentBackingInfos)
+		self.documentBackingCache.add(documentBackings)
 
-		return documentBackingInfos
+		return documentBackings
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1226,8 +1227,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 						documentFullInfos.map({
 							// Return OverviewInfo
 							MDSDocument.OverviewInfo(documentID: $0.documentID, revision: $0.revision,
-									active: $0.active, creationDate: $0.creationDate,
-									modificationDate: $0.modificationDate)
+									creationDate: $0.creationDate, modificationDate: $0.modificationDate)
 						})
 			}
 		}
@@ -1237,7 +1237,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func documentGet(for documentIDs :[String], documentType :String,
-			proc :(_ documentBackingInfo :MDSDocument.BackingInfo<DocumentBacking>) -> Void ) {
+			proc :(_ documentBacking :DocumentBacking) -> Void ) {
 		// Preflight
 		guard !documentIDs.isEmpty else { return }
 

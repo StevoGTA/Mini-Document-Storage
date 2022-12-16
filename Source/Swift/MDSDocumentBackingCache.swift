@@ -10,21 +10,21 @@ import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: MDSDocumentBackingCache
-class MDSDocumentBackingCache<T> {
+class MDSDocumentBackingCache<T : MDSDocumentBacking> {
 
 	// MARK: Reference
 	private class Reference<T> {
 
 		// MARK: Properties
-		let	documentBackingInfo :MDSDocument.BackingInfo<T>
+		let	documentBacking :T
 
 		var	lastReferencedDate :Date
 
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
-		init(documentBackingInfo :MDSDocument.BackingInfo<T>) {
+		init(documentBacking :T) {
 			// Store
-			self.documentBackingInfo = documentBackingInfo
+			self.documentBacking = documentBacking
 
 			// Setup
 			self.lastReferencedDate = Date()
@@ -57,11 +57,11 @@ class MDSDocumentBackingCache<T> {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	func add(_ documentBackingInfos :[MDSDocument.BackingInfo<T>]) {
+	func add(_ documentBackings :[T]) {
 		// Update
 		self.lock.write() {
 			// Do all document backing infos
-			documentBackingInfos.forEach() { self.referenceMap[$0.documentID] = Reference(documentBackingInfo: $0) }
+			documentBackings.forEach() { self.referenceMap[$0.documentID] = Reference(documentBacking: $0) }
 
 			// Reset pruning timer if needed
 //			resetPruningTimerIfNeeded()
@@ -77,7 +77,7 @@ class MDSDocumentBackingCache<T> {
 				// Note was referenced
 				reference.noteWasReferenced()
 
-				return reference.documentBackingInfo.documentBacking
+				return reference.documentBacking
 			} else {
 				// Not found
 				return nil
@@ -108,10 +108,9 @@ class MDSDocumentBackingCache<T> {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func queryDocumentBackingInfos(_ documentIDs :[String]) ->
-			(foundDocumentBackingInfos :[MDSDocument.BackingInfo<T>], notFoundDocumentIDs :[String]) {
+	func queryDocumentBackings(_ documentIDs :[String]) -> (foundDocumentBackings :[T], notFoundDocumentIDs :[String]) {
 		// Setup
-		var	foundDocumentInfos = [MDSDocument.BackingInfo<T>]()
+		var	foundDocumentBackings = [T]()
 		var	notFoundDocumentIDs = [String]()
 
 		// Iterate document IDs
@@ -119,7 +118,7 @@ class MDSDocumentBackingCache<T> {
 			// Look up reference for this document ID
 			if let reference = self.referenceMap[$0] {
 				// Found
-				foundDocumentInfos.append(reference.documentBackingInfo)
+				foundDocumentBackings.append(reference.documentBacking)
 				reference.noteWasReferenced()
 			} else {
 				// Not found
@@ -127,7 +126,7 @@ class MDSDocumentBackingCache<T> {
 			}
 		} }
 
-		return (foundDocumentInfos, notFoundDocumentIDs)
+		return (foundDocumentBackings, notFoundDocumentIDs)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

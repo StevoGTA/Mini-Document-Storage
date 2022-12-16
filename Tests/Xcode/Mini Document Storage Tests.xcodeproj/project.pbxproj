@@ -163,6 +163,10 @@
 		0A687FE828EE59E300715660 /* MDSCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A687FE428EE59CB00715660 /* MDSCache.swift */; };
 		0A7BB5D629109A53009CD1F9 /* CacheTransactionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A7BB5D529109A53009CD1F9 /* CacheTransactionTests.swift */; };
 		0A82EDA928C83857008F0218 /* HTTPServer+MDS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A82EDA828C83857008F0218 /* HTTPServer+MDS.swift */; };
+		0A87432D294AF48900DAB65D /* SQLiteLimit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A87432C294AF48900DAB65D /* SQLiteLimit.swift */; };
+		0A87432E294AF48900DAB65D /* SQLiteLimit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A87432C294AF48900DAB65D /* SQLiteLimit.swift */; };
+		0A87432F294AF48900DAB65D /* SQLiteLimit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A87432C294AF48900DAB65D /* SQLiteLimit.swift */; };
+		0A874330294AF48900DAB65D /* SQLiteLimit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A87432C294AF48900DAB65D /* SQLiteLimit.swift */; };
 		0A8A9B7027FD375B00B2139A /* AssociationUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A8A9B6F27FD375B00B2139A /* AssociationUnitTests.swift */; };
 		0A91AB7528127F6600FE1549 /* Parent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A91AB7428127F6600FE1549 /* Parent.swift */; };
 		0A91AB7628127F6600FE1549 /* Parent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A91AB7428127F6600FE1549 /* Parent.swift */; };
@@ -348,6 +352,7 @@
 		0A687FE428EE59CB00715660 /* MDSCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MDSCache.swift; sourceTree = "<group>"; };
 		0A7BB5D529109A53009CD1F9 /* CacheTransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheTransactionTests.swift; sourceTree = "<group>"; };
 		0A82EDA828C83857008F0218 /* HTTPServer+MDS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HTTPServer+MDS.swift"; sourceTree = "<group>"; };
+		0A87432C294AF48900DAB65D /* SQLiteLimit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteLimit.swift; sourceTree = "<group>"; };
 		0A8A9B6F27FD375B00B2139A /* AssociationUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssociationUnitTests.swift; sourceTree = "<group>"; };
 		0A91AB7428127F6600FE1549 /* Parent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Parent.swift; sourceTree = "<group>"; };
 		0A91AB7828127F7000FE1549 /* Child.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Child.swift; sourceTree = "<group>"; };
@@ -488,8 +493,8 @@
 		0A5551F427C5D8E7003E497B /* SQLite */ = {
 			isa = PBXGroup;
 			children = (
-				0A5551F527C5D8E7003E497B /* MDSSQLiteDatabaseManager.swift */,
 				0A5551F627C5D8E7003E497B /* MDSSQLite.swift */,
+				0A5551F527C5D8E7003E497B /* MDSSQLiteDatabaseManager.swift */,
 				0A5551F727C5D8E7003E497B /* MDSSQLiteDocumentBacking.swift */,
 			);
 			path = SQLite;
@@ -655,6 +660,7 @@
 			children = (
 				0A55524F27C5DA60003E497B /* SQLiteDatabase.swift */,
 				0A55525427C5DA60003E497B /* SQLiteInnerJoin.swift */,
+				0A87432C294AF48900DAB65D /* SQLiteLimit.swift */,
 				0A55525027C5DA60003E497B /* SQLiteOrderBy.swift */,
 				0A55525127C5DA60003E497B /* SQLiteResultsRow.swift */,
 				0A55525527C5DA60003E497B /* SQLiteStatementPerformer.swift */,
@@ -916,6 +922,7 @@
 				0A55527027C5DC2D003E497B /* RangeReplaceableCollection+Extensions.swift in Sources */,
 				0A1F7FDD27E40244007F8920 /* DocumentUnitTests.swift in Sources */,
 				0A55526E27C5DC0A003E497B /* URL+Extensions.swift in Sources */,
+				0A87432D294AF48900DAB65D /* SQLiteLimit.swift in Sources */,
 				0A1F800727E40543007F8920 /* SQLiteTable.swift in Sources */,
 				0A4313B028E3C1BC00CD1A6B /* MDSAssociation.swift in Sources */,
 				0A1F802027E40560007F8920 /* BatchQueue.swift in Sources */,
@@ -981,6 +988,7 @@
 				0A5E186A27C71F400089E550 /* LockingPrimitives.swift in Sources */,
 				0A5E187627C71F650089E550 /* HTTPEndpointRequest.swift in Sources */,
 				0A91AB7628127F6600FE1549 /* Parent.swift in Sources */,
+				0A87432E294AF48900DAB65D /* SQLiteLimit.swift in Sources */,
 				0A1F7FE827E40519007F8920 /* MDSRemoteStorageCache.swift in Sources */,
 				0A5E186427C71F2A0089E550 /* MDSDocument.swift in Sources */,
 				0A5E187C27C71F830089E550 /* Dispatch+Extensions.swift in Sources */,
@@ -1025,6 +1033,7 @@
 				0A5E185127C716FB0089E550 /* HTTPURLResponse+Extensions.swift in Sources */,
 				0A4313B228E3C1BC00CD1A6B /* MDSAssociation.swift in Sources */,
 				0A5E188727C71F9A0089E550 /* URLComponents+Extensions.swift in Sources */,
+				0A87432F294AF48900DAB65D /* SQLiteLimit.swift in Sources */,
 				0A1F7FFE27E40528007F8920 /* MDSDocumentBackingCache.swift in Sources */,
 				0A1F801C27E40544007F8920 /* SQLiteTrigger.swift in Sources */,
 				0A1F801B27E40544007F8920 /* SQLiteInnerJoin.swift in Sources */,
@@ -1068,6 +1077,7 @@
 				0ADC8EBB28BEDBA300632551 /* VaporHTTPServer.swift in Sources */,
 				0ADC8EA028BED85200632551 /* SQLiteInnerJoin.swift in Sources */,
 				0ADC8EA928BED8B000632551 /* HTTPServer.swift in Sources */,
+				0A874330294AF48900DAB65D /* SQLiteLimit.swift in Sources */,
 				0ADC8EB028BED8E900632551 /* BatchQueue.swift in Sources */,
 				0ADC8EB228BED90400632551 /* Dictionary+Extensions.swift in Sources */,
 				0ADC8EAE28BED8D900632551 /* Date+Extensions.swift in Sources */,

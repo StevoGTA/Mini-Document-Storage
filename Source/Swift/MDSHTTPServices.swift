@@ -83,7 +83,6 @@ extension MDSDocument.OverviewInfo {
 				[
 					"documentID": self.documentID,
 					"revision": self.revision,
-					"active": self.active,
 					"creationDate": self.creationDate.rfc3339Extended,
 					"modificationDate": self.modificationDate.rfc3339Extended,
 				]
@@ -95,7 +94,6 @@ extension MDSDocument.OverviewInfo {
 		// Setup
 		guard let documentID = httpServicesInfo["documentID"] as? String,
 				let revision = httpServicesInfo["revision"] as? Int,
-				let active = httpServicesInfo["active"] as? Bool,
 				let creationDate = Date(fromRFC3339Extended: httpServicesInfo["creationDate"] as? String),
 				let modificationDate = Date(fromRFC3339Extended: httpServicesInfo["modificationDate"] as? String)
 				else { return nil }
@@ -103,7 +101,6 @@ extension MDSDocument.OverviewInfo {
 		// Store
 		self.documentID = documentID
 		self.revision = revision
-		self.active = active
 		self.creationDate = creationDate
 		self.modificationDate = modificationDate
 	}

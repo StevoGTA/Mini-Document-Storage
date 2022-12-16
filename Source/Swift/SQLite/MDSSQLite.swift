@@ -9,71 +9,34 @@
 import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: MDSSQLiteError
-public enum MDSSQLiteError : Error {
-	case documentNotFound(documentType :String, documentID :String)
-}
-
-extension MDSSQLiteError : CustomStringConvertible, LocalizedError {
-
-	// MARK: Properties
-	public 	var	description :String { self.localizedDescription }
-	public	var	errorDescription :String? {
-						switch self {
-							case .documentNotFound(let documentType, let documentID):
-								return "MDSSQLite cannot find document of type \(documentType) with id \"\(documentID)\""
-						}
-					}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSSQLite
+// MARK: MDSSQLite
 public class MDSSQLite : MDSHTTPServicesHandler {
-
-	// MARK: DocumentInfo
-	struct DocumentInfo {
-
-		// MARK: Properties
-		let	documentType :String
-		let	documentID :String
-		let	creationDate :Date?
-		let	modificationDate :Date?
-		let	propertyMap :[String : Any]
-
-		// Lifecycle methods
-		//------------------------------------------------------------------------------------------------------------------
-		init(documentType :String, documentID :String, creationDate :Date? = nil, modificationDate :Date? = nil,
-				propertyMap :[String : Any]) {
-			// Store
-			self.documentType = documentType
-			self.documentID = documentID
-			self.creationDate = creationDate
-			self.modificationDate = modificationDate
-			self.propertyMap = propertyMap
-		}
-	}
 
 	// MARK: Properties
 	public	var	id :String = UUID().uuidString
 
-			var	logErrorMessageProc :(_ errorMessage :String) -> Void = { _ in }
+	private	var	associationsByNameMap = LockingDictionary</* Name */ String, MDSAssociation>()
+	private	var	associationItemsByNameMap = LockingArrayDictionary</* Name */ String, MDSAssociation.Item>()
+
+	private	let	batchInfoMap = LockingDictionary<Thread, MDSBatchInfo<MDSSQLiteDocumentBacking>>()
+
+	private	let	cachesByNameMap = LockingDictionary</* Name */ String, MDSCache>()
+	private	let	cachesByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSCache>()
+
+	private	let	collectionsByNameMap = LockingDictionary</* Name */ String, MDSCollection>()
+	private	let	collectionsByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSCollection>()
 
 	private	let	databaseManager :MDSSQLiteDatabaseManager
 
 	private	var	ephemeralValues :[/* Key */ String : Any]?
 
-	private	let	batchInfoMap = LockingDictionary<Thread, MDSBatchInfo<MDSSQLiteDocumentBacking>>()
-
 	private	let	documentBackingCache = MDSDocumentBackingCache<MDSSQLiteDocumentBacking>()
-	private	var	documentCreateProcMap = LockingDictionary<String, MDSDocument.CreateProc>()
-	private	var	documentChangedProcsMap = LockingArrayDictionary</* Document Type */ String, MDSDocument.ChangedProc>()
+	private	let	documentCreateProcMap = LockingDictionary<String, MDSDocument.CreateProc>()
+	private	let	documentChangedProcsMap = LockingArrayDictionary</* Document Type */ String, MDSDocument.ChangedProc>()
 	private	let	documentsBeingCreatedPropertyMapMap = LockingDictionary<String, [String : Any]>()
 
-	private	var	collectionsByNameMap = LockingDictionary</* Name */ String, MDSCollection>()
-	private	var	collectionsByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSCollection>()
-
-	private	var	indexesByNameMap = LockingDictionary</* Name */ String, MDSIndex>()
-	private	var	indexesByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSIndex>()
+	private	let	indexesByNameMap = LockingDictionary</* Name */ String, MDSIndex>()
+	private	let	indexesByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSIndex>()
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -88,12 +51,14 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	// MARK: MDSDocumentStorage methods
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationRegister(named name :String, fromDocumentType :String, toDocumentType :String) throws {
+// TODO: associationRegister(...)
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationUpdate(for name :String, updates :[MDSAssociation.Update]) throws {
+// TODO: associationUpdate(...)
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
@@ -101,6 +66,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationGet(for name :String, startIndex :Int, count :Int?) throws ->
 			(totalCount :Int, associationItems :[MDSAssociation.Item]) {
+// TODO: associationGet(...)
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
@@ -108,6 +74,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationIterate(for name :String, from fromDocumentID :String, toDocumentType :String,
 			proc :(_ document :MDSDocument) -> Void) throws {
+// TODO: associationIterate(...)
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
@@ -115,6 +82,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationIterate(for name :String, to toDocumentID :String, fromDocumentType :String,
 			proc :(_ document :MDSDocument) -> Void) throws {
+// TODO: associationIterate(...)
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
@@ -122,6 +90,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationGetIntegerValue(for name :String, action :MDSAssociation.GetIntegerValueAction,
 			fromDocumentID :String, cacheName :String, cachedValueName :String) throws -> Int {
+// TODO: associationGetIntegerValue(...)
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
@@ -130,6 +99,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	public func cacheRegister(named name :String, documentType :String, relevantProperties :[String],
 			valueInfos :[(name :String, valueType :MDSValue.Type_, selector :String, proc :MDSDocument.ValueProc)])
 			throws {
+// TODO: cacheRegister(...)
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
@@ -138,18 +108,23 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	public func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String, isIncludedProcVersion :Int,
 			isIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
-		// Ensure this collection has not already been registered
-		guard self.collectionsByNameMap.value(for: name) == nil else { return }
+		// Validate
+		guard self.databaseManager.documentIsKnown(documentType: documentType) else {
+			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
+		}
 
-		// Note this document type
-		self.databaseManager.note(documentType: documentType)
+		// Remove current collection if found
+		if let collection = self.collectionsByNameMap.value(for: name) {
+			// Remove
+			self.collectionsByDocumentTypeMap.remove(collection, for: documentType)
+		}
 
 		// Register collection
 		let	lastRevision =
 					self.databaseManager.collectionRegister(documentType: documentType, name: name,
 							version: isIncludedProcVersion, isUpToDate: isUpToDate)
 
-		// Create collection
+		// Create or re-create collection
 		let	collection =
 					MDSCollection(name: name, documentType: documentType, relevantProperties: relevantProperties,
 							lastRevision: lastRevision, isIncludedProc: isIncludedProc, isIncludedInfo: isIncludedInfo)
@@ -157,29 +132,47 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 		// Add to maps
 		self.collectionsByNameMap.set(collection, for: name)
 		self.collectionsByDocumentTypeMap.append(collection, for: documentType)
+
+		// Check if is up to date
+		if !isUpToDate {
+			// Bring up to date
+			collectionUpdate(collection, updateInfos: self.updateInfos(for: documentType, sinceRevision: 0))
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func collectionGetDocumentCount(for name :String) throws -> Int {
-		// Run lean
-		autoreleasepool() { _ = bringCollectionUpToDate(name: name) }
+		// Validate
+		guard self.collectionsByNameMap.value(for: name) != nil else {
+			throw MDSDocumentStorageError.unknownCollection(name: name)
+		}
 
-		return self.databaseManager.collectionGetDocumentCount(for: name) ?? 0
+//		// Run lean
+//		autoreleasepool() { _ = bringCollectionUpToDate(name: name) }
+
+		return self.databaseManager.collectionGetDocumentCount(for: name)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func collectionIterate(name :String, documentType :String, proc :(_ document :MDSDocument) -> Void) throws {
-		// Bring up to date
-		_ = autoreleasepool() { bringCollectionUpToDate(name: name) }
+		// Validate
+		guard self.collectionsByNameMap.value(for: name) != nil else {
+			throw MDSDocumentStorageError.unknownCollection(name: name)
+		}
 
+//		// Bring up to date
+//		_ = autoreleasepool() { bringCollectionUpToDate(name: name) }
+//
 		// Collect document IDs
 		var	documentIDs = [String]()
-		iterateDocumentBackingInfos(documentType: documentType,
-				innerJoin: self.databaseManager.innerJoin(for: documentType, collectionName: name))
-				{ documentIDs.append($0.documentID); _ = $1 }
+		autoreleasepool() {
+			collectionIterate(name: name, documentType: documentType, startIndex: 0, count: nil)
+					{ documentIDs.append($0.documentID) }
+		}
 
 		// Iterate document IDs
-		let	documentCreateProc = self.documentCreateProcMap.value(for: documentType)!
+		let	documentCreateProc =
+				self.documentCreateProcMap.value(for: documentType) ?? { MDSDocument(id: $0, documentStorage: $1) }
 		autoreleasepool() { documentIDs.forEach() { proc(documentCreateProc($0, self)) } }
 	}
 
@@ -214,9 +207,10 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 				let	batchQueue =
 							BatchQueue<MDSUpdateInfo<Int64>>(
 									maximumBatchSize: self.databaseManager.variableNumberLimit) {
-								// Update collections and indexes
-								self.updateCollections(for: documentType, updateInfos: $0)
-								self.updateIndexes(for: documentType, updateInfos: $0)
+//								// Update collections and indexes
+//								self.updateCollections(for: documentType, updateInfos: $0)
+//								self.updateIndexes(for: documentType, updateInfos: $0)
+_ = $0
 							}
 
 				// Iterate document create infos
@@ -241,14 +235,11 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 								MDSSQLiteDocumentBacking(documentType: documentType, documentID: documentID,
 										creationDate: creationDate, modificationDate: modificationDate,
 										propertyMap: propertyMap, with: self.databaseManager)
-					self.documentBackingCache.add(
-							[MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>(documentID: documentID,
-									documentBacking: documentBacking)])
+					self.documentBackingCache.add([documentBacking])
 					infos.append(
 							(document,
 									MDSDocument.OverviewInfo(documentID: documentID, revision: documentBacking.revision,
-											active: true, creationDate: creationDate,
-											modificationDate: modificationDate)))
+											creationDate: creationDate, modificationDate: modificationDate)))
 
 					// Call document changed procs
 					documentChangedProcs?.forEach() { $0(document, .created) }
@@ -268,35 +259,55 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentGetCount(for documentType :String) throws -> Int { self.databaseManager.count(for: documentType)! }
+	public func documentGetCount(for documentType :String) throws -> Int {
+		// Validate
+		guard self.databaseManager.documentIsKnown(documentType: documentType) else {
+			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
+		}
+
+		return self.databaseManager.documentCount(for: documentType)
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentIterate(for documentType :String, documentIDs :[String],
 			documentCreateProc :MDSDocument.CreateProc?,
 			proc :(_ document :MDSDocument?, _ documentFullInfo :MDSDocument.FullInfo) -> Void) throws {
+		// Validate
+		guard self.databaseManager.documentIsKnown(documentType: documentType) else {
+			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
+		}
+
 		// Setup
 		let	batchInfo = self.batchInfoMap.value(for: Thread.current)
 
 		// Iterate initial document IDs
-		var	documentIDsToRetrieve = [String]()
+		var	documentIDsToCache = Set<String>()
 		documentIDs.forEach() {
 			// Check what we have currently
 			if let documentInfo = batchInfo?.documentGetInfo(for: $0) {
 				// Have document in batch
-				proc(documentCreateProc?($0, self), documentInfo.documentBacking!.documentFullInfo(with: $0))
+				proc(documentCreateProc?($0, self), documentInfo.documentBacking!.documentFullInfo)
 			} else if let documentBacking = self.documentBackingCache.documentBacking(for: $0) {
 				// Have documentBacking in cache
-				proc(documentCreateProc?($0, self), documentBacking.documentFullInfo(with: $0))
+				proc(documentCreateProc?($0, self), documentBacking.documentFullInfo)
 			} else {
 				// Will need to retrieve from database
-				documentIDsToRetrieve.append($0)
+				documentIDsToCache.insert($0)
 			}
 		}
 
 		// Iterate documentIDs not found in batch or cache
-		iterateDocumentBackingInfos(documentType: documentType, documentIDs: documentIDsToRetrieve) {
+		documentBackingsIterate(documentType: documentType, documentIDs: Array(documentIDsToCache)) {
 			// Call proc
-			proc(documentCreateProc?($0.documentID, self), $0.documentBacking.documentFullInfo(with: $0.documentID))
+			proc(documentCreateProc?($0.documentID, self), $0.documentFullInfo)
+
+			// Update
+			documentIDsToCache.remove($0.documentID)
+		}
+
+		// Check if have any that we didn't find
+		if let documentID = documentIDsToCache.first {
+			throw MDSDocumentStorageError.unknownDocumentID(documentID: documentID)
 		}
 	}
 
@@ -304,73 +315,29 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	public func documentIterate(for documentType :String, sinceRevision :Int, count :Int?, activeOnly: Bool,
 			documentCreateProc :MDSDocument.CreateProc?,
 			proc :(_ document :MDSDocument?, _ documentFullInfo :MDSDocument.FullInfo) -> Void) throws {
+		// Validate
+		guard self.databaseManager.documentIsKnown(documentType: documentType) else {
+			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
+		}
+
 		// Check if have count
 		if count != nil {
 			// Have count
-			var	documentBackingInfos = [MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>]()
-			iterateDocumentBackingInfos(documentType: documentType, sinceRevision: sinceRevision,
-					activeOnly: activeOnly) { documentBackingInfos.append($0) }
+			var	documentBackings = [MDSSQLiteDocumentBacking]()
+			documentBackingsIterate(documentType: documentType, sinceRevision: sinceRevision,
+					activeOnly: activeOnly) { documentBackings.append($0) }
 
-			documentBackingInfos.sorted(by: { $0.documentBacking.revision < $1.documentBacking.revision })[..<count!]
-					.forEach() {
-						// Call proc
-						proc(documentCreateProc?($0.documentID, self),
-								$0.documentBacking.documentFullInfo(with: $0.documentID))
-					}
+			documentBackings[..<count!]
+					.forEach({ proc(documentCreateProc?($0.documentID, self), $0.documentFullInfo) })
 		} else {
 			// Don't have count
-			iterateDocumentBackingInfos(documentType: documentType, sinceRevision: sinceRevision,
-					activeOnly: activeOnly) {
-				// Call proc
-				proc(documentCreateProc?($0.documentID, self), $0.documentBacking.documentFullInfo(with: $0.documentID))
-			}
+			documentBackingsIterate(documentType: documentType, sinceRevision: sinceRevision, activeOnly: activeOnly)
+					{ proc(documentCreateProc?($0.documentID, self), $0.documentFullInfo) }
 		}
 	}
 
-//	//------------------------------------------------------------------------------------------------------------------
-//	public func document<T : MDSDocument>(for documentID :String) -> T? {
-//		// Check for batch
-//		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
-//				batchInfo.documentInfo(for: documentID) != nil {
-//			// Have document in batch
-//			return T(id: documentID, documentStorage: self)
-//		} else if documentBacking(documentType: T.documentType, documentID: documentID) != nil {
-//			// Have document backing
-//			return T(id: documentID, documentStorage: self)
-//		} else {
-//			// Don't have document backing
-//			return nil
-//		}
-//	}
-
-//	//------------------------------------------------------------------------------------------------------------------
-//	public func iterate<T : MDSDocument>(proc :(_ document : T) -> Void) {
-//		// Collect document IDs
-//		var	documentIDs = [String]()
-//		autoreleasepool() {
-//			// Iterate document backing infos
-//			iterateDocumentBackingInfos(documentType: T.documentType,
-//					innerJoin: self.databaseManager.innerJoin(for: T.documentType),
-//					where: self.databaseManager.where(forDocumentActive: true))
-//					{ documentIDs.append($0.documentID); _ = $1 }
-//		}
-//
-//		// Iterate document IDs
-//		autoreleasepool() { documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) } }
-//	}
-
-//	//------------------------------------------------------------------------------------------------------------------
-//	public func iterate<T : MDSDocument>(documentIDs :[String], proc :(_ document : T) -> Void) {
-//		// Iterate document backing infos to ensure they are in the cache
-//		autoreleasepool()
-//			{ iterateDocumentBackingInfos(documentType: T.documentType, documentIDs: documentIDs) { _ = $0 } }
-//
-//		// Iterate document IDs
-//		autoreleasepool() { documentIDs.forEach() { proc(T(id: $0, documentStorage: self)) } }
-//	}
-
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentCreationDate(for document :MDSDocument) -> Date{
+	public func documentCreationDate(for document :MDSDocument) -> Date {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
 				let batchDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
@@ -381,7 +348,8 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 			return Date()
 		} else {
 			// "Idle"
-			return documentBacking(documentType: type(of: document).documentType, documentID: document.id)!.creationDate
+			return try! documentBacking(documentType: type(of: document).documentType, documentID: document.id)
+					.creationDate
 		}
 	}
 
@@ -397,7 +365,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 			return Date()
 		} else {
 			// "Idle"
-			return documentBacking(documentType: type(of: document).documentType, documentID: document.id)!
+			return try! documentBacking(documentType: type(of: document).documentType, documentID: document.id)
 					.modificationDate
 		}
 	}
@@ -414,7 +382,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 			return propertyMap[property]
 		} else {
 			// "Idle"
-			return documentBacking(documentType: type(of: document).documentType, documentID: document.id)!
+			return try! documentBacking(documentType: type(of: document).documentType, documentID: document.id)
 					.value(for: property)
 		}
 	}
@@ -460,7 +428,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 				batchDocumentInfo.set(valueUse, for: property)
 			} else {
 				// Don't have document in batch
-				let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
+				let	documentBacking = try! self.documentBacking(documentType: documentType, documentID: documentID)
 				batchInfo.documentAdd(documentType: documentType, documentID: documentID,
 								documentBacking: documentBacking, creationDate: documentBacking.creationDate,
 								modificationDate: documentBacking.modificationDate,
@@ -473,15 +441,15 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 			self.documentsBeingCreatedPropertyMapMap.set(propertyMap, for: documentID)
 		} else {
 			// Update document
-			let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
+			let	documentBacking = try! self.documentBacking(documentType: documentType, documentID: documentID)
 			documentBacking.set(valueUse, for: property, documentType: documentType, with: self.databaseManager)
 
-			// Update collections and indexes
-			let	updateInfos :[MDSUpdateInfo<Int64>] =
-						[MDSUpdateInfo<Int64>(document: document, revision: documentBacking.revision,
-								value: documentBacking.id, changedProperties: [property])]
-			updateCollections(for: documentType, updateInfos: updateInfos)
-			updateIndexes(for: documentType, updateInfos: updateInfos)
+//			// Update collections and indexes
+//			let	updateInfos :[MDSUpdateInfo<Int64>] =
+//						[MDSUpdateInfo<Int64>(document: document, revision: documentBacking.revision,
+//								value: documentBacking.id, changedProperties: [property])]
+//			updateCollections(for: documentType, updateInfos: updateInfos)
+//			updateIndexes(for: documentType, updateInfos: updateInfos)
 
 			// Call document changed procs
 			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .updated) }
@@ -491,6 +459,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentAttachmentAdd(for documentType :String, documentID :String, info :[String : Any],
 			content :Data) throws -> MDSDocument.AttachmentInfo {
+// TODO: documentAttachmentAdd(...)
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
@@ -498,6 +467,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentAttachmentInfoMap(for documentType :String, documentID :String) throws ->
 			MDSDocument.AttachmentInfoMap {
+// TODO: documentAttachmentInfoMap(...)
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
@@ -505,6 +475,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentAttachmentContent(for documentType :String, documentID :String, attachmentID :String) throws ->
 			Data? {
+// TODO: documentAttachmentContent(...)
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
@@ -512,12 +483,14 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentAttachmentUpdate(for documentType :String, documentID :String, attachmentID :String,
 			updatedInfo :[String : Any], updatedContent :Data) throws -> Int {
+// TODO: documentAttachmentUpdate(...)
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentAttachmentRemove(for documentType :String, documentID :String, attachmentID :String) throws {
+// TODO: documentAttachmentRemove(...)
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
@@ -536,21 +509,21 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 				batchDocumentInfo.remove()
 			} else {
 				// Don't have document in batch
-				let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
+				let	documentBacking = try! self.documentBacking(documentType: documentType, documentID: documentID)
 				batchInfo.documentAdd(documentType: documentType, documentID: documentID,
 								documentBacking: documentBacking, creationDate: Date(), modificationDate: Date())
 						.remove()
 			}
 		} else {
 			// Not in batch
-			let	documentBacking = self.documentBacking(documentType: documentType, documentID: documentID)!
+			let	documentBacking = try! self.documentBacking(documentType: documentType, documentID: documentID)
 
-			// Remove from collections and indexes
-			removeFromCollections(for: documentType, documentBackingIDs: [documentBacking.id])
-			removeFromIndexes(for: documentType, documentBackingIDs: [documentBacking.id])
+//			// Remove from collections and indexes
+//			removeFromCollections(for: documentType, documentBackingIDs: [documentBacking.id])
+//			removeFromIndexes(for: documentType, documentBackingIDs: [documentBacking.id])
 
 			// Remove
-			self.databaseManager.remove(documentType: documentType, id: documentBacking.id)
+			self.databaseManager.documentRemove(documentType: documentType, id: documentBacking.id)
 
 			// Remove from cache
 			self.documentBackingCache.remove([documentID])
@@ -564,18 +537,23 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	public func indexRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			keysInfo :[String : Any], keysSelector :String, keysProcVersion :Int,
 			keysProc :@escaping MDSDocument.KeysProc) throws {
-		// Ensure this index has not already been registered
-		guard self.indexesByNameMap.value(for: name) == nil else { return }
+		// Validate
+		guard self.databaseManager.documentIsKnown(documentType: documentType) else {
+			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
+		}
 
-		// Note this document type
-		self.databaseManager.note(documentType: documentType)
+		// Remove current index if found
+		if let index = self.indexesByNameMap.value(for: name) {
+			// Remove
+			self.indexesByDocumentTypeMap.remove(index, for: documentType)
+		}
 
 		// Register index
 		let	lastRevision =
 					self.databaseManager.indexRegister(documentType: documentType, name: name, version: keysProcVersion,
 							isUpToDate: isUpToDate)
 
-		// Create index
+		// Create or re-create index
 		let	index =
 					MDSIndex(name: name, documentType: documentType, relevantProperties: relevantProperties,
 							lastRevision: lastRevision, keysProc: keysProc, keysInfo: keysInfo)
@@ -583,161 +561,181 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 		// Add to maps
 		self.indexesByNameMap.set(index, for: name)
 		self.indexesByDocumentTypeMap.append(index, for: documentType)
+
+		// Check if is up to date
+		if !isUpToDate {
+			// Bring up to date
+			indexUpdate(index, updateInfos: self.updateInfos(for: documentType, sinceRevision: 0))
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func indexIterate(name :String, documentType :String, keys :[String],
 			proc :(_ key :String, _ document :MDSDocument) -> Void) throws {
+		// Validate
+		guard self.indexesByNameMap.value(for: name) != nil else {
+			throw MDSDocumentStorageError.unknownIndex(name: name)
+		}
+
 		// Compose map
 		var	documentIDMap = [/* Key */ String : /* String */ String]()
-		autoreleasepool() { indexIterate(name: name, keys: keys, with: { documentIDMap[$0] = $1.documentID }) }
+		autoreleasepool() {
+			// Iterate index
+			self.indexIterate(name: name, documentType: documentType, keys: keys,
+					proc: {documentIDMap[$0] = $1.documentID })
+		}
 
 		// Iterate map
-		let	documentCreateProc = self.documentCreateProcMap.value(for: documentType)!
+		let	documentCreateProc =
+				self.documentCreateProcMap.value(for: documentType) ?? { MDSDocument(id: $0, documentStorage: $1) }
 		autoreleasepool() { documentIDMap.forEach() { proc($0.key, documentCreateProc($0.value, self)) } }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func info(for keys :[String]) -> [String : String] {
 		// Return dictionary
-		return [String : String](keys){ self.databaseManager.string(for: $0) }
+		return [String : String](keys){ self.databaseManager.infoString(for: $0) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func infoSet(_ info :[String : String]) {
 		// Iterate keys and values
-		info.forEach() { self.databaseManager.set($0.value, for: $0.key) }
+		info.forEach() { self.databaseManager.infoSet($0.value, for: $0.key) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func remove(keys :[String]) { keys.forEach() { self.databaseManager.set(nil, for: $0) } }
+	public func remove(keys :[String]) { keys.forEach() { self.databaseManager.infoSet(nil, for: $0) } }
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func internalGet(for keys :[String]) -> [String : String] { [:] }
+	public func internalGet(for keys :[String]) -> [String : String] {
+		// Return dictionary
+		return [String : String](keys){ self.databaseManager.internalString(for: $0) }
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func internalSet(_ info :[String : String]) {}
+	public func internalSet(_ info :[String : String]) {
+		// Iterate keys and values
+		info.forEach() { self.databaseManager.internalSet($0.value, for: $0.key) }
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func batch(_ proc :() throws -> MDSBatchResult) rethrows {
-		// Setup
-		let	batchInfo = MDSBatchInfo<MDSSQLiteDocumentBacking>()
-
-		// Store
-		self.batchInfoMap.set(batchInfo, for: Thread.current)
-
-		// Run lean
-		var	result = MDSBatchResult.commit
-		try autoreleasepool() {
-			// Call proc
-			result = try proc()
-		}
-
-		// Check result
-		if result == .commit {
-			// Batch changes
-			self.databaseManager.batch() {
-				// Iterate all document changes
-				batchInfo.documentIterateChanges() { documentType, batchDocumentInfosMap in
-					// Setup
-					let	updateBatchQueue =
-								BatchQueue<MDSUpdateInfo<Int64>>(
-										maximumBatchSize: self.databaseManager.variableNumberLimit) {
-									// Update collections and indexes
-									self.updateCollections(for: documentType, updateInfos: $0)
-									self.updateIndexes(for: documentType, updateInfos: $0)
-								}
-					var	removedDocumentBackingIDs = [Int64]()
-
-					// Update documents
-					batchDocumentInfosMap.forEach() { documentID, batchDocumentInfo in
-						// Check removed
-						if !batchDocumentInfo.removed {
-							// Add/update document
-							if let documentBacking = batchDocumentInfo.documentBacking {
-								// Update document
-								documentBacking.update(documentType: documentType,
-										updatedPropertyMap: batchDocumentInfo.updatedPropertyMap,
-										removedProperties: batchDocumentInfo.removedProperties,
-										with: self.databaseManager)
-
-								// Check if we have creation proc
-								if let documentCreateProc = self.documentCreateProcMap.value(for: documentType) {
-									// Create document
-									let	document = documentCreateProc(documentID, self)
-
-									// Update collections and indexes
-									let	changedProperties =
-												Set<String>((batchDocumentInfo.updatedPropertyMap ?? [:]).keys)
-														.union(batchDocumentInfo.removedProperties ?? Set<String>())
-									updateBatchQueue.add(
-											MDSUpdateInfo<Int64>(document: document,
-													revision: documentBacking.revision, value: documentBacking.id,
-													changedProperties: changedProperties))
-
-									// Call document changed procs
-									self.documentChangedProcsMap.values(for: documentType)?.forEach()
-										{ $0(document, .updated) }
-								}
-							} else {
-								// Add document
-								let	documentBacking =
-											MDSSQLiteDocumentBacking(documentType: documentType, documentID: documentID,
-													creationDate: batchDocumentInfo.creationDate,
-													modificationDate: batchDocumentInfo.modificationDate,
-													propertyMap: batchDocumentInfo.updatedPropertyMap ?? [:],
-													with: self.databaseManager)
-								self.documentBackingCache.add(
-										[MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>(documentID: documentID,
-												documentBacking: documentBacking)])
-
-								// Check if we have creation proc
-								if let documentCreateProc = self.documentCreateProcMap.value(for: documentType) {
-									// Create document
-									let	document = documentCreateProc(documentID, self)
-
-									// Update collections and indexes
-									updateBatchQueue.add(
-											MDSUpdateInfo<Int64>(document: document,
-													revision: documentBacking.revision, value: documentBacking.id,
-													changedProperties: nil))
-
-									// Call document changed procs
-									self.documentChangedProcsMap.values(for: documentType)?.forEach()
-										{ $0(document, .created) }
-								}
-							}
-						} else if let documentBacking = batchDocumentInfo.documentBacking {
-							// Remove document
-							self.databaseManager.remove(documentType: documentType, id: documentBacking.id)
-							self.documentBackingCache.remove([documentID])
-
-							// Remove from collections and indexes
-							removedDocumentBackingIDs.append(documentBacking.id)
-
-							// Check if we have creation proc
-							if let documentCreateProc = self.documentCreateProcMap.value(for: documentType) {
-								// Create document
-								let	document = documentCreateProc(documentID, self)
-
-								// Call document changed procs
-								self.documentChangedProcsMap.values(for: documentType)?.forEach()
-									{ $0(document, .removed) }
-							}
-						}
-					}
-
-					// Finalize updates
-					updateBatchQueue.finalize()
-					self.removeFromCollections(for: documentType, documentBackingIDs: removedDocumentBackingIDs)
-					self.removeFromIndexes(for: documentType, documentBackingIDs: removedDocumentBackingIDs)
-				}
-			}
-		}
-
-		// Remove - must wait to do this until the batch has been fully processed in case processing Collections and
-		//	Indexes ends up referencing other documents that have not yet been committed.
-		self.batchInfoMap.set(nil, for: Thread.current)
+//		// Setup
+//		let	batchInfo = MDSBatchInfo<MDSSQLiteDocumentBacking>()
+//
+//		// Store
+//		self.batchInfoMap.set(batchInfo, for: Thread.current)
+//
+//		// Run lean
+//		var	result = MDSBatchResult.commit
+//		try autoreleasepool() {
+//			// Call proc
+//			result = try proc()
+//		}
+//
+//		// Check result
+//		if result == .commit {
+//			// Batch changes
+//			self.databaseManager.batch() {
+//				// Iterate all document changes
+//				batchInfo.documentIterateChanges() { documentType, batchDocumentInfosMap in
+//					// Setup
+//					let	updateBatchQueue =
+//								BatchQueue<MDSUpdateInfo<Int64>>(
+//										maximumBatchSize: self.databaseManager.variableNumberLimit) {
+//									// Update collections and indexes
+//									self.updateCollections(for: documentType, updateInfos: $0)
+//									self.updateIndexes(for: documentType, updateInfos: $0)
+//								}
+//					var	removedDocumentBackingIDs = [Int64]()
+//
+//					// Update documents
+//					batchDocumentInfosMap.forEach() { documentID, batchDocumentInfo in
+//						// Check removed
+//						if !batchDocumentInfo.removed {
+//							// Add/update document
+//							if let documentBacking = batchDocumentInfo.documentBacking {
+//								// Update document
+//								documentBacking.update(documentType: documentType,
+//										updatedPropertyMap: batchDocumentInfo.updatedPropertyMap,
+//										removedProperties: batchDocumentInfo.removedProperties,
+//										with: self.databaseManager)
+//
+//								// Check if we have creation proc
+//								if let documentCreateProc = self.documentCreateProcMap.value(for: documentType) {
+//									// Create document
+//									let	document = documentCreateProc(documentID, self)
+//
+//									// Update collections and indexes
+//									let	changedProperties =
+//												Set<String>((batchDocumentInfo.updatedPropertyMap ?? [:]).keys)
+//														.union(batchDocumentInfo.removedProperties ?? Set<String>())
+//									updateBatchQueue.add(
+//											MDSUpdateInfo<Int64>(document: document,
+//													revision: documentBacking.revision, value: documentBacking.id,
+//													changedProperties: changedProperties))
+//
+//									// Call document changed procs
+//									self.documentChangedProcsMap.values(for: documentType)?.forEach()
+//										{ $0(document, .updated) }
+//								}
+//							} else {
+//								// Add document
+//								let	documentBacking =
+//											MDSSQLiteDocumentBacking(documentType: documentType, documentID: documentID,
+//													creationDate: batchDocumentInfo.creationDate,
+//													modificationDate: batchDocumentInfo.modificationDate,
+//													propertyMap: batchDocumentInfo.updatedPropertyMap ?? [:],
+//													with: self.databaseManager)
+//								self.documentBackingCache.add(documentBacking)
+//
+//								// Check if we have creation proc
+//								if let documentCreateProc = self.documentCreateProcMap.value(for: documentType) {
+//									// Create document
+//									let	document = documentCreateProc(documentID, self)
+//
+//									// Update collections and indexes
+//									updateBatchQueue.add(
+//											MDSUpdateInfo<Int64>(document: document,
+//													revision: documentBacking.revision, value: documentBacking.id,
+//													changedProperties: nil))
+//
+//									// Call document changed procs
+//									self.documentChangedProcsMap.values(for: documentType)?.forEach()
+//										{ $0(document, .created) }
+//								}
+//							}
+//						} else if let documentBacking = batchDocumentInfo.documentBacking {
+//							// Remove document
+//							self.databaseManager.remove(documentType: documentType, id: documentBacking.id)
+//							self.documentBackingCache.remove([documentID])
+//
+//							// Remove from collections and indexes
+//							removedDocumentBackingIDs.append(documentBacking.id)
+//
+//							// Check if we have creation proc
+//							if let documentCreateProc = self.documentCreateProcMap.value(for: documentType) {
+//								// Create document
+//								let	document = documentCreateProc(documentID, self)
+//
+//								// Call document changed procs
+//								self.documentChangedProcsMap.values(for: documentType)?.forEach()
+//									{ $0(document, .removed) }
+//							}
+//						}
+//					}
+//
+//					// Finalize updates
+//					updateBatchQueue.finalize()
+//					self.removeFromCollections(for: documentType, documentBackingIDs: removedDocumentBackingIDs)
+//					self.removeFromIndexes(for: documentType, documentBackingIDs: removedDocumentBackingIDs)
+//				}
+//			}
+//		}
+//
+//		// Remove - must wait to do this until the batch has been fully processed in case processing Collections and
+//		//	Indexes ends up referencing other documents that have not yet been committed.
+//		self.batchInfoMap.set(nil, for: Thread.current)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -779,13 +777,15 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	func associationGetDocumentRevisionInfos(name :String, from fromDocumentID :String, startIndex :Int, count :Int?)
 			throws -> (totalCount :Int, documentRevisionInfos :[MDSDocument.RevisionInfo]) {
+// TODO: associationGetDocumentRevisionInfos(...)
 		// Unimplemented
-		fatalError("Unimplemented")
+		fatalError("associationGetDocumentRevisionInfos")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func associationGetDocumentRevisionInfos(name :String, to toDocumentID :String, startIndex :Int, count :Int?) throws
 			-> (totalCount :Int, documentRevisionInfos :[MDSDocument.RevisionInfo]) {
+// TODO: associationGetDocumentRevisionInfos(...)
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
@@ -793,6 +793,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	func associationGetDocumentFullInfos(name :String, from fromDocumentID :String, startIndex :Int, count :Int?) throws
 			-> (totalCount :Int, documentFullInfos :[MDSDocument.FullInfo]) {
+// TODO: associationGetDocumentFullInfos(...)
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
@@ -800,6 +801,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	func associationGetDocumentFullInfos(name :String, to toDocumentID :String, startIndex :Int, count :Int?) throws ->
 			(totalCount :Int, documentFullInfos :[MDSDocument.FullInfo]) {
+// TODO: associationGetDocumentFullInfos(...)
 		// Unimplemented
 		fatalError("Unimplemented")
 	}
@@ -807,19 +809,43 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	func collectionGetDocumentRevisionInfos(name :String, startIndex :Int, count :Int?) throws ->
 			[MDSDocument.RevisionInfo] {
-		// Unimplemented
-		fatalError("Unimplemented")
+		// Setup
+		let	collection = self.collectionsByNameMap.value(for: name)!
+
+		// Collect MDSDocument RevisionInfos
+		var	documentRevisionInfos = [MDSDocument.RevisionInfo]()
+		autoreleasepool() {
+			// Iterate collection
+			self.databaseManager.collectionIterateDocumentInfos(for: name, documentType: collection.documentType,
+					startIndex: startIndex, count: count) { documentRevisionInfos.append($0.documentRevisionInfo) }
+		}
+
+		return documentRevisionInfos
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func collectionGetDocumentFullInfos(name :String, startIndex :Int, count :Int?) throws -> [MDSDocument.FullInfo] {
-		// Unimplemented
-		fatalError("Unimplemented")
+		// Setup
+		let	collection = self.collectionsByNameMap.value(for: name)!
+
+		// Collect MDSDocument FullInfos
+		var	documentFullInfos = [MDSDocument.FullInfo]()
+		autoreleasepool() {
+			collectionIterate(name: name, documentType: collection.documentType, startIndex: startIndex, count: count)
+					{ documentFullInfos.append($0.documentFullInfo) }
+		}
+
+		return documentFullInfos
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func documentUpdate(for documentType :String, documentUpdateInfos :[MDSDocument.UpdateInfo]) throws ->
 			[MDSDocument.FullInfo] {
+		// Validate
+		guard self.databaseManager.documentIsKnown(documentType: documentType) else {
+			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
+		}
+
 		// Batch changes
 		return self.databaseManager.batch() {
 			// Setup
@@ -827,27 +853,29 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 			let	updateBatchQueue =
 						BatchQueue<MDSUpdateInfo<Int64>>(
 								maximumBatchSize: self.databaseManager.variableNumberLimit) {
-							// Update collections and indexes
-							self.updateCollections(for: documentType, updateInfos: $0)
-							self.updateIndexes(for: documentType, updateInfos: $0)
+//							// Update collections and indexes
+//							self.updateCollections(for: documentType, updateInfos: $0)
+//							self.updateIndexes(for: documentType, updateInfos: $0)
+_ = $0
 						}
 			let	removedBatchQueue =
 						BatchQueue<Int64>(maximumBatchSize: 999) {
-							// Update collections and indexes
-							self.removeFromCollections(for: documentType, documentBackingIDs: $0)
-							self.removeFromIndexes(for: documentType, documentBackingIDs: $0)
+//							// Update collections and indexes
+//							self.removeFromCollections(for: documentType, documentBackingIDs: $0)
+//							self.removeFromIndexes(for: documentType, documentBackingIDs: $0)
+_ = $0
 						}
 			var	documentFullInfos = [MDSDocument.FullInfo]()
 
 			// Iterate document IDs
-			iterateDocumentBackingInfos(documentType: documentType, documentIDs: Array(map.keys)) {
+			documentBackingsIterate(documentType: documentType, documentIDs: Array(map.keys)) {
 				// Set update info
 				let	documentUpdateInfo = map[$0.documentID]!
 
 				// Check active
 				if documentUpdateInfo.active {
 					// Update document
-					$0.documentBacking.update(documentType: documentType,
+					$0.update(documentType: documentType,
 							updatedPropertyMap: documentUpdateInfo.updated,
 							removedProperties: Set(documentUpdateInfo.removed), with: self.databaseManager)
 
@@ -860,21 +888,20 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 						let	changedProperties =
 									Set<String>(documentUpdateInfo.updated.keys).union(documentUpdateInfo.removed)
 						updateBatchQueue.add(
-								MDSUpdateInfo<Int64>(document: document,
-										revision: $0.documentBacking.revision, value: $0.documentBacking.id,
+								MDSUpdateInfo<Int64>(document: document, revision: $0.revision, value: $0.id,
 										changedProperties: changedProperties))
 					}
 				} else {
 					// Remove document
-					self.databaseManager.remove(documentType: documentType, id: $0.documentBacking.id)
+					self.databaseManager.documentRemove(documentType: documentType, id: $0.id)
 					self.documentBackingCache.remove([$0.documentID])
 
 					// Remove from collections and indexes
-					removedBatchQueue.add($0.documentBacking.id)
+					removedBatchQueue.add($0.id)
 				}
 
 				// Update array
-				documentFullInfos.append($0.documentBacking.documentFullInfo(with: $0.documentID))
+				documentFullInfos.append($0.documentFullInfo)
 			}
 
 			// Finalize batch queues
@@ -887,370 +914,486 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func indexGetDocumentRevisionInfos(name :String, keys :[String]) throws -> [String : MDSDocument.RevisionInfo] {
-return [:]
+		// Validate
+		guard let index = self.indexesByNameMap.value(for: name) else {
+			throw MDSDocumentStorageError.unknownIndex(name: name)
+		}
+
+		// Compose MDSDocument RevisionInfo map
+		var	documentRevisionInfoMap = [String : MDSDocument.RevisionInfo]()
+		autoreleasepool() {
+			// Iterate index
+			self.databaseManager.indexIterateDocumentInfos(name: name, documentType: index.documentType, keys: keys)
+					{ documentRevisionInfoMap[$0] = $1.documentRevisionInfo }
+		}
+
+		return documentRevisionInfoMap
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func indexGetDocumentFullInfos(name :String, keys :[String]) throws -> [String : MDSDocument.FullInfo] {
-return [:]
-	}
-
-	// MARK: MDSDocumentStorageServerHandler methods
-//	//------------------------------------------------------------------------------------------------------------------
-//	func collectionIterate(name :String, proc :(_ documentRevisionInfo :MDSDocument.RevisionInfo) -> Void) {
-//		// Bring up to date
-//		let	collection = autoreleasepool() { bringCollectionUpToDate(name: name) }
-//
-//		// Iterate
-//		self.databaseManager.collectionIterate(name: name, documentType: collection.documentType)
-//				{ proc($0.documentRevisionInfo) }
-//	}
-//
-//	//------------------------------------------------------------------------------------------------------------------
-//	func documentCreate(documentType :String, documentCreateInfos :[MDSDocument.CreateInfo]) {
-//		// Batch
-//		self.databaseManager.batch() {
-//			// Setup
-//			let	batchQueue =
-//						BatchQueue<MDSUpdateInfo<Int64>>(
-//								maximumBatchSize: self.databaseManager.variableNumberLimit) {
-//							// Update collections and indexes
-//							self.updateCollections(for: documentType, updateInfos: $0)
-//							self.updateIndexes(for: documentType, updateInfos: $0)
-//						}
-//
-//			// Iterate all infos
-//			documentCreateInfos.forEach() {
-//				// Add document
-//				let	documentID = $0.documentID ?? UUID().base64EncodedString
-//				let	documentBacking =
-//							MDSSQLiteDocumentBacking(documentType: documentType, documentID: documentID,
-//									creationDate: $0.creationDate, modificationDate: $0.modificationDate,
-//									propertyMap: $0.propertyMap, with: self.databaseManager)
-//				self.documentBackingCache.add(
-//						[MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>(documentID: documentID,
-//								documentBacking: documentBacking)])
-//
-//				// Check if we have creation proc
-//				if let documentCreateProc = self.documentCreateProcMap.value(for: documentType) {
-//					// Create document
-//					let	document = documentCreateProc(documentID, self)
-//
-//					// Update collections and indexes
-//					batchQueue.add(
-//							MDSUpdateInfo<Int64>(document: document, revision: documentBacking.revision,
-//									value: documentBacking.id, changedProperties: nil))
-//				}
-//			}
-//
-//			// Finalize batch queue
-//			batchQueue.finalize()
-//		}
-//	}
-//
-//	//------------------------------------------------------------------------------------------------------------------
-//	func indexIterate(name :String, keys :[String],
-//			proc :(_ key :String, _ documentRevisionInfo :MDSDocument.RevisionInfo) -> Void) {
-//		// Bring up to date
-//		let	index = autoreleasepool() { bringIndexUpToDate(name: name) }
-//		let	documentType = index.documentType
-//
-//		// Iterate index
-//		self.databaseManager.indexIterate(name: name, documentType: documentType, keys: keys)
-//				{ proc($0, $1.documentRevisionInfo) }
-//	}
-
-	// MARK: Instance methods
-	//------------------------------------------------------------------------------------------------------------------
-	@discardableResult
-	func documentBackingMap(for documentInfos :[DocumentInfo]) -> [String : MDSSQLiteDocumentBacking] {
-		// Setup
-		var	documentBackingMap = [String : MDSSQLiteDocumentBacking]()
-
-		// Perform as batch and iterate all
-		self.databaseManager.batch() {
-			// Create document backings
-			var	documentTypeMap = [/* Document type */ String : [MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>]]()
-			documentInfos.forEach() {
-				// Create document backing
-				let	documentBacking =
-							MDSSQLiteDocumentBacking(documentType: $0.documentType, documentID: $0.documentID,
-									creationDate: $0.creationDate, modificationDate: $0.modificationDate,
-									propertyMap: $0.propertyMap, with: self.databaseManager)
-
-				// Add to maps
-				documentBackingMap[$0.documentID] = documentBacking
-				documentTypeMap.appendArrayValueElement(key: $0.documentType,
-						value:
-								MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>(documentID: $0.documentID,
-										documentBacking: documentBacking))
-			}
-
-			// Iterate document types
-			documentTypeMap.forEach() {
-				// Add to cache
-				self.documentBackingCache.add($0.value)
-
-				// Check if have creation proc
-				if let documentCreateProc = self.documentCreateProcMap.value(for: $0.key) {
-					// Update collections and indexes
-					let	updateInfos :[MDSUpdateInfo<Int64>] =
-								$0.value.map() {
-									MDSUpdateInfo<Int64>(document: documentCreateProc($0.documentID, self),
-											revision: $0.documentBacking.revision, value: $0.documentBacking.id,
-											changedProperties: nil)
-								}
-					updateCollections(for: $0.key, updateInfos: updateInfos, processNotIncluded: false)
-					updateIndexes(for: $0.key, updateInfos: updateInfos)
-				}
-			}
+		// Validate
+		guard let index = self.indexesByNameMap.value(for: name) else {
+			throw MDSDocumentStorageError.unknownIndex(name: name)
 		}
 
-		return documentBackingMap
+		// Compose MDSDocument FullInfo map
+		var	documentFullInfoMap = [String : MDSDocument.FullInfo]()
+		autoreleasepool() {
+			// Iterate index
+			self.indexIterate(name: name, documentType: index.documentType, keys: keys,
+					proc: { documentFullInfoMap[$0] = $1.documentFullInfo })
+		}
+
+		return documentFullInfoMap
 	}
+
+	// MARK: Instance methods
+//	//------------------------------------------------------------------------------------------------------------------
+//	@discardableResult
+//	func documentBackingMap(for documentInfos :[DocumentInfo]) -> [String : MDSSQLiteDocumentBacking] {
+//		// Setup
+//		var	documentBackingMap = [String : MDSSQLiteDocumentBacking]()
+//
+//		// Perform as batch and iterate all
+//		self.databaseManager.batch() {
+//			// Create document backings
+//			var	documentTypeMap = [/* Document type */ String : [MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>]]()
+//			documentInfos.forEach() {
+//				// Create document backing
+//				let	documentBacking =
+//							MDSSQLiteDocumentBacking(documentType: $0.documentType, documentID: $0.documentID,
+//									creationDate: $0.creationDate, modificationDate: $0.modificationDate,
+//									propertyMap: $0.propertyMap, with: self.databaseManager)
+//
+//				// Add to maps
+//				documentBackingMap[$0.documentID] = documentBacking
+//				documentTypeMap.appendArrayValueElement(key: $0.documentType,
+//						value:
+//								MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>(documentID: $0.documentID,
+//										documentBacking: documentBacking))
+//			}
+//
+//			// Iterate document types
+//			documentTypeMap.forEach() {
+//				// Add to cache
+//				self.documentBackingCache.add($0.value)
+//
+//				// Check if have creation proc
+//				if let documentCreateProc = self.documentCreateProcMap.value(for: $0.key) {
+//					// Update collections and indexes
+//					let	updateInfos :[MDSUpdateInfo<Int64>] =
+//								$0.value.map() {
+//									MDSUpdateInfo<Int64>(document: documentCreateProc($0.documentID, self),
+//											revision: $0.documentBacking.revision, value: $0.documentBacking.id,
+//											changedProperties: nil)
+//								}
+//					updateCollections(for: $0.key, updateInfos: updateInfos, processNotIncluded: false)
+//					updateIndexes(for: $0.key, updateInfos: updateInfos)
+//				}
+//			}
+//		}
+//
+//		return documentBackingMap
+//return [:]
+//	}
 
 	// MARK: Private methods
 	//------------------------------------------------------------------------------------------------------------------
-	private func documentBacking(documentType :String, documentID :String) -> MDSSQLiteDocumentBacking? {
+	private func collectionIterate(name :String, documentType :String, startIndex :Int, count :Int?,
+			proc :(_ documentBacking :MDSSQLiteDocumentBacking) -> Void) {
+		// Collect MDSDocument RevisionInfos
+		var	documentInfos = [MDSSQLiteDatabaseManager.DocumentInfo]()
+		autoreleasepool() {
+			// Iterate collection
+			self.databaseManager.collectionIterateDocumentInfos(for: name, documentType: documentType,
+					startIndex: startIndex, count: count, proc: { documentInfos.append($0) })
+		}
+
+		// Iterate document backings
+		documentBackingsIterate(documentType: documentType, infos: documentInfos.map({ ($0, "") }),
+				proc: { proc($0); _ = $1 })
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func collectionUpdate(_ collection :MDSCollection, updateInfos :[MDSUpdateInfo<Int64>]) {
+		// Update
+		if let (includedIDs, notIncludedIDs, lastRevision) = collection.update(updateInfos) {
+			// Update database
+			self.databaseManager.collectionUpdate(name: collection.name, includedIDs: includedIDs,
+					notIncludedIDs: notIncludedIDs, lastRevision: lastRevision)
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func documentBacking(documentType :String, documentID :String) throws -> MDSSQLiteDocumentBacking {
 		// Try to retrieve from cache
 		if let documentBacking = self.documentBackingCache.documentBacking(for: documentID) {
 			// Have document
 			return documentBacking
 		} else {
 			// Try to retrieve from database
-			var	documentBackingInfo :MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>?
-			iterateDocumentBackingInfos(documentType: documentType, documentIDs: [documentID])
-					{ documentBackingInfo = $0 }
+			var	documentBacking :MDSSQLiteDocumentBacking?
+			documentBackingsIterate(documentType: documentType, documentIDs: [documentID]) { documentBacking = $0 }
 
 			// Check results
-			if documentBackingInfo != nil {
-				// Update cache
-				self.documentBackingCache.add([documentBackingInfo!])
-			} else {
-				// Not found
-				self.logErrorMessageProc(
-						"MDSSQLite - Cannot find document of type \(documentType) with documentID \(documentID)")
+			guard documentBacking != nil else {
+				throw MDSDocumentStorageError.unknownDocumentID(documentID: documentID)
 			}
 
-			return documentBackingInfo?.documentBacking
+			// Update cache
+			self.documentBackingCache.add([documentBacking!])
+
+			return documentBacking!
 		}
 	}
 
-	//------------------------------------------------------------------------------------------------------------------
-	private func iterateDocumentBackingInfos(documentType :String, innerJoin :SQLiteInnerJoin? = nil,
-			where sqliteWhere :SQLiteWhere? = nil,
-			proc
-					:(_ documentBackingInfo :MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>,
-							_ resultsRow :SQLiteResultsRow) -> Void) {
-		// Iterate
-		self.databaseManager.iterate(documentType: documentType, innerJoin: innerJoin, where: sqliteWhere) {
-			// Try to retrieve document backing
-			let	documentBackingInfo :MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>
-			if let documentBacking =
-					self.documentBackingCache.documentBacking(for: $0.documentRevisionInfo.documentID) {
-				// Have document backing
-				documentBackingInfo =
-						MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>(
-								documentID: $0.documentRevisionInfo.documentID, documentBacking: documentBacking)
-			} else {
-				// Read
-				documentBackingInfo = MDSSQLiteDatabaseManager.documentBackingInfo(for: $0, resultsRow: $1)
-			}
-
-			// Note referenced
-			self.documentBackingCache.add([documentBackingInfo])
-
-			// Call proc
-			proc(documentBackingInfo, $1)
-		}
-	}
+//	//------------------------------------------------------------------------------------------------------------------
+//	private func documentBackingsIterate(documentType :String, innerJoin :SQLiteInnerJoin? = nil,
+//			where sqliteWhere :SQLiteWhere? = nil,
+//			proc :(_ documentBackingInfo :MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
+//		// Iterate
+//		self.databaseManager.documentInfoIterate(documentType: documentType, innerJoin: innerJoin, where: sqliteWhere) {
+//			// Try to retrieve document backing
+//			let	documentBackingInfo :MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>
+//			if let documentBacking =
+//					self.documentBackingCache.documentBacking(for: $0.documentRevisionInfo.documentID) {
+//				// Have document backing
+//				documentBackingInfo =
+//						MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>(
+//								documentID: $0.documentRevisionInfo.documentID, documentBacking: documentBacking)
+//			} else {
+//				// Read
+//				documentBackingInfo = MDSSQLiteDatabaseManager.documentBackingInfo(for: $0, resultsRow: $1)
+//			}
+//
+//			// Note referenced
+//			self.documentBackingCache.add([documentBackingInfo])
+//
+//			// Call proc
+//			proc(documentBackingInfo)
+//		}
+//	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func iterateDocumentBackingInfos(documentType :String, documentIDs :[String],
-			proc :(_ documentBackingInfo :MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
-		// Iterate
-		iterateDocumentBackingInfos(documentType: documentType,
-				innerJoin: self.databaseManager.innerJoin(for: documentType),
-				where: self.databaseManager.where(forDocumentIDs: documentIDs)) { proc($0); _ = $1 }
-	}
+	private func documentBackingsIterate(documentType :String, documentIDs :[String],
+			proc :(_ documentBacking :MDSSQLiteDocumentBacking) -> Void) {
+		// Collect MDSDocument RevisionInfos
+		var	documentInfos = [MDSSQLiteDatabaseManager.DocumentInfo]()
+		self.databaseManager.documentInfoIterate(documentType: documentType, documentIDs: documentIDs,
+				proc: { documentInfos.append($0) })
 
-	//------------------------------------------------------------------------------------------------------------------
-	private func iterateDocumentBackingInfos(documentType :String, sinceRevision revision :Int, activeOnly: Bool,
-			proc :(_ documentBackingInfo :MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
-		// Iterate
-		iterateDocumentBackingInfos(documentType: documentType,
-				innerJoin: self.databaseManager.innerJoin(for: documentType),
-				where:
-						self.databaseManager.where(forDocumentRevision: revision, comparison: ">",
-								activeOnly: activeOnly))
+		// Iterate document backings
+		documentBackingsIterate(documentType: documentType, infos: documentInfos.map({ ($0, "") }))
 				{ proc($0); _ = $1 }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func updateCollections(for documentType :String, updateInfos :[MDSUpdateInfo<Int64>],
-			processNotIncluded :Bool = true) {
-		// Get collections
-		guard let collections = self.collectionsByDocumentTypeMap.values(for: documentType) else { return }
+	private func documentBackingsIterate(documentType :String, sinceRevision :Int, activeOnly: Bool,
+			proc :(_ documentBacking :MDSSQLiteDocumentBacking) -> Void) {
+		// Collect MDSDocument RevisionInfos
+		var	documentInfos = [MDSSQLiteDatabaseManager.DocumentInfo]()
+		self.databaseManager.documentInfoIterate(documentType: documentType, sinceRevision: sinceRevision,
+				activeOnly: activeOnly, proc: { documentInfos.append($0) })
 
-		// Setup
-		let	minRevision = updateInfos.min(by: { $0.revision < $1.revision })?.revision
+		// Iterate document backings
+		documentBackingsIterate(documentType: documentType, infos: documentInfos.map({ ($0, "") }))
+				{ proc($0); _ = $1 }
+	}
 
-		// Iterate collections
-		collections.forEach() {
-			// Check revision state
-			if $0.lastRevision + 1 == minRevision {
-				// Update collection
-				if let (includedIDs, notIncludedIDs, lastRevision) = $0.update(updateInfos) {
-					// Update database
-					self.databaseManager.updateCollection(name: $0.name, includedIDs: includedIDs,
-							notIncludedIDs: processNotIncluded ? notIncludedIDs : [], lastRevision: lastRevision)
-				}
+	//------------------------------------------------------------------------------------------------------------------
+//	private func updateCollections(for documentType :String, updateInfos :[MDSUpdateInfo<Int64>],
+//			processNotIncluded :Bool = true) {
+//		// Get collections
+//		guard let collections = self.collectionsByDocumentTypeMap.values(for: documentType) else { return }
+//
+//		// Setup
+//		let	minRevision = updateInfos.min(by: { $0.revision < $1.revision })?.revision
+//
+//		// Iterate collections
+//		collections.forEach() {
+//			// Check revision state
+//			if $0.lastRevision + 1 == minRevision {
+//				// Update collection
+//				if let (includedIDs, notIncludedIDs, lastRevision) = $0.update(updateInfos) {
+//					// Update database
+//					self.databaseManager.updateCollection(name: $0.name, includedIDs: includedIDs,
+//							notIncludedIDs: processNotIncluded ? notIncludedIDs : [], lastRevision: lastRevision)
+//				}
+//			} else {
+//				// Bring up to date
+//				bringUpToDate($0)
+//			}
+//		}
+//	}
+
+	//------------------------------------------------------------------------------------------------------------------
+//	private func bringCollectionUpToDate(name :String) -> MDSCollection {
+//		// Setup
+//		let	collection = self.collectionsByNameMap.value(for: name)!
+//
+//		// Bring up to date
+//		bringUpToDate(collection)
+//
+//		return collection
+//	}
+
+	//------------------------------------------------------------------------------------------------------------------
+//	private func bringUpToDate(_ collection :MDSCollection) {
+//		// Setup
+//		let	documentCreateProc = self.documentCreateProcMap.value(for: collection.documentType)!
+//		let	batchInfo = self.batchInfoMap.value(for: Thread.current)
+//
+//		// Collect infos
+//		var	updateInfos = [MDSUpdateInfo<Int64>]()
+//		iterateDocumentBackingInfos(documentType: collection.documentType, sinceRevision: collection.lastRevision,
+//				activeOnly: true) {
+//					// Query batch info
+//					let batchDocumentInfo = batchInfo?.documentGetInfo(for: $0.documentID)
+//
+//					// Ensure we want to process this document
+//					if (batchDocumentInfo == nil) || !batchDocumentInfo!.removed {
+//						// Append info
+//						updateInfos.append(
+//								MDSUpdateInfo<Int64>(document: documentCreateProc($0.documentID, self),
+//										revision: $0.documentBacking.revision, value: $0.documentBacking.id))
+//					}
+//				}
+//
+//		// Update
+//		if let (includedIDs, notIncludedIDs, lastRevision) = collection.update(updateInfos) {
+//			// Update database
+//			self.databaseManager.updateCollection(name: collection.name, includedIDs: includedIDs,
+//					notIncludedIDs: notIncludedIDs, lastRevision: lastRevision)
+//		}
+//	}
+
+	//------------------------------------------------------------------------------------------------------------------
+//	private func removeFromCollections(for documentType :String, documentBackingIDs :[Int64]) {
+//		// Iterate all collections for this document type
+//		self.collectionsByDocumentTypeMap.values(for: documentType)?.forEach() {
+//			// Update collection
+//			self.databaseManager.updateCollection(name: $0.name, includedIDs: [], notIncludedIDs: documentBackingIDs,
+//					lastRevision: $0.lastRevision)
+//		}
+//	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func indexIterate(name :String, documentType :String, keys :[String],
+			proc :(_ key :String, _ documentBacking :MDSSQLiteDocumentBacking) -> Void) {
+		// Compose MDSDocument RevisionInfo map
+		var	documentInfosByKey = [String : MDSSQLiteDatabaseManager.DocumentInfo]()
+		autoreleasepool() {
+			// Iterate index
+			self.databaseManager.indexIterateDocumentInfos(name: name, documentType: documentType, keys: keys,
+					proc: { documentInfosByKey[$0] = $1 })
+		}
+
+		// Iterate document backings
+		documentBackingsIterate(documentType: documentType, infos: documentInfosByKey.map({ ($0.value, $0.key) }))
+				{ proc($1, $0) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func documentBackingsIterate<T>(documentType :String,
+			infos :[(documentInfo :MDSSQLiteDatabaseManager.DocumentInfo, t :T)],
+			proc :(_ documentBacking :MDSSQLiteDocumentBacking, _ t : T) -> Void) {
+		// Iterate infos
+		var	infosNotFound = [(documentInfo :MDSSQLiteDatabaseManager.DocumentInfo, t :T)]()
+		infos.forEach() {
+			// Check cache
+			if let documentBacking = self.documentBackingCache.documentBacking(for: $0.documentInfo.documentID) {
+				// Have in cache
+				proc(documentBacking, $0.t)
 			} else {
-				// Bring up to date
-				bringUpToDate($0)
+				// Don't have in cache
+				infosNotFound.append($0)
 			}
 		}
-	}
 
-	//------------------------------------------------------------------------------------------------------------------
-	private func bringCollectionUpToDate(name :String) -> MDSCollection {
-		// Setup
-		let	collection = self.collectionsByNameMap.value(for: name)!
+		// Collect DocumentContentInfos
+		var	documentContentInfosByID = [Int64 : MDSSQLiteDatabaseManager.DocumentContentInfo]()
+		self.databaseManager.documentContentInfoIterate(documentType: documentType,
+				documentInfos: infosNotFound.map({ $0.documentInfo })) { documentContentInfosByID[$0.id] = $0 }
 
-		// Bring up to date
-		bringUpToDate(collection)
+		// Iterate infos not found
+		infosNotFound.forEach() {
+			// Get DocumentContentInfo
+			let	documentContentInfo = documentContentInfosByID[$0.documentInfo.id]!
 
-		return collection
-	}
+			// Load attachment
+let	attachmentInfoMap = MDSDocument.AttachmentInfoMap()
+//TODO
 
-	//------------------------------------------------------------------------------------------------------------------
-	private func bringUpToDate(_ collection :MDSCollection) {
-		// Setup
-		let	documentCreateProc = self.documentCreateProcMap.value(for: collection.documentType)!
-		let	batchInfo = self.batchInfoMap.value(for: Thread.current)
+			// Create MDSSQLiteDocumentBacking
+			let	documentBacking =
+						MDSSQLiteDocumentBacking(id: $0.documentInfo.id, documentID: $0.documentInfo.documentID,
+								revision: $0.documentInfo.revision, active: $0.documentInfo.active,
+								creationDate: documentContentInfo.creationDate,
+								modificationDate: documentContentInfo.modificationDate,
+								propertyMap: documentContentInfo.propertyMap, attachmentInfoMap: attachmentInfoMap)
+			self.documentBackingCache.add([documentBacking])
 
-		// Collect infos
-		var	updateInfos = [MDSUpdateInfo<Int64>]()
-		iterateDocumentBackingInfos(documentType: collection.documentType, sinceRevision: collection.lastRevision,
-				activeOnly: true) {
-					// Query batch info
-					let batchDocumentInfo = batchInfo?.documentGetInfo(for: $0.documentID)
-
-					// Ensure we want to process this document
-					if (batchDocumentInfo == nil) || !batchDocumentInfo!.removed {
-						// Append info
-						updateInfos.append(
-								MDSUpdateInfo<Int64>(document: documentCreateProc($0.documentID, self),
-										revision: $0.documentBacking.revision, value: $0.documentBacking.id))
-					}
-				}
-
-		// Update
-		if let (includedIDs, notIncludedIDs, lastRevision) = collection.update(updateInfos) {
-			// Update database
-			self.databaseManager.updateCollection(name: collection.name, includedIDs: includedIDs,
-					notIncludedIDs: notIncludedIDs, lastRevision: lastRevision)
+			// Call proc
+			proc(documentBacking, $0.t)
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func removeFromCollections(for documentType :String, documentBackingIDs :[Int64]) {
-		// Iterate all collections for this document type
-		self.collectionsByDocumentTypeMap.values(for: documentType)?.forEach() {
-			// Update collection
-			self.databaseManager.updateCollection(name: $0.name, includedIDs: [], notIncludedIDs: documentBackingIDs,
-					lastRevision: $0.lastRevision)
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	private func indexIterate(name :String, keys :[String],
-			with proc
-					:(_ key :String,
-							_ documentBackingInfo :MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
-		// Bring up to date
-		let	index = autoreleasepool() { bringIndexUpToDate(name: name) }
-
-		// Iterate
-		iterateDocumentBackingInfos(documentType: index.documentType,
-				innerJoin: self.databaseManager.innerJoin(for: index.documentType, indexName: name),
-				where: self.databaseManager.where(forIndexKeys: keys))
-				{ proc(MDSSQLiteDatabaseManager.indexContentsKey(for: $1), $0) }
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	private func updateIndexes(for documentType :String, updateInfos :[MDSUpdateInfo<Int64>]) {
-		// Get indexes
-		guard let indexes = self.indexesByDocumentTypeMap.values(for: documentType) else { return }
-
-		// Setup
-		let	minRevision = updateInfos.min(by: { $0.revision < $1.revision })?.revision
-
-		// Iterate indexes
-		indexes.forEach() {
-			// Check revision state
-			if $0.lastRevision + 1 == minRevision {
-				// Update index
-				if let (keysInfos, lastRevision) = $0.update(updateInfos) {
-					// Update database
-					self.databaseManager.updateIndex(name: $0.name, keysInfos: keysInfos, removedIDs: [],
-							lastRevision: lastRevision)
-				}
-			} else {
-				// Bring up to date
-				bringUpToDate($0)
-			}
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	private func bringIndexUpToDate(name :String) -> MDSIndex {
-		// Setup
-		let	index = self.indexesByNameMap.value(for: name)!
-
-		// Bring up to date
-		bringUpToDate(index)
-
-		return index
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	private func bringUpToDate<I : MDSIndex>(_ index :I) {
-		// Setp
-		let	documentCreateProc = self.documentCreateProcMap.value(for: index.documentType)!
-		let	batchInfo = self.batchInfoMap.value(for: Thread.current)
-
-		// Collect infos
-		var	updateInfos = [MDSUpdateInfo<Int64>]()
-		iterateDocumentBackingInfos(documentType: index.documentType, sinceRevision: index.lastRevision,
-				activeOnly: true) {
-					// Query batch info
-					let batchDocumentInfo = batchInfo?.documentGetInfo(for: $0.documentID)
-
-					// Ensure we want to process this document
-					if (batchDocumentInfo == nil) || !batchDocumentInfo!.removed {
-						// Append info
-						updateInfos.append(
-								MDSUpdateInfo<Int64>(document: documentCreateProc($0.documentID, self),
-										revision: $0.documentBacking.revision, value: $0.documentBacking.id))
-					}
-				}
-
+	private func indexUpdate(_ index :MDSIndex, updateInfos :[MDSUpdateInfo<Int64>]) {
 		// Update
 		if let (keysInfos, lastRevision) = index.update(updateInfos) {
 			// Update database
-			self.databaseManager.updateIndex(name: index.name, keysInfos: keysInfos, removedIDs: [],
+			self.databaseManager.indexUpdate(name: index.name, keysInfos: keysInfos, removedIDs: [],
 					lastRevision: lastRevision)
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func removeFromIndexes(for documentType :String, documentBackingIDs :[Int64]) {
-		// Iterate all indexes for this document type
-		self.indexesByDocumentTypeMap.values(for: documentType)?.forEach() {
-			// Update index
-			self.databaseManager.updateIndex(name: $0.name, keysInfos: [], removedIDs: documentBackingIDs,
-					lastRevision: $0.lastRevision)
+//	private func indexIterate(name :String, keys :[String],
+//			with proc
+//					:(_ key :String,
+//							_ documentBackingInfo :MDSDocument.BackingInfo<MDSSQLiteDocumentBacking>) -> Void) {
+//		// Bring up to date
+//		let	index = autoreleasepool() { bringIndexUpToDate(name: name) }
+//
+//		// Iterate
+//		iterateDocumentBackingInfos(documentType: index.documentType,
+//				innerJoin: self.databaseManager.innerJoin(for: index.documentType, indexName: name),
+//				where: self.databaseManager.where(forIndexKeys: keys))
+//				{ proc(MDSSQLiteDatabaseManager.indexContentsKey(for: $1), $0) }
+//	}
+
+	//------------------------------------------------------------------------------------------------------------------
+//	private func updateIndexes(for documentType :String, updateInfos :[MDSUpdateInfo<Int64>]) {
+//		// Get indexes
+//		guard let indexes = self.indexesByDocumentTypeMap.values(for: documentType) else { return }
+//
+//		// Setup
+//		let	minRevision = updateInfos.min(by: { $0.revision < $1.revision })?.revision
+//
+//		// Iterate indexes
+//		indexes.forEach() {
+//			// Check revision state
+//			if $0.lastRevision + 1 == minRevision {
+//				// Update index
+//				if let (keysInfos, lastRevision) = $0.update(updateInfos) {
+//					// Update database
+//					self.databaseManager.updateIndex(name: $0.name, keysInfos: keysInfos, removedIDs: [],
+//							lastRevision: lastRevision)
+//				}
+//			} else {
+//				// Bring up to date
+//				bringUpToDate($0)
+//			}
+//		}
+//	}
+
+	//------------------------------------------------------------------------------------------------------------------
+//	private func bringIndexUpToDate(name :String) -> MDSIndex {
+//		// Setup
+//		let	index = self.indexesByNameMap.value(for: name)!
+//
+//		// Bring up to date
+//		bringUpToDate(index)
+//
+//		return index
+//	}
+
+	//------------------------------------------------------------------------------------------------------------------
+//	private func bringUpToDate<I : MDSIndex>(_ index :I) {
+//		// Setp
+//		let	documentCreateProc = self.documentCreateProcMap.value(for: index.documentType)!
+//		let	batchInfo = self.batchInfoMap.value(for: Thread.current)
+//
+//		// Collect infos
+//		var	updateInfos = [MDSUpdateInfo<Int64>]()
+//		iterateDocumentBackingInfos(documentType: index.documentType, sinceRevision: index.lastRevision,
+//				activeOnly: true) {
+//					// Query batch info
+//					let batchDocumentInfo = batchInfo?.documentGetInfo(for: $0.documentID)
+//
+//					// Ensure we want to process this document
+//					if (batchDocumentInfo == nil) || !batchDocumentInfo!.removed {
+//						// Append info
+//						updateInfos.append(
+//								MDSUpdateInfo<Int64>(document: documentCreateProc($0.documentID, self),
+//										revision: $0.documentBacking.revision, value: $0.documentBacking.id))
+//					}
+//				}
+//
+//		// Update
+//		if let (keysInfos, lastRevision) = index.update(updateInfos) {
+//			// Update database
+//			self.databaseManager.updateIndex(name: index.name, keysInfos: keysInfos, removedIDs: [],
+//					lastRevision: lastRevision)
+//		}
+//	}
+
+	//------------------------------------------------------------------------------------------------------------------
+//	private func removeFromIndexes(for documentType :String, documentBackingIDs :[Int64]) {
+//		// Iterate all indexes for this document type
+//		self.indexesByDocumentTypeMap.values(for: documentType)?.forEach() {
+//			// Update index
+//			self.databaseManager.updateIndex(name: $0.name, keysInfos: [], removedIDs: documentBackingIDs,
+//					lastRevision: $0.lastRevision)
+//		}
+//	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func updateInfos(for documentType :String, sinceRevision: Int) -> [MDSUpdateInfo<Int64>] {
+		// Setup
+		let	documentCreateProc =
+				self.documentCreateProcMap.value(for: documentType) ?? { MDSDocument(id: $0, documentStorage: $1) }
+		let	batchInfo = self.batchInfoMap.value(for: Thread.current)
+
+		// Collect update infos
+		var	updateInfos = [MDSUpdateInfo<Int64>]()
+		documentBackingsIterate(documentType: documentType, sinceRevision: sinceRevision, activeOnly: false) {
+			// Query batch info
+			let batchDocumentInfo = batchInfo?.documentGetInfo(for: $0.documentID)
+
+			// Ensure we want to process this document
+			if (batchDocumentInfo == nil) || !batchDocumentInfo!.removed {
+				// Append info
+				updateInfos.append(
+						MDSUpdateInfo<Int64>(document: documentCreateProc($0.documentID, self),
+								revision: $0.revision, value: $0.id))
+			}
 		}
+
+		return updateInfos
 	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func update(for documentType :String, updateInfos :[MDSUpdateInfo<Int64>]) {
+		// Update caches
+//		self.cachesByDocumentTypeMap.values(for: documentType)?.forEach()
+//				{ self.cacheUpdate($0, updateInfos: updateInfos) }
+
+		// Update collections
+		self.collectionsByDocumentTypeMap.values(for: documentType)?.forEach()
+				{ self.collectionUpdate($0, updateInfos: updateInfos) }
+
+		// Update indexes
+		self.indexesByDocumentTypeMap.values(for: documentType)?.forEach()
+			{ self.indexUpdate($0, updateInfos: updateInfos) }
+	}
+
+//	//------------------------------------------------------------------------------------------------------------------
+//	private func note(removedDocumentIDs documentIDs :Set<Int64>) {
+//		// Iterate all caches
+//		self.cacheValuesMap.keys.forEach()
+//			{ self.cacheValuesMap.update(for: $0, with: { $0?.filter({ !documentIDs.contains($0.key) }) }) }
+//
+//		// Iterate all collections
+//		self.collectionValuesMap.keys.forEach()
+//			{ self.collectionValuesMap.update(for: $0, with: { $0?.filter({ !documentIDs.contains($0) }) }) }
+//
+//		// Iterate all indexes
+//		self.indexValuesMap.keys.forEach() {
+//			// Remove document from this index
+//			self.indexValuesMap.update(for: $0) { $0?.filter({ !documentIDs.contains($0.value) }) }
+//		}
+//	}
 }
