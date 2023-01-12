@@ -442,7 +442,7 @@ extension HTTPEndpointClient {
 			partialResultsProc :@escaping (_ documentUpdateReturnInfo :[MDSDocument.UpdateReturnInfo]) -> Void,
 			completionProc :@escaping(_ errors :[Error]) -> Void) {
 		// Setup
-		let	documentUpdateInfosChunks = documentUpdateInfos.chunk(by: 100)
+		let	documentUpdateInfosChunks = documentUpdateInfos.chunk(by: 25)
 		let	pendingCount = LockingNumeric<Int>(documentUpdateInfosChunks.count)
 		let	errors = LockingArray<Error>()
 
