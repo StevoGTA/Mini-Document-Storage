@@ -355,7 +355,7 @@ module.exports = class Collections {
 		// Get update document infos
 		let	updateDocumentInfos =
 					await internals.documents.getUpdateDocumentInfos(statementPerformer, collection.type,
-							collection.lastDocumentRevision, 500);
+							collection.lastDocumentRevision, 150);
 		documentUpdateTracker.addDocumentInfos(updateDocumentInfos);
 		
 		// Perform updates

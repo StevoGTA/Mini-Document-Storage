@@ -334,7 +334,7 @@ module.exports = class Indexes {
 		// Get update document infos
 		let	updateDocumentInfos =
 					await internals.documents.getUpdateDocumentInfos(statementPerformer, index.type,
-							index.lastDocumentRevision, 500);
+							index.lastDocumentRevision, 150);
 		documentUpdateTracker.addDocumentInfos(updateDocumentInfos);
 		
 		// Perform updates

@@ -220,7 +220,7 @@ module.exports = class Caches {
 		// Get update document infos
 		let	updateDocumentInfos =
 					await internals.documents.getUpdateDocumentInfos(statementPerformer, cache.type,
-							cache.lastDocumentRevision, 500);
+							cache.lastDocumentRevision, 150);
 		documentUpdateTracker.addDocumentInfos(updateDocumentInfos);
 		
 		// Perform updates
