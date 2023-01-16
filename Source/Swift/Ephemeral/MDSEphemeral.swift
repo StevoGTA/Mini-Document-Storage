@@ -702,7 +702,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentAttachmentContent(for documentType :String, documentID :String, attachmentID :String) throws ->
-			Data? {
+			Data {
 		// Validate
 		guard self.documentMapsLock.read({ self.documentIDsByTypeMap[documentType] }) != nil else {
 			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
@@ -715,27 +715,24 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 			if let content = batchInfoDocumentInfo.attachmentContent(for: attachmentID) {
 				// Found
 				return content
-			} else {
-				// Not found
-				throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
 			}
 		} else if self.documentsBeingCreatedPropertyMapMap.value(for: documentID) != nil {
 			// Creating
 			throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
-		} else if let attachmentMap =
-				self.documentMapsLock.read({ self.documentBackingByIDMap[documentID]?.attachmentMap }) {
-			// Not in batch and not creating
-			if let content = attachmentMap[attachmentID]?.content {
-				// Have attachment
-				return content
-			} else {
-				// Don't have attachment
-				throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
-			}
-		} else {
+		}
+
+		// Get non-batch attachmentMap
+		guard let attachmentMap =
+				self.documentMapsLock.read({ self.documentBackingByIDMap[documentID]?.attachmentMap }) else {
 			// Unknown documentID
 			throw MDSDocumentStorageError.unknownDocumentID(documentID: documentID)
 		}
+		guard let documentAttachmentInfo = attachmentMap[attachmentID] else {
+			// Don't have attachment
+			throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
+		}
+
+		return documentAttachmentInfo.content
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

@@ -891,7 +891,7 @@ class AssociationUnitTests : XCTestCase {
 		// Perform
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSIntegerWithUpToDateHTTPEndpointRequest(method: .get,
-							path: "/v1/association/\(config.documentStorageID)/\(name)/crashplease",
+							path: "/v1/association/\(config.documentStorageID)/\(associationName)/crashplease",
 							queryComponents: [
 												"fromID": "ABC",
 												"cacheName": "ABC",

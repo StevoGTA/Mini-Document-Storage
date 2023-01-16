@@ -662,16 +662,9 @@ extension HTTPServer {
 			// Catch errors
 			do {
 				// Get document attachment content
-				guard let content =
+				let	content =
 						try documentStorage!.documentAttachmentContent(for: info.documentType,
-								documentID: info.documentID, attachmentID: info.attachmentID) else {
-					// Not found
-					return (.badRequest, nil,
-							.json([
-									"error":
-									"Attachment \(info.attachmentID) for \(info.documentID) of type \(info.documentType) not found"
-								  ]))
-				}
+								documentID: info.documentID, attachmentID: info.attachmentID)
 
 				return (.ok, nil, .data(content))
 			} catch {

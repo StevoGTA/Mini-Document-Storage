@@ -49,7 +49,7 @@
 import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSSQLiteDatabaseManager
+// MARK: MDSSQLiteDatabaseManager
 class MDSSQLiteDatabaseManager {
 
 	// MARK: DocumentInfo
@@ -382,6 +382,16 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
+		static func update(id :Int64, modificationDate :Date, in table :SQLiteTable) {
+			// Update
+			 table.update(
+					[
+						(self.modificationDateTableColumn, modificationDate.rfc3339Extended),
+					],
+					where: SQLiteWhere(tableColumn: self.idTableColumn, value: id))
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
 		static func remove(id :Int64, in table :SQLiteTable) {
 			// Update
 			table.update(
@@ -401,10 +411,10 @@ class MDSSQLiteDatabaseManager {
 		static	let	attachmentIDTableColumn = SQLiteTableColumn("attachmentID", .text, [.notNull, .unique])
 		static	let	revisionTableColumn = SQLiteTableColumn("revision", .integer, [.notNull])
 		static	let	infoTableColumn = SQLiteTableColumn("info", .blob, [.notNull])
-		static	let	jsonTableColumn = SQLiteTableColumn("json", .blob, [.notNull])
+		static	let	contentTableColumn = SQLiteTableColumn("content", .blob, [.notNull])
 		static	let	tableColumns =
 							[idTableColumn, attachmentIDTableColumn, revisionTableColumn, infoTableColumn,
-									jsonTableColumn]
+									contentTableColumn]
 
 		// MARK: Class methods
 		//--------------------------------------------------------------------------------------------------------------
@@ -417,14 +427,75 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
+		static func add(id :Int64, attachmentID :String, info :[String : Any], content :Data, to table :SQLiteTable) ->
+				Int {
+			// Insert
+			_ = table.insertRow([
+									(self.idTableColumn, id),
+									(self.attachmentIDTableColumn, attachmentID),
+									(self.revisionTableColumn, 1),
+									(self.infoTableColumn, try! JSONSerialization.data(withJSONObject: info)),
+									(self.contentTableColumn, content),
+								])
+
+			return 1
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func documentAttachmentInfoMap(id :Int64, in table :SQLiteTable) -> MDSDocument.AttachmentInfoMap {
+			// Get info
+			var	documentAttachmentInfoMap = MDSDocument.AttachmentInfoMap()
+			try! table.select(
+					tableColumns: [self.attachmentIDTableColumn, self.revisionTableColumn, self.infoTableColumn],
+					 where: SQLiteWhere(tableColumn: self.idTableColumn, value: id))  {
+						// Process values
+						let	id = $0.text(for: self.attachmentIDTableColumn)!
+						let	revision = Int($0.integer(for: self.revisionTableColumn)!)
+						let	info =
+									try! JSONSerialization.jsonObject(
+											with: $0.blob(for: self.infoTableColumn)!) as! [String : Any]
+
+						documentAttachmentInfoMap[id] =
+								MDSDocument.AttachmentInfo(id: id, revision: revision, info: info)
+					 }
+
+			return documentAttachmentInfoMap
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func content(for resultsRow :SQLiteResultsRow) -> Data { resultsRow.blob(for: self.contentTableColumn)! }
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func update(id :Int64, attachmentID :String, updatedInfo :[String : Any], updatedContent :Data,
+				to table :SQLiteTable) -> Int {
+			// Setup
+			let	sqliteWhere = SQLiteWhere(tableColumn: self.attachmentIDTableColumn, value: attachmentID)
+
+			// Get current revision
+			var	revision :Int!
+			try! table.select(tableColumns: [self.revisionTableColumn], where: sqliteWhere)
+					{ revision = Int($0.integer(for: self.revisionTableColumn)!) }
+
+			table.update([
+								(self.revisionTableColumn, revision + 1),
+								(self.infoTableColumn, try! JSONSerialization.data(withJSONObject: updatedInfo)),
+								(self.contentTableColumn, updatedContent),
+							],
+					where: SQLiteWhere(tableColumn: self.attachmentIDTableColumn, value: attachmentID))
+
+			return revision + 1
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func remove(id :Int64, attachmentID :String, in table :SQLiteTable) {
+			// Delete rows
+			table.deleteRows(self.attachmentIDTableColumn, values: [attachmentID])
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
 		static func remove(id :Int64, in table :SQLiteTable) {
-//			// Update
-//			table.update(
-//					[
-//						(self.modificationDateTableColumn, Date().rfc3339Extended),
-//						(self.jsonTableColumn, try! JSONSerialization.data(withJSONObject: [:], options: []))
-//					],
-//					where: SQLiteWhere(tableColumn: self.idTableColumn, value: id))
+			// Delete rows
+			table.deleteRows(self.idTableColumn, values: [id])
 		}
 	}
 
@@ -540,9 +611,9 @@ class MDSSQLiteDatabaseManager {
 			var	value :Int? = nil
 			try! table.select(tableColumns: [self.valueTableColumn],
 					where: SQLiteWhere(tableColumn: self.keyTableColumn, value: key)) {
-				// Process values
-				value = Int($0.text(for: self.valueTableColumn)!)!
-			}
+						// Process values
+						value = Int($0.text(for: self.valueTableColumn)!)!
+					}
 
 			return value
 		}
@@ -553,9 +624,9 @@ class MDSSQLiteDatabaseManager {
 			var	value :String? = nil
 			try! table.select(tableColumns: [self.valueTableColumn],
 					where: SQLiteWhere(tableColumn: self.keyTableColumn, value: key)) {
-				// Process values
-				value = $0.text(for: self.valueTableColumn)!
-			}
+						// Process values
+						value = $0.text(for: self.valueTableColumn)!
+					}
 
 			return value
 		}
@@ -600,9 +671,9 @@ class MDSSQLiteDatabaseManager {
 			var	value :String? = nil
 			try! table.select(tableColumns: [self.valueTableColumn],
 					where: SQLiteWhere(tableColumn: self.keyTableColumn, value: key)) {
-				// Process values
-				value = $0.text(for: self.valueTableColumn)!
-			}
+						// Process values
+						value = $0.text(for: self.valueTableColumn)!
+					}
 
 			return value
 		}
@@ -824,9 +895,6 @@ class MDSSQLiteDatabaseManager {
 
 		// Iterate rows
 		try! documentTables.contentsTable.select(
-//				innerJoin:
-//						SQLiteInnerJoin(documentTables.infoTable, tableColumn: DocumentTypeInfoTable.idTableColumn,
-//								to: documentTables.contentsTable),
 				where:
 						SQLiteWhere(tableColumn: DocumentTypeInfoTable.idTableColumn,
 								values: documentInfos.map({ $0.id }))) {
@@ -878,12 +946,92 @@ class MDSSQLiteDatabaseManager {
 	//------------------------------------------------------------------------------------------------------------------
 	func documentRemove(documentType :String, id :Int64) {
 		// Setup
-		let	documentType = documentTables(for: documentType)
+		let	documentTables = documentTables(for: documentType)
 
 		// Remove
-		DocumentTypeInfoTable.remove(id: id, in: documentType.infoTable)
-		DocumentTypeContentsTable.remove(id: id, in: documentType.contentsTable)
-		DocumentTypeAttachmentsTable.remove(id: id, in: documentType.attachmentsTable)
+		DocumentTypeInfoTable.remove(id: id, in: documentTables.infoTable)
+		DocumentTypeContentsTable.remove(id: id, in: documentTables.contentsTable)
+		DocumentTypeAttachmentsTable.remove(id: id, in: documentTables.attachmentsTable)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentAttachmentAdd(documentType :String, id :Int64, info: [String : Any], content :Data) ->
+			(revision :Int, modificationDate :Date, documentAttachmentInfo :MDSDocument.AttachmentInfo) {
+		// Setup
+		let	revision = documentNextRevision(for: documentType)
+		let	modificationDate = Date()
+		let	attachmentID = UUID().base64EncodedString
+		let	documentTables = documentTables(for: documentType)
+
+		// Add attachment
+		DocumentTypeInfoTable.update(id: id, to: revision, in: documentTables.infoTable)
+		DocumentTypeContentsTable.update(id: id, modificationDate: modificationDate, in: documentTables.contentsTable)
+		let	attachmentRevision =
+					DocumentTypeAttachmentsTable.add(id: id, attachmentID: attachmentID, info: info, content: content,
+							to: documentTables.attachmentsTable)
+
+		return (revision, modificationDate,
+				MDSDocument.AttachmentInfo(id: attachmentID, revision: attachmentRevision, info: info))
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentAttachmentInfoMap(documentType :String, id :Int64) -> MDSDocument.AttachmentInfoMap {
+		// Setup
+		let	documentTables = documentTables(for: documentType)
+
+		return DocumentTypeAttachmentsTable.documentAttachmentInfoMap(id: id, in: documentTables.attachmentsTable)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentAttachmentContent(documentType :String, id :Int64, attachmentID :String) -> Data {
+		// Setup
+		let	documentTables = documentTables(for: documentType)
+
+		// Iterate rows
+		var	content :Data!
+		try! documentTables.attachmentsTable.select(tableColumns: [DocumentTypeAttachmentsTable.contentTableColumn],
+				where:
+						SQLiteWhere(tableColumn: DocumentTypeAttachmentsTable.attachmentIDTableColumn,
+								value: attachmentID))
+				{ content = $0.blob(for: DocumentTypeAttachmentsTable.contentTableColumn) }
+
+		return content
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentAttachmentUpdate(documentType :String, id :Int64, attachmentID :String, updatedInfo :[String : Any],
+			updatedContent :Data) ->
+			(revision :Int, modificationDate :Date, documentAttachmentInfo :MDSDocument.AttachmentInfo) {
+		// Setup
+		let	revision = documentNextRevision(for: documentType)
+		let	modificationDate = Date()
+		let	documentTables = documentTables(for: documentType)
+
+		// Update attachment
+		DocumentTypeInfoTable.update(id: id, to: revision, in: documentTables.infoTable)
+		DocumentTypeContentsTable.update(id: id, modificationDate: modificationDate, in: documentTables.contentsTable)
+		let	attachmentRevision =
+					DocumentTypeAttachmentsTable.update(id: id, attachmentID: attachmentID, updatedInfo: updatedInfo,
+							updatedContent: updatedContent, to: documentTables.attachmentsTable)
+
+		return (revision, modificationDate,
+				MDSDocument.AttachmentInfo(id: attachmentID, revision: attachmentRevision, info: updatedInfo))
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentAttachmentRemove(documentType :String, id :Int64, attachmentID :String) ->
+			(revision :Int, modificationDate :Date) {
+		// Setup
+		let	revision = documentNextRevision(for: documentType)
+		let	modificationDate = Date()
+		let	documentTables = documentTables(for: documentType)
+
+		// Remove attachment
+		DocumentTypeInfoTable.update(id: id, to: revision, in: documentTables.infoTable)
+		DocumentTypeContentsTable.update(id: id, modificationDate: modificationDate, in: documentTables.contentsTable)
+		DocumentTypeAttachmentsTable.remove(id: id, attachmentID: attachmentID, in: documentTables.attachmentsTable)
+
+		return (revision, modificationDate)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

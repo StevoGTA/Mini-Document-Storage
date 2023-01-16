@@ -413,27 +413,25 @@ open class MDSDocument : Hashable {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func attachmentContent(for attachmentInfo :AttachmentInfo) -> Data? {
+	public func attachmentContent(for attachmentInfo :AttachmentInfo) -> Data {
 		// Return attachment content
 		return try! self.documentStorage.documentAttachmentContent(for: self, attachmentInfo: attachmentInfo)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func attachmentContentAsString(for attachmentInfo :AttachmentInfo) -> String? {
+	public func attachmentContentAsString(for attachmentInfo :AttachmentInfo) -> String {
 		// Get attachment content
-		guard let data = try! self.documentStorage.documentAttachmentContent(for: self, attachmentInfo: attachmentInfo)
-				else { return nil }
+		let	data = try! self.documentStorage.documentAttachmentContent(for: self, attachmentInfo: attachmentInfo)
 
-		return String(data: data, encoding: .utf8)
+		return String(data: data, encoding: .utf8)!
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func attachmentContentAsJSON<T>(for attachmentInfo :AttachmentInfo) -> T? {
+	public func attachmentContentAsJSON<T>(for attachmentInfo :AttachmentInfo) -> T {
 		// Get attachment content
-		guard let data = try! self.documentStorage.documentAttachmentContent(for: self, attachmentInfo: attachmentInfo)
-				else { return nil }
+		let	data = try! self.documentStorage.documentAttachmentContent(for: self, attachmentInfo: attachmentInfo)
 
-		return try! JSONSerialization.jsonObject(with: data, options: []) as? T
+		return try! JSONSerialization.jsonObject(with: data, options: []) as! T
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

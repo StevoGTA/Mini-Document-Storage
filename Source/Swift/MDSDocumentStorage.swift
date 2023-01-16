@@ -119,7 +119,7 @@ public protocol MDSDocumentStorage : AnyObject {
 	func documentAttachmentAdd(for documentType :String, documentID :String, info :[String : Any], content :Data) throws
 			-> MDSDocument.AttachmentInfo
 	func documentAttachmentInfoMap(for documentType :String, documentID :String) throws -> MDSDocument.AttachmentInfoMap
-	func documentAttachmentContent(for documentType :String, documentID :String, attachmentID :String) throws -> Data?
+	func documentAttachmentContent(for documentType :String, documentID :String, attachmentID :String) throws -> Data
 	func documentAttachmentUpdate(for documentType :String, documentID :String, attachmentID :String,
 			updatedInfo :[String : Any], updatedContent :Data) throws -> Int
 	func documentAttachmentRemove(for documentType :String, documentID :String, attachmentID :String) throws
@@ -398,7 +398,7 @@ extension MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentAttachmentContent<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo)
-			throws -> Data? {
+			throws -> Data {
 		// Return document attachment content
 		return try documentAttachmentContent(for: T.documentType, documentID: document.id,
 				attachmentID: attachmentInfo.id)

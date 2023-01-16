@@ -206,12 +206,8 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 				// Setup
 				let	batchQueue =
 							BatchQueue<MDSUpdateInfo<Int64>>(
-									maximumBatchSize: self.databaseManager.variableNumberLimit) {
-//								// Update collections and indexes
-//								self.updateCollections(for: documentType, updateInfos: $0)
-//								self.updateIndexes(for: documentType, updateInfos: $0)
-_ = $0
-							}
+									maximumBatchSize: self.databaseManager.variableNumberLimit)
+									{ self.update(for: documentType, updateInfos: $0) 	}
 
 				// Iterate document create infos
 				documentCreateInfos.forEach() {
@@ -444,12 +440,11 @@ _ = $0
 			let	documentBacking = try! self.documentBacking(documentType: documentType, documentID: documentID)
 			documentBacking.set(valueUse, for: property, documentType: documentType, with: self.databaseManager)
 
-//			// Update collections and indexes
-//			let	updateInfos :[MDSUpdateInfo<Int64>] =
-//						[MDSUpdateInfo<Int64>(document: document, revision: documentBacking.revision,
-//								value: documentBacking.id, changedProperties: [property])]
-//			updateCollections(for: documentType, updateInfos: updateInfos)
-//			updateIndexes(for: documentType, updateInfos: updateInfos)
+			// Update stufs
+			let	updateInfos :[MDSUpdateInfo<Int64>] =
+						[MDSUpdateInfo<Int64>(document: document, revision: documentBacking.revision,
+								value: documentBacking.id, changedProperties: [property])]
+			update(for: documentType, updateInfos: updateInfos)
 
 			// Call document changed procs
 			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .updated) }
@@ -459,40 +454,184 @@ _ = $0
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentAttachmentAdd(for documentType :String, documentID :String, info :[String : Any],
 			content :Data) throws -> MDSDocument.AttachmentInfo {
-// TODO: documentAttachmentAdd(...)
-		// Unimplemented
-		fatalError("Unimplemented")
+		// Validate
+		guard self.databaseManager.documentIsKnown(documentType: documentType) else {
+			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
+		}
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+			// In batch
+			if let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
+				// Have document in batch
+				return batchInfoDocumentInfo.attachmentAdd(info: info, content: content)
+			} else {
+				// Don't have document in batch
+				let	documentBacking = try! self.documentBacking(documentType: documentType, documentID: documentID)
+
+				return batchInfo.documentAdd(documentType: documentType, documentID: documentID,
+								documentBacking: documentBacking, creationDate: documentBacking.creationDate,
+								modificationDate: documentBacking.modificationDate,
+								initialPropertyMap: documentBacking.propertyMap)
+						.attachmentAdd(info: info, content: content)
+			}
+		} else {
+			// Not in batch
+			return try self.documentBacking(documentType: documentType, documentID: documentID)
+					.attachmentAdd(documentType: documentType, info: info, content: content, with: self.databaseManager)
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentAttachmentInfoMap(for documentType :String, documentID :String) throws ->
 			MDSDocument.AttachmentInfoMap {
-// TODO: documentAttachmentInfoMap(...)
-		// Unimplemented
-		fatalError("Unimplemented")
+		// Validate
+		guard self.databaseManager.documentIsKnown(documentType: documentType) else {
+			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
+		}
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
+				let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
+			// Have document in batch
+			return batchInfoDocumentInfo.attachmentInfoMap(
+					applyingChangesTo: batchInfoDocumentInfo.documentBacking?.attachmentInfoMap ?? [:])
+		} else if self.documentsBeingCreatedPropertyMapMap.value(for: documentID) != nil {
+			// Creating
+			return [:]
+		} else {
+			// Retrieve document backing
+			return try self.documentBacking(documentType: documentType, documentID: documentID).attachmentInfoMap
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentAttachmentContent(for documentType :String, documentID :String, attachmentID :String) throws ->
-			Data? {
-// TODO: documentAttachmentContent(...)
-		// Unimplemented
-		fatalError("Unimplemented")
+			Data {
+		// Validate
+		guard self.databaseManager.documentIsKnown(documentType: documentType) else {
+			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
+		}
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
+				let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
+			// Have document in batch
+			if let content = batchInfoDocumentInfo.attachmentContent(for: attachmentID) {
+				// Found
+				return content
+			}
+		} else if self.documentsBeingCreatedPropertyMapMap.value(for: documentID) != nil {
+			// Creating
+			throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
+		}
+
+		// Get non-batch attachmentMap
+		let	documentBacking = try self.documentBacking(documentType: documentType, documentID: documentID)
+		guard documentBacking.attachmentInfoMap[attachmentID] != nil else {
+			// Don't have attachment
+			throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
+		}
+
+		return documentBacking.attachmentContent(documentType: documentType, attachmentID: attachmentID,
+				with: self.databaseManager)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentAttachmentUpdate(for documentType :String, documentID :String, attachmentID :String,
 			updatedInfo :[String : Any], updatedContent :Data) throws -> Int {
-// TODO: documentAttachmentUpdate(...)
-		// Unimplemented
-		fatalError("Unimplemented")
+		// Validate
+		guard self.databaseManager.documentIsKnown(documentType: documentType) else {
+			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
+		}
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+			// In batch
+			if let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
+				// Have document in batch
+				let	documentAttachmentInfoMap =
+							batchInfoDocumentInfo.attachmentInfoMap(
+									applyingChangesTo: batchInfoDocumentInfo.documentBacking?.attachmentInfoMap ?? [:])
+				guard let attachmentInfo = documentAttachmentInfoMap[attachmentID] else {
+					throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
+				}
+
+				batchInfoDocumentInfo.attachmentUpdate(attachmentID: attachmentID,
+						currentRevision: attachmentInfo.revision, info: updatedInfo, content: updatedContent)
+			} else {
+				// Don't have document in batch
+				let	documentBacking = try self.documentBacking(documentType: documentType, documentID: documentID)
+				guard let attachmentInfo = documentBacking.attachmentInfoMap[attachmentID] else {
+					throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
+				}
+
+				batchInfo.documentAdd(documentType: documentType, documentID: documentID,
+								documentBacking: documentBacking, creationDate: documentBacking.creationDate,
+								modificationDate: documentBacking.modificationDate,
+								initialPropertyMap: documentBacking.propertyMap)
+						.attachmentUpdate(attachmentID: attachmentID, currentRevision: attachmentInfo.revision,
+								info: updatedInfo, content: updatedContent)
+			}
+
+			return -1
+		} else {
+			// Not in batch
+			let	documentBacking = try self.documentBacking(documentType: documentType, documentID: documentID)
+			guard documentBacking.attachmentInfoMap[attachmentID] != nil else {
+				throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
+			}
+
+			// Update attachment
+			return documentBacking.attachmentUpdate(documentType: documentType, attachmentID: attachmentID,
+					updatedInfo: updatedInfo, updatedContent: updatedContent, with: self.databaseManager)
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentAttachmentRemove(for documentType :String, documentID :String, attachmentID :String) throws {
-// TODO: documentAttachmentRemove(...)
-		// Unimplemented
-		fatalError("Unimplemented")
+		// Validate
+		guard self.databaseManager.documentIsKnown(documentType: documentType) else {
+			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
+		}
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+			// In batch
+			if let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
+				// Have document in batch
+				let	documentAttachmentInfoMap =
+							batchInfoDocumentInfo.attachmentInfoMap(
+									applyingChangesTo: batchInfoDocumentInfo.documentBacking?.attachmentInfoMap ?? [:])
+				guard documentAttachmentInfoMap[attachmentID] != nil else {
+					throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
+				}
+
+				batchInfoDocumentInfo.attachmentRemove(attachmentID: attachmentID)
+			} else {
+				// Don't have document in batch
+				let	documentBacking = try self.documentBacking(documentType: documentType, documentID: documentID)
+				guard documentBacking.attachmentInfoMap[attachmentID] != nil else {
+					throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
+				}
+
+				batchInfo.documentAdd(documentType: documentType, documentID: documentID,
+								documentBacking: documentBacking, creationDate: documentBacking.creationDate,
+								modificationDate: documentBacking.modificationDate,
+								initialPropertyMap: documentBacking.propertyMap)
+						.attachmentRemove(attachmentID: attachmentID)
+			}
+		} else {
+			// Not in batch
+			let	documentBacking = try self.documentBacking(documentType: documentType, documentID: documentID)
+			guard documentBacking.attachmentInfoMap[attachmentID] != nil else {
+				throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
+			}
+
+			// Remove attachment
+			documentBacking.attachmentRemove(documentType: documentType, attachmentID: attachmentID,
+					with: self.databaseManager)
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -518,9 +657,8 @@ _ = $0
 			// Not in batch
 			let	documentBacking = try! self.documentBacking(documentType: documentType, documentID: documentID)
 
-//			// Remove from collections and indexes
-//			removeFromCollections(for: documentType, documentBackingIDs: [documentBacking.id])
-//			removeFromIndexes(for: documentType, documentBackingIDs: [documentBacking.id])
+			// Remove from stuffs
+			note(removedDocumentBackingIDs: Set<Int64>([documentBacking.id]))
 
 			// Remove
 			self.databaseManager.documentRemove(documentType: documentType, id: documentBacking.id)
@@ -643,9 +781,8 @@ _ = $0
 //					let	updateBatchQueue =
 //								BatchQueue<MDSUpdateInfo<Int64>>(
 //										maximumBatchSize: self.databaseManager.variableNumberLimit) {
-//									// Update collections and indexes
-//									self.updateCollections(for: documentType, updateInfos: $0)
-//									self.updateIndexes(for: documentType, updateInfos: $0)
+//									// Update stuffs
+//									self.update(for: documentType, updateInfos: $0)
 //								}
 //					var	removedDocumentBackingIDs = [Int64]()
 //
@@ -851,20 +988,11 @@ _ = $0
 			// Setup
 			let	map = Dictionary(documentUpdateInfos.map() { ($0.documentID, $0) })
 			let	updateBatchQueue =
-						BatchQueue<MDSUpdateInfo<Int64>>(
-								maximumBatchSize: self.databaseManager.variableNumberLimit) {
-//							// Update collections and indexes
-//							self.updateCollections(for: documentType, updateInfos: $0)
-//							self.updateIndexes(for: documentType, updateInfos: $0)
-_ = $0
-						}
+						BatchQueue<MDSUpdateInfo<Int64>>(maximumBatchSize: self.databaseManager.variableNumberLimit)
+								{ self.update(for: documentType, updateInfos: $0) }
 			let	removedBatchQueue =
-						BatchQueue<Int64>(maximumBatchSize: 999) {
-//							// Update collections and indexes
-//							self.removeFromCollections(for: documentType, documentBackingIDs: $0)
-//							self.removeFromIndexes(for: documentType, documentBackingIDs: $0)
-_ = $0
-						}
+						BatchQueue<Int64>(maximumBatchSize: 999)
+								{ self.note(removedDocumentBackingIDs: Set<Int64>($0)) }
 			var	documentFullInfos = [MDSDocument.FullInfo]()
 
 			// Iterate document IDs
@@ -1102,6 +1230,52 @@ _ = $0
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	private func documentBackingsIterate<T>(documentType :String,
+			infos :[(documentInfo :MDSSQLiteDatabaseManager.DocumentInfo, t :T)],
+			proc :(_ documentBacking :MDSSQLiteDocumentBacking, _ t : T) -> Void) {
+		// Iterate infos
+		var	infosNotFound = [(documentInfo :MDSSQLiteDatabaseManager.DocumentInfo, t :T)]()
+		infos.forEach() {
+			// Check cache
+			if let documentBacking = self.documentBackingCache.documentBacking(for: $0.documentInfo.documentID) {
+				// Have in cache
+				proc(documentBacking, $0.t)
+			} else {
+				// Don't have in cache
+				infosNotFound.append($0)
+			}
+		}
+
+		// Collect DocumentContentInfos
+		var	documentContentInfosByID = [Int64 : MDSSQLiteDatabaseManager.DocumentContentInfo]()
+		self.databaseManager.documentContentInfoIterate(documentType: documentType,
+				documentInfos: infosNotFound.map({ $0.documentInfo })) { documentContentInfosByID[$0.id] = $0 }
+
+		// Iterate infos not found
+		infosNotFound.forEach() {
+			// Get DocumentContentInfo
+			let	documentContentInfo = documentContentInfosByID[$0.documentInfo.id]!
+
+			// Load attachment
+			let	attachmentInfoMap =
+						self.databaseManager.documentAttachmentInfoMap(documentType: documentType,
+								id: $0.documentInfo.id)
+
+			// Create MDSSQLiteDocumentBacking
+			let	documentBacking =
+						MDSSQLiteDocumentBacking(id: $0.documentInfo.id, documentID: $0.documentInfo.documentID,
+								revision: $0.documentInfo.revision, active: $0.documentInfo.active,
+								creationDate: documentContentInfo.creationDate,
+								modificationDate: documentContentInfo.modificationDate,
+								propertyMap: documentContentInfo.propertyMap, attachmentInfoMap: attachmentInfoMap)
+			self.documentBackingCache.add([documentBacking])
+
+			// Call proc
+			proc(documentBacking, $0.t)
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 //	private func updateCollections(for documentType :String, updateInfos :[MDSUpdateInfo<Int64>],
 //			processNotIncluded :Bool = true) {
 //		// Get collections
@@ -1192,51 +1366,6 @@ _ = $0
 		// Iterate document backings
 		documentBackingsIterate(documentType: documentType, infos: documentInfosByKey.map({ ($0.value, $0.key) }))
 				{ proc($1, $0) }
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	private func documentBackingsIterate<T>(documentType :String,
-			infos :[(documentInfo :MDSSQLiteDatabaseManager.DocumentInfo, t :T)],
-			proc :(_ documentBacking :MDSSQLiteDocumentBacking, _ t : T) -> Void) {
-		// Iterate infos
-		var	infosNotFound = [(documentInfo :MDSSQLiteDatabaseManager.DocumentInfo, t :T)]()
-		infos.forEach() {
-			// Check cache
-			if let documentBacking = self.documentBackingCache.documentBacking(for: $0.documentInfo.documentID) {
-				// Have in cache
-				proc(documentBacking, $0.t)
-			} else {
-				// Don't have in cache
-				infosNotFound.append($0)
-			}
-		}
-
-		// Collect DocumentContentInfos
-		var	documentContentInfosByID = [Int64 : MDSSQLiteDatabaseManager.DocumentContentInfo]()
-		self.databaseManager.documentContentInfoIterate(documentType: documentType,
-				documentInfos: infosNotFound.map({ $0.documentInfo })) { documentContentInfosByID[$0.id] = $0 }
-
-		// Iterate infos not found
-		infosNotFound.forEach() {
-			// Get DocumentContentInfo
-			let	documentContentInfo = documentContentInfosByID[$0.documentInfo.id]!
-
-			// Load attachment
-let	attachmentInfoMap = MDSDocument.AttachmentInfoMap()
-//TODO
-
-			// Create MDSSQLiteDocumentBacking
-			let	documentBacking =
-						MDSSQLiteDocumentBacking(id: $0.documentInfo.id, documentID: $0.documentInfo.documentID,
-								revision: $0.documentInfo.revision, active: $0.documentInfo.active,
-								creationDate: documentContentInfo.creationDate,
-								modificationDate: documentContentInfo.modificationDate,
-								propertyMap: documentContentInfo.propertyMap, attachmentInfoMap: attachmentInfoMap)
-			self.documentBackingCache.add([documentBacking])
-
-			// Call proc
-			proc(documentBacking, $0.t)
-		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1368,6 +1497,7 @@ let	attachmentInfoMap = MDSDocument.AttachmentInfoMap()
 	//------------------------------------------------------------------------------------------------------------------
 	private func update(for documentType :String, updateInfos :[MDSUpdateInfo<Int64>]) {
 		// Update caches
+// TODO: update caches for documentType
 //		self.cachesByDocumentTypeMap.values(for: documentType)?.forEach()
 //				{ self.cacheUpdate($0, updateInfos: updateInfos) }
 
@@ -1380,8 +1510,9 @@ let	attachmentInfoMap = MDSDocument.AttachmentInfoMap()
 			{ self.indexUpdate($0, updateInfos: updateInfos) }
 	}
 
-//	//------------------------------------------------------------------------------------------------------------------
-//	private func note(removedDocumentIDs documentIDs :Set<Int64>) {
+	//------------------------------------------------------------------------------------------------------------------
+	private func note(removedDocumentBackingIDs documentBackingIDs :Set<Int64>) {
+// TODO: note(removedDocumentBackingIDs...)
 //		// Iterate all caches
 //		self.cacheValuesMap.keys.forEach()
 //			{ self.cacheValuesMap.update(for: $0, with: { $0?.filter({ !documentIDs.contains($0.key) }) }) }
@@ -1395,5 +1526,5 @@ let	attachmentInfoMap = MDSDocument.AttachmentInfoMap()
 //			// Remove document from this index
 //			self.indexValuesMap.update(for: $0) { $0?.filter({ !documentIDs.contains($0.value) }) }
 //		}
-//	}
+	}
 }

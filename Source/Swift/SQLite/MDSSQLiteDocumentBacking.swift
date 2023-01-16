@@ -73,35 +73,84 @@ class MDSSQLiteDocumentBacking : MDSDocumentBacking {
 	func value(for property :String) -> Any? { self.propertiesLock.read() { self.propertyMapInternal[property] } }
 
 	//------------------------------------------------------------------------------------------------------------------
-	func set(_ value :Any?, for property :String, documentType :String, with databaseManager :MDSSQLiteDatabaseManager,
-			commitChange :Bool = true) {
+	func set(_ value :Any?, for property :String, documentType :String,
+			with databaseManager :MDSSQLiteDatabaseManager) {
 		// Update
 		update(documentType: documentType, updatedPropertyMap: (value != nil) ? [property : value!] : nil,
-				removedProperties: (value != nil) ? nil : Set([property]), with: databaseManager,
-				commitChange: commitChange)
+				removedProperties: (value != nil) ? nil : Set([property]), with: databaseManager)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func update(documentType :String, updatedPropertyMap :[String : Any]? = nil,
-			removedProperties :Set<String>? = nil, with databaseManager :MDSSQLiteDatabaseManager,
-			commitChange :Bool = true) {
-		// Update
+			removedProperties :Set<String>? = nil, with databaseManager :MDSSQLiteDatabaseManager) {
+		// Exclusive access
 		self.propertiesLock.write() {
-			// Store
+			// Update property map
 			updatedPropertyMap?.forEach() { self.propertyMapInternal[$0.key] = $0.value }
 			removedProperties?.forEach() { self.propertyMapInternal[$0] = nil }
 
-			// Check if committing change
-			if commitChange {
-				// Get info
-				let	(revision, modificationDate) =
-							databaseManager.documentUpdate(documentType: documentType, id: self.id,
-									propertyMap: self.propertyMapInternal)
+			// Update persistent storage
+			let	(revision, modificationDate) =
+						databaseManager.documentUpdate(documentType: documentType, id: self.id,
+								propertyMap: self.propertyMapInternal)
+			self.revision = revision
+			self.modificationDate = modificationDate
+		}
+	}
 
-				// Store
-				self.revision = revision
-				self.modificationDate = modificationDate
-			}
+	//------------------------------------------------------------------------------------------------------------------
+	func attachmentAdd(documentType :String, info :[String : Any], content :Data,
+			with databaseManager :MDSSQLiteDatabaseManager) -> MDSDocument.AttachmentInfo {
+		// Exclusive access
+		self.propertiesLock.write() {
+			// Update persistent storage
+			let	(revision, modificationDate, documentAttachmentInfo) =
+						databaseManager.documentAttachmentAdd(documentType: documentType, id: self.id, info: info,
+								content: content)
+			self.revision = revision
+			self.modificationDate = modificationDate
+			self.attachmentInfoMap[documentAttachmentInfo.id] = documentAttachmentInfo
+
+			return documentAttachmentInfo
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func attachmentContent(documentType :String, attachmentID :String, with databaseManager :MDSSQLiteDatabaseManager)
+			-> Data {
+		// Return content
+		return databaseManager.documentAttachmentContent(documentType: documentType, id: self.id,
+				attachmentID: attachmentID)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func attachmentUpdate(documentType :String, attachmentID :String, updatedInfo :[String : Any], updatedContent :Data,
+			with databaseManager :MDSSQLiteDatabaseManager) -> Int {
+		// Exclusive access
+		self.propertiesLock.write() {
+			// Update persistent storage
+			let	(revision, modificationDate, documentAttachmentInfo) =
+						databaseManager.documentAttachmentUpdate(documentType: documentType, id: self.id,
+								attachmentID: attachmentID, updatedInfo: updatedInfo, updatedContent: updatedContent)
+			self.revision = revision
+			self.modificationDate = modificationDate
+			self.attachmentInfoMap[attachmentID] = documentAttachmentInfo
+
+			return documentAttachmentInfo.revision
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func attachmentRemove(documentType :String, attachmentID :String, with databaseManager :MDSSQLiteDatabaseManager) {
+		// Exclusive access
+		self.propertiesLock.write() {
+			// Update persistent storage
+			let	(revision, modificationDate) =
+						databaseManager.documentAttachmentRemove(documentType: documentType, id: self.id,
+								attachmentID: attachmentID)
+			self.revision = revision
+			self.modificationDate = modificationDate
+			self.attachmentInfoMap[attachmentID] = nil
 		}
 	}
 }
