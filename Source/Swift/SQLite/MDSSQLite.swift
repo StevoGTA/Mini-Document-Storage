@@ -16,7 +16,6 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	public	var	id :String = UUID().uuidString
 
 	private	var	associationsByNameMap = LockingDictionary</* Name */ String, MDSAssociation>()
-	private	var	associationItemsByNameMap = LockingArrayDictionary</* Name */ String, MDSAssociation.Item>()
 
 	private	let	batchInfoMap = LockingDictionary<Thread, MDSBatchInfo<MDSSQLiteDocumentBacking>>()
 
@@ -51,40 +50,89 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	// MARK: MDSDocumentStorage methods
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationRegister(named name :String, fromDocumentType :String, toDocumentType :String) throws {
-// TODO: associationRegister(...)
-		// Unimplemented
-		fatalError("Unimplemented")
+		// Validate
+		guard self.databaseManager.documentIsKnown(documentType: fromDocumentType) else {
+			throw MDSDocumentStorageError.unknownDocumentType(documentType: fromDocumentType)
+		}
+		guard self.databaseManager.documentIsKnown(documentType: toDocumentType) else {
+			throw MDSDocumentStorageError.unknownDocumentType(documentType: toDocumentType)
+		}
+
+		// Register
+		self.databaseManager.associationRegister(name: name, fromDocumentType: fromDocumentType,
+				toDocumentType: toDocumentType)
+
+		// Create or re-create association
+		let	association = MDSAssociation(name: name, fromDocumentType: fromDocumentType, toDocumentType: toDocumentType)
+
+		// Add to map
+		self.associationsByNameMap.set(association, for: name)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationUpdate(for name :String, updates :[MDSAssociation.Update]) throws {
-// TODO: associationUpdate(...)
-		// Unimplemented
-		fatalError("Unimplemented")
+		// Validate
+		guard let association = self.associationsByNameMap.value(for: name) else {
+			throw MDSDocumentStorageError.unknownAssociation(name: name)
+		}
+
+		// Update
+		self.databaseManager.associationUpdate(name: name, updates: updates,
+				fromDocumentType: association.fromDocumentType, toDocumentType: association.toDocumentType)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationGet(for name :String, startIndex :Int, count :Int?) throws ->
 			(totalCount :Int, associationItems :[MDSAssociation.Item]) {
-// TODO: associationGet(...)
-		// Unimplemented
-		fatalError("Unimplemented")
+		// Validate
+		guard let association = self.associationsByNameMap.value(for: name) else {
+			throw MDSDocumentStorageError.unknownAssociation(name: name)
+		}
+
+		return self.databaseManager.associationGet(name: name, fromDocumentType: association.fromDocumentType,
+				toDocumentType: association.toDocumentType, startIndex: startIndex, count: count)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationIterate(for name :String, from fromDocumentID :String, toDocumentType :String,
 			proc :(_ document :MDSDocument) -> Void) throws {
-// TODO: associationIterate(...)
-		// Unimplemented
-		fatalError("Unimplemented")
+		// Validate
+		guard let association = self.associationsByNameMap.value(for: name) else {
+			throw MDSDocumentStorageError.unknownAssociation(name: name)
+		}
+
+		// Collect document IDs
+		var	documentIDs = [String]()
+		autoreleasepool() {
+			associationIterate(association: association, fromDocumentID: fromDocumentID, startIndex: 0, count: nil)
+					{ documentIDs.append($0.documentID) }
+		}
+
+		// Iterate document IDs
+		let	documentCreateProc =
+				self.documentCreateProcMap.value(for: toDocumentType) ?? { MDSDocument(id: $0, documentStorage: $1) }
+		autoreleasepool() { documentIDs.forEach() { proc(documentCreateProc($0, self)) } }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationIterate(for name :String, to toDocumentID :String, fromDocumentType :String,
 			proc :(_ document :MDSDocument) -> Void) throws {
-// TODO: associationIterate(...)
-		// Unimplemented
-		fatalError("Unimplemented")
+		// Validate
+		guard let association = self.associationsByNameMap.value(for: name) else {
+			throw MDSDocumentStorageError.unknownAssociation(name: name)
+		}
+
+		// Collect document IDs
+		var	documentIDs = [String]()
+		autoreleasepool() {
+			associationIterate(association: association, toDocumentID: toDocumentID,  startIndex: 0, count: nil)
+					{ documentIDs.append($0.documentID) }
+		}
+
+		// Iterate document IDs
+		let	documentCreateProc =
+				self.documentCreateProcMap.value(for: fromDocumentType) ?? { MDSDocument(id: $0, documentStorage: $1) }
+		autoreleasepool() { documentIDs.forEach() { proc(documentCreateProc($0, self)) } }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -719,8 +767,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 		var	documentIDMap = [/* Key */ String : /* String */ String]()
 		autoreleasepool() {
 			// Iterate index
-			self.indexIterate(name: name, documentType: documentType, keys: keys,
-					proc: {documentIDMap[$0] = $1.documentID })
+			self.indexIterate(name: name, documentType: documentType, keys: keys) {documentIDMap[$0] = $1.documentID }
 		}
 
 		// Iterate map
@@ -914,33 +961,105 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	func associationGetDocumentRevisionInfos(name :String, from fromDocumentID :String, startIndex :Int, count :Int?)
 			throws -> (totalCount :Int, documentRevisionInfos :[MDSDocument.RevisionInfo]) {
-// TODO: associationGetDocumentRevisionInfos(...)
-		// Unimplemented
-		fatalError("associationGetDocumentRevisionInfos")
+		// Validate
+		guard let association = self.associationsByNameMap.value(for: name) else {
+			throw MDSDocumentStorageError.unknownAssociation(name: name)
+		}
+
+		// Get count
+		guard let totalCount =
+					self.databaseManager.associationGetCount(name: name, fromDocumentID: fromDocumentID,
+							fromDocumentType: association.fromDocumentType) else {
+			throw MDSDocumentStorageError.unknownDocumentID(documentID: fromDocumentID)
+		}
+
+		// Collect MDSDocument RevisionInfos
+		var	documentRevisionInfos = [MDSDocument.RevisionInfo]()
+		autoreleasepool() {
+			// Iterate association
+			self.databaseManager.associationIterateDocumentInfos(name: name, fromDocumentID: fromDocumentID,
+					fromDocumentType: association.fromDocumentType, toDocumentType: association.toDocumentType,
+					startIndex: startIndex, count: count) { documentRevisionInfos.append($0.documentRevisionInfo) }
+		}
+
+		return (totalCount, documentRevisionInfos)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func associationGetDocumentRevisionInfos(name :String, to toDocumentID :String, startIndex :Int, count :Int?) throws
 			-> (totalCount :Int, documentRevisionInfos :[MDSDocument.RevisionInfo]) {
-// TODO: associationGetDocumentRevisionInfos(...)
-		// Unimplemented
-		fatalError("Unimplemented")
+		// Validate
+		guard let association = self.associationsByNameMap.value(for: name) else {
+			throw MDSDocumentStorageError.unknownAssociation(name: name)
+		}
+
+		// Get count
+		guard let totalCount =
+					self.databaseManager.associationGetCount(name: name, toDocumentID: toDocumentID,
+							toDocumentType: association.toDocumentType) else {
+			throw MDSDocumentStorageError.unknownDocumentID(documentID: toDocumentID)
+		}
+
+		// Collect MDSDocument RevisionInfos
+		var	documentRevisionInfos = [MDSDocument.RevisionInfo]()
+		autoreleasepool() {
+			// Iterate association
+			self.databaseManager.associationIterateDocumentInfos(name: name, toDocumentID: toDocumentID,
+					toDocumentType: association.toDocumentType, fromDocumentType: association.fromDocumentType,
+					startIndex: startIndex, count: count) { documentRevisionInfos.append($0.documentRevisionInfo) }
+		}
+
+		return (totalCount, documentRevisionInfos)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func associationGetDocumentFullInfos(name :String, from fromDocumentID :String, startIndex :Int, count :Int?) throws
 			-> (totalCount :Int, documentFullInfos :[MDSDocument.FullInfo]) {
-// TODO: associationGetDocumentFullInfos(...)
-		// Unimplemented
-		fatalError("Unimplemented")
+		// Validate
+		guard let association = self.associationsByNameMap.value(for: name) else {
+			throw MDSDocumentStorageError.unknownAssociation(name: name)
+		}
+
+		// Get count
+		guard let totalCount =
+					self.databaseManager.associationGetCount(name: name, fromDocumentID: fromDocumentID,
+							fromDocumentType: association.fromDocumentType) else {
+			throw MDSDocumentStorageError.unknownDocumentID(documentID: fromDocumentID)
+		}
+
+		// Collect MDSDocument FullInfos
+		var	documentFullInfos = [MDSDocument.FullInfo]()
+		autoreleasepool() {
+			associationIterate(association: association, fromDocumentID: fromDocumentID, startIndex: startIndex,
+					count: count) { documentFullInfos.append($0.documentFullInfo) }
+		}
+
+		return (totalCount, documentFullInfos)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func associationGetDocumentFullInfos(name :String, to toDocumentID :String, startIndex :Int, count :Int?) throws ->
 			(totalCount :Int, documentFullInfos :[MDSDocument.FullInfo]) {
-// TODO: associationGetDocumentFullInfos(...)
-		// Unimplemented
-		fatalError("Unimplemented")
+		// Validate
+		guard let association = self.associationsByNameMap.value(for: name) else {
+			throw MDSDocumentStorageError.unknownAssociation(name: name)
+		}
+
+		// Get count
+		guard let totalCount =
+					self.databaseManager.associationGetCount(name: name, toDocumentID: toDocumentID,
+							toDocumentType: association.toDocumentType) else {
+			throw MDSDocumentStorageError.unknownDocumentID(documentID: toDocumentID)
+		}
+
+		// Collect MDSDocument FullInfos
+		var	documentFullInfos = [MDSDocument.FullInfo]()
+		autoreleasepool() {
+			associationIterate(association: association, toDocumentID: toDocumentID, startIndex: startIndex,
+					count: count) { documentFullInfos.append($0.documentFullInfo) }
+		}
+
+		return (totalCount, documentFullInfos)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1069,8 +1188,8 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 		var	documentFullInfoMap = [String : MDSDocument.FullInfo]()
 		autoreleasepool() {
 			// Iterate index
-			self.indexIterate(name: name, documentType: index.documentType, keys: keys,
-					proc: { documentFullInfoMap[$0] = $1.documentFullInfo })
+			self.indexIterate(name: name, documentType: index.documentType, keys: keys)
+					{ documentFullInfoMap[$0] = $1.documentFullInfo }
 		}
 
 		return documentFullInfoMap
@@ -1128,19 +1247,52 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 
 	// MARK: Private methods
 	//------------------------------------------------------------------------------------------------------------------
+	private func associationIterate(association :MDSAssociation, fromDocumentID :String, startIndex :Int,
+			count :Int?, proc :(_ documentBacking :MDSSQLiteDocumentBacking) -> Void) {
+		// Collect DocumentInfos
+		var	documentInfos = [MDSSQLiteDatabaseManager.DocumentInfo]()
+		autoreleasepool() {
+			// Iterate association
+			self.databaseManager.associationIterateDocumentInfos(name: association.name, fromDocumentID: fromDocumentID,
+					fromDocumentType: association.fromDocumentType, toDocumentType: association.toDocumentType,
+					startIndex: startIndex, count: count) { documentInfos.append($0) }
+		}
+
+		// Iterate document backings
+		documentBackingsIterate(documentType: association.toDocumentType, infos: documentInfos.map({ ($0, "") }))
+				{ proc($0); _ = $1 }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func associationIterate(association :MDSAssociation, toDocumentID :String, startIndex :Int,
+			count :Int?, proc :(_ documentBacking :MDSSQLiteDocumentBacking) -> Void) {
+		// Collect DocumentInfos
+		var	documentInfos = [MDSSQLiteDatabaseManager.DocumentInfo]()
+		autoreleasepool() {
+			// Iterate association
+			self.databaseManager.associationIterateDocumentInfos(name: association.name, toDocumentID: toDocumentID,
+					toDocumentType: association.toDocumentType, fromDocumentType: association.fromDocumentType,
+					startIndex: startIndex, count: count) { documentInfos.append($0) }
+		}
+
+		// Iterate document backings
+		documentBackingsIterate(documentType: association.fromDocumentType, infos: documentInfos.map({ ($0, "") }))
+				{ proc($0); _ = $1 }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	private func collectionIterate(name :String, documentType :String, startIndex :Int, count :Int?,
 			proc :(_ documentBacking :MDSSQLiteDocumentBacking) -> Void) {
-		// Collect MDSDocument RevisionInfos
+		// Collect DocumentInfos
 		var	documentInfos = [MDSSQLiteDatabaseManager.DocumentInfo]()
 		autoreleasepool() {
 			// Iterate collection
 			self.databaseManager.collectionIterateDocumentInfos(for: name, documentType: documentType,
-					startIndex: startIndex, count: count, proc: { documentInfos.append($0) })
+					startIndex: startIndex, count: count) { documentInfos.append($0) }
 		}
 
 		// Iterate document backings
-		documentBackingsIterate(documentType: documentType, infos: documentInfos.map({ ($0, "") }),
-				proc: { proc($0); _ = $1 })
+		documentBackingsIterate(documentType: documentType, infos: documentInfos.map({ ($0, "") })) { proc($0); _ = $1 }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1206,10 +1358,10 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	private func documentBackingsIterate(documentType :String, documentIDs :[String],
 			proc :(_ documentBacking :MDSSQLiteDocumentBacking) -> Void) {
-		// Collect MDSDocument RevisionInfos
+		// Collect DocumentInfos
 		var	documentInfos = [MDSSQLiteDatabaseManager.DocumentInfo]()
-		self.databaseManager.documentInfoIterate(documentType: documentType, documentIDs: documentIDs,
-				proc: { documentInfos.append($0) })
+		self.databaseManager.documentInfoIterate(documentType: documentType, documentIDs: documentIDs)
+				{ documentInfos.append($0) }
 
 		// Iterate document backings
 		documentBackingsIterate(documentType: documentType, infos: documentInfos.map({ ($0, "") }))
@@ -1219,10 +1371,10 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	private func documentBackingsIterate(documentType :String, sinceRevision :Int, activeOnly: Bool,
 			proc :(_ documentBacking :MDSSQLiteDocumentBacking) -> Void) {
-		// Collect MDSDocument RevisionInfos
+		// Collect DocumentInfos
 		var	documentInfos = [MDSSQLiteDatabaseManager.DocumentInfo]()
 		self.databaseManager.documentInfoIterate(documentType: documentType, sinceRevision: sinceRevision,
-				activeOnly: activeOnly, proc: { documentInfos.append($0) })
+				activeOnly: activeOnly) { documentInfos.append($0) }
 
 		// Iterate document backings
 		documentBackingsIterate(documentType: documentType, infos: documentInfos.map({ ($0, "") }))
@@ -1359,8 +1511,8 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 		var	documentInfosByKey = [String : MDSSQLiteDatabaseManager.DocumentInfo]()
 		autoreleasepool() {
 			// Iterate index
-			self.databaseManager.indexIterateDocumentInfos(name: name, documentType: documentType, keys: keys,
-					proc: { documentInfosByKey[$0] = $1 })
+			self.databaseManager.indexIterateDocumentInfos(name: name, documentType: documentType, keys: keys)
+					{ documentInfosByKey[$0] = $1 }
 		}
 
 		// Iterate document backings

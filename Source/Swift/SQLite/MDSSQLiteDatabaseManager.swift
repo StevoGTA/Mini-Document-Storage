@@ -97,16 +97,29 @@ class MDSSQLiteDatabaseManager {
 
 		// MARK: Properties
 		static	let	nameTableColumn = SQLiteTableColumn("name", .text, [.notNull, .unique])
-		static	let	tableColumns = [nameTableColumn]
+		static	let	fromTypeTableColumn = SQLiteTableColumn("fromType", .text, [.notNull])
+		static	let	toTypeTableColumn = SQLiteTableColumn("toType", .text, [.notNull])
+		static	let	tableColumns = [nameTableColumn, fromTypeTableColumn, toTypeTableColumn]
 
 		// MARK: Class methods
 		//--------------------------------------------------------------------------------------------------------------
 		static func create(in database :SQLiteDatabase, version :Int?) -> SQLiteTable {
 			// Create table
 			let	table = database.table(name: "Associations", tableColumns: self.tableColumns)
-			if version == nil { table.create() }
+			if (version == nil) || (version! == 1) { table.create() }
 
 			return table
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func addOrUpdate(name :String, fromDocumentType :String, toDocumentType :String, in table :SQLiteTable) {
+			// Insert or replace
+			table.insertOrReplaceRow(
+					[
+						(self.nameTableColumn, name),
+						(self.fromTypeTableColumn, fromDocumentType),
+						(self.toTypeTableColumn, toDocumentType),
+					])
 		}
 	}
 
@@ -122,8 +135,63 @@ class MDSSQLiteDatabaseManager {
 		//--------------------------------------------------------------------------------------------------------------
 		static func create(in database :SQLiteDatabase, name :String, version :Int) -> SQLiteTable {
 			// Create table
-			return database.table(name: "Association-\(name)", options: [.withoutRowID],
-					tableColumns: self.tableColumns)
+			let	table = database.table(name: "Association-\(name)", tableColumns: self.tableColumns)
+			table.create()
+
+			return table
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func count(fromID :Int64, in table :SQLiteTable) -> Int {
+			// Return count
+			return table.count(where: SQLiteWhere(tableColumn: self.fromIDTableColumn, value: fromID))
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func count(toID :Int64, in table :SQLiteTable) -> Int {
+			// Return count
+			return table.count(where: SQLiteWhere(tableColumn: self.toIDTableColumn, value: toID))
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func get(from table :SQLiteTable) -> [(fromID :Int64, toID :Int64)] {
+			// Iterate all rows
+			var	items = [(fromID :Int64, toID :Int64)]()
+			try! table.select() {
+				// Process values
+				let	fromID = $0.integer(for: self.fromIDTableColumn)!
+				let	toID = $0.integer(for: self.toIDTableColumn)!
+
+				// Add item
+				items.append((fromID, toID))
+			}
+
+			return items
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func add(items :[(fromID :Int64, toID :Int64)], in table :SQLiteTable) {
+			// Iterate items
+			items.forEach() {
+				// Insert
+				table.insertOrReplaceRow(
+						[
+							(self.fromIDTableColumn, $0.fromID),
+							(self.toIDTableColumn, $0.toID),
+						])
+			}
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func remove(items :[(fromID :Int64, toID :Int64)], in table :SQLiteTable) {
+			// Iterate items
+			items.forEach() {
+				// Delete
+				table.deleteRow(
+						where:
+								SQLiteWhere(tableColumn: self.fromIDTableColumn, value: $0.fromID)
+										.and(tableColumn: self.toIDTableColumn, value: $0.toID))
+			}
 		}
 	}
 
@@ -188,7 +256,7 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func update(name :String, version :Int, lastRevision :Int, in table :SQLiteTable) {
+		static func addOrUpdate(name :String, version :Int, lastRevision :Int, in table :SQLiteTable) {
 			// Insert or replace
 			table.insertOrReplaceRow(
 					[
@@ -215,7 +283,7 @@ class MDSSQLiteDatabaseManager {
 
 		// MARK: Class methods
 		//--------------------------------------------------------------------------------------------------------------
-		static func create(in database :SQLiteDatabase, name :String, version :Int) -> SQLiteTable {
+		static func table(in database :SQLiteDatabase, name :String, version :Int) -> SQLiteTable {
 			// Create table
 			return database.table(name: "Collection-\(name)", options: [.withoutRowID], tableColumns: self.tableColumns)
 		}
@@ -283,6 +351,53 @@ class MDSSQLiteDatabaseManager {
 			table.create()
 
 			return table
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func id(for documentID :String, in table :SQLiteTable) -> Int64? {
+			// Retrieve id
+			var	id :Int64?
+			try! table.select(tableColumns: [self.idTableColumn],
+					where: SQLiteWhere(tableColumn: self.documentIDTableColumn, value: documentID))
+					{ id = $0.integer(for: self.idTableColumn)! }
+
+			return id
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func ids(for documentIDs :[String], in table :SQLiteTable) -> [String : Int64] {
+			// Retrieve id
+			var	idsByDocumentID = [String : Int64]()
+			try! table.select(tableColumns: [self.idTableColumn, self.documentIDTableColumn],
+					where: SQLiteWhere(tableColumn: self.documentIDTableColumn, values: documentIDs))
+					{
+						// Process values
+						let	id = $0.integer(for: self.idTableColumn)!
+						let	documentID = $0.text(for: self.documentIDTableColumn)!
+
+						// Update Map
+						idsByDocumentID[documentID] = id
+					}
+
+			return idsByDocumentID
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func documentIDs(for ids :[Int64], in table :SQLiteTable) -> [Int64 : String] {
+			// Retrieve id
+			var	documentIDsByID = [Int64 : String]()
+			try! table.select(tableColumns: [self.idTableColumn, self.documentIDTableColumn],
+					where: SQLiteWhere(tableColumn: self.idTableColumn, values: ids))
+					{
+						// Process values
+						let	id = $0.integer(for: self.idTableColumn)!
+						let	documentID = $0.text(for: self.documentIDTableColumn)!
+
+						// Update Map
+						documentIDsByID[id] = documentID
+					}
+
+			return documentIDsByID
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
@@ -534,7 +649,7 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func update(name :String, version :Int, lastRevision :Int, in table :SQLiteTable) {
+		static func addOrUpdate(name :String, version :Int, lastRevision :Int, in table :SQLiteTable) {
 			// Insert or replace
 			table.insertOrReplaceRow(
 					[
@@ -562,7 +677,7 @@ class MDSSQLiteDatabaseManager {
 
 		// MARK: Class methods
 		//--------------------------------------------------------------------------------------------------------------
-		static func create(in database :SQLiteDatabase, name :String, version :Int) -> SQLiteTable {
+		static func table(in database :SQLiteDatabase, name :String, version :Int) -> SQLiteTable {
 			// Create table
 			return database.table(name: "Index-\(name)", options: [.withoutRowID], tableColumns: self.tableColumns)
 		}
@@ -763,13 +878,145 @@ class MDSSQLiteDatabaseManager {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
+	func associationRegister(name :String, fromDocumentType :String, toDocumentType :String) {
+		// Register
+		AssociationsTable.addOrUpdate(name: name, fromDocumentType: fromDocumentType, toDocumentType: toDocumentType,
+				in: self.associationsTable)
+
+		// Create contents table
+		let	associationContentsTable =
+					AssocationContentsTable.create(in: self.database, name: name, version: self.databaseVersion!)
+		self.associationTablesByName.set(associationContentsTable, for: name)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func associationUpdate(name :String, updates :[MDSAssociation.Update], fromDocumentType :String,
+			toDocumentType :String) {
+		// Setup
+		let	fromDocumentTables = documentTables(for: fromDocumentType)
+		let	fromIDsByDocumentID =
+					DocumentTypeInfoTable.ids(for: Array(Set<String>(updates.map({ $0.item.fromDocumentID }))),
+							in: fromDocumentTables.infoTable)
+
+		let	toDocumentTables = documentTables(for: toDocumentType)
+		let	toIDsByDocumentID =
+					DocumentTypeInfoTable.ids(for: Array(Set<String>(updates.map({ $0.item.toDocumentID }))),
+							in: toDocumentTables.infoTable)
+
+		let	associationContentsTable = self.associationTablesByName.value(for: name)!
+
+		// Update Association
+		AssocationContentsTable.remove(
+				items:
+						updates
+								.filter({ $0.action == .remove })
+								.map({ (fromIDsByDocumentID[$0.item.fromDocumentID]!,
+										toIDsByDocumentID[$0.item.toDocumentID]!) }),
+				in: associationContentsTable)
+		AssocationContentsTable.add(
+				items:
+						updates
+								.filter({ $0.action == .add })
+								.map({ (fromIDsByDocumentID[$0.item.fromDocumentID]!,
+										toIDsByDocumentID[$0.item.toDocumentID]!) }),
+				in: associationContentsTable)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func associationGet(name :String, fromDocumentType :String, toDocumentType :String, startIndex :Int, count :Int?) ->
+			(totalCount :Int, associationItems :[MDSAssociation.Item]) {
+		// Setup
+		let	fromDocumentTables = documentTables(for: fromDocumentType)
+		let	toDocumentTables = documentTables(for: toDocumentType)
+		let	associationContentsTable = self.associationTablesByName.value(for: name)!
+
+		// Get all
+		let	items = AssocationContentsTable.get(from: associationContentsTable)
+		let	fromDocumentIDsByID =
+					DocumentTypeInfoTable.documentIDs(for: Array(Set<Int64>(items.map({ $0.fromID }))),
+							in: fromDocumentTables.infoTable)
+		let	toDocumentIDsByID =
+					DocumentTypeInfoTable.documentIDs(for: Array(Set<Int64>(items.map({ $0.toID }))),
+							in: toDocumentTables.infoTable)
+
+		return (items.count,
+				items.map({ MDSAssociation.Item(fromDocumentID: fromDocumentIDsByID[$0.fromID]!,
+						toDocumentID: toDocumentIDsByID[$0.toID]!) }))
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func associationGetCount(name :String, fromDocumentID :String, fromDocumentType :String) -> Int? {
+		// Setup
+		let	documentTables = self.documentTables(for: fromDocumentType)
+		let	associationContentsTable = self.associationTablesByName.value(for: name)!
+
+		// Get document id
+		guard let id = DocumentTypeInfoTable.id(for: fromDocumentID, in: documentTables.infoTable) else { return nil }
+
+		return AssocationContentsTable.count(fromID: id, in: associationContentsTable)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func associationGetCount(name :String, toDocumentID :String, toDocumentType :String) -> Int? {
+		// Setup
+		let	documentTables = self.documentTables(for: toDocumentType)
+		let	associationContentsTable = self.associationTablesByName.value(for: name)!
+		guard let id = DocumentTypeInfoTable.id(for: toDocumentID, in: documentTables.infoTable) else { return nil }
+
+		return AssocationContentsTable.count(toID: id, in: associationContentsTable)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func associationIterateDocumentInfos(name :String, fromDocumentID :String, fromDocumentType :String,
+			toDocumentType :String, startIndex :Int, count :Int?, proc :(_ documentInfo :DocumentInfo) -> Void) {
+		// Setup
+		let	fromDocumentTables = documentTables(for: fromDocumentType)
+		let	toDocumentTables = documentTables(for: toDocumentType)
+		let	associationContentsTable = self.associationTablesByName.value(for: name)!
+		let	fromID = DocumentTypeInfoTable.id(for: fromDocumentID, in: fromDocumentTables.infoTable)!
+
+		// Iterate rows
+		try! associationContentsTable.select(tableColumns: DocumentTypeInfoTable.tableColumns,
+				innerJoin:
+						SQLiteInnerJoin(associationContentsTable,
+								tableColumn: AssocationContentsTable.toIDTableColumn, to: toDocumentTables.infoTable,
+								otherTableColumn: DocumentTypeInfoTable.idTableColumn),
+				where: SQLiteWhere(tableColumn: AssocationContentsTable.fromIDTableColumn, value: fromID),
+				orderBy: SQLiteOrderBy(tableColumn: AssocationContentsTable.toIDTableColumn),
+				limit: SQLiteLimit(limit: count ?? -1, offset: startIndex))
+				{ proc(DocumentTypeInfoTable.documentInfo(for: $0)) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func associationIterateDocumentInfos(name :String, toDocumentID :String, toDocumentType :String,
+			fromDocumentType :String, startIndex :Int, count :Int?, proc :(_ documentInfo :DocumentInfo) -> Void) {
+		// Setup
+		let	fromDocumentTables = documentTables(for: fromDocumentType)
+		let	toDocumentTables = documentTables(for: toDocumentType)
+		let	associationContentsTable = self.associationTablesByName.value(for: name)!
+		let	toID = DocumentTypeInfoTable.id(for: toDocumentID, in: toDocumentTables.infoTable)!
+
+		// Iterate rows
+		try! associationContentsTable.select(tableColumns: DocumentTypeInfoTable.tableColumns,
+				innerJoin:
+						SQLiteInnerJoin(associationContentsTable,
+								tableColumn: AssocationContentsTable.fromIDTableColumn,
+								to: fromDocumentTables.infoTable,
+								otherTableColumn: DocumentTypeInfoTable.idTableColumn),
+				where: SQLiteWhere(tableColumn: AssocationContentsTable.toIDTableColumn, value: toID),
+				orderBy: SQLiteOrderBy(tableColumn: AssocationContentsTable.fromIDTableColumn),
+				limit: SQLiteLimit(limit: count ?? -1, offset: startIndex))
+				{ proc(DocumentTypeInfoTable.documentInfo(for: $0)) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func collectionRegister(documentType :String, name :String, version :Int, isUpToDate :Bool) -> Int {
 		// Get current info
 		let (storedVersion, storedLastRevision) = CollectionsTable.info(forName: name, in: self.collectionsTable)
 
 		// Setup table
 		let	collectionContentsTable =
-					CollectionContentsTable.create(in: self.database, name: name, version: self.databaseVersion!)
+					CollectionContentsTable.table(in: self.database, name: name, version: self.databaseVersion!)
 		self.collectionTablesByName.set(collectionContentsTable, for: name)
 
 		// Compose last revision
@@ -792,7 +1039,8 @@ class MDSSQLiteDatabaseManager {
 		// Check if need to update the master table
 		if updateMasterTable {
 			// New or updated
-			CollectionsTable.update(name: name, version: version, lastRevision: lastRevision, in: self.collectionsTable)
+			CollectionsTable.addOrUpdate(name: name, version: version, lastRevision: lastRevision,
+					in: self.collectionsTable)
 
 			// Update table
 			if storedLastRevision != nil { collectionContentsTable.drop() }
@@ -1041,7 +1289,7 @@ class MDSSQLiteDatabaseManager {
 
 		// Setup table
 		let	indexContentsTable =
-					IndexContentsTable.create(in: self.database, name: name, version: self.databaseVersion!)
+					IndexContentsTable.table(in: self.database, name: name, version: self.databaseVersion!)
 		self.indexTablesByName.set(indexContentsTable, for: name)
 
 		// Compose last revision
@@ -1064,7 +1312,7 @@ class MDSSQLiteDatabaseManager {
 		// Check if need to update the master table
 		if updateMasterTable {
 			// New or updated
-			IndexesTable.update(name: name, version: version, lastRevision: lastRevision, in: self.indexesTable)
+			IndexesTable.addOrUpdate(name: name, version: version, lastRevision: lastRevision, in: self.indexesTable)
 
 			// Update table
 			if storedLastRevision != nil { indexContentsTable.drop() }
