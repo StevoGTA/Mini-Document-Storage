@@ -96,7 +96,7 @@ extension MDSDocument.UpdateInfo {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSError
-enum MDSError : Error {
+public enum MDSError : Error {
 	case invalidRequest(error :String)
 	case responseWasEmpty
 	case didNotReceiveSizeInHeader
@@ -136,10 +136,6 @@ extension String {
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSHTTPServices
 class MDSHTTPServices {
-
-
-	// MARK: Properties
-//	static	private	let
 
 	// MARK: MDSHTTPEndpointRequest
 	class MDSHTTPEndpointRequest : HTTPEndpointRequest {
