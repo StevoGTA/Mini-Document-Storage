@@ -312,7 +312,7 @@ module.exports = class Associations {
 										cache.table.idTableColumn),
 								statementPerformer.where(association.table.fromIDTableColumn, fromID));
 
-			return [true, value, null];
+			return [true, value || 0, null];
 		} else if (documentTypeLastRevision) {
 			// Update
 			await internals.caches.updateCache(statementPerformer, cache);

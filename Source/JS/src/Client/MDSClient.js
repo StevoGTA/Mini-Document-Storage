@@ -247,7 +247,7 @@ class MDSClient {
 		let	url =
 					this.urlBase + '/v1/association/' + encodeURIComponent(documentStorageIDUse) + '/' +
 							encodeURIComponent(name) + '/' + action +
-							'?fromID=' + encodeURIComponent(fromDocument.documentID) +
+							'?fromID=' + encodeURIComponent(documentID) +
 							'&cacheName=' + encodeURIComponent(cacheName) +
 							'&cachedValueName=' + encodeURIComponent(cachedValueName);
 

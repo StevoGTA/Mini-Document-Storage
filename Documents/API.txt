@@ -114,7 +114,7 @@ Cache Register
 	//			"valueInfos" :[
 	//							{
 	//								"name" :String,
-	//								"valueKind" :"integer",
+	//								"valueType" :"integer",
 	//								"selector" :String,
 	//							},
 	//							...

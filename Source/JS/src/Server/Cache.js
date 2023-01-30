@@ -31,7 +31,7 @@ module.exports = class Cache {
 											// // Check value type
 											// if (valueInfo.valueType == 'integer')
 												// Integer
-												return new TableColumn.INT(valueInfo.name,
+												return new TableColumn.BIGINT(valueInfo.name,
 														TableColumn.options.nonNull | TableColumn.options.unsigned);
 											}));
 		this.table = statementPerformer.table(tableName, tableColumns);
