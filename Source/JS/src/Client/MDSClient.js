@@ -256,11 +256,19 @@ class MDSClient {
 
 		let	options = {headers: headers};
 
-		// Queue the call
-		let	response = await this.queue.add(() => fetch(url, options));
-		await processResponse(response);
+		// Loop until up-to-date
+		while (true) {
+			// Queue the call
+			let	response = await this.queue.add(() => fetch(url, options));
 
-		return parseInt(await response.text());
+			// Handle results
+			if (response.status != 409) {
+				// Process response
+				await processResponse(response);
+
+				return parseInt(await response.text());
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -334,21 +342,30 @@ class MDSClient {
 							encodeURIComponent(name);
 		let	options = {method: 'HEAD', headers: this.headers};
 
-		// Queue the call
-		let	response = await this.queue.add(() => fetch(url, options));
-		if (!response.ok)
-			// Some error, but no additional info
-			throw new Error('Unable to get count');
 
-		// Decode header
-		let	contentRange = response.headers.get('content-range');
-		let	contentRangeParts = (contentRange || '').split('/');
-		if (contentRangeParts.length == 2)
-			// Have count
-			return parseInt(contentRangeParts[1]);
-		else
-			// Don't have count
-			throw new Error('Unable to get count from response');
+		// Loop until up-to-date
+		while (true) {
+			// Queue the call
+			let	response = await this.queue.add(() => fetch(url, options));
+
+			// Handle results
+			if (response.status != 409) {
+				// Process response
+				if (!response.ok)
+					// Some error, but no additional info
+					throw new Error('Unable to get count');
+
+				// Decode header
+				let	contentRange = response.headers.get('content-range');
+				let	contentRangeParts = (contentRange || '').split('/');
+				if (contentRangeParts.length == 2)
+					// Have count
+					return parseInt(contentRangeParts[1]);
+				else
+					// Don't have count
+					throw new Error('Unable to get count from response');
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -384,14 +401,23 @@ class MDSClient {
 
 		let	options = {headers: this.headers};
 
-		// Queue the call
-		let	response = await this.queue.add(() => fetch(url, options));
-		await processResponse(response);
-	
-		// Decode
-		let	infos = await response.json();
 
-		return infos.map(info => documentCreationProc(info));
+		// Loop until up-to-date
+		while (true) {
+			// Queue the call
+			let	response = await this.queue.add(() => fetch(url, options));
+
+			// Handle results
+			if (response.status != 409) {
+				// Process response
+				await processResponse(response);
+			
+				// Decode
+				let	infos = await response.json();
+
+				return infos.map(info => documentCreationProc(info));
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -413,22 +439,31 @@ class MDSClient {
 						body: JSON.stringify(documents.map(document => document.createInfo())),
 					};
 
-		// Queue the call
-		let	response = await this.queue.add(() => fetch(url, options));
-		await processResponse(response);
 
-		// Decode info
-		let	results = await response.json();
+		// Loop until up-to-date
+		while (true) {
+			// Queue the call
+			let	response = await this.queue.add(() => fetch(url, options));
 
-		// Update documents
-		var	documentsByID = {};
-		for (let document of documents)
-			// Update info
-			documentsByID[document.documentID] = document;
-		
-		for (let result of results)
-			// Update document
-			documentsByID[result.documentID].updateFromCreate(result);
+			// Handle results
+			if (response.status != 409) {
+				// Process response
+				await processResponse(response);
+
+				// Decode info
+				let	results = await response.json();
+
+				// Update documents
+				var	documentsByID = {};
+				for (let document of documents)
+					// Update info
+					documentsByID[document.documentID] = document;
+				
+				for (let result of results)
+					// Update document
+					documentsByID[result.documentID].updateFromCreate(result);
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -741,11 +776,20 @@ class MDSClient {
 							encodeURIComponent(name) + '?fullInfo=0' + '?key=' + keysUse.join('&key=');
 		let	options = {headers: this.headers};
 
-		// Queue the call
-		let	response = await this.queue.add(() => fetch(url, options));
-		await processResponse(response);
-	
-		return await response.json();
+
+		// Loop until up-to-date
+		while (true) {
+			// Queue the call
+			let	response = await this.queue.add(() => fetch(url, options));
+
+			// Handle results
+			if (response.status != 409) {
+				// Process response
+				await processResponse(response);
+			
+				return await response.json();
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -759,14 +803,23 @@ class MDSClient {
 							encodeURIComponent(name) + '?fullInfo=1' + '?key=' + keysUse.join('&key=');
 		let	options = {headers: this.headers};
 
-		// Queue the call
-		let	response = await this.queue.add(() => fetch(url, options));
-		await processResponse(response);
-	
-		// Decode
-		let	results = await response.json();
 
-		return Object.fromEntries(Object.entries(results).map(([k, v]) => [k, documentCreationProc(v)]));
+		// Loop until up-to-date
+		while (true) {
+			// Queue the call
+			let	response = await this.queue.add(() => fetch(url, options));
+
+			// Handle results
+			if (response.status != 409) {
+				// Process response
+				await processResponse(response);
+			
+				// Decode
+				let	results = await response.json();
+
+				return Object.fromEntries(Object.entries(results).map(([k, v]) => [k, documentCreationProc(v)]));
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
