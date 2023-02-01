@@ -95,13 +95,17 @@ Association Get Value
 	//	=> documentStorageID (path)
 	//	=> name (path)
 	//	=> action (path)	Currently only "sum"
-	//	=> fromID (query)
+	//	=> fromID (query) (can specify multiple)
 	//	=> cacheName (query)
-	//	=> cachedValueName (query)
+	//	=> cachedValueName (query) (can specify multiple)
 	//	=> authorization (header) (optional)
 	//
 	//	<= HTTP Status 409 if cache is out of date => call endpoint again
-	//	<= value
+	//	<= json
+	//		{
+	//			cachedValueName1 :Int,
+	//			..
+	//		}
 
 Cache Register
 	PUT /v1/cache/:documentStorageID

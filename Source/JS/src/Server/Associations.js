@@ -256,20 +256,28 @@ module.exports = class Associations {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getValue(statementPerformer, name, action, fromDocumentID, cacheName, cachedValueName) {
+	async getValue(statementPerformer, name, action, fromDocumentIDs, cacheName, cachedValueNames) {
 		// Validate
 		if (!name)
 			return [null, null, 'Missing name'];
+
 		if (!action)
 			return [null, null, 'Missing action'];
 		if (action != 'sum')
 			return [null, null, 'Invalid action'];
-		if (!fromDocumentID)
-			return [null, null, 'Missing fromDocumentID'];
+
+		if (!fromDocumentIDs)
+			return [null, null, 'Missing fromDocumentIDs'];
+		if (!Array.isArray(fromDocumentIDs))
+			return [null, null, 'fromDocumentIDs is not an array'];
+
 		if (!cacheName)
 			return [null, null, 'Missing cacheName'];
-		if (!cachedValueName)
-			return [null, null, 'Missing cachedValueName'];
+
+		if (!cachedValueNames)
+			return [null, null, 'Missing cachedValueNames'];
+		if (!Array.isArray(cachedValueNames))
+			return [null, null, 'cachedValueNames is not an array.'];
 
 		// Setup
 		let	internals = this.internals;
@@ -286,9 +294,18 @@ module.exports = class Associations {
 			// Error
 			return [null, null, cacheError];
 		
-		if (!cache.tableColumn(cachedValueName))
-			// Unknown cache valueName
-			return [null, null, 'Unknown cache valueName: ' + cachedValueName];
+		// Get TableColumns
+		var	tableColumns = [];
+		for (let cachedValueName of cachedValueNames) {
+			// Get TableColumn
+			let	tableColumn = cache.tableColumn(cachedValueName);
+			if (!cache.tableColumn(cachedValueName))
+				// Unknown cache valueName
+				return [null, null, 'Unknown cache valueName: ' + cachedValueName];
+			
+			// Add to array
+			tableColumns.push(tableColumn);
+		}
 		
 		// Get document type last revision
 		let	documentTypeLastRevision = await internals.documents.getLastRevision(statementPerformer, cache.type);
@@ -296,23 +313,27 @@ module.exports = class Associations {
 		// Check if up to date
 		if (cache.lastDocumentRevision == documentTypeLastRevision) {
 			// Get from document info
-			let	[ids, idsError] =
+			let	[fromIDs, fromIDsError] =
 						await internals.documents.getIDsForDocumentIDs(statementPerformer, association.fromType,
-								[fromDocumentID]);
-			if (idsError)
-				return [null, null, idsError];
-			if (ids.length == 0)
-				return [null, null, 'Document ' + fromDocumentID + ' not found.'];
-			let	fromID = ids[fromDocumentID];
+								fromDocumentIDs);
+			if (fromIDsError)
+				return [null, null, fromIDsError];
+			if (fromIDs.length < fromDocumentIDs.length)
+				return [null, null, 'Not all documentIDs found.'];
 
 			// Perform
-			let	value =
-						await statementPerformer.sum(association.table, cache.tableColumn(cachedValueName),
+			var	mySQLResults =
+						await statementPerformer.sum(association.table, tableColumns,
 								statementPerformer.innerJoin(cache.table, association.table.toIDTableColumn,
 										cache.table.idTableColumn),
-								statementPerformer.where(association.table.fromIDTableColumn, fromID));
+								statementPerformer.where(association.table.fromIDTableColumn, fromIDs));
 
-			return [true, value || 0, null];
+			// Process results
+			for (let cachedValueName of cachedValueNames)
+				// Update if necessary
+				mySQLResults[cachedValueName] = mySQLResults[cachedValueName] || 0;
+				
+			return [true, mySQLResults, null];
 		} else if (documentTypeLastRevision) {
 			// Update
 			await internals.caches.updateCache(statementPerformer, cache);
