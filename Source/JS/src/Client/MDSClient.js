@@ -399,11 +399,19 @@ class MDSClient {
 
 		let	options = {headers: this.headers};
 
-		// Queue the call
-		let	response = await this.queue.add(() => fetch(url, options));
-		await processResponse(response);
+		// Loop until up-to-date
+		while (true) {
+			// Queue the call
+			let	response = await this.queue.add(() => fetch(url, options));
+
+			// Handle results
+			if (response.status != 409) {
+				// Process response
+				await processResponse(response);
 	
-		return await response.json();
+				return await response.json();
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -418,7 +426,6 @@ class MDSClient {
 		if (count) url += '&count=' + count;
 
 		let	options = {headers: this.headers};
-
 
 		// Loop until up-to-date
 		while (true) {
@@ -457,31 +464,22 @@ class MDSClient {
 						body: JSON.stringify(documents.map(document => document.createInfo())),
 					};
 
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
+		await processResponse(response);
 
-		// Loop until up-to-date
-		while (true) {
-			// Queue the call
-			let	response = await this.queue.add(() => fetch(url, options));
+		// Decode info
+		let	results = await response.json();
 
-			// Handle results
-			if (response.status != 409) {
-				// Process response
-				await processResponse(response);
-
-				// Decode info
-				let	results = await response.json();
-
-				// Update documents
-				var	documentsByID = {};
-				for (let document of documents)
-					// Update info
-					documentsByID[document.documentID] = document;
-				
-				for (let result of results)
-					// Update document
-					documentsByID[result.documentID].updateFromCreate(result);
-			}
-		}
+		// Update documents
+		var	documentsByID = {};
+		for (let document of documents)
+			// Update info
+			documentsByID[document.documentID] = document;
+		
+		for (let result of results)
+			// Update document
+			documentsByID[result.documentID].updateFromCreate(result);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
