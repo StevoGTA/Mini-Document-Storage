@@ -270,6 +270,8 @@ module.exports = class Associations {
 			return [null, null, 'Missing fromDocumentIDs'];
 		if (!Array.isArray(fromDocumentIDs))
 			return [null, null, 'fromDocumentIDs is not an array'];
+		if (fromDocumentIDs.length == 0)
+			return [null, null, 'Missing fromDocumentID']
 
 		if (!cacheName)
 			return [null, null, 'Missing cacheName'];
@@ -278,6 +280,8 @@ module.exports = class Associations {
 			return [null, null, 'Missing cachedValueNames'];
 		if (!Array.isArray(cachedValueNames))
 			return [null, null, 'cachedValueNames is not an array.'];
+		if (cachedValueNames.length == 0)
+			return [null, null, "Missing cachedValueName"];
 
 		// Setup
 		let	internals = this.internals;
@@ -299,7 +303,7 @@ module.exports = class Associations {
 		for (let cachedValueName of cachedValueNames) {
 			// Get TableColumn
 			let	tableColumn = cache.tableColumn(cachedValueName);
-			if (!cache.tableColumn(cachedValueName))
+			if (!tableColumn)
 				// Unknown cache valueName
 				return [null, null, 'Unknown cache valueName: ' + cachedValueName];
 			
@@ -313,13 +317,23 @@ module.exports = class Associations {
 		// Check if up to date
 		if (cache.lastDocumentRevision == documentTypeLastRevision) {
 			// Get from document info
-			let	[fromIDs, fromIDsError] =
+			let	[ids, idsError] =
 						await internals.documents.getIDsForDocumentIDs(statementPerformer, association.fromType,
 								fromDocumentIDs);
-			if (fromIDsError)
-				return [null, null, fromIDsError];
-			if (fromIDs.length < fromDocumentIDs.length)
-				return [null, null, 'Not all documentIDs found.'];
+			if (idsError)
+				return [null, null, idsError];
+
+			var	fromIDs = [];
+			for (let fromDocumentID of fromDocumentIDs) {
+				// Get id
+				let	id = ids[fromDocumentID];
+				if (id)
+					// Have id
+					fromIDs.push(id);
+				else
+					// fromDocumentID not found
+					return [null, null, 'Document ' + fromDocumentID + ' not found.'];
+			}
 
 			// Perform
 			var	mySQLResults =
@@ -332,7 +346,7 @@ module.exports = class Associations {
 			for (let cachedValueName of cachedValueNames)
 				// Update if necessary
 				mySQLResults[cachedValueName] = mySQLResults[cachedValueName] || 0;
-				
+
 			return [true, mySQLResults, null];
 		} else if (documentTypeLastRevision) {
 			// Update

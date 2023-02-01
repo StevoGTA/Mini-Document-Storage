@@ -133,7 +133,7 @@ module.exports = class DocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async associationGetValue(documentStorageID, name, action, fromDocumentID, cacheName, cachedValueName) {
+	async associationGetValue(documentStorageID, name, action, fromDocumentIDs, cacheName, cachedValueNames) {
 		// Setup
 		let	statementPerformer = this.statementPerformerProc();
 		statementPerformer.use(documentStorageID);
@@ -147,7 +147,7 @@ module.exports = class DocumentStorage {
 						await statementPerformer.batch(true,
 								() =>
 										{ return internals.associations.getValue(statementPerformer, name, action,
-												fromDocumentID, cacheName, cachedValueName); });
+												fromDocumentIDs, cacheName, cachedValueNames); });
 			
 			return results;
 		} catch (error) {
