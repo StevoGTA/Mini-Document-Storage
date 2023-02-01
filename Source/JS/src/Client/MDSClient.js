@@ -239,36 +239,54 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async associationGetValue(name, action, fromDocument, cacheName, cachedValueName, documentStorageID) {
+	async associationGetValue(name, action, fromDocuments, cacheName, cachedValueNames, documentStorageID) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
-		let	documentID = fromDocument.documentID.replace(/\+/g, '%2B');
+		let	fromDocumentIDs =
+					fromDocuments.map(document => encodeURIComponent(document.documentID).replace(/\+/g, '%2B'));
+		let	cachedValueNameQuery =
+					cachedValueNames.map(
+							cachedValueName => 'cachedValueName=' + encodeURIComponent(cachedValueName)).join('&');
 		
-		let	url =
+		let	urlBase =
 					this.urlBase + '/v1/association/' + encodeURIComponent(documentStorageIDUse) + '/' +
 							encodeURIComponent(name) + '/' + action +
-							'?fromID=' + encodeURIComponent(documentID) +
-							'&cacheName=' + encodeURIComponent(cacheName) +
-							'&cachedValueName=' + encodeURIComponent(cachedValueName);
+							'?cacheName=' + encodeURIComponent(cacheName) +
+							'&' + cachedValueNameQuery;
 
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
 		let	options = {headers: headers};
 
-		// Loop until up-to-date
-		while (true) {
-			// Queue the call
-			let	response = await this.queue.add(() => fetch(url, options));
+		// Max each call at 10 documentIDs
+		var	results = {};
+		for (let i = 0, length = fromDocumentIDs.length; i < length; i += 10) {
+			// Setup
+			let	documentIDsSlice = fromDocumentIDs.slice(i, i + 10);
+			let	url = urlBase + '&fromID=' + documentIDsSlice.join('&fromID=');
 
-			// Handle results
-			if (response.status != 409) {
-				// Process response
-				await processResponse(response);
+			// Loop until up-to-date
+			while (true) {
+				// Queue the call
+				let	response = await this.queue.add(() => fetch(url, options));
 
-				return parseInt(await response.text());
+				// Handle results
+				if (response.status != 409) {
+					// Process response
+					await processResponse(response);
+
+					// Merge results
+					let	sliceResults = await response.json();
+					for (let key of Object.keys(sliceResults))
+						// Merge entry
+						results[key] = (results[key] || 0) + sliceResults[key];
+					break;
+				}
 			}
 		}
+
+		return results;
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
