@@ -31,7 +31,8 @@ template <typename T> class TMDSBatchInfo {
 										mDocumentType(documentType), mDocumentID(documentID), mReference(reference),
 												mCreationUniversalTime(creationUniversalTime),
 												mModificationUniversalTime(modificationUniversalTime), mRemoved(false),
-												mValueProc(valueProc), mValueProcUserData(valueProcUserData)
+												mValueProc(valueProc), mValueProcUserData(valueProcUserData),
+												mLock(new CReadPreferringLock())
 										{}
 
 									// Instance methods
@@ -58,7 +59,7 @@ template <typename T> class TMDSBatchInfo {
 
 											// Check for value
 											bool	returnValue = false;
-											mLock.lockForReading();
+											mLock->lockForReading();
 											if (mRemovedProperties.contains(property))
 												// Property removed
 												returnValue = true;
@@ -67,7 +68,7 @@ template <typename T> class TMDSBatchInfo {
 												value = OV<SValue>(mUpdatedPropertyMap.getValue(property));
 												returnValue = true;
 											}
-											mLock.lockForWriting();
+											mLock->lockForWriting();
 											if (returnValue) return value;
 
 											// Call proc
@@ -76,7 +77,7 @@ template <typename T> class TMDSBatchInfo {
 					void			set(const CString& property, const OV<SValue>& value)
 										{
 											// Write
-											mLock.lockForWriting();
+											mLock->lockForWriting();
 											if (value.hasValue()) {
 												// Have value
 												mUpdatedPropertyMap.set(property, *value);
@@ -87,7 +88,7 @@ template <typename T> class TMDSBatchInfo {
 												mRemovedProperties += property;
 											}
 											mModificationUniversalTime = SUniversalTime::getCurrent();
-											mLock.unlockForWriting();
+											mLock->unlockForWriting();
 										}
 			const	CDictionary&	getUpdatedPropertyMap() const
 										{ return mUpdatedPropertyMap; }
@@ -113,13 +114,20 @@ template <typename T> class TMDSBatchInfo {
 						DocumentPropertyValueProc	mValueProc;
 						void*						mValueProcUserData;
 
-						CReadPreferringLock			mLock;
+						I<CReadPreferringLock>		mLock;
 		};
 
 	// Methods
 	public:
 								// Lifecycle methods
-								TMDSBatchInfo() {}
+								TMDSBatchInfo() :
+									mDocumentInfoMap(new TNDictionary<DocumentInfo<T> >()),
+											mDocumentInfoMapLock(new CReadPreferringLock())
+									{}
+								TMDSBatchInfo(const TMDSBatchInfo& other) :
+									mDocumentInfoMap(other.mDocumentInfoMap),
+											mDocumentInfoMapLock(other.mDocumentInfoMapLock)
+									{}
 
 								// Instance methods
 		DocumentInfo<T>&		addDocument(const CString& documentType, const CString& documentID,
@@ -133,10 +141,10 @@ template <typename T> class TMDSBatchInfo {
 																valueProc, userData);
 
 										// Add to map
-										mDocumentInfoMapLock.lockForWriting();
-										mDocumentInfoMap.set(documentID, documentInfo);
-										OR<DocumentInfo<T> >	documentInfoReference = mDocumentInfoMap[documentID];
-										mDocumentInfoMapLock.unlockForWriting();
+										mDocumentInfoMapLock->lockForWriting();
+										mDocumentInfoMap->set(documentID, documentInfo);
+										OR<DocumentInfo<T> >	documentInfoReference = (*mDocumentInfoMap)[documentID];
+										mDocumentInfoMapLock->unlockForWriting();
 
 										return *documentInfoReference;
 									}
@@ -147,9 +155,9 @@ template <typename T> class TMDSBatchInfo {
 		OR<DocumentInfo<T> >	getDocumentInfo(const CString& documentID) const
 									{
 										// Get document info
-										mDocumentInfoMapLock.lockForReading();
-										OR<DocumentInfo<T> >	documentInfo = mDocumentInfoMap[documentID];
-										mDocumentInfoMapLock.unlockForReading();
+										mDocumentInfoMapLock->lockForReading();
+										OR<DocumentInfo<T> >	documentInfo = (*mDocumentInfoMap)[documentID];
+										mDocumentInfoMapLock->unlockForReading();
 
 										return documentInfo;
 									}
@@ -157,8 +165,8 @@ template <typename T> class TMDSBatchInfo {
 									{
 										// Collate
 										TNDictionary<TNDictionary<DocumentInfo<T> > >	map;
-										mDocumentInfoMapLock.lockForReading();
-										for (TIteratorS<CDictionary::Item> iterator = mDocumentInfoMap.getIterator();
+										mDocumentInfoMapLock->lockForReading();
+										for (TIteratorS<CDictionary::Item> iterator = mDocumentInfoMap->getIterator();
 												iterator.hasValue(); iterator.advance()) {
 											// Setup
 											DocumentInfo<T>&	documentInfo =
@@ -178,7 +186,7 @@ template <typename T> class TMDSBatchInfo {
 												map.set(documentInfo.getDocumentType(), newDocumentInfosMap);
 											}
 										}
-										mDocumentInfoMapLock.unlockForReading();
+										mDocumentInfoMapLock->unlockForReading();
 
 										// Iterate all document types
 										for (TIteratorS<CDictionary::Item> iterator = map.getIterator();
@@ -203,6 +211,6 @@ template <typename T> class TMDSBatchInfo {
 
 	// Properties
 	private:
-		TNDictionary<DocumentInfo<T> >	mDocumentInfoMap;
-		CReadPreferringLock				mDocumentInfoMapLock;
+		I<TNDictionary<DocumentInfo<T> > >	mDocumentInfoMap;
+		I<CReadPreferringLock>				mDocumentInfoMapLock;
 };

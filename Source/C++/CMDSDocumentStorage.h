@@ -54,7 +54,7 @@ class CMDSDocumentStorage {
 			};
 
 			// Properties
-			CString	mName;
+			CString		mName;
 			ValueType	mValueType;
 			CString		mSelector;
 //			???			mProc;
