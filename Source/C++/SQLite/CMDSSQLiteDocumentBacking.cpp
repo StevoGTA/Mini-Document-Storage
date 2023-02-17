@@ -119,7 +119,7 @@ void CMDSSQLiteDocumentBacking::set(const CString& property, const OV<SValue>& v
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Update
-	if (value.hasInstance()) {
+	if (value.hasValue()) {
 		// Set
 		CDictionary	updatedPropertyMap;
 		updatedPropertyMap.set(property, *value);
