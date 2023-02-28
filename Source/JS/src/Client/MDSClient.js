@@ -152,11 +152,11 @@ class MDSClient {
 	async associationGetDocumentInfosFrom(name, document, startIndex, count, documentStorageID) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
-		let	documentID = document.documentID.replace(/\+/g, '%2B');
 		
 		var	url =
 					this.urlBase + '/v1/association/' + encodeURIComponent(documentStorageIDUse) + '/' +
-							encodeURIComponent(name) + '?fromID=' + encodeURIComponent(documentID) + '&fullInfo=0';
+							encodeURIComponent(name) + '?fromID=' + encodeURIComponent(document.documentID) +
+							'&fullInfo=0';
 		if (startIndex) url += '&startIndex=' + startIndex;
 		if (count) url += '&count=' + count;
 
@@ -173,11 +173,11 @@ class MDSClient {
 	async associationGetDocumentsFrom(name, document, startIndex, count, documentCreationProc, documentStorageID) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
-		let	documentID = document.documentID.replace(/\+/g, '%2B');
 		
 		var	url =
 					this.urlBase + '/v1/association/' + encodeURIComponent(documentStorageIDUse) + '/' +
-							encodeURIComponent(name) + '?fromID=' + encodeURIComponent(documentID) + '&fullInfo=1';
+							encodeURIComponent(name) + '?fromID=' + encodeURIComponent(document.documentID) +
+							'&fullInfo=1';
 		if (startIndex) url += '&startIndex=' + startIndex;
 		if (count) url += '&count=' + count;
 
@@ -197,11 +197,11 @@ class MDSClient {
 	async associationGetDocumentInfosTo(name, document, startIndex, count, documentStorageID) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
-		let	documentID = document.documentID.replace(/\+/g, '%2B');
 		
 		var	url =
 					this.urlBase + '/v1/association/' + encodeURIComponent(documentStorageIDUse) + '/' +
-							encodeURIComponent(name) + '?toID=' + encodeURIComponent(documentID) + '&fullInfo=0';
+							encodeURIComponent(name) + '?toID=' + encodeURIComponent(document.documentID) +
+							'&fullInfo=0';
 		if (startIndex) url += '&startIndex=' + startIndex;
 		if (count) url += '&count=' + count;
 
@@ -218,11 +218,11 @@ class MDSClient {
 	async associationGetDocumentsTo(name, document, startIndex, count, documentCreationProc, documentStorageID) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
-		let	documentID = document.documentID.replace(/\+/g, '%2B');
 		
 		var	url =
 					this.urlBase + '/v1/association/' + encodeURIComponent(documentStorageIDUse) + '/' +
-							encodeURIComponent(name) + '?toID=' + encodeURIComponent(documentID) + '&fullInfo=1';
+							encodeURIComponent(name) + '?toID=' + encodeURIComponent(document.documentID) +
+							'&fullInfo=1';
 		if (startIndex) url += '&startIndex=' + startIndex;
 		if (count) url += '&count=' + count;
 
@@ -242,8 +242,7 @@ class MDSClient {
 	async associationGetValue(name, action, fromDocuments, cacheName, cachedValueNames, documentStorageID) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
-		let	fromDocumentIDs =
-					fromDocuments.map(document => encodeURIComponent(document.documentID).replace(/\+/g, '%2B'));
+		let	fromDocumentIDs = fromDocuments.map(document => encodeURIComponent(document.documentID));
 		let	cachedValueNameQuery =
 					cachedValueNames.map(
 							cachedValueName => 'cachedValueName=' + encodeURIComponent(cachedValueName)).join('&');
@@ -538,13 +537,15 @@ class MDSClient {
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		let	urlBase =
 					this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
-							encodeURIComponent(documentType) + '?count=' + batchCount + '&sinceRevision=';
+							encodeURIComponent(documentType) +
+							(batchCount ? '?count=' + batchCount + '&sinceRevision=' : '?sinceRevision=');
 		let	options = {headers: this.headers};
 
 		var	sinceRevisionUse = sinceRevision;
 		var	totalDocumentCount = null;
 
 		// Loop until done
+		let	documents = [];
 		for (;;) {
 			// Retrieve next batch of documents
 			let	response = await this.queue.add(() => fetch(urlBase + sinceRevisionUse, options));
@@ -552,9 +553,10 @@ class MDSClient {
 		
 			// Decode
 			let	infos = await response.json();
-			let	documents = infos.map(info => documentCreationProc(info));
+			let	documentsBatch = infos.map(info => documentCreationProc(info));
+			documents = documents.concat(documentsBatch);
 
-			if (documents.length > 0) {
+			if (documentsBatch.length > 0) {
 				// More Documents
 				if (totalDocumentCount == null) {
 					// Retrieve total count from header
@@ -563,14 +565,16 @@ class MDSClient {
 					totalDocumentCount = (contentRangeParts.length == 2) ? parseInt(contentRangeParts[1]) : null;
 				}
 
-				// Call proc
-				proc(documents, totalDocumentCount);
+				// Check if have proc
+				if (proc)
+					// Call proc
+					proc(documentsBatch, totalDocumentCount);
 
 				// Update
-				documents.forEach(document => sinceRevisionUse = Math.max(sinceRevisionUse, document.revision));
+				documentsBatch.forEach(document => sinceRevisionUse = Math.max(sinceRevisionUse, document.revision));
 			} else
 				// Have all Documents
-				break;
+				return documents;
 		}
 	}
 
