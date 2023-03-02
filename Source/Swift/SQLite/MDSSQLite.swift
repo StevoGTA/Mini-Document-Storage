@@ -291,7 +291,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 					// Update collections and indexes
 					batchQueue.add(
 							MDSUpdateInfo<Int64>(document: document, revision: documentBacking.revision,
-									value: documentBacking.id, changedProperties: Set<String>(propertyMap.keys)))
+									id: documentBacking.id, changedProperties: Set<String>(propertyMap.keys)))
 				}
 
 				// Finalize batch queue
@@ -491,7 +491,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 			// Update stufs
 			let	updateInfos :[MDSUpdateInfo<Int64>] =
 						[MDSUpdateInfo<Int64>(document: document, revision: documentBacking.revision,
-								value: documentBacking.id, changedProperties: [property])]
+								id: documentBacking.id, changedProperties: [property])]
 			update(for: documentType, updateInfos: updateInfos)
 
 			// Call document changed procs
@@ -1131,7 +1131,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 						let	changedProperties =
 									Set<String>(documentUpdateInfo.updated.keys).union(documentUpdateInfo.removed)
 						updateBatchQueue.add(
-								MDSUpdateInfo<Int64>(document: document, revision: $0.revision, value: $0.id,
+								MDSUpdateInfo<Int64>(document: document, revision: $0.revision, id: $0.id,
 										changedProperties: changedProperties))
 					}
 				} else {
@@ -1634,8 +1634,8 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 			if (batchDocumentInfo == nil) || !batchDocumentInfo!.removed {
 				// Append info
 				updateInfos.append(
-						MDSUpdateInfo<Int64>(document: documentCreateProc($0.documentID, self),
-								revision: $0.revision, value: $0.id))
+						MDSUpdateInfo<Int64>(document: documentCreateProc($0.documentID, self), revision: $0.revision,
+								id: $0.id))
 			}
 		}
 

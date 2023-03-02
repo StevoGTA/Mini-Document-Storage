@@ -521,16 +521,16 @@ struct MDSUpdateInfo<T> {
 	// MARK: Properties
 	let	document :MDSDocument
 	let	revision :Int
-	let	value :T
+	let	id :T
 	let	changedProperties :Set<String>?
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	init(document :MDSDocument, revision :Int, value :T, changedProperties :Set<String>? = nil) {
+	init(document :MDSDocument, revision :Int, id :T, changedProperties :Set<String>? = nil) {
 		// Store
 		self.document = document
 		self.revision = revision
-		self.value = value
+		self.id = id
 		self.changedProperties = changedProperties
 	}
 }

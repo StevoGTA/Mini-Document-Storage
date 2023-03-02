@@ -81,7 +81,7 @@ class MDSSQLiteDatabaseManager {
 
 	private	typealias CollectionUpdateInfo = (includedIDs :[Int64], notIncludedIDs :[Int64], lastRevision :Int)
 	private	typealias IndexUpdateInfo =
-						(keysInfos :[(keys :[String], value :Int64)], removedIDs :[Int64], lastRevision :Int)
+						(keysInfos :[(keys :[String], id :Int64)], removedIDs :[Int64], lastRevision :Int)
 
 	// MARK: BatchInfo
 	private struct BatchInfo {
@@ -686,9 +686,9 @@ class MDSSQLiteDatabaseManager {
 		static func key(for resultsRow :SQLiteResultsRow) -> String { resultsRow.text(for: self.keyTableColumn)! }
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func update(keysInfos :[(keys :[String], value :Int64)], removedIDs :[Int64], in table :SQLiteTable) {
+		static func update(keysInfos :[(keys :[String], id :Int64)], removedIDs :[Int64], in table :SQLiteTable) {
 			// Setup
-			let	idsToRemove = removedIDs + keysInfos.map({ $0.value })
+			let	idsToRemove = removedIDs + keysInfos.map({ $0.id })
 
 			// Update tables
 			if !idsToRemove.isEmpty { table.deleteRows(self.idTableColumn, values: idsToRemove) }
@@ -696,7 +696,7 @@ class MDSSQLiteDatabaseManager {
 				// Insert this key
 				table.insertRow([
 									(tableColumn: self.keyTableColumn, value: $0),
-									(tableColumn: self.idTableColumn, value: keysInfo.value),
+									(tableColumn: self.idTableColumn, value: keysInfo.id),
 								])
 			} }
 		}
@@ -1340,8 +1340,7 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func indexUpdate(name :String, keysInfos :[(keys :[String], value :Int64)], removedIDs :[Int64],
-			lastRevision :Int) {
+	func indexUpdate(name :String, keysInfos :[(keys :[String], id :Int64)], removedIDs :[Int64], lastRevision :Int) {
 		// Check if in batch
 		if var batchInfo = self.batchInfoMap.value(for: Thread.current) {
 			// Update batch info

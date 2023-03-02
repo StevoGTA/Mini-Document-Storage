@@ -442,7 +442,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 
 				// Add update info
 				updateInfos.append(
-						MDSUpdateInfo<String>(document: document, revision: documentBacking.revision, value: documentID,
+						MDSUpdateInfo<String>(document: document, revision: documentBacking.revision, id: documentID,
 								changedProperties: Set<String>(propertyMap.keys)))
 			}
 
@@ -619,7 +619,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 			update(for: documentType,
 					updateInfos:
 							[MDSUpdateInfo<String>(document: document, revision: documentBacking.revision,
-									value: document.id, changedProperties: [property])])
+									id: document.id, changedProperties: [property])])
 
 			// Call document changed procs
 			self.documentChangedProcsMap.values(for: T.documentType)?.forEach() { $0(document, .updated) }
@@ -1002,7 +1002,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 														.union(batchInfoDocumentInfo.removedProperties ?? Set<String>())
 									updateInfos.append(
 											MDSUpdateInfo<String>(document: document,
-													revision: documentBacking.revision, value: documentID,
+													revision: documentBacking.revision, id: documentID,
 													changedProperties: changedProperties))
 
 									// Call document changed procs
@@ -1326,7 +1326,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 						// Note update infos
 						updateInfos.append(
 								MDSUpdateInfo<String>(document: document,
-										revision: documentBacking.revision, value: documentID,
+										revision: documentBacking.revision, id: documentID,
 										changedProperties: Set<String>(updated.keys).union(removed)))
 
 						// Call document changed procs
@@ -1455,7 +1455,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 		// Update
 		if let (keysInfos, _) = index.update(updateInfos) {
 			// Update storage
-			let	documentIDs = Set<String>(keysInfos.map({ $0.value }))
+			let	documentIDs = Set<String>(keysInfos.map({ $0.id }))
 			self.indexValuesMap.update(for: index.name) {
 				// Filter out document IDs included in update
 				var	updatedValueInfo = ($0 ?? [:]).filter({ !documentIDs.contains($0.value) })
@@ -1489,7 +1489,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 				documentCreateProc: documentCreateProc, proc: {
 					// Append MDSUpdateInfo
 					updateInfos.append(
-							MDSUpdateInfo<String>(document: $0!, revision: $1.revision, value: $1.documentID))
+							MDSUpdateInfo<String>(document: $0!, revision: $1.revision, id: $1.documentID))
 				})
 
 		return updateInfos
