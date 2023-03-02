@@ -382,7 +382,6 @@ Index Register
 	//			"name" :String,
 	//			"documentType" :String,
 	//			"relevantProperties" :[String]
-	//			"isUpToDate" :Int (0 or 1)
 	//			"keysSelector" :String,
 	//			"keysSelectorInfo" :{
 	//									"key" :Any,

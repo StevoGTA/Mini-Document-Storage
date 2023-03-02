@@ -754,8 +754,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async indexRegister(name, documentType, relevantProperties, isUpToDate, keysSelector, keysSelectorInfo,
-			documentStorageID) {
+	async indexRegister(name, documentType, relevantProperties, keysSelector, keysSelectorInfo, documentStorageID) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -774,7 +773,6 @@ class MDSClient {
 											'name': name,
 											'documentType': documentType,
 											'relevantProperties': relevantProperties,
-											'isUpToDate': isUpToDate,
 											'keysSelector': keysSelector,
 											'keysSelectorInfo': keysSelectorInfo,
 										}),

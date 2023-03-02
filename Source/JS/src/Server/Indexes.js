@@ -57,10 +57,6 @@ module.exports = class Indexes {
 		if (!relevantProperties)
 			return 'Missing relevantProperties';
 
-		if (!('isUpToDate' in info))
-			return 'Missing isUpToDate';
-		let	isUpToDate = info.isUpToDate;
-
 		let	keysSelector = info.keysSelector;
 		if (!keysSelector)
 			return 'Missing keysSelector';
@@ -93,9 +89,7 @@ module.exports = class Indexes {
 							statementPerformer.where(this.indexesTable.nameTableColumn, name));
 		if (results.length == 0) {
 			// Add
-			if (!isUpToDate)
-				// Reset last document revision
-				lastDocumentRevision = 0;
+			lastDocumentRevision = 0;
 			
 			// Create index
 			let	index =
@@ -117,7 +111,7 @@ module.exports = class Indexes {
 			index.queueCreate(statementPerformer);
 		} else if (keysSelector != results[0].keysSelector) {
 			// Update to new keysSelector
-			lastDocumentRevision = isUpToDate ? results[0].lastDocumentRevision : 0;
+			lastDocumentRevision = 0;
 			let	index =
 						new Index(statementPerformer, name, documentType, relevantProperties,
 								this.keysSelectorInfo[keysSelector], keysSelectorInfo, lastDocumentRevision);
@@ -135,30 +129,21 @@ module.exports = class Indexes {
 			index.queueTruncate(statementPerformer);
 		} else if (!util.isDeepStrictEqual(keysSelectorInfo, JSON.parse(results[0].keysSelectorInfo))) {
 			// keysSelectorInfo has changed
-			if (isUpToDate)
-				// Updated info needed for future document changes
-				statementPerformer.queueUpdate(this.indexesTable,
-						[{tableColumn: this.indexesTable.keysSelectorInfoTableColumn,
-								value: JSON.stringify(keysSelectorInfo)}],
-						statementPerformer.where(this.indexesTable.nameTableColumn, name));
-			else {
-				// Need to rebuild this index
-				let	index =
-						new Index(statementPerformer, name, documentType, relevantProperties,
-								this.keysSelectorInfo[keysSelector], keysSelectorInfo, 0);
+			let	index =
+					new Index(statementPerformer, name, documentType, relevantProperties,
+							this.keysSelectorInfo[keysSelector], keysSelectorInfo, 0);
 
-				statementPerformer.queueUpdate(this.indexesTable,
-						[
-							{tableColumn: this.indexesTable.relevantPropertiesTableColumn,
-									value: relevantProperties.toString()},
-							{tableColumn: this.indexesTable.keysSelectorTableColumn, value: keysSelector},
-							{tableColumn: this.indexesTable.keysSelectorInfoTableColumn,
-									value: JSON.stringify(keysSelectorInfo)},
-							{tableColumn: this.indexesTable.lastDocumentRevisionTableColumn, value: 0},
-						],
-						statementPerformer.where(this.indexesTable.nameTableColumn, name));
-				index.queueTruncate(statementPerformer);
-			}
+			statementPerformer.queueUpdate(this.indexesTable,
+					[
+						{tableColumn: this.indexesTable.relevantPropertiesTableColumn,
+								value: relevantProperties.toString()},
+						{tableColumn: this.indexesTable.keysSelectorTableColumn, value: keysSelector},
+						{tableColumn: this.indexesTable.keysSelectorInfoTableColumn,
+								value: JSON.stringify(keysSelectorInfo)},
+						{tableColumn: this.indexesTable.lastDocumentRevisionTableColumn, value: 0},
+					],
+					statementPerformer.where(this.indexesTable.nameTableColumn, name));
+			index.queueTruncate(statementPerformer);
 		}
 	}
 

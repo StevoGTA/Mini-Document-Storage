@@ -720,7 +720,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func indexRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+	public func indexRegister(name :String, documentType :String, relevantProperties :[String],
 			keysInfo :[String : Any], keysSelector :String, keysProcVersion :Int,
 			keysProc :@escaping MDSDocument.KeysProc) throws {
 		// Validate
@@ -736,8 +736,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 
 		// Register index
 		let	lastRevision =
-					self.databaseManager.indexRegister(documentType: documentType, name: name, version: keysProcVersion,
-							isUpToDate: isUpToDate)
+					self.databaseManager.indexRegister(documentType: documentType, name: name, version: keysProcVersion)
 
 		// Create or re-create index
 		let	index =
@@ -748,11 +747,8 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 		self.indexesByNameMap.set(index, for: name)
 		self.indexesByDocumentTypeMap.append(index, for: documentType)
 
-		// Check if is up to date
-		if !isUpToDate {
-			// Bring up to date
-			indexUpdate(index, updateInfos: self.updateInfos(for: documentType, sinceRevision: 0))
-		}
+		// Bring up to date
+		indexUpdate(index, updateInfos: self.updateInfos(for: documentType, sinceRevision: lastRevision))
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

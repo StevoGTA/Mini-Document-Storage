@@ -1283,7 +1283,7 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func indexRegister(documentType :String, name :String, version :Int, isUpToDate :Bool) -> Int {
+	func indexRegister(documentType :String, name :String, version :Int) -> Int {
 		// Get current info
 		let (storedVersion, storedLastRevision) = IndexesTable.info(forName: name, in: self.indexesTable)
 
@@ -1297,7 +1297,7 @@ class MDSSQLiteDatabaseManager {
 		let	updateMasterTable :Bool
 		if storedLastRevision == nil {
 			// New
-			lastRevision = isUpToDate ? (self.documentLastRevisionMap.value(for: documentType) ?? 0) : 0
+			lastRevision = 0
 			updateMasterTable = true
 		} else if version != storedVersion {
 			// Updated version

@@ -766,15 +766,14 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func indexRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+	public func indexRegister(name :String, documentType :String, relevantProperties :[String],
 			keysInfo :[String : Any], keysSelector :String, keysProcVersion :Int,
 			keysProc :@escaping MDSDocument.KeysProc) {
 		// Register index
 		let	error =
 					self.httpEndpointClient.indexRegister(documentStorageID: self.documentStorageID, name: name,
 							documentType: documentType, relevantProperties: relevantProperties,
-							isUpToDate: isUpToDate, keysSelector: keysSelector, keysSelectorInfo: keysInfo,
-							authorization: self.authorization)
+							keysSelector: keysSelector, keysSelectorInfo: keysInfo, authorization: self.authorization)
 		guard error == nil else {
 			// Store error
 			self.recentErrors.append(error!)

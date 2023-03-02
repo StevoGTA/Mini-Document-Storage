@@ -873,7 +873,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func indexRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+	public func indexRegister(name :String, documentType :String, relevantProperties :[String],
 			keysInfo :[String : Any], keysSelector :String, keysProcVersion :Int,
 			keysProc :@escaping MDSDocument.KeysProc) throws {
 		// Validate
@@ -890,18 +890,14 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 		// Create or re-create index
 		let	index =
 					MDSIndex(name: name, documentType: documentType, relevantProperties: relevantProperties,
-							lastRevision: isUpToDate ? (self.documentLastRevisionMap.value(for: documentType) ?? 0) : 0,
-							keysProc: keysProc, keysInfo: keysInfo)
+							lastRevision: 0, keysProc: keysProc, keysInfo: keysInfo)
 
 		// Add to maps
 		self.indexesByNameMap.set(index, for: name)
 		self.indexesByDocumentTypeMap.append(index, for: documentType)
 
-		// Check if is up to date
-		if !isUpToDate {
-			// Bring up to date
-			indexUpdate(index, updateInfos: self.updateInfos(for: documentType, sinceRevision: 0))
-		}
+		// Bring up to date
+		indexUpdate(index, updateInfos: self.updateInfos(for: documentType, sinceRevision: 0))
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

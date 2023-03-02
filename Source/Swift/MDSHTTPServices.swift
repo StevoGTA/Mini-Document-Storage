@@ -1359,8 +1359,7 @@ class MDSHTTPServices {
 	// MARK: - Index Register
 	typealias IndexRegisterEndpointInfo =
 				(documentStorageID :String, name :String?, documentType :String?, relevantProperties :[String]?,
-						isUpToDate :Bool, keysSelector :String?, keysSelectorInfo: [String : Any]?,
-						authorization :String?)
+						keysSelector :String?, keysSelectorInfo: [String : Any]?, authorization :String?)
 	static	let	indexRegisterEndpoint =
 						JSONHTTPEndpoint<[String : Any], IndexRegisterEndpointInfo>(method: .put,
 								path: "/v1/index/:documentStorageID")
@@ -1369,14 +1368,13 @@ class MDSHTTPServices {
 									let	documentStorageID = performInfo.pathComponents[2]
 
 									return (documentStorageID, info["name"] as? String, info["documentType"] as? String,
-											info["relevantProperties"] as? [String],
-											((info["isUpToDate"] as? Int) ?? 0) == 1, info["keysSelector"] as? String,
+											info["relevantProperties"] as? [String], info["keysSelector"] as? String,
 											info["keysSelectorInfo"] as? [String : Any],
 											performInfo.headers["Authorization"])
 								}
 	static func httpEndpointRequestForIndexRegister(documentStorageID :String, name :String, documentType :String,
-			relevantProperties :[String] = [], isUpToDate :Bool = false, keysSelector :String,
-			keysSelectorInfo :[String : Any] = [:], authorization :String? = nil) -> MDSSuccessHTTPEndpointRequest {
+			relevantProperties :[String] = [], keysSelector :String, keysSelectorInfo :[String : Any] = [:],
+			authorization :String? = nil) -> MDSSuccessHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.transformedForPath
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
@@ -1386,7 +1384,6 @@ class MDSHTTPServices {
 							"name": name,
 							"documentType": documentType,
 							"relevantProperties": relevantProperties,
-							"isUpToDate": isUpToDate ? 1 : 0,
 							"keysSelector": keysSelector,
 							"keysSelectorInfo": keysSelectorInfo,
 						  ])

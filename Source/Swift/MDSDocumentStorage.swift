@@ -126,9 +126,8 @@ public protocol MDSDocumentStorage : AnyObject {
 
 	func documentRemove(_ document :MDSDocument)
 
-	func indexRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
-			keysInfo :[String : Any], keysSelector :String, keysProcVersion :Int,
-			keysProc :@escaping MDSDocument.KeysProc) throws
+	func indexRegister(name :String, documentType :String, relevantProperties :[String], keysInfo :[String : Any],
+			keysSelector :String, keysProcVersion :Int, keysProc :@escaping MDSDocument.KeysProc) throws
 	func indexIterate(name :String, documentType :String, keys :[String],
 			proc :(_ key :String, _ document :MDSDocument) -> Void) throws
 
@@ -425,23 +424,23 @@ extension MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func indexRegister(name :String, documentType :String, relevantProperties :[String],
-			isUpToDate :Bool = false, keysInfo :[String : Any] = [:], keysProc :@escaping MDSDocument.KeysProc) throws {
+			keysInfo :[String : Any] = [:], keysProc :@escaping MDSDocument.KeysProc) throws {
 		// Register index
 		try indexRegister(name: name, documentType: documentType, relevantProperties: relevantProperties,
-				isUpToDate: isUpToDate, keysInfo: keysInfo, keysSelector: "", keysProcVersion: 1, keysProc: keysProc)
+				keysInfo: keysInfo, keysSelector: "", keysProcVersion: 1, keysProc: keysProc)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func indexRegister<T : MDSDocument>(name :String, relevantProperties :[String],
-			isUpToDate :Bool = false, keysInfo :[String : Any] = [:], keysSelector :String = "",
-			keysProcVersion :Int = 1, keysProc :@escaping (_ document :T, _ info :[String : Any]) -> [String]) throws {
+			keysInfo :[String : Any] = [:], keysSelector :String = "", keysProcVersion :Int = 1,
+			keysProc :@escaping (_ document :T, _ info :[String : Any]) -> [String]) throws {
 		// Register creation proc
 		registerDocumentCreateProc() { T(id: $0, documentStorage: $1) }
 
 		// Register index
 		try indexRegister(name: name, documentType: T.documentType, relevantProperties: relevantProperties,
-				isUpToDate: isUpToDate, keysInfo: keysInfo, keysSelector: keysSelector,
-				keysProcVersion: keysProcVersion, keysProc: { keysProc($0 as! T, $1) })
+				keysInfo: keysInfo, keysSelector: keysSelector, keysProcVersion: keysProcVersion,
+				keysProc: { keysProc($0 as! T, $1) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

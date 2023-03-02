@@ -769,8 +769,7 @@ extension HTTPServer {
 			do {
 				// Register index
 				try documentStorage!.indexRegister(name: name, documentType: documentType,
-						relevantProperties: relevantProperties, isUpToDate: info.isUpToDate, keysInfo: keysSelectorInfo,
-						keysProc: keysProc)
+						relevantProperties: relevantProperties, keysInfo: keysSelectorInfo, keysProc: keysProc)
 
 				return (.ok, nil, nil)
 			} catch {
