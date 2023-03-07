@@ -289,6 +289,59 @@ public class MDSRemoteStorageCache {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func info(for documentType :String, documentIDs :[String]) ->
+			(documentFullInfos :[MDSDocument.FullInfo], documentIDsNotResolved :[String]) {
+		// Setup
+		let	sqliteTable = self.sqliteTable(for: documentType)
+		let	idTableColumn = sqliteTable.idTableColumn
+		let	revisionTableColumn = sqliteTable.revisionTableColumn
+		let	activeTableColumn = sqliteTable.activeTableColumn
+		let	creationDateTableColumn = sqliteTable.creationDateTableColumn
+		let	modificationDateTableColumn = sqliteTable.modificationDateTableColumn
+		let	jsonTableColumn = sqliteTable.jsonTableColumn
+		let	attachmentInfoTableColumn = sqliteTable.attachmentInfoTableColumn
+
+		var	documentFullInfos = [MDSDocument.FullInfo]()
+		var	documentIDsNotResolved = Set<String>(documentIDs)
+		try! sqliteTable.select(where: SQLiteWhere(tableColumn: sqliteTable.idTableColumn, values: documentIDs)) {
+			// Retrieve info for this record
+			let	id = $0.text(for: idTableColumn)!
+			let	revision = Int($0.integer(for: revisionTableColumn)!)
+			let	active = Int($0.integer(for: activeTableColumn)!)
+			let	creationDate = Date(timeIntervalSince1970: $0.real(for: creationDateTableColumn)!)
+			let	modificationDate = Date(timeIntervalSince1970: $0.real(for: modificationDateTableColumn)!)
+			let	propertyMap =
+						try! JSONSerialization.jsonObject(with: $0.blob(for: jsonTableColumn)!, options: [])
+								as! [String : Any]
+
+			let	attachmentInfoMap :MDSDocument.AttachmentInfoMap
+			if let data = $0.blob(for: attachmentInfoTableColumn) {
+				// Have info
+				attachmentInfoMap =
+						(try! JSONSerialization.jsonObject(with: data, options: [])
+										as! [String : [String : Any]])
+								.mapValues({
+										MDSDocument.AttachmentInfo(id: ($0["id"] as? String) ?? "None",
+												revision: $0["revision"] as! Int,
+												info: $0["info"] as! [String : Any])
+								})
+			} else {
+				// Don't have info
+				attachmentInfoMap = [:]
+			}
+
+			// Add
+			documentFullInfos.append(
+					MDSDocument.FullInfo(documentID: id, revision: revision, active: active == 1,
+							creationDate: creationDate, modificationDate: modificationDate,
+							propertyMap: propertyMap, attachmentInfoMap: attachmentInfoMap))
+			documentIDsNotResolved.remove(id)
+		}
+
+		return (documentFullInfos, Array(documentIDsNotResolved))
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func add(_ documentFullInfos :[MDSDocument.FullInfo], for documentType :String) {
 		// Setup
 		let	sqliteTable = self.sqliteTable(for: documentType)

@@ -1134,8 +1134,16 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 			documentIDsToRetrieve = documentIDs
 		}
 
+		// Retrieve from disk cache
+		let	(documentFullInfos, documentIDsNotResolved) =
+					self.remoteStorageCache.info(for: documentType, documentIDs: documentIDsToRetrieve)
+
+		// Update document backing cache
+		updateDocumentBackingCache(for: documentType, with: documentFullInfos).forEach()
+				{ proc(creationProc($0.documentID, self)) }
+
 		// Retrieve documents and call proc
-		retrieveDocuments(for: documentIDsToRetrieve, documentType: documentType)
+		retrieveDocuments(for: documentIDsNotResolved, documentType: documentType)
 				{ proc(creationProc($0.documentID, self)) }
 	}
 
