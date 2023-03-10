@@ -293,7 +293,7 @@ public class MDSEphemeral : MDSDocumentStorageServerHandler {
 			updateIndexes(for: documentType, updateInfos: updateInfos)
 
 			// Call document changed procs
-			self.documentChangedProcsMap.values(for: T.documentType)?.forEach() { $0(document, .updated) }
+			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .updated) }
 		}
 	}
 
