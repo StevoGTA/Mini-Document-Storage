@@ -26,6 +26,7 @@ class CMDSEphemeral : public CMDSDocumentStorage {
 
 				I<CMDSDocument>			newDocument(const CMDSDocument::InfoForNew& infoForNew);
 
+				OV<UInt32>				getDocumentCount(const CMDSDocument::Info& documentInfo) const;
 				OI<CMDSDocument>		getDocument(const CString& documentID, const CMDSDocument::Info& documentInfo)
 												const;
 
