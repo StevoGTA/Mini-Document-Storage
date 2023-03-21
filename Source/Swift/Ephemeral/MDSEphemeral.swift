@@ -119,7 +119,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	private	let	cachesByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSCache>()
 	private	let	cacheValuesMap =
 						LockingDictionary</* Cache Name */ String,
-								[/* Document ID */ String : [/* Value Name */ String : /* Value */ MDSValue.Value?]]>()
+								[/* Document ID */ String : [/* Value Name */ String : /* Value */ Any]]>()
 
 	private	let	collectionsByNameMap = LockingDictionary</* Name */ String, MDSCollection>()
 	private	let	collectionsByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSCollection>()
@@ -219,8 +219,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Iterate values
 		let	associationItems = associationItems(for: name)
-		let	documentCreateProc =
-				self.documentCreateProcMap.value(for: toDocumentType) ?? { MDSDocument(id: $0, documentStorage: $1) }
+		let	documentCreateProc = self.documentCreateProc(for: toDocumentType)
 		associationItems
 				.filter({ $0.fromDocumentID == fromDocumentID })
 				.forEach() { proc(documentCreateProc($0.toDocumentID, self)) }
@@ -242,8 +241,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Iterate values
 		let	associationItems = associationItems(for: name)
-		let	documentCreateProc =
-				self.documentCreateProcMap.value(for: fromDocumentType) ?? { MDSDocument(id: $0, documentStorage: $1) }
+		let	documentCreateProc = self.documentCreateProc(for: fromDocumentType)
 		associationItems
 				.filter({ $0.toDocumentID == toDocumentID })
 				.forEach() { proc(documentCreateProc($0.fromDocumentID, self)) }
@@ -275,9 +273,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 				.forEach() {
 					// Get value and sum
 					let	valueInfos = cacheValueInfos[$0.toDocumentID]!
-					switch valueInfos[cachedValueName]!! {
-						case .integer(let value):	sum += value
-					}
+					sum += (valueInfos[cachedValueName] as? Int) ?? 0
 				}
 
 		return sum
@@ -285,7 +281,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func cacheRegister(name :String, documentType :String, relevantProperties :[String], version :Int,
-			valueInfos :[(name :String, valueType :MDSValue.Type_, selector :String, proc :MDSDocument.ValueProc)])
+			valueInfos :[(name :String, valueType :MDSValueType, selector :String, proc :MDSDocument.ValueProc)])
 			throws {
 		// Validate
 		guard self.documentIDsByTypeMap[documentType] != nil else {
@@ -363,8 +359,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Setup
-		let	documentCreateProc =
-				self.documentCreateProcMap.value(for: documentType) ?? { MDSDocument(id: $0, documentStorage: $1) }
+		let	documentCreateProc = self.documentCreateProc(for: documentType)
 
 		// Iterate
 		documentIDs.forEach() { proc(documentCreateProc($0, self)) }
@@ -393,7 +388,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			}
 		} else {
 			// Setup
-			let	documentChangedProcs = self.documentChangedProcsMap.values(for: documentType)
+			let	documentChangedProcs = self.documentChangedProcs(for: documentType)
 			var	updateInfos = [MDSUpdateInfo<String>]()
 
 			// Iterate document create infos
@@ -613,7 +608,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 									id: document.id, changedProperties: [property])])
 
 			// Call document changed procs
-			self.documentChangedProcsMap.values(for: T.documentType)?.forEach() { $0(document, .updated) }
+			self.documentChangedProcs(for: T.documentType)?.forEach() { $0(document, .updated) }
 		}
 	}
 
@@ -859,7 +854,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			note(removedDocumentIDs: Set<String>([document.id]))
 
 			// Call document changed procs
-			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .removed) }
+			self.documentChangedProcs(for: documentType)?.forEach() { $0(document, .removed) }
 		}
 	}
 
@@ -900,8 +895,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Setup
-		let	documentCreateProc =
-				self.documentCreateProcMap.value(for: documentType) ?? { MDSDocument(id: $0, documentStorage: $1) }
+		let	documentCreateProc = self.documentCreateProc(for: documentType)
 
 		// Iterate keys
 		try keys.forEach() {
@@ -953,7 +947,8 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			// Iterate all document changes
 			batchInfo.documentIterateChanges() { documentType, batchInfoDocumentInfosMap in
 				// Setup
-				let	documentCreateProc = self.documentCreateProcMap.value(for: documentType)
+				let	documentCreateProc = self.documentCreateProc(for: documentType)
+				let	documentChangedProcs = self.documentChangedProcs(for: documentType)
 
 				var	updateInfos = [MDSUpdateInfo<String>]()
 				var	removedDocumentIDs = Set<String>()
@@ -982,10 +977,10 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 											updatedContent: $0.content)
 								}
 
-								// Check if have create proc
-								if documentCreateProc != nil {
+								// Check if have changed procs
+								if documentChangedProcs != nil {
 									// Create document
-									let	document = documentCreateProc!(documentID, self)
+									let	document = documentCreateProc(documentID, self)
 
 									// Note update info
 									let	changedProperties =
@@ -997,8 +992,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 													changedProperties: changedProperties))
 
 									// Call document changed procs
-									self.documentChangedProcsMap.values(for: documentType)?.forEach()
-										{ $0(document, changeKind) }
+									documentChangedProcs!.forEach() { $0(document, changeKind) }
 								}
 							}
 
@@ -1044,14 +1038,14 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 							// Update maps
 							self.documentBackingByIDMap[documentID]?.active = false
 
-							// Check if we have creation proc
-							if let documentCreateProc = self.documentCreateProcMap.value(for: documentType) {
+							// Check if have changed procs
+							if let documentChangedProcs = self.documentChangedProcs(for: documentType) {
 								// Create document
+								let	documentCreateProc = self.documentCreateProc(for: documentType)
 								let	document = documentCreateProc(documentID, self)
 
 								// Call document changed procs
-								self.documentChangedProcsMap.values(for: documentType)?.forEach()
-									{ $0(document, .removed) }
+								documentChangedProcs.forEach() { $0(document, .removed) }
 							}
 						}
 					}
@@ -1246,7 +1240,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> MDSValue.Value {
+	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> Int? {
 		// Check for batch
 		let	value :Any?
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
@@ -1261,7 +1255,26 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			value = self.documentMapsLock.read() { self.documentBackingByIDMap[document.id]?.propertyMap[property] }
 		}
 
-		return MDSValue.Value.integer(value: (value as? Int) ?? 0)
+		return value as? Int
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentStringValue(for documentType :String, document :MDSDocument, property :String) -> String? {
+		// Check for batch
+		let	value :Any?
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
+				let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
+			// In batch
+			value = batchInfoDocumentInfo.value(for: property)
+		} else if let propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: document.id) {
+			// Being created
+			value = propertyMap[property]
+		} else {
+			// "Idle"
+			value = self.documentMapsLock.read() { self.documentBackingByIDMap[document.id]?.propertyMap[property] }
+		}
+
+		return value as? String
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1273,8 +1286,8 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Setup
-		let	documentCreateProc = self.documentCreateProcMap.value(for: documentType)
-		let	documentChangedProcs = self.documentChangedProcsMap.values(for: documentType)
+		let	documentCreateProc = self.documentCreateProc(for: documentType)
+		let	documentChangedProcs = self.documentChangedProcs(for: documentType)
 		var	updateInfos = [MDSUpdateInfo<String>]()
 		var	removedDocumentIDs = Set<String>()
 		var	documentFullInfos = [MDSDocument.FullInfo]()
@@ -1297,10 +1310,10 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 					documentBacking.update(revision: nextRevision(for: documentType), updatedPropertyMap: updated,
 							removedProperties: removed)
 
-					// Check if we have creation proc
-					if documentCreateProc != nil {
+					// Check if have changed procs
+					if documentChangedProcs != nil {
 						// Create document
-						let	document = documentCreateProc!(documentID, self)
+						let	document = documentCreateProc(documentID, self)
 
 						// Note update infos
 						updateInfos.append(
@@ -1309,7 +1322,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 										changedProperties: Set<String>(updated.keys).union(removed)))
 
 						// Call document changed procs
-						documentChangedProcs?.forEach() { $0(document, .created) }
+						documentChangedProcs!.forEach() { $0(document, .created) }
 					}
 
 					// Add full info
@@ -1327,9 +1340,10 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 					documentBacking.active = false
 
 					// Check if have document changed procs and can create document
-					if documentChangedProcs != nil, let document = documentCreateProc?(documentID, self) {
+					if documentChangedProcs != nil {
 						// Call document changed procs
-						documentChangedProcs?.forEach() { $0(document, .removed) }
+						let document = documentCreateProc(documentID, self)
+						documentChangedProcs!.forEach() { $0(document, .removed) }
 					}
 
 					// Add full info
@@ -1460,8 +1474,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	private func updateInfos(for documentType :String, sinceRevision: Int) -> [MDSUpdateInfo<String>] {
 		// Collect update infos
-		let	documentCreateProc =
-				self.documentCreateProcMap.value(for: documentType) ?? { MDSDocument(id: $0, documentStorage: $1) }
+		let	documentCreateProc = self.documentCreateProc(for: documentType)
 		var	updateInfos = [MDSUpdateInfo<String>]()
 		try! documentIterate(for: documentType, sinceRevision: 0, count: nil, activeOnly: false,
 				documentCreateProc: documentCreateProc, proc: {

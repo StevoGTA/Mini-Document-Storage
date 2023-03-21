@@ -254,6 +254,8 @@ protocol MDSHTTPServicesHandler : MDSDocumentStorageCore, MDSDocumentStorage {
 			[MDSDocument.RevisionInfo]
 	func collectionGetDocumentFullInfos(name :String, startIndex :Int, count :Int?) throws -> [MDSDocument.FullInfo]
 
+	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> Int?
+	func documentStringValue(for documentType :String, document :MDSDocument, property :String) -> String?
 	func documentUpdate(for documentType :String, documentUpdateInfos :[MDSDocument.UpdateInfo]) throws ->
 			[MDSDocument.FullInfo]
 
@@ -924,7 +926,7 @@ class MDSHTTPServices {
 	}
 
 	// MARK: - Cache Register
-	typealias CacheRegisterEndpointValueInfo = (name :String, valueType :MDSValue.Type_, selector :String)
+	typealias CacheRegisterEndpointValueInfo = (name :String, valueType :MDSValueType, selector :String)
 	typealias CacheRegisterEndpointInfo =
 				(documentStorageID :String, name :String?, documentType :String?, relevantProperties :[String]?,
 						valueInfos :[[String : Any]]?, authorization :String?)
@@ -967,7 +969,7 @@ class MDSHTTPServices {
 		// Get values
 		guard let name = info["name"] as? String else { return (nil, "Missing value name") }
 		guard let valueTypeRawValue = info["valueType"] as? String else { return (nil, "Missing value valueType") }
-		guard let valueType = MDSValue.Type_(rawValue: valueTypeRawValue) else
+		guard let valueType = MDSValueType(rawValue: valueTypeRawValue) else
 				{ return (nil, "Invalid value valueType: \(valueTypeRawValue)") }
 		guard let selector = info["selector"] as? String else { return (nil, "Missing value selector") }
 

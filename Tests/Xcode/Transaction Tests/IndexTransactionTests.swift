@@ -31,8 +31,7 @@ class IndexTransactionTests : XCTestCase {
 		let	registerError1 =
 					config.httpEndpointClient.indexRegister(documentStorageID: config.documentStorageID,
 							name: indexName, documentType: Child.documentType, relevantProperties: [property1],
-							isUpToDate: true, keysSelector: "keysForDocumentProperty()",
-							keysSelectorInfo: ["property": property1])
+							keysSelector: "keysForDocumentProperty()", keysSelectorInfo: ["property": property1])
 		XCTAssertNil(registerError1, "register (1) received error \(registerError1!)")
 		guard registerError1 == nil else { return }
 

@@ -90,8 +90,7 @@ public protocol MDSDocumentStorage {
 			fromDocumentID :String, cacheName :String, cachedValueName :String) throws -> Int
 
 	func cacheRegister(name :String, documentType :String, relevantProperties :[String], version :Int,
-			valueInfos :[(name :String, valueType :MDSValue.Type_, selector :String, proc :MDSDocument.ValueProc)])
-			throws
+			valueInfos :[(name :String, valueType :MDSValueType, selector :String, proc :MDSDocument.ValueProc)]) throws
 
 	func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String, isIncludedProcVersion :Int,
@@ -140,10 +139,10 @@ public protocol MDSDocumentStorage {
 
 	func batch(_ proc :() throws -> MDSBatchResult) rethrows
 
-	func registerDocumentCreateProc<T : MDSDocument>(
-			proc :@escaping (_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
-	func registerDocumentChangedProc<T : MDSDocument>(
-			proc :@escaping (_ document :T, _ changeKind :MDSDocument.ChangeKind) -> Void)
+	func register<T : MDSDocument>(
+			documentCreateProc :@escaping (_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
+	func register<T : MDSDocument>(
+			documentChangedProc :@escaping (_ document :T, _ changeKind :MDSDocument.ChangeKind) -> Void)
 
 	func ephemeralValue<T>(for key :String) -> T?
 	func store<T>(ephemeralValue :T?, for key :String)
@@ -182,7 +181,7 @@ extension MDSDocumentStorage {
 	public func associationIterate<T : MDSDocument, U : MDSDocument>(from document :T, proc :(_ document :U) -> Void)
 			throws {
 		// Register creation proc
-		registerDocumentCreateProc() { U(id: $0, documentStorage: $1) }
+		register(documentCreateProc: { U(id: $0, documentStorage: $1) })
 
 		// Iterate association
 		try associationIterate(for: associationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
@@ -193,7 +192,7 @@ extension MDSDocumentStorage {
 	public func associationIterate<T : MDSDocument, U : MDSDocument>(to document :U, proc :(_ document :T) -> Void)
 			throws {
 		// Register creation proc
-		registerDocumentCreateProc() { T(id: $0, documentStorage: $1) }
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
 
 		// Iterate association
 		try associationIterate(for: associationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
@@ -204,7 +203,7 @@ extension MDSDocumentStorage {
 	public func associationDocuments<T : MDSDocument, U : MDSDocument>(for name :String? = nil, from document :T) throws
 			-> [U] {
 		// Register creation proc
-		registerDocumentCreateProc() { U(id: $0, documentStorage: $1) }
+		register(documentCreateProc: { U(id: $0, documentStorage: $1) })
 
 		// Iterate
 		var	documents = [U]()
@@ -219,7 +218,7 @@ extension MDSDocumentStorage {
 	public func associationDocuments<T : MDSDocument, U : MDSDocument>(for name :String? = nil, to document :U) throws
 			-> [T] {
 		// Register creation proc
-		registerDocumentCreateProc() { T(id: $0, documentStorage: $1) }
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
 
 		// Iterate
 		var	documents = [T]()
@@ -251,7 +250,7 @@ extension MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func cacheRegister(name :String, documentType :String, relevantProperties :[String],
-			valueInfos :[(name :String, valueType :MDSValue.Type_, selector :String, proc :MDSDocument.ValueProc)])
+			valueInfos :[(name :String, valueType :MDSValueType, selector :String, proc :MDSDocument.ValueProc)])
 			throws {
 		// Register cache
 		try cacheRegister(name: name, documentType: documentType, relevantProperties: relevantProperties, version: 1,
@@ -262,10 +261,10 @@ extension MDSDocumentStorage {
 	public func cacheRegister<T : MDSDocument>(name :String? = nil, relevantProperties :[String]? = nil,
 			version :Int = 1,
 			valueInfos
-					:[(name :String, valueType :MDSValue.Type_, selector :String, proc :(_ document :T, _ name :String)
-							-> MDSValue.Value)]) throws {
+					:[(name :String, valueType :MDSValueType, selector :String,
+							proc :(_ document :T, _ name :String) -> Any)]) throws {
 		// Register creation proc
-		registerDocumentCreateProc() { T(id: $0, documentStorage: $1) }
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
 
 		// Register cache
 		try cacheRegister(name: name ?? T.documentType, documentType: T.documentType,
@@ -291,7 +290,7 @@ extension MDSDocumentStorage {
 			isIncludedProcVersion :Int = 1, isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool)
 			throws {
 		// Register creation proc
-		registerDocumentCreateProc() { T(id: $0, documentStorage: $1) }
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
 
 		// Register collection
 		try collectionRegister(name: name, documentType: T.documentType, relevantProperties: relevantProperties,
@@ -445,7 +444,7 @@ extension MDSDocumentStorage {
 			keysInfo :[String : Any] = [:], keysSelector :String = "", keysProcVersion :Int = 1,
 			keysProc :@escaping (_ document :T, _ info :[String : Any]) -> [String]) throws {
 		// Register creation proc
-		registerDocumentCreateProc() { T(id: $0, documentStorage: $1) }
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
 
 		// Register index
 		try indexRegister(name: name, documentType: T.documentType, relevantProperties: relevantProperties,
@@ -558,15 +557,16 @@ open class MDSDocumentStorageCore {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentCreateProc(for documentType :String) -> MDSDocument.CreateProc? {
+	func documentCreateProc(for documentType :String) -> MDSDocument.CreateProc {
 		// Return proc
-		return self.documentCreateProcByDocumentType.value(for: documentType)
+		return self.documentCreateProcByDocumentType.value(for: documentType) ??
+				{ MDSDocument(id: $0, documentStorage: $1) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentChangedProcs(for documentType :String) -> [MDSDocument.ChangedProc] {
+	func documentChangedProcs(for documentType :String) -> [MDSDocument.ChangedProc]? {
 		// Return procs
-		return self.documentChangedProcsByDocumentType.values(for: documentType) ?? []
+		return self.documentChangedProcsByDocumentType.values(for: documentType)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

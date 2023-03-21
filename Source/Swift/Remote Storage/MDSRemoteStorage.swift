@@ -294,7 +294,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func cacheRegister(name :String, documentType :String, relevantProperties :[String], version :Int,
-			valueInfos :[(name :String, valueType :MDSValue.Type_, selector :String, proc :MDSDocument.ValueProc)]) {
+			valueInfos :[(name :String, valueType :MDSValueType, selector :String, proc :MDSDocument.ValueProc)]) {
 		// Register cache
 		let	error =
 					self.httpEndpointClient.cacheRegister(documentStorageID: self.documentStorageID, name: name,
@@ -640,9 +640,9 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 			MDSDocument.AttachmentInfoMap {
 		// Check for batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
-				let documentInfo = batchInfo.documentGetInfo(for: documentID) {
+				let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
 			// Have document in batch
-			return documentInfo.documentBacking?.attachmentInfoMap ?? [:]
+			return batchInfoDocumentInfo.documentBacking?.attachmentInfoMap ?? [:]
 		} else if self.documentsBeingCreatedPropertyMapMap.value(for: documentID) != nil {
 			// Creating
 			return [:]

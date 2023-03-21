@@ -103,8 +103,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Iterate document IDs
-		let	documentCreateProc =
-				self.documentCreateProcMap.value(for: toDocumentType) ?? { MDSDocument(id: $0, documentStorage: $1) }
+		let	documentCreateProc = self.documentCreateProc(for: toDocumentType)
 		autoreleasepool() { documentIDs.forEach() { proc(documentCreateProc($0, self)) } }
 	}
 
@@ -124,8 +123,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Iterate document IDs
-		let	documentCreateProc =
-				self.documentCreateProcMap.value(for: fromDocumentType) ?? { MDSDocument(id: $0, documentStorage: $1) }
+		let	documentCreateProc = self.documentCreateProc(for: fromDocumentType)
 		autoreleasepool() { documentIDs.forEach() { proc(documentCreateProc($0, self)) } }
 	}
 
@@ -213,8 +211,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Iterate document IDs
-		let	documentCreateProc =
-				self.documentCreateProcMap.value(for: documentType) ?? { MDSDocument(id: $0, documentStorage: $1) }
+		let	documentCreateProc = self.documentCreateProc(for: documentType)
 		autoreleasepool() { documentIDs.forEach() { proc(documentCreateProc($0, self)) } }
 	}
 
@@ -241,7 +238,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			}
 		} else {
 			// Setup
-			let	documentChangedProcs = self.documentChangedProcsMap.values(for: documentType)
+			let	documentChangedProcs = self.documentChangedProcs(for: documentType)
 
 			// Batch
 			self.databaseManager.batch() {
@@ -489,7 +486,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			update(for: documentType, updateInfos: updateInfos)
 
 			// Call document changed procs
-			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .updated) }
+			self.documentChangedProcs(for: documentType)?.forEach() { $0(document, .updated) }
 		}
 	}
 
@@ -709,7 +706,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			self.documentBackingCache.remove([documentID])
 
 			// Call document changed procs
-			self.documentChangedProcsMap.values(for: documentType)?.forEach() { $0(document, .removed) }
+			self.documentChangedProcs(for: documentType)?.forEach() { $0(document, .removed) }
 		}
 	}
 
@@ -761,8 +758,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Iterate map
-		let	documentCreateProc =
-				self.documentCreateProcMap.value(for: documentType) ?? { MDSDocument(id: $0, documentStorage: $1) }
+		let	documentCreateProc = self.documentCreateProc(for: documentType)
 		autoreleasepool() { documentIDMap.forEach() { proc($0.key, documentCreateProc($0.value, self)) } }
 	}
 
@@ -850,7 +846,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 //													changedProperties: changedProperties))
 //
 //									// Call document changed procs
-//									self.documentChangedProcsMap.values(for: documentType)?.forEach()
+//									self.documentChangedProcs(for: documentType)?.forEach()
 //										{ $0(document, .updated) }
 //								}
 //							} else {
@@ -875,7 +871,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 //													changedProperties: nil))
 //
 //									// Call document changed procs
-//									self.documentChangedProcsMap.values(for: documentType)?.forEach()
+//									self.documentChangedProcs(for: documentType)?.forEach()
 //										{ $0(document, .created) }
 //								}
 //							}
@@ -893,7 +889,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 //								let	document = documentCreateProc(documentID, self)
 //
 //								// Call document changed procs
-//								self.documentChangedProcsMap.values(for: documentType)?.forEach()
+//								self.documentChangedProcs(for: documentType)?.forEach()
 //									{ $0(document, .removed) }
 //							}
 //						}
@@ -1050,6 +1046,44 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> Int? {
+		// Check for batch
+		let	value :Any?
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
+				let batchDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
+			// In batch
+			value = batchDocumentInfo.value(for: property)
+		} else if let propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: document.id) {
+			// Being created
+			value = propertyMap[property]
+		} else {
+			// "Idle"
+			value = try! documentBacking(documentType: documentType, documentID: document.id).value(for: property)
+		}
+
+		return value as? Int
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentStringValue(for documentType :String, document :MDSDocument, property :String) -> String? {
+		// Check for batch
+		let	value :Any?
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
+				let batchDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
+			// In batch
+			value = batchDocumentInfo.value(for: property)
+		} else if let propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: document.id) {
+			// Being created
+			value = propertyMap[property]
+		} else {
+			// "Idle"
+			value = try! documentBacking(documentType: documentType, documentID: document.id).value(for: property)
+		}
+
+		return value as? String
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func documentUpdate(for documentType :String, documentUpdateInfos :[MDSDocument.UpdateInfo]) throws ->
 			[MDSDocument.FullInfo] {
 		// Validate
@@ -1071,6 +1105,9 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 			// Iterate document IDs
 			documentBackingsIterate(documentType: documentType, documentIDs: Array(map.keys)) {
+				// Setup
+				let	documentCreateProc = self.documentCreateProc(for: documentType)
+
 				// Set update info
 				let	documentUpdateInfo = map[$0.documentID]!
 
@@ -1081,18 +1118,13 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 							updatedPropertyMap: documentUpdateInfo.updated,
 							removedProperties: Set(documentUpdateInfo.removed), with: self.databaseManager)
 
-					// Check if we have creation proc
-					if let documentCreateProc = self.documentCreateProcMap.value(for: documentType) {
-						// Create document
-						let	document = documentCreateProc($0.documentID, self)
-
-						// Update collections and indexes
-						let	changedProperties =
-									Set<String>(documentUpdateInfo.updated.keys).union(documentUpdateInfo.removed)
-						updateBatchQueue.add(
-								MDSUpdateInfo<Int64>(document: document, revision: $0.revision, id: $0.id,
-										changedProperties: changedProperties))
-					}
+					// Prepare for cache, collection, and index updates
+					let	document = documentCreateProc($0.documentID, self)
+					let	changedProperties =
+								Set<String>(documentUpdateInfo.updated.keys).union(documentUpdateInfo.removed)
+					updateBatchQueue.add(
+							MDSUpdateInfo<Int64>(document: document, revision: $0.revision, id: $0.id,
+									changedProperties: changedProperties))
 				} else {
 					// Remove document
 					self.databaseManager.documentRemove(documentType: documentType, id: $0.id)
@@ -1579,8 +1611,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	private func updateInfos(for documentType :String, sinceRevision: Int) -> [MDSUpdateInfo<Int64>] {
 		// Setup
-		let	documentCreateProc =
-				self.documentCreateProcMap.value(for: documentType) ?? { MDSDocument(id: $0, documentStorage: $1) }
+		let	documentCreateProc = self.documentCreateProc(for: documentType)
 		let	batchInfo = self.batchInfoMap.value(for: Thread.current)
 
 		// Collect update infos

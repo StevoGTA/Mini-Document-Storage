@@ -48,7 +48,7 @@ class MDSIndex : Equatable {
 			// Check if there is something to do
 			if ($0.changedProperties == nil) || !self.relevantProperties.intersection($0.changedProperties!).isEmpty {
 				// Update keys info
-				keysInfos.append((self.keysProc($0.document, self.keysInfo), $0.id))
+				keysInfos.append((self.keysProc(type(of: $0.document).documentType, $0.document, self.keysInfo), $0.id))
 			}
 
 			// Update last revision

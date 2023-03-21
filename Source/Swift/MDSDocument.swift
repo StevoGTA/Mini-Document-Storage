@@ -122,8 +122,7 @@ open class MDSDocument : Hashable {
 	public	typealias ChangedProc = (_ document :MDSDocument, _ changeKind :ChangeKind) -> Void
 	public	typealias IsIncludedProc = (_ documentType :String, _ document :MDSDocument, _ info :[String : Any]) -> Bool
 	public	typealias KeysProc = (_ documentType :String, _ document :MDSDocument, _ info :[String : Any]) -> [String]
-	public	typealias ValueProc =
-							(_ documentType :String, _ document :MDSDocument, _ property :String) -> MDSValue.Value
+	public	typealias ValueProc = (_ documentType :String, _ document :MDSDocument, _ property :String) -> Any
 
 			typealias PropertyMap = [/* Property */ String : /* Value */ Any]
 
@@ -537,23 +536,9 @@ struct MDSUpdateInfo<T> {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSValue {
-public struct MDSValue {
-
-	// MARK: Value
-	public enum Value {
-		// Values
-		case integer(value :Int)
-
-		// Class methods
-		//--------------------------------------------------------------------------------------------------------------
-		static func integer(for value :Int?) -> Value? { return (value != nil) ? .integer(value: value!) : nil }
-	}
-
-	// MARK: Type
-	public enum Type_ : String {
-		case integer = "integer"
-	}
+// MARK: - MDSValueType {
+public enum MDSValueType : String {
+	case integer = "integer"
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -562,5 +547,5 @@ public struct MDSValueInfo {
 
 	// MARK: Properties
 	let	name :String
-	let	type :MDSValue.Type_
+	let	type :MDSValueType
 }
