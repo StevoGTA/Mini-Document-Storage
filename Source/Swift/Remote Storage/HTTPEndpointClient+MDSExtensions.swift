@@ -855,15 +855,15 @@ extension HTTPEndpointClient {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func indexRegister(documentStorageID :String, name :String, documentType :String,
-			relevantProperties :[String] = [], isUpToDate :Bool = false, keysSelector :String,
-			keysSelectorInfo :[String : Any] = [:], authorization :String? = nil) -> Error? {
+			relevantProperties :[String] = [], keysSelector :String, keysSelectorInfo :[String : Any] = [:],
+			authorization :String? = nil) -> Error? {
 		// Perform
 		return DispatchQueue.performBlocking() { completionProc in
 			// Queue
 			self.queue(
 					MDSHTTPServices.httpEndpointRequestForIndexRegister(documentStorageID: documentStorageID,
 							name: name, documentType: documentType, relevantProperties: relevantProperties,
-							isUpToDate: isUpToDate, keysSelector: keysSelector, keysSelectorInfo: keysSelectorInfo,
+							keysSelector: keysSelector, keysSelectorInfo: keysSelectorInfo,
 							authorization: authorization))
 					{ completionProc($0) }
 		}

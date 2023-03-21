@@ -120,9 +120,10 @@ open class MDSDocument : Hashable {
 	// MARK: Procs
 	public	typealias CreateProc = (_ id :String, _ documentStorage :MDSDocumentStorage) -> MDSDocument
 	public	typealias ChangedProc = (_ document :MDSDocument, _ changeKind :ChangeKind) -> Void
-	public	typealias IsIncludedProc = (_ document :MDSDocument, _ info :[String : Any]) -> Bool
-	public	typealias KeysProc = (_ document :MDSDocument, _ info :[String : Any]) -> [String]
-	public	typealias ValueProc = (_ document :MDSDocument, _ name :String) -> MDSValue.Value?
+	public	typealias IsIncludedProc = (_ documentType :String, _ document :MDSDocument, _ info :[String : Any]) -> Bool
+	public	typealias KeysProc = (_ documentType :String, _ document :MDSDocument, _ info :[String : Any]) -> [String]
+	public	typealias ValueProc =
+							(_ documentType :String, _ document :MDSDocument, _ property :String) -> MDSValue.Value
 
 			typealias PropertyMap = [/* Property */ String : /* Value */ Any]
 

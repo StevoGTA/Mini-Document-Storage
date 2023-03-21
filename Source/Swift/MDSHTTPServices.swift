@@ -238,7 +238,7 @@ extension MDSError : CustomStringConvertible, LocalizedError {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSHTTPServicesHandler
-protocol MDSHTTPServicesHandler : MDSDocumentStorage {
+protocol MDSHTTPServicesHandler : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	// MARK: Instance methods
 	func associationGetDocumentRevisionInfos(name :String, from fromDocumentID :String, startIndex :Int, count :Int?)

@@ -49,7 +49,7 @@ class MDSCollection : Equatable {
 			// Check if there is something to do
 			if ($0.changedProperties == nil) || !self.relevantProperties.intersection($0.changedProperties!).isEmpty {
 				// Query
-				if self.isIncludedProc($0.document, self.isIncludedInfo) {
+				if self.isIncludedProc(type(of: $0.document).documentType, $0.document, self.isIncludedInfo) {
 					// Included
 					includedIDs.append($0.id)
 				} else {

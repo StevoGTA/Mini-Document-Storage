@@ -28,7 +28,7 @@ extension MDSRemoteStorageError : CustomStringConvertible, LocalizedError {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSRemoteStorage
-open class MDSRemoteStorage : MDSDocumentStorage {
+open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	// MARK: Types
 	class DocumentBacking : MDSDocumentBacking {
@@ -92,7 +92,6 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	// MARK: Properties
 	public	let	documentStorageID :String
 
-	public	var	id :String = UUID().uuidString
 	public	var	authorization :String?
 
 	private	let	httpEndpointClient :HTTPEndpointClient
@@ -100,9 +99,6 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	private	let	batchInfoMap = LockingDictionary<Thread, MDSBatchInfo<DocumentBacking>>()
 	private	let	documentBackingCache = MDSDocumentBackingCache<DocumentBacking>()
 	private	let	documentsBeingCreatedPropertyMapMap = LockingDictionary<String, [String : Any]>()
-
-	private	var	ephemeralValues :[/* Key */ String : Any]?
-	private	var	documentCreateProcMap = LockingDictionary<String, MDSDocument.CreateProc>()
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -297,7 +293,7 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func cacheRegister(named name :String, documentType :String, relevantProperties :[String],
+	public func cacheRegister(name :String, documentType :String, relevantProperties :[String], version :Int,
 			valueInfos :[(name :String, valueType :MDSValue.Type_, selector :String, proc :MDSDocument.ValueProc)]) {
 		// Register cache
 		let	error =
@@ -1061,41 +1057,6 @@ open class MDSRemoteStorage : MDSDocumentStorage {
 
 		// Remove
 		self.batchInfoMap.set(nil, for: Thread.current)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func registerDocumentCreateProc<T : MDSDocument>(
-			proc :@escaping (_ id :String, _ documentStorage :MDSDocumentStorage) -> T) {
-		// Add
-		self.documentCreateProcMap.set(proc, for: T.documentType)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func registerDocumentChangedProc<T : MDSDocument>(
-			proc :@escaping (_ document :T, _ changeKind :MDSDocument.ChangeKind) -> Void) {
-		// Unimplemented
-		fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func ephemeralValue<T>(for key :String) -> T? { self.ephemeralValues?[key] as? T }
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func store<T>(ephemeralValue value :T?, for key :String) {
-		// Store
-		if (self.ephemeralValues == nil) && (value != nil) {
-			// First one
-			self.ephemeralValues = [key : value!]
-		} else {
-			// Update
-			self.ephemeralValues?[key] = value
-
-			// Check for empty
-			if self.ephemeralValues?.isEmpty ?? false {
-				// No more values
-				self.ephemeralValues = nil
-			}
-		}
 	}
 
 	// MARK: Instance methods

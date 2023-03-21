@@ -15,7 +15,7 @@ import Foundation
 		MDSEphemeral will ensure all Caches, Collections, and Indexes are kept up-to-date after any change that would
 			affect them.
 */
-public class MDSEphemeral : MDSHTTPServicesHandler {
+public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	// MARK: Types
 	typealias MDSEphemeralBatchInfo = MDSBatchInfo<[String : Any]>
@@ -110,8 +110,6 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	}
 
 	// MARK: Properties
-	public	let	id :String = UUID().uuidString
-
 	private	var	associationsByNameMap = LockingDictionary</* Name */ String, MDSAssociation>()
 	private	var	associationItemsByNameMap = LockingArrayDictionary</* Name */ String, MDSAssociation.Item>()
 
@@ -128,14 +126,10 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	private	let	collectionValuesMap = LockingDictionary</* Name */ String, /* Document IDs */ [String]>()
 
 	private	var	documentBackingByIDMap = [/* Document ID */ String : DocumentBacking]()
-	private	let	documentCreateProcMap = LockingDictionary<String, MDSDocument.CreateProc>()
-	private	let	documentChangedProcsMap = LockingArrayDictionary</* Document Type */ String, MDSDocument.ChangedProc>()
 	private	var	documentIDsByTypeMap = [/* Document Type */ String : /* Document IDs */ Set<String>]()
 	private	let	documentLastRevisionMap = LockingDictionary</* Document type */ String, Int>()
 	private	let	documentMapsLock = ReadPreferringReadWriteLock()
 	private	let	documentsBeingCreatedPropertyMapMap = LockingDictionary<String, [String : Any]>()
-
-	private	var	ephemeralValues :[/* Key */ String : Any]?
 
 	private	let	indexesByNameMap = LockingDictionary</* Name */ String, MDSIndex>()
 	private	let	indexesByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSIndex>()
@@ -146,7 +140,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	public init() {}
+	public override init() {}
 
 	// MARK: MDSDocumentStorage methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -190,16 +184,18 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationGet(for name :String, startIndex :Int, count :Int?) throws ->
 			(totalCount :Int, associationItems :[MDSAssociation.Item]) {
-		// Setup
-		let	associationItems = try associationItems(for: name)
-
 		// Validate
+		guard self.associationsByNameMap.value(for: name) != nil else {
+			throw MDSDocumentStorageError.unknownAssociation(name: name)
+		}
 		guard startIndex >= 0 else {
 			throw MDSDocumentStorageError.invalidStartIndex(startIndex: startIndex)
 		}
 		guard (count == nil) || (count! > 0) else {
 			throw MDSDocumentStorageError.invalidCount(count: count!)
 		}
+
+		let	associationItems = associationItems(for: name)
 
 		return (associationItems.count,
 				(count != nil) ?
@@ -210,9 +206,6 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationIterate(for name :String, from fromDocumentID :String, toDocumentType :String,
 			proc :(_ document :MDSDocument) -> Void) throws {
-		// Setup
-		let	associationItems = try associationItems(for: name)
-
 		// Validate
 		guard let association = self.associationsByNameMap.value(for: name) else {
 			throw MDSDocumentStorageError.unknownAssociation(name: name)
@@ -225,6 +218,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 		}
 
 		// Iterate values
+		let	associationItems = associationItems(for: name)
 		let	documentCreateProc =
 				self.documentCreateProcMap.value(for: toDocumentType) ?? { MDSDocument(id: $0, documentStorage: $1) }
 		associationItems
@@ -235,9 +229,6 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationIterate(for name :String, to toDocumentID :String, fromDocumentType :String,
 			proc :(_ document :MDSDocument) -> Void) throws {
-		// Setup
-		let	associationItems = try associationItems(for: name)
-
 		// Validate
 		guard let association = self.associationsByNameMap.value(for: name) else {
 			throw MDSDocumentStorageError.unknownAssociation(name: name)
@@ -250,6 +241,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 		}
 
 		// Iterate values
+		let	associationItems = associationItems(for: name)
 		let	documentCreateProc =
 				self.documentCreateProcMap.value(for: fromDocumentType) ?? { MDSDocument(id: $0, documentStorage: $1) }
 		associationItems
@@ -260,9 +252,6 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationGetIntegerValue(for name :String, action :MDSAssociation.GetIntegerValueAction,
 			fromDocumentID :String, cacheName :String, cachedValueName :String) throws -> Int {
-		// Setup
-		let	associationItems = try associationItems(for: name)
-
 		// Validate
 		guard self.associationsByNameMap.value(for: name) != nil else {
 			throw MDSDocumentStorageError.unknownAssociation(name: name)
@@ -278,6 +267,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 		}
 
 		// Iterate values
+		let	associationItems = associationItems(for: name)
 		let	cacheValueInfos = self.cacheValuesMap.value(for: cacheName)!
 		var	sum = 0
 		associationItems
@@ -294,7 +284,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func cacheRegister(named name :String, documentType :String, relevantProperties :[String],
+	public func cacheRegister(name :String, documentType :String, relevantProperties :[String], version :Int,
 			valueInfos :[(name :String, valueType :MDSValue.Type_, selector :String, proc :MDSDocument.ValueProc)])
 			throws {
 		// Validate
@@ -310,7 +300,8 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 
 		// Create or re-create cache
 		let	cache =
-					MDSCache(name: name, documentType: documentType, lastRevision: 0,
+					MDSCache(name: name, documentType: documentType, relevantProperties: relevantProperties,
+							lastRevision: 0,
 							valueInfos: valueInfos.map({ (MDSValueInfo(name: $0, type: $1), $3) }))
 
 		// Add to maps
@@ -1084,49 +1075,14 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 		self.batchInfoMap.set(nil, for: Thread.current)
 	}
 
-	//------------------------------------------------------------------------------------------------------------------
-	public func registerDocumentCreateProc<T : MDSDocument>(
-			proc :@escaping (_ id :String, _ documentStorage :MDSDocumentStorage) -> T) {
-		// Add
-		self.documentCreateProcMap.set(proc, for: T.documentType)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func registerDocumentChangedProc<T : MDSDocument>(
-			proc :@escaping (_ document :T, _ changeKind :MDSDocument.ChangeKind) -> Void) {
-		//  Add
-		self.documentChangedProcsMap.append({ proc($0 as! T, $1) }, for: T.documentType)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func ephemeralValue<T>(for key :String) -> T? { self.ephemeralValues?[key] as? T }
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func store<T>(ephemeralValue value :T?, for key :String) {
-		// Store
-		if (self.ephemeralValues == nil) && (value != nil) {
-			// First one
-			self.ephemeralValues = [key : value!]
-		} else {
-			// Update
-			self.ephemeralValues?[key] = value
-
-			// Check for empty
-			if self.ephemeralValues?.isEmpty ?? false {
-				// No more values
-				self.ephemeralValues = nil
-			}
-		}
-	}
-
 	// MARK: MDSHTTPServicesHandler methods
 	//------------------------------------------------------------------------------------------------------------------
 	func associationGetDocumentRevisionInfos(name :String, from fromDocumentID :String, startIndex :Int, count :Int?)
 			throws -> (totalCount :Int, documentRevisionInfos :[MDSDocument.RevisionInfo]) {
-		// Setup
-		let	associationItems = try associationItems(for: name)
-
 		// Validate
+		guard self.associationsByNameMap.value(for: name) != nil else {
+			throw MDSDocumentStorageError.unknownAssociation(name: name)
+		}
 		guard self.documentMapsLock.read({ self.documentBackingByIDMap[fromDocumentID] }) != nil else {
 			throw MDSDocumentStorageError.unknownDocumentID(documentID: fromDocumentID)
 		}
@@ -1138,6 +1094,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 		}
 
 		// Get document IDs
+		let	associationItems = associationItems(for: name)
 		let	documentIDs = associationItems.filter({ $0.fromDocumentID == fromDocumentID }).map({ $0.toDocumentID })
 		guard !documentIDs.isEmpty else { return (0, []) }
 
@@ -1157,10 +1114,10 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	func associationGetDocumentRevisionInfos(name :String, to toDocumentID :String, startIndex :Int, count :Int?) throws
 			-> (totalCount :Int, documentRevisionInfos :[MDSDocument.RevisionInfo]) {
-		// Setup
-		let	associationItems = try associationItems(for: name)
-
 		// Validate
+		guard self.associationsByNameMap.value(for: name) != nil else {
+			throw MDSDocumentStorageError.unknownAssociation(name: name)
+		}
 		guard self.documentMapsLock.read({ self.documentBackingByIDMap[toDocumentID] }) != nil else {
 			throw MDSDocumentStorageError.unknownDocumentID(documentID: toDocumentID)
 		}
@@ -1172,6 +1129,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 		}
 
 		// Get document IDs
+		let	associationItems = associationItems(for: name)
 		let	documentIDs = associationItems.filter({ $0.toDocumentID == toDocumentID }).map({ $0.fromDocumentID })
 		guard !documentIDs.isEmpty else { return (0, []) }
 
@@ -1191,10 +1149,10 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	func associationGetDocumentFullInfos(name :String, from fromDocumentID :String, startIndex :Int, count :Int?) throws
 			-> (totalCount :Int, documentFullInfos :[MDSDocument.FullInfo]) {
-		// Setup
-		let	associationItems = try associationItems(for: name)
-
 		// Validate
+		guard self.associationsByNameMap.value(for: name) != nil else {
+			throw MDSDocumentStorageError.unknownAssociation(name: name)
+		}
 		guard self.documentMapsLock.read({ self.documentBackingByIDMap[fromDocumentID] }) != nil else {
 			throw MDSDocumentStorageError.unknownDocumentID(documentID: fromDocumentID)
 		}
@@ -1206,6 +1164,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 		}
 
 		// Get document IDs
+		let	associationItems = associationItems(for: name)
 		let	documentIDs = associationItems.filter({ $0.fromDocumentID == fromDocumentID }).map({ $0.toDocumentID })
 		guard !documentIDs.isEmpty else { return (0, []) }
 
@@ -1225,10 +1184,10 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	func associationGetDocumentFullInfos(name :String, to toDocumentID :String, startIndex :Int, count :Int?) throws ->
 			(totalCount :Int, documentFullInfos :[MDSDocument.FullInfo]) {
-		// Setup
-		let	associationItems = try associationItems(for: name)
-
 		// Validate
+		guard self.associationsByNameMap.value(for: name) != nil else {
+			throw MDSDocumentStorageError.unknownAssociation(name: name)
+		}
 		guard self.documentMapsLock.read({ self.documentBackingByIDMap[toDocumentID] }) != nil else {
 			throw MDSDocumentStorageError.unknownDocumentID(documentID: toDocumentID)
 		}
@@ -1240,6 +1199,7 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 		}
 
 		// Get document IDs
+		let	associationItems = associationItems(for: name)
 		let	documentIDs = associationItems.filter({ $0.toDocumentID == toDocumentID }).map({ $0.fromDocumentID })
 		guard !documentIDs.isEmpty else { return (0, []) }
 
@@ -1283,6 +1243,25 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 		return self.documentMapsLock.read() {
 			documentIDs.map() { self.documentBackingByIDMap[$0]!.documentFullInfo }
 		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> MDSValue.Value {
+		// Check for batch
+		let	value :Any?
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
+				let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
+			// In batch
+			value = batchInfoDocumentInfo.value(for: property)
+		} else if let propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: document.id) {
+			// Being created
+			value = propertyMap[property]
+		} else {
+			// "Idle"
+			value = self.documentMapsLock.read() { self.documentBackingByIDMap[document.id]?.propertyMap[property] }
+		}
+
+		return MDSValue.Value.integer(value: (value as? Int) ?? 0)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1406,11 +1385,9 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 
 	// MARK: Private methods
 	//------------------------------------------------------------------------------------------------------------------
-	private func associationItems(for name :String) throws -> [MDSAssociation.Item] {
+	private func associationItems(for name :String) -> [MDSAssociation.Item] {
 		// Setup
-		guard var associationItems = self.associationItemsByNameMap.values(for: name) else {
-			throw MDSDocumentStorageError.unknownAssociation(name: name)
-		}
+		var associationItems = self.associationItemsByNameMap.values(for: name)!
 
 		// Process batch updates
 		self.batchInfoMap.value(for: Thread.current)?.associationGetChanges(for: name)?.forEach() {
@@ -1430,10 +1407,11 @@ public class MDSEphemeral : MDSHTTPServicesHandler {
 	//------------------------------------------------------------------------------------------------------------------
 	private func cacheUpdate(_ cache :MDSCache, updateInfos :[MDSUpdateInfo<String>]) {
 		// Get infos
-		let	infos = cache.update(updateInfos)
+		let	(infosByValue, _) = cache.update(updateInfos)
 
 		// Update
-		self.cacheValuesMap.update(for: cache.name, with: { ($0 ?? [:]).merging(infos, uniquingKeysWith: { $1 }) })
+		self.cacheValuesMap.update(for: cache.name, with: { ($0 ?? [:])
+				.merging(infosByValue, uniquingKeysWith: { $1 }) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

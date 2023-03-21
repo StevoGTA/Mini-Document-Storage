@@ -31,6 +31,7 @@ class MDSCache : Equatable {
 	// MARK: Properties
 			let	name :String
 			let	documentType :String
+			let	relevantProperties: Set<String>
 
 			var	lastRevision :Int
 
@@ -38,11 +39,12 @@ class MDSCache : Equatable {
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	init(name :String, documentType :String, lastRevision :Int,
+	init(name :String, documentType :String, relevantProperties :[String], lastRevision :Int,
 			valueInfos :[(valueInfo :MDSValueInfo, proc :MDSDocument.ValueProc)]) {
 		// Store
 		self.name = name
 		self.documentType = documentType
+		self.relevantProperties = Set<String>(relevantProperties)
 
 		self.lastRevision = lastRevision
 
@@ -59,23 +61,23 @@ class MDSCache : Equatable {
 	
 	//------------------------------------------------------------------------------------------------------------------
 	func update<U>(_ updateInfos :[MDSUpdateInfo<U>]) ->
-			[/* Value */ U : [/* Name */ String : MDSValue.Value?]] {
+			(infosByID :[/* ID */ U : [/* Name */ String : MDSValue.Value]], lastRevision :Int) {
 		// Compose results
-		var	infosByValue = [/* Value */ U : [/* Name */ String : MDSValue.Value?]]()
+		var	infosByID = [/* ID */ U : [/* Name */ String : MDSValue.Value]]()
 		updateInfos.forEach() { updateInfo in
 			// Collect value infos
-			var	valuesByName = [/* Name */ String : MDSValue.Value?]()
+			var	valuesByName = [/* Name */ String : MDSValue.Value]()
 			self.valueInfos.forEach() {
 				// Add entry for this value info
 				valuesByName[$0.name] = $0.proc(updateInfo.document, $0.name)
 			}
 
-			infosByValue[updateInfo.value] = valuesByName
+			infosByID[updateInfo.id] = valuesByName
 
 			// Update last revision
 			self.lastRevision = max(self.lastRevision, updateInfo.revision)
 		}
 
-		return infosByValue
+		return (infosByID, self.lastRevision)
 	}
 }

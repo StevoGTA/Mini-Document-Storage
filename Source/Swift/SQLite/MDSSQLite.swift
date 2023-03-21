@@ -10,11 +10,9 @@ import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: MDSSQLite
-public class MDSSQLite : MDSHTTPServicesHandler {
+public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	// MARK: Properties
-	public	var	id :String = UUID().uuidString
-
 	private	var	associationsByNameMap = LockingDictionary</* Name */ String, MDSAssociation>()
 
 	private	let	batchInfoMap = LockingDictionary<Thread, MDSBatchInfo<MDSSQLiteDocumentBacking>>()
@@ -27,11 +25,7 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 
 	private	let	databaseManager :MDSSQLiteDatabaseManager
 
-	private	var	ephemeralValues :[/* Key */ String : Any]?
-
 	private	let	documentBackingCache = MDSDocumentBackingCache<MDSSQLiteDocumentBacking>()
-	private	let	documentCreateProcMap = LockingDictionary<String, MDSDocument.CreateProc>()
-	private	let	documentChangedProcsMap = LockingArrayDictionary</* Document Type */ String, MDSDocument.ChangedProc>()
 	private	let	documentsBeingCreatedPropertyMapMap = LockingDictionary<String, [String : Any]>()
 
 	private	let	indexesByNameMap = LockingDictionary</* Name */ String, MDSIndex>()
@@ -916,41 +910,6 @@ public class MDSSQLite : MDSHTTPServicesHandler {
 //		// Remove - must wait to do this until the batch has been fully processed in case processing Collections and
 //		//	Indexes ends up referencing other documents that have not yet been committed.
 //		self.batchInfoMap.set(nil, for: Thread.current)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func registerDocumentCreateProc<T : MDSDocument>(
-			proc :@escaping (_ id :String, _ documentStorage :MDSDocumentStorage) -> T) {
-		// Add
-		self.documentCreateProcMap.set(proc, for: T.documentType)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func registerDocumentChangedProc<T : MDSDocument>(
-			proc :@escaping (_ document :T, _ changeKind :MDSDocument.ChangeKind) -> Void) {
-		//  Add
-		self.documentChangedProcsMap.append({ proc($0 as! T, $1) }, for: T.documentType)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func ephemeralValue<T>(for key :String) -> T? { self.ephemeralValues?[key] as? T }
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func store<T>(ephemeralValue value :T?, for key :String) {
-		// Store
-		if (self.ephemeralValues == nil) && (value != nil) {
-			// First one
-			self.ephemeralValues = [key : value!]
-		} else {
-			// Update
-			self.ephemeralValues?[key] = value
-
-			// Check for empty
-			if self.ephemeralValues?.isEmpty ?? false {
-				// No more values
-				self.ephemeralValues = nil
-			}
-		}
 	}
 
 	// MARK: MDSHTTPServicesHandler methods
