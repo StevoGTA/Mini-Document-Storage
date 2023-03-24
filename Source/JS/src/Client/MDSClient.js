@@ -111,6 +111,11 @@ class MDSClient {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async associationUpdate(name, updates, documentStorageID) {
+		// Check for updates
+		if (updates.length == 0)
+			// No updates
+			return;
+
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -446,6 +451,11 @@ class MDSClient {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async documentCreate(documentType, documents, documentStorageID) {
+		// Check if have documents
+		if (documents.length == 0)
+			// No documents
+			return;
+
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -611,6 +621,12 @@ class MDSClient {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async documentUpdate(documentType, documents, documentStorageID) {
+		// Collect updates
+		let	documentsToUpdate = documents.filter(document => document.hasUpdateInfo());
+		if (documentsToUpdate.length == 0)
+			// No updates
+			return;
+
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -620,12 +636,6 @@ class MDSClient {
 
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
-
-		// Collect updates
-		let	documentsToUpdate = documents.filter(document => document.hasUpdateInfo());
-		if (documentsToUpdate.length == 0)
-			// No updates
-			return;
 
 		// Max each call at 50 updates
 		for (let i = 0, length = documentsToUpdate.length; i < length; i += 50) {
