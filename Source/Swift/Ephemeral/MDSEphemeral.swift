@@ -280,7 +280,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func cacheRegister(name :String, documentType :String, relevantProperties :[String], version :Int,
+	public func cacheRegister(name :String, documentType :String, relevantProperties :[String],
 			valueInfos :[(name :String, valueType :MDSValueType, selector :String, proc :MDSDocument.ValueProc)])
 			throws {
 		// Validate
@@ -310,7 +310,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
-			isIncludedInfo :[String : Any], isIncludedSelector :String, isIncludedProcVersion :Int,
+			isIncludedInfo :[String : Any], isIncludedSelector :String,
 			isIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
 		// Validate
 		guard self.documentIDsByTypeMap[documentType] != nil else {
@@ -860,8 +860,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func indexRegister(name :String, documentType :String, relevantProperties :[String],
-			keysInfo :[String : Any], keysSelector :String, keysProcVersion :Int,
-			keysProc :@escaping MDSDocument.KeysProc) throws {
+			keysInfo :[String : Any], keysSelector :String, keysProc :@escaping MDSDocument.KeysProc) throws {
 		// Validate
 		guard self.documentIDsByTypeMap[documentType] != nil else {
 			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)

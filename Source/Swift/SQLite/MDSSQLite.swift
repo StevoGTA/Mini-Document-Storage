@@ -146,7 +146,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
-			isIncludedInfo :[String : Any], isIncludedSelector :String, isIncludedProcVersion :Int,
+			isIncludedInfo :[String : Any], isIncludedSelector :String,
 			isIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
 		// Validate
 		guard self.databaseManager.documentIsKnown(documentType: documentType) else {
@@ -161,8 +161,9 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Register collection
 		let	lastRevision =
-					self.databaseManager.collectionRegister(documentType: documentType, name: name,
-							version: isIncludedProcVersion, isUpToDate: isUpToDate)
+					self.databaseManager.collectionRegister(name: name, documentType: documentType,
+							relevantProperties: relevantProperties, isIncludedSelector: isIncludedSelector,
+							isIncludedSelectorInfo: isIncludedInfo, isUpToDate: isUpToDate)
 
 		// Create or re-create collection
 		let	collection =
@@ -712,8 +713,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func indexRegister(name :String, documentType :String, relevantProperties :[String],
-			keysInfo :[String : Any], keysSelector :String, keysProcVersion :Int,
-			keysProc :@escaping MDSDocument.KeysProc) throws {
+			keysInfo :[String : Any], keysSelector :String, keysProc :@escaping MDSDocument.KeysProc) throws {
 		// Validate
 		guard self.databaseManager.documentIsKnown(documentType: documentType) else {
 			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
@@ -727,7 +727,9 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Register index
 		let	lastRevision =
-					self.databaseManager.indexRegister(documentType: documentType, name: name, version: keysProcVersion)
+					self.databaseManager.indexRegister(name: name, documentType: documentType,
+							relevantProperties: relevantProperties, keysSelector: keysSelector,
+							keysSelectorInfo: keysInfo)
 
 		// Create or re-create index
 		let	index =

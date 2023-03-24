@@ -293,7 +293,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func cacheRegister(name :String, documentType :String, relevantProperties :[String], version :Int,
+	public func cacheRegister(name :String, documentType :String, relevantProperties :[String],
 			valueInfos :[(name :String, valueType :MDSValueType, selector :String, proc :MDSDocument.ValueProc)]) {
 		// Register cache
 		let	error =
@@ -314,7 +314,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
-			isIncludedInfo :[String : Any], isIncludedSelector :String, isIncludedProcVersion :Int,
+			isIncludedInfo :[String : Any], isIncludedSelector :String,
 			isIncludedProc :@escaping MDSDocument.IsIncludedProc) {
 		// Register collection
 		let	error =
@@ -763,8 +763,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func indexRegister(name :String, documentType :String, relevantProperties :[String],
-			keysInfo :[String : Any], keysSelector :String, keysProcVersion :Int,
-			keysProc :@escaping MDSDocument.KeysProc) {
+			keysInfo :[String : Any], keysSelector :String, keysProc :@escaping MDSDocument.KeysProc) {
 		// Register index
 		let	error =
 					self.httpEndpointClient.indexRegister(documentStorageID: self.documentStorageID, name: name,

@@ -44,6 +44,9 @@
 
 		Internal table
 			Columns: key, value
+
+		Internals table
+			Columns: key, value
 */
 
 import Foundation
@@ -88,8 +91,8 @@ class MDSSQLiteDatabaseManager {
 
 		// MARK: Properties
 		var	documentLastRevisionTypesNeedingWrite = Set<String>()
-		var	collectionInfo = [/* collection name */ String : CollectionUpdateInfo]()
-		var	indexInfo = [/* index name */ String : IndexUpdateInfo]()
+		var	collectionInfo = [/* Collection name */ String : CollectionUpdateInfo]()
+		var	indexInfo = [/* Index name */ String : IndexUpdateInfo]()
 	}
 
 	// MARK: AssociationsTable
@@ -103,10 +106,18 @@ class MDSSQLiteDatabaseManager {
 
 		// MARK: Class methods
 		//--------------------------------------------------------------------------------------------------------------
-		static func create(in database :SQLiteDatabase, version :Int?) -> SQLiteTable {
+		static func table(in database :SQLiteDatabase, internalsTable :SQLiteTable) -> SQLiteTable {
 			// Create table
 			let	table = database.table(name: "Associations", tableColumns: self.tableColumns)
-			if (version == nil) || (version! == 1) { table.create() }
+
+			// Check if need to create
+			if InternalsTable.version(for: table, in: internalsTable) == nil {
+				// Create
+				table.create()
+
+				// Store version
+				InternalsTable.set(version: 1, for: table, in: internalsTable)
+			}
 
 			return table
 		}
@@ -133,10 +144,18 @@ class MDSSQLiteDatabaseManager {
 
 		// MARK: Class methods
 		//--------------------------------------------------------------------------------------------------------------
-		static func create(in database :SQLiteDatabase, name :String, version :Int) -> SQLiteTable {
+		static func table(in database :SQLiteDatabase, name :String, internalsTable :SQLiteTable) -> SQLiteTable {
 			// Create table
 			let	table = database.table(name: "Association-\(name)", tableColumns: self.tableColumns)
-			table.create()
+
+			// Check if need to create
+			if InternalsTable.version(for: table, in: internalsTable) == nil {
+				// Create
+				table.create()
+
+				// Store version
+				InternalsTable.set(version: 1, for: table, in: internalsTable)
+			}
 
 			return table
 		}
@@ -200,14 +219,28 @@ class MDSSQLiteDatabaseManager {
 
 		// MARK: Properties
 		static	let	nameTableColumn = SQLiteTableColumn("name", .text, [.notNull, .unique])
-		static	let	tableColumns = [nameTableColumn]
+		static	let	typeTableColumn = SQLiteTableColumn("type", .text, [.notNull])
+		static	let	relevantPropertiesTableColumn = SQLiteTableColumn("relevantProperties", .text, [.notNull])
+		static	let	infoTableColumn = SQLiteTableColumn("info", .blob, [.notNull])
+		static	let	lastRevisionTableColumn = SQLiteTableColumn("lastRevision", .integer, [.notNull])
+		static	let	tableColumns =
+							[nameTableColumn, typeTableColumn, relevantPropertiesTableColumn, infoTableColumn,
+									lastRevisionTableColumn]
 
 		// MARK: Class methods
 		//--------------------------------------------------------------------------------------------------------------
-		static func create(in database :SQLiteDatabase, version :Int?) -> SQLiteTable {
+		static func table(in database :SQLiteDatabase, internalsTable :SQLiteTable) -> SQLiteTable {
 			// Create table
 			let	table = database.table(name: "Caches", tableColumns: self.tableColumns)
-			if version == nil { table.create() }
+
+			// Check if need to create
+			if InternalsTable.version(for: table, in: internalsTable) == nil {
+				// Create
+				table.create()
+
+				// Store version
+				InternalsTable.set(version: 1, for: table, in: internalsTable)
+			}
 
 			return table
 		}
@@ -219,6 +252,26 @@ class MDSSQLiteDatabaseManager {
 		// MARK: Properties
 		static	let	idTableColumn = SQLiteTableColumn("id", .integer, [.primaryKey])
 
+		// MARK: Class methods
+		//--------------------------------------------------------------------------------------------------------------
+		static func table(in database :SQLiteDatabase, name :String, valueInfos :[CacheValueInfo],
+				internalsTable :SQLiteTable) -> SQLiteTable {
+			// Setup
+			let	tableColumns =
+						[self.idTableColumn] + valueInfos.map({ SQLiteTableColumn($0.name, .integer, [.notNull]) })
+			let	table = database.table(name: "Cache-\(name)", options: [.withoutRowID], tableColumns: tableColumns)
+
+			// Check if need to create
+			if InternalsTable.version(for: table, in: internalsTable) == nil {
+				// Create
+				table.create()
+
+				// Store version
+				InternalsTable.set(version: 1, for: table, in: internalsTable)
+			}
+
+			return table
+		}
 	}
 
 	// MARK: CollectionsTable
@@ -226,42 +279,101 @@ class MDSSQLiteDatabaseManager {
 
 		// MARK: Properties
 		static	let	nameTableColumn = SQLiteTableColumn("name", .text, [.notNull, .unique])
-		static	let	versionTableColumn = SQLiteTableColumn("version", .integer, [.notNull])
+		static	let	typeTableColumn = SQLiteTableColumn("type", .text, [.notNull])
+		static	let	relevantPropertiesTableColumn = SQLiteTableColumn("relevantProperties", .text, [.notNull])
+		static	let	isIncludedSelectorTableColumn = SQLiteTableColumn("isIncludedSelector", .text, [.notNull])
+		static	let	isIncludedSelectorInfoTableColumn = SQLiteTableColumn("isIncludedSelectorInfo", .blob, [.notNull])
 		static	let	lastRevisionTableColumn = SQLiteTableColumn("lastRevision", .integer, [.notNull])
-		static	let	tableColumns = [nameTableColumn, versionTableColumn, lastRevisionTableColumn]
+		static	let	tableColumns =
+							[nameTableColumn, typeTableColumn, relevantPropertiesTableColumn,
+									isIncludedSelectorTableColumn, isIncludedSelectorInfoTableColumn,
+									lastRevisionTableColumn]
+
+		static	let	versionTableColumn = SQLiteTableColumn("version", .integer, [.notNull])
 
 		// MARK: Class methods
 		//--------------------------------------------------------------------------------------------------------------
-		static func create(in database :SQLiteDatabase, version :Int?) -> SQLiteTable {
+		static func table(in database :SQLiteDatabase, internalsTable :SQLiteTable, infoTable :SQLiteTable) ->
+				SQLiteTable {
 			// Create table
 			let	table = database.table(name: "Collections", tableColumns: self.tableColumns)
-			if version == nil { table.create() }
+
+			// Check if need to create/migrate
+			let	version =
+						InternalsTable.version(for: table, in: internalsTable) ??
+								InfoTable.int(for: "version", in: infoTable)
+			if version == nil {
+				// Create
+				table.create()
+
+				// Store version
+				InternalsTable.set(version: 2, for: table, in: internalsTable)
+			} else if version! == 1 {
+				// Migrate to version 2
+				try! table.migrate() {
+					// Get old info
+					let	name = $0.text(for: self.nameTableColumn)!
+					let	version = $0.integer(for: self.versionTableColumn)!
+					let	lastRevision = $0.integer(for: self.lastRevisionTableColumn)!
+
+					return [
+							(self.nameTableColumn, name),
+							(self.typeTableColumn, ""),
+							(self.relevantPropertiesTableColumn, ""),
+							(self.isIncludedSelectorTableColumn, ""),
+							(self.isIncludedSelectorInfoTableColumn,
+									try! JSONSerialization.data(withJSONObject: ["version": version])),
+							(self.lastRevisionTableColumn, lastRevision),
+						   ]
+				}
+
+				// Store version
+				InternalsTable.set(version: 2, for: table, in: internalsTable)
+			}
 
 			return table
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func info(forName name :String, in table :SQLiteTable) -> (version :Int?, lastRevision :Int?) {
+		static func info(forName name :String, in table :SQLiteTable) ->
+				(relevantProperties :[String], isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
+						lastRevision :Int)? {
 			// Query
-			var	version :Int?
-			var	lastRevision :Int?
+			var	currentInfo
+						:(relevantProperties :[String], isIncludedSelector :String,
+								isIncludedSelectorInfo :[String : Any], lastRevision :Int)?
 			try! table.select(tableColumns: [self.versionTableColumn, self.lastRevisionTableColumn],
 					where: SQLiteWhere(tableColumn: self.nameTableColumn, value: name)) {
-						// Process results
-						version = Int($0.integer(for: self.versionTableColumn)!)
-						lastRevision = Int($0.integer(for: self.lastRevisionTableColumn)!)
+						// Get info
+						let	relevantProperties =
+								$0.text(for: self.relevantPropertiesTableColumn)!.components(separatedBy: ",")
+						let	isIncludedSelector = $0.text(for: self.isIncludedSelectorTableColumn)!
+						let	isIncludedSelectorInfo =
+									try! JSONSerialization.jsonObject(
+											with: $0.blob(for: self.isIncludedSelectorInfoTableColumn)!) as!
+											[String : Any]
+						let	lastRevision = Int($0.integer(for: self.lastRevisionTableColumn)!)
+
+						// Set current info
+						currentInfo = (relevantProperties, isIncludedSelector, isIncludedSelectorInfo, lastRevision)
 					}
 
-			return (version, lastRevision)
+			return currentInfo
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func addOrUpdate(name :String, version :Int, lastRevision :Int, in table :SQLiteTable) {
+		static func addOrUpdate(name :String, documentType :String, relevantProperties :[String],
+				isIncludedSelector :String, isIncludedSelectorInfo :[String : Any], lastRevision :Int,
+				in table :SQLiteTable) {
 			// Insert or replace
 			table.insertOrReplaceRow(
 					[
 						(self.nameTableColumn, name),
-						(self.versionTableColumn, version),
+						(self.typeTableColumn, documentType),
+						(self.relevantPropertiesTableColumn, String(combining: relevantProperties, with: ",")),
+						(self.isIncludedSelectorTableColumn, isIncludedSelector),
+						(self.isIncludedSelectorInfoTableColumn,
+								try! JSONSerialization.data(withJSONObject: isIncludedSelectorInfo)),
 						(self.lastRevisionTableColumn, lastRevision),
 					])
 		}
@@ -283,9 +395,22 @@ class MDSSQLiteDatabaseManager {
 
 		// MARK: Class methods
 		//--------------------------------------------------------------------------------------------------------------
-		static func table(in database :SQLiteDatabase, name :String, version :Int) -> SQLiteTable {
+		static func table(in database :SQLiteDatabase, name :String, internalsTable :SQLiteTable) -> SQLiteTable {
 			// Create table
-			return database.table(name: "Collection-\(name)", options: [.withoutRowID], tableColumns: self.tableColumns)
+			let	table =
+						database.table(name: "Collection-\(name)", options: [.withoutRowID],
+								tableColumns: self.tableColumns)
+
+			// Check if need to create
+			if InternalsTable.version(for: table, in: internalsTable) == nil {
+				// Create
+				table.create()
+
+				// Store version
+				InternalsTable.set(version: 1, for: table, in: internalsTable)
+			}
+
+			return table
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
@@ -306,10 +431,18 @@ class MDSSQLiteDatabaseManager {
 
 		// MARK: Class methods
 		//--------------------------------------------------------------------------------------------------------------
-		static func create(in database :SQLiteDatabase, version :Int?) -> SQLiteTable {
+		static func table(in database :SQLiteDatabase, internalsTable :SQLiteTable) -> SQLiteTable {
 			// Create table
 			let	table = database.table(name: "Documents", tableColumns: self.tableColumns)
-			if version == nil { table.create() }
+
+			// Check if need to create
+			if InternalsTable.version(for: table, in: internalsTable) == nil {
+				// Create
+				table.create()
+
+				// Store version
+				InternalsTable.set(version: 1, for: table, in: internalsTable)
+			}
 
 			return table
 		}
@@ -345,10 +478,18 @@ class MDSSQLiteDatabaseManager {
 
 		// MARK: Class methods
 		//--------------------------------------------------------------------------------------------------------------
-		static func create(in database :SQLiteDatabase, nameRoot :String, version :Int) -> SQLiteTable {
+		static func table(in database :SQLiteDatabase, nameRoot :String, internalsTable :SQLiteTable) -> SQLiteTable {
 			// Create table
 			let	table = database.table(name: "\(nameRoot)s", tableColumns: self.tableColumns)
-			table.create()
+
+			// Check if need to create
+			if InternalsTable.version(for: table, in: internalsTable) == nil {
+				// Create
+				table.create()
+
+				// Store version
+				InternalsTable.set(version: 1, for: table, in: internalsTable)
+			}
 
 			return table
 		}
@@ -448,13 +589,21 @@ class MDSSQLiteDatabaseManager {
 
 		// MARK: Class methods
 		//--------------------------------------------------------------------------------------------------------------
-		static func create(in database :SQLiteDatabase, nameRoot :String, infoTable :SQLiteTable, version :Int) ->
-				SQLiteTable {
+		static func table(in database :SQLiteDatabase, nameRoot :String, infoTable :SQLiteTable,
+				internalsTable :SQLiteTable) -> SQLiteTable {
 			// Create table
 			let	table =
 						database.table(name: "\(nameRoot)Contents", tableColumns: self.tableColumns,
 								references: [(self.idTableColumn, infoTable, DocumentTypeInfoTable.idTableColumn)])
-			table.create()
+
+			// Check if need to create
+			if InternalsTable.version(for: table, in: internalsTable) == nil {
+				// Create
+				table.create()
+
+				// Store version
+				InternalsTable.set(version: 1, for: table, in: internalsTable)
+			}
 
 			return table
 		}
@@ -533,10 +682,18 @@ class MDSSQLiteDatabaseManager {
 
 		// MARK: Class methods
 		//--------------------------------------------------------------------------------------------------------------
-		static func create(in database :SQLiteDatabase, nameRoot :String, version :Int) -> SQLiteTable {
+		static func table(in database :SQLiteDatabase, nameRoot :String, internalsTable :SQLiteTable) -> SQLiteTable {
 			// Create table
 			let	table = database.table(name: "\(nameRoot)Attachments", tableColumns: self.tableColumns)
-			table.create()
+
+			// Check if need to create
+			if InternalsTable.version(for: table, in: internalsTable) == nil {
+				// Create
+				table.create()
+
+				// Store version
+				InternalsTable.set(version: 1, for: table, in: internalsTable)
+			}
 
 			return table
 		}
@@ -619,42 +776,98 @@ class MDSSQLiteDatabaseManager {
 
 		// MARK: Properties
 		static	let	nameTableColumn = SQLiteTableColumn("name", .text, [.notNull, .unique])
-		static	let	versionTableColumn = SQLiteTableColumn("version", .integer, [.notNull])
+		static	let	typeTableColumn = SQLiteTableColumn("type", .text, [.notNull])
+		static	let	relevantPropertiesTableColumn = SQLiteTableColumn("relevantProperties", .text, [.notNull])
+		static	let	keysSelectorTableColumn = SQLiteTableColumn("keysSelector", .text, [.notNull])
+		static	let	keysSelectorInfoTableColumn = SQLiteTableColumn("keysSelectorInfo", .blob, [.notNull])
 		static	let	lastRevisionTableColumn = SQLiteTableColumn("lastRevision", .integer, [.notNull])
-		static	let	tableColumns = [nameTableColumn, versionTableColumn, lastRevisionTableColumn]
+		static	let	tableColumns =
+							[nameTableColumn, typeTableColumn, relevantPropertiesTableColumn, keysSelectorTableColumn,
+									keysSelectorInfoTableColumn, lastRevisionTableColumn]
+
+		static	let	versionTableColumn = SQLiteTableColumn("version", .integer, [.notNull])
 
 		// MARK: Class methods
 		//--------------------------------------------------------------------------------------------------------------
-		static func create(in database :SQLiteDatabase, version :Int?) -> SQLiteTable {
+		static func table(in database :SQLiteDatabase, internalsTable :SQLiteTable, infoTable :SQLiteTable) ->
+				SQLiteTable {
 			// Create table
 			let	table = database.table(name: "Indexes", tableColumns: self.tableColumns)
-			if version == nil { table.create() }
+
+			// Check if need to create/migrate
+			let	version =
+						InternalsTable.version(for: table, in: internalsTable) ??
+								InfoTable.int(for: "version", in: infoTable)
+			if version == nil {
+				// Create
+				table.create()
+
+				// Store version
+				InternalsTable.set(version: 2, for: table, in: internalsTable)
+			} else if version! == 1 {
+				// Migrate to version 2
+				try! table.migrate() {
+					// Get old info
+					let	name = $0.text(for: self.nameTableColumn)!
+					let	version = $0.integer(for: self.versionTableColumn)!
+					let	lastRevision = $0.integer(for: self.lastRevisionTableColumn)!
+
+					return [
+							(self.nameTableColumn, name),
+							(self.typeTableColumn, ""),
+							(self.relevantPropertiesTableColumn, ""),
+							(self.keysSelectorTableColumn, ""),
+							(self.keysSelectorInfoTableColumn,
+									try! JSONSerialization.data(withJSONObject: ["version": version])),
+							(self.lastRevisionTableColumn, lastRevision),
+						   ]
+				}
+
+				// Store version
+				InternalsTable.set(version: 2, for: table, in: internalsTable)
+			}
 
 			return table
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func info(forName name :String, in table :SQLiteTable) -> (version :Int?, lastRevision :Int?) {
+		static func info(forName name :String, in table :SQLiteTable) ->
+				(relevantProperties :[String], keysSelector :String, keysSelectorInfo :[String : Any],
+						lastRevision :Int)? {
 			// Query
-			var	version :Int?
-			var	lastRevision :Int?
+			var	currentInfo
+						:(relevantProperties :[String], keysSelector :String, keysSelectorInfo :[String : Any],
+								lastRevision :Int)?
 			try! table.select(tableColumns: [self.versionTableColumn, self.lastRevisionTableColumn],
 					where: SQLiteWhere(tableColumn: self.nameTableColumn, value: name)) {
-						// Process results
-						version = Int($0.integer(for: self.versionTableColumn)!)
-						lastRevision = Int($0.integer(for: self.lastRevisionTableColumn)!)
+						// Get info
+						let	relevantProperties =
+								$0.text(for: self.relevantPropertiesTableColumn)!.components(separatedBy: ",")
+						let	keysSelector = $0.text(for: self.keysSelectorTableColumn)!
+						let	keysSelectorInfo =
+									try! JSONSerialization.jsonObject(
+											with: $0.blob(for: self.keysSelectorInfoTableColumn)!) as! [String : Any]
+						let	lastRevision = Int($0.integer(for: self.lastRevisionTableColumn)!)
+
+						// Set current info
+						currentInfo = (relevantProperties, keysSelector, keysSelectorInfo, lastRevision)
 					}
 
-			return (version, lastRevision)
+			return currentInfo
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func addOrUpdate(name :String, version :Int, lastRevision :Int, in table :SQLiteTable) {
+		static func addOrUpdate(name :String, documentType :String, relevantProperties :[String], keysSelector :String,
+				keysSelectorInfo :[String : Any], lastRevision :Int, in table :SQLiteTable) {
 			// Insert or replace
 			table.insertOrReplaceRow(
 					[
 						(self.nameTableColumn, name),
-						(self.versionTableColumn, version),
+						(self.typeTableColumn, documentType),
+						(self.relevantPropertiesTableColumn, String(combining: relevantProperties, with: ",")),
+						(self.keysSelectorTableColumn, keysSelector),
+						(self.keysSelectorInfoTableColumn,
+								try! JSONSerialization.data(withJSONObject: keysSelectorInfo)),
 						(self.lastRevisionTableColumn, lastRevision),
 					])
 		}
@@ -677,9 +890,20 @@ class MDSSQLiteDatabaseManager {
 
 		// MARK: Class methods
 		//--------------------------------------------------------------------------------------------------------------
-		static func table(in database :SQLiteDatabase, name :String, version :Int) -> SQLiteTable {
+		static func table(in database :SQLiteDatabase, name :String, internalsTable :SQLiteTable) -> SQLiteTable {
 			// Create table
-			return database.table(name: "Index-\(name)", options: [.withoutRowID], tableColumns: self.tableColumns)
+			let	table = database.table(name: "Index-\(name)", options: [.withoutRowID], tableColumns: self.tableColumns)
+
+			// Check if need to create
+			if InternalsTable.version(for: table, in: internalsTable) == nil {
+				// Create
+				table.create()
+
+				// Store version
+				InternalsTable.set(version: 1, for: table, in: internalsTable)
+			}
+
+			return table
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
@@ -712,7 +936,7 @@ class MDSSQLiteDatabaseManager {
 
 		// MARK: Class methods
 		//--------------------------------------------------------------------------------------------------------------
-		static func create(in database :SQLiteDatabase) -> SQLiteTable {
+		static func table(in database :SQLiteDatabase) -> SQLiteTable {
 			// Create table
 			let	table = database.table(name: "Info", options: [.withoutRowID], tableColumns: self.tableColumns)
 			table.create()
@@ -772,7 +996,7 @@ class MDSSQLiteDatabaseManager {
 
 		// MARK: Class methods
 		//--------------------------------------------------------------------------------------------------------------
-		static func create(in database :SQLiteDatabase) -> SQLiteTable {
+		static func table(in database :SQLiteDatabase) -> SQLiteTable {
 			// Create table
 			let	table = database.table(name: "Internal", options: [.withoutRowID], tableColumns: self.tableColumns)
 			table.create()
@@ -809,11 +1033,51 @@ class MDSSQLiteDatabaseManager {
 		}
 	}
 
+	// MARK: InternalsTable
+	private struct InternalsTable {
+
+		// MARK: Properties
+		static	let	keyTableColumn = SQLiteTableColumn("key", .text, [.primaryKey, .unique, .notNull])
+		static	let	valueTableColumn = SQLiteTableColumn("value", .text, [.notNull])
+		static	let	tableColumns = [keyTableColumn, valueTableColumn]
+
+		// MARK: Class methods
+		//--------------------------------------------------------------------------------------------------------------
+		static func table(in database :SQLiteDatabase) -> SQLiteTable {
+			// Create table
+			let	table = database.table(name: "Internals", options: [.withoutRowID], tableColumns: self.tableColumns)
+			table.create()
+
+			return table
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func version(for table :SQLiteTable, in internalsTable :SQLiteTable) -> Int? {
+			// Retrieve value
+			var	value :Int? = nil
+			try! internalsTable.select(tableColumns: [self.valueTableColumn],
+					where: SQLiteWhere(tableColumn: self.keyTableColumn, value: table.name + "TableVersion")) {
+						// Process values
+						value = Int($0.text(for: self.valueTableColumn)!)!
+					}
+
+			return value
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func set(version :Int, for table :SQLiteTable, in internalsTable :SQLiteTable) {
+			// Update
+			internalsTable.insertOrReplaceRow([
+										(self.keyTableColumn, table.name + "TableVersion"),
+										(self.valueTableColumn, version),
+									 ])
+		}
+	}
+
 	// MARK: Properties
 			var	variableNumberLimit :Int { self.infoTable.variableNumberLimit }
 
 	private	let	database :SQLiteDatabase
-	private	var	databaseVersion :Int?
 
 	private	let	batchInfoMap = LockingDictionary<Thread, BatchInfo>()
 
@@ -837,9 +1101,7 @@ class MDSSQLiteDatabaseManager {
 
 	private	let	internalTable :SQLiteTable
 
-	// MARK: Class methods
-	//------------------------------------------------------------------------------------------------------------------
-//	static func indexContentsKey(for resultsRow :SQLiteResultsRow) -> String { IndexContentsTable.key(for: resultsRow) }
+	private	let	internalsTable :SQLiteTable
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -848,23 +1110,22 @@ class MDSSQLiteDatabaseManager {
 		self.database = database
 
 		// Create tables
-		self.infoTable = InfoTable.create(in: self.database)
+		self.infoTable = InfoTable.table(in: self.database)
+		self.internalsTable = InternalsTable.table(in: self.database)
 
-		self.databaseVersion = InfoTable.int(for: "version", in: self.infoTable)
-
-		self.associationsTable = AssociationsTable.create(in: self.database, version: self.databaseVersion)
-		self.cachesTable = CachesTable.create(in: self.database, version: self.databaseVersion)
-		self.collectionsTable = CollectionsTable.create(in: self.database, version: self.databaseVersion)
-		self.documentsTable = DocumentsTable.create(in: self.database, version: self.databaseVersion)
-		self.indexesTable = IndexesTable.create(in: self.database, version: self.databaseVersion)
-		self.internalTable = InternalTable.create(in: self.database)
+		self.associationsTable = AssociationsTable.table(in: self.database, internalsTable: self.internalsTable)
+		self.cachesTable = CachesTable.table(in: self.database, internalsTable: self.internalsTable)
+		self.collectionsTable =
+				CollectionsTable.table(in: self.database, internalsTable: self.internalsTable,
+						infoTable: self.infoTable)
+		self.documentsTable = DocumentsTable.table(in: self.database, internalsTable: self.internalsTable)
+		self.indexesTable =
+				IndexesTable.table(in: self.database, internalsTable: self.internalsTable,
+						infoTable: self.infoTable)
+		self.internalTable = InternalTable.table(in: self.database)
 
 		// Finalize setup
-		if self.databaseVersion == nil {
-			// Update version
-			self.databaseVersion = 1
-			InfoTable.set(value: self.databaseVersion, for: "version", in: self.infoTable)
-		}
+		InfoTable.set(value: nil, for: "version", in: self.infoTable)
 
 		// Load all existing document info
 		try! self.documentsTable.select() {
@@ -885,7 +1146,7 @@ class MDSSQLiteDatabaseManager {
 
 		// Create contents table
 		let	associationContentsTable =
-					AssocationContentsTable.create(in: self.database, name: name, version: self.databaseVersion!)
+					AssocationContentsTable.table(in: self.database, name: name, internalsTable: self.internalsTable)
 		self.associationTablesByName.set(associationContentsTable, for: name)
 	}
 
@@ -970,10 +1231,10 @@ class MDSSQLiteDatabaseManager {
 	func associationIterateDocumentInfos(name :String, fromDocumentID :String, fromDocumentType :String,
 			toDocumentType :String, startIndex :Int, count :Int?, proc :(_ documentInfo :DocumentInfo) -> Void) {
 		// Setup
-		let	fromDocumentTables = documentTables(for: fromDocumentType)
-		let	toDocumentTables = documentTables(for: toDocumentType)
 		let	associationContentsTable = self.associationTablesByName.value(for: name)!
+		let	fromDocumentTables = documentTables(for: fromDocumentType)
 		let	fromID = DocumentTypeInfoTable.id(for: fromDocumentID, in: fromDocumentTables.infoTable)!
+		let	toDocumentTables = documentTables(for: toDocumentType)
 
 		// Iterate rows
 		try! associationContentsTable.select(tableColumns: DocumentTypeInfoTable.tableColumns,
@@ -1010,40 +1271,47 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func collectionRegister(documentType :String, name :String, version :Int, isUpToDate :Bool) -> Int {
 		// Get current info
 		let (storedVersion, storedLastRevision) = CollectionsTable.info(forName: name, in: self.collectionsTable)
+	//------------------------------------------------------------------------------------------------------------------
+	func collectionRegister(name :String, documentType :String, relevantProperties :[String],
+				isIncludedSelector :String, isIncludedSelectorInfo :[String : Any], isUpToDate :Bool) -> Int {
+		// Get current info
+		let currentInfo = CollectionsTable.info(forName: name, in: self.collectionsTable)
 
 		// Setup table
 		let	collectionContentsTable =
-					CollectionContentsTable.table(in: self.database, name: name, version: self.databaseVersion!)
+					CollectionContentsTable.table(in: self.database, name: name, internalsTable: self.internalsTable)
 		self.collectionTablesByName.set(collectionContentsTable, for: name)
 
-		// Compose last revision
+		// Compose next steps
 		let	lastRevision :Int
 		let	updateMasterTable :Bool
-		if storedLastRevision == nil {
+		if currentInfo == nil {
 			// New
 			lastRevision = isUpToDate ? self.documentLastRevisionMap.value(for: documentType) ?? 0 : 0
 			updateMasterTable = true
-		} else if version != storedVersion {
-			// Updated version
+		} else if (relevantProperties != currentInfo!.relevantProperties) ||
+				(isIncludedSelector != currentInfo!.isIncludedSelector) ||
+				!isIncludedSelectorInfo.equals(currentInfo!.isIncludedSelectorInfo) {
+			// Info has changed
 			lastRevision = 0
 			updateMasterTable = true
 		} else {
 			// No change
-			lastRevision = storedLastRevision!
+			lastRevision = currentInfo!.lastRevision
 			updateMasterTable = false
 		}
 
 		// Check if need to update the master table
 		if updateMasterTable {
 			// New or updated
-			CollectionsTable.addOrUpdate(name: name, version: version, lastRevision: lastRevision,
-					in: self.collectionsTable)
+			CollectionsTable.addOrUpdate(name: name, documentType: documentType, relevantProperties: relevantProperties,
+					isIncludedSelector: isIncludedSelector, isIncludedSelectorInfo: isIncludedSelectorInfo,
+					lastRevision: lastRevision, in: self.collectionsTable)
 
 			// Update table
-			if storedLastRevision != nil { collectionContentsTable.drop() }
+			if currentInfo != nil { collectionContentsTable.drop() }
 			collectionContentsTable.create()
 		}
 
@@ -1283,39 +1551,43 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func indexRegister(documentType :String, name :String, version :Int) -> Int {
+	func indexRegister(name :String, documentType :String, relevantProperties :[String], keysSelector :String,
+				keysSelectorInfo :[String : Any]) -> Int {
 		// Get current info
-		let (storedVersion, storedLastRevision) = IndexesTable.info(forName: name, in: self.indexesTable)
+		let currentInfo = IndexesTable.info(forName: name, in: self.collectionsTable)
 
 		// Setup table
 		let	indexContentsTable =
-					IndexContentsTable.table(in: self.database, name: name, version: self.databaseVersion!)
+					IndexContentsTable.table(in: self.database, name: name, internalsTable: self.internalsTable)
 		self.indexTablesByName.set(indexContentsTable, for: name)
 
-		// Compose last revision
+		// Compose next steps
 		let	lastRevision :Int
 		let	updateMasterTable :Bool
-		if storedLastRevision == nil {
+		if currentInfo == nil {
 			// New
 			lastRevision = 0
 			updateMasterTable = true
-		} else if version != storedVersion {
+		} else if (relevantProperties != currentInfo!.relevantProperties) ||
+				(keysSelector != currentInfo!.keysSelector) || !keysSelectorInfo.equals(currentInfo!.keysSelectorInfo) {
 			// Updated version
 			lastRevision = 0
 			updateMasterTable = true
 		} else {
 			// No change
-			lastRevision = storedLastRevision!
+			lastRevision = currentInfo!.lastRevision
 			updateMasterTable = false
 		}
 
 		// Check if need to update the master table
 		if updateMasterTable {
 			// New or updated
-			IndexesTable.addOrUpdate(name: name, version: version, lastRevision: lastRevision, in: self.indexesTable)
+			IndexesTable.addOrUpdate(name: name, documentType: documentType, relevantProperties: relevantProperties,
+					keysSelector: keysSelector, keysSelectorInfo: keysSelectorInfo, lastRevision: lastRevision,
+					in: self.indexesTable)
 
 			// Update table
-			if storedLastRevision != nil { indexContentsTable.drop() }
+			if currentInfo != nil { indexContentsTable.drop() }
 			indexContentsTable.create()
 		}
 
@@ -1383,24 +1655,28 @@ class MDSSQLiteDatabaseManager {
 		let	t = proc()
 
 		// Commit changes
-//		let	batchInfo = self.batchInfoMap.value(for: Thread.current)!
+		let	batchInfo = self.batchInfoMap.value(for: Thread.current)!
 		self.batchInfoMap.set(nil, for: Thread.current)
 
-//		batchInfo.documentLastRevisionTypesNeedingWrite.forEach() {
-//			// Update
-//			DocumentsTable.set(lastRevision: self.documentLastRevisionMap.value(for: $0)!, for: $0,
-//					in: self.documentsTable)
-//		}
-//		batchInfo.collectionInfo.forEach() {
-//			// Update collection
-//			self.updateCollection(name: $0.key, includedIDs: $0.value.includedIDs,
-//					notIncludedIDs: $0.value.notIncludedIDs, lastRevision: $0.value.lastRevision)
-//		}
-//		batchInfo.indexInfo.forEach() {
-//			// Update index
-//			self.updateIndex(name: $0.key, keysInfos: $0.value.keysInfos, removedIDs: $0.value.removedIDs,
-//					lastRevision: $0.value.lastRevision)
-//		}
+		batchInfo.documentLastRevisionTypesNeedingWrite.forEach() {
+			// Update
+			DocumentsTable.set(lastRevision: self.documentLastRevisionMap.value(for: $0)!, for: $0,
+					in: self.documentsTable)
+		}
+		batchInfo.cacheInfo.forEach() {
+			// Update Cache
+			self.cacheUpdate(name: $0.key, infosByValue: $0.value.infosByValue, lastRevision: $0.value.lastRevision)
+		}
+		batchInfo.collectionInfo.forEach() {
+			// Update Collection
+			self.collectionUpdate(name: $0.key, includedIDs: $0.value.includedIDs,
+					notIncludedIDs: $0.value.notIncludedIDs, lastRevision: $0.value.lastRevision)
+		}
+		batchInfo.indexInfo.forEach() {
+			// Update Index
+			self.indexUpdate(name: $0.key, keysInfos: $0.value.keysInfos, removedIDs: $0.value.removedIDs,
+					lastRevision: $0.value.lastRevision)
+		}
 
 		return t
 	}
@@ -1478,14 +1754,14 @@ class MDSSQLiteDatabaseManager {
 			// Setup tables
 			let	nameRoot = documentType.prefix(1).uppercased() + documentType.dropFirst()
 			let	infoTable =
-						DocumentTypeInfoTable.create(in: self.database, nameRoot: nameRoot,
-								version: self.databaseVersion!)
+						DocumentTypeInfoTable.table(in: self.database, nameRoot: nameRoot,
+								internalsTable: self.internalsTable)
 			let	contentsTable =
-						DocumentTypeContentsTable.create(in: self.database, nameRoot: nameRoot,
-								infoTable: infoTable, version: self.databaseVersion!)
+						DocumentTypeContentsTable.table(in: self.database, nameRoot: nameRoot,
+								infoTable: infoTable, internalsTable: self.internalsTable)
 			let	attachmentsTable =
-						DocumentTypeAttachmentsTable.create(in: self.database, nameRoot: nameRoot,
-								version: self.databaseVersion!)
+						DocumentTypeAttachmentsTable.table(in: self.database, nameRoot: nameRoot,
+								internalsTable: self.internalsTable)
 			let	documentTables = (infoTable, contentsTable, attachmentsTable)
 
 			// Cache

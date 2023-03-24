@@ -22,9 +22,9 @@ extension MDSHTTPServices {
 	// Class methods
 	//------------------------------------------------------------------------------------------------------------------
 	static func register(documentStorage :MDSHTTPServicesHandler, for documentStorageID :String = "default",
-			isIncludedProcs :[(selector :String, version :Int, isIncludedProc :MDSDocument.IsIncludedProc)] = [],
-			keysProcs :[(selector :String, version :Int, keysProc :MDSDocument.KeysProc)] = [],
-			valueProcs :[(selector :String, version :Int, valueProc :MDSDocument.ValueProc)] = [],
+			isIncludedProcs :[(selector :String, isIncludedProc :MDSDocument.IsIncludedProc)] = [],
+			keysProcs :[(selector :String, keysProc :MDSDocument.KeysProc)] = [],
+			valueProcs :[(selector :String, valueProc :MDSDocument.ValueProc)] = [],
 			authorizationValidationProc :@escaping AuthorizationValidationProc = { _ in true }) {
 		// Store
 		documentStorageInfosByDocumentStorageID[documentStorageID] = (documentStorage, authorizationValidationProc)
@@ -33,7 +33,7 @@ extension MDSHTTPServices {
 		documentStorage.register(
 				isIncludedProcs:
 						[
-							("documentPropertyIsValue()", 1,
+							("documentPropertyIsValue()",
 									{ [unowned documentStorage] documentType, document, info in
 										// Setup
 										guard let property = info["property"] as? String else { return false }
@@ -49,7 +49,7 @@ extension MDSHTTPServices {
 		documentStorage.register(
 				keysProcs:
 						[
-							("keysForDocumentProperty()", 1,
+							("keysForDocumentProperty()",
 									{ [unowned documentStorage] documentType, document, info in
 										// Setup
 										guard let property = info["property"] as? String else { return [] }
@@ -64,7 +64,7 @@ extension MDSHTTPServices {
 		documentStorage.register(
 				valueProcs:
 						[
-							("integerValueForProperty()", 1,
+							("integerValueForProperty()",
 									{ [unowned documentStorage] documentType, document, property in
 										// Return integer value
 										return documentStorage.documentIntegerValue(for: documentType,
@@ -394,8 +394,7 @@ extension HTTPServer {
 				// isIncludedSelectorInfo missing
 				return (.badRequest, nil, .json(["error": "Missing isIncludedSelectorInfo"]))
 			}
-			guard let (isIncludedProcVersion, isIncludedProc) =
-					documentStorage!.documentIsIncludedProcInfo(for: isIncludedSelector) else {
+			guard let isIncludedProc = documentStorage!.documentIsIncludedProc(for: isIncludedSelector) else {
 				// isIncludedSelector not found
 				return (.badRequest, nil, .json(["error": "Invalid isIncludedSelector"]))
 			}
@@ -406,7 +405,7 @@ extension HTTPServer {
 				try documentStorage!.collectionRegister(name: name, documentType: documentType,
 						relevantProperties: relevantProperties, isUpToDate: info.isUpToDate,
 						isIncludedInfo: isIncludedSelectorInfo, isIncludedSelector: isIncludedSelector,
-						isIncludedProcVersion: isIncludedProcVersion, isIncludedProc: isIncludedProc)
+						isIncludedProc: isIncludedProc)
 
 				return (.ok, nil, nil)
 			} catch {
@@ -763,7 +762,7 @@ extension HTTPServer {
 				// keysSelectorInfo missing
 				return (.badRequest, nil, .json(["error": "Missing keysSelectorInfo"]))
 			}
-			guard let (keysProcVersion, keysProc) = documentStorage!.documentKeysProcInfo(for: keysSelector) else {
+			guard let keysProc = documentStorage!.documentKeysProc(for: keysSelector) else {
 				// keysSelector not found
 				return (.badRequest, nil, .json(["error": "Invalid keysSelector"]))
 			}
@@ -773,7 +772,7 @@ extension HTTPServer {
 				// Register index
 				try documentStorage!.indexRegister(name: name, documentType: documentType,
 						relevantProperties: relevantProperties, keysInfo: keysSelectorInfo, keysSelector: keysSelector,
-						keysProcVersion: keysProcVersion, keysProc: keysProc)
+						keysProc: keysProc)
 
 				return (.ok, nil, nil)
 			} catch {
