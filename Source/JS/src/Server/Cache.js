@@ -81,7 +81,7 @@ module.exports = class Cache {
 					} else
 						// Not active
 						statementPerformer.queueDelete(this.table,
-								[{tableColumn: this.table.idTableColumn, value: updateDocumentInfo.id}]);
+								statementPerformer.where(this.table.idTableColumn, updateDocumentInfo.id));
 				}
 
 				// Update
