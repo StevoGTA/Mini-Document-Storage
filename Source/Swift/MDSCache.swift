@@ -39,8 +39,8 @@ class MDSCache : Equatable {
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	init(name :String, documentType :String, relevantProperties :[String], lastRevision :Int,
-			valueInfos :[(valueInfo :MDSValueInfo, proc :MDSDocument.ValueProc)]) {
+	init(name :String, documentType :String, relevantProperties :[String],
+			valueInfos :[(valueInfo :MDSValueInfo, proc :MDSDocument.ValueProc)], lastRevision :Int) {
 		// Store
 		self.name = name
 		self.documentType = documentType
@@ -69,8 +69,7 @@ class MDSCache : Equatable {
 			var	valuesByName = [/* Name */ String : Any]()
 			self.valueInfos.forEach() {
 				// Add entry for this value info
-				valuesByName[$0.name] =
-						$0.proc(type(of: updateInfo.document).documentType, updateInfo.document, $0.name)
+				valuesByName[$0.name] = $0.proc(self.documentType, updateInfo.document, $0.name)
 			}
 
 			infosByID[updateInfo.id] = valuesByName

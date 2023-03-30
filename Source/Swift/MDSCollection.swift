@@ -22,8 +22,8 @@ class MDSCollection : Equatable {
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	init(name :String, documentType :String, relevantProperties :[String], lastRevision :Int,
-			isIncludedProc :@escaping MDSDocument.IsIncludedProc, isIncludedInfo :[String : Any]) {
+	init(name :String, documentType :String, relevantProperties :[String],
+			isIncludedProc :@escaping MDSDocument.IsIncludedProc, isIncludedInfo :[String : Any], lastRevision :Int) {
 		// Store
 		self.name = name
 		self.documentType = documentType
@@ -49,7 +49,7 @@ class MDSCollection : Equatable {
 			// Check if there is something to do
 			if ($0.changedProperties == nil) || !self.relevantProperties.intersection($0.changedProperties!).isEmpty {
 				// Query
-				if self.isIncludedProc(type(of: $0.document).documentType, $0.document, self.isIncludedInfo) {
+				if self.isIncludedProc(self.documentType, $0.document, self.isIncludedInfo) {
 					// Included
 					includedIDs.append($0.id)
 				} else {

@@ -297,8 +297,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Create or re-create cache
 		let	cache =
 					MDSCache(name: name, documentType: documentType, relevantProperties: relevantProperties,
-							lastRevision: 0,
-							valueInfos: valueInfos.map({ (MDSValueInfo(name: $0, type: $1), $3) }))
+							valueInfos: valueInfos.map({ (MDSValueInfo(name: $0, type: $1), $3) }), lastRevision: 0)
 
 		// Add to maps
 		self.cachesByNameMap.set(cache, for: name)
@@ -326,8 +325,8 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Create or re-create collection
 		let	collection =
 					MDSCollection(name: name, documentType: documentType, relevantProperties: relevantProperties,
-							lastRevision: isUpToDate ? (self.documentLastRevisionMap.value(for: documentType) ?? 0) : 0,
-							isIncludedProc: isIncludedProc, isIncludedInfo: isIncludedInfo)
+							isIncludedProc: isIncludedProc, isIncludedInfo: isIncludedInfo,
+							lastRevision: isUpToDate ? (self.documentLastRevisionMap.value(for: documentType) ?? 0) : 0)
 
 		// Add to maps
 		self.collectionsByNameMap.set(collection, for: name)
@@ -875,7 +874,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Create or re-create index
 		let	index =
 					MDSIndex(name: name, documentType: documentType, relevantProperties: relevantProperties,
-							lastRevision: 0, keysProc: keysProc, keysInfo: keysInfo)
+							keysProc: keysProc, keysInfo: keysInfo, lastRevision: 0)
 
 		// Add to maps
 		self.indexesByNameMap.set(index, for: name)
@@ -1489,11 +1488,11 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	private func update(for documentType :String, updateInfos :[MDSUpdateInfo<String>]) {
 		// Update caches
 		self.cachesByDocumentTypeMap.values(for: documentType)?.forEach()
-				{ self.cacheUpdate($0, updateInfos: updateInfos) }
+			{ self.cacheUpdate($0, updateInfos: updateInfos) }
 
 		// Update collections
 		self.collectionsByDocumentTypeMap.values(for: documentType)?.forEach()
-				{ self.collectionUpdate($0, updateInfos: updateInfos) }
+			{ self.collectionUpdate($0, updateInfos: updateInfos) }
 
 		// Update indexes
 		self.indexesByDocumentTypeMap.values(for: documentType)?.forEach()
@@ -1511,9 +1510,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			{ self.collectionValuesMap.update(for: $0, with: { $0?.filter({ !documentIDs.contains($0) }) }) }
 
 		// Iterate all indexes
-		self.indexValuesMap.keys.forEach() {
-			// Remove document from this index
-			self.indexValuesMap.update(for: $0) { $0?.filter({ !documentIDs.contains($0.value) }) }
-		}
+		self.indexValuesMap.keys.forEach()
+			{ self.indexValuesMap.update(for: $0, with: { $0?.filter({ !documentIDs.contains($0.value) }) }) }
 	}
 }

@@ -55,6 +55,15 @@ import Foundation
 // MARK: MDSSQLiteDatabaseManager
 class MDSSQLiteDatabaseManager {
 
+	// MARK: CacheValueInfo
+	struct CacheValueInfo : Equatable {
+
+		// MARK: Properties
+		let	name :String
+		let	valueType :MDSValueType
+		let	selector :String
+	}
+
 	// MARK: DocumentInfo
 	struct DocumentInfo {
 
@@ -82,15 +91,18 @@ class MDSSQLiteDatabaseManager {
 	private	typealias DocumentTables =
 					(infoTable :SQLiteTable, contentsTable :SQLiteTable, attachmentsTable :SQLiteTable)
 
+	private	typealias CacheUpdateInfo =
+						(infosByValue :[Int64 : [/* Name */ String : Any]], removedIDs :[Int64], lastRevision :Int)
 	private	typealias CollectionUpdateInfo = (includedIDs :[Int64], notIncludedIDs :[Int64], lastRevision :Int)
 	private	typealias IndexUpdateInfo =
 						(keysInfos :[(keys :[String], id :Int64)], removedIDs :[Int64], lastRevision :Int)
 
 	// MARK: BatchInfo
-	private struct BatchInfo {
+	private class BatchInfo {
 
 		// MARK: Properties
 		var	documentLastRevisionTypesNeedingWrite = Set<String>()
+		var	cacheInfo = [/* Cache name */ String : CacheUpdateInfo]()
 		var	collectionInfo = [/* Collection name */ String : CollectionUpdateInfo]()
 		var	indexInfo = [/* Index name */ String : IndexUpdateInfo]()
 	}
@@ -120,6 +132,23 @@ class MDSSQLiteDatabaseManager {
 			}
 
 			return table
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func info(for name :String, in table :SQLiteTable) ->
+				(fromDocumentType :String, toDocumentType :String)? {
+			// Iterate all rows
+			var	info :(fromDocumentType :String, toDocumentType :String)?
+			try! table.select(where: SQLiteWhere(tableColumn: self.nameTableColumn, value: name)) {
+				// Process values
+				let	fromDocumentType = $0.text(for: self.fromTypeTableColumn)!
+				let	toDocumentType = $0.text(for: self.toTypeTableColumn)!
+
+				// Store
+				info = (fromDocumentType, toDocumentType)
+			}
+
+			return info
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
@@ -244,6 +273,71 @@ class MDSSQLiteDatabaseManager {
 
 			return table
 		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func info(for name :String, in table :SQLiteTable) ->
+				(type :String, relevantProperties :[String], valueInfos :[CacheValueInfo], lastRevision :Int)? {
+			// Query
+			var	info :(type :String, relevantProperties :[String], valueInfos :[CacheValueInfo], lastRevision :Int)?
+			try! table.select(
+					tableColumns:
+							[
+								self.typeTableColumn,
+								self.relevantPropertiesTableColumn,
+								self.infoTableColumn,
+								self.lastRevisionTableColumn
+							],
+					where: SQLiteWhere(tableColumn: self.nameTableColumn, value: name)) {
+						// Get info
+						let	type = $0.text(for: self.typeTableColumn)!
+						let	relevantProperties =
+								$0.text(for: self.relevantPropertiesTableColumn)!
+										.components(separatedBy: ",")
+										.filter({ !$0.isEmpty })
+						let	_info =
+									try! JSONSerialization.jsonObject(with: $0.blob(for: self.infoTableColumn)!) as!
+											[[String : String]]
+						let	lastRevision = Int($0.integer(for: self.lastRevisionTableColumn)!)
+
+						// Compose other info
+						let	valueInfos =
+									_info.map(
+											{ CacheValueInfo(name: $0["name"]!,
+													valueType: MDSValueType(rawValue: $0["valueType"]!)!,
+													selector: $0["selector"]!) })
+
+						// Set current info
+						info = (type, relevantProperties, valueInfos, lastRevision)
+					}
+
+			return info
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func addOrUpdate(name :String, documentType :String, relevantProperties :[String],
+				valueInfos :[CacheValueInfo], in table :SQLiteTable) {
+			// Setup
+			let	info =
+						valueInfos.map(
+								{ ["name": $0.name, "valueType": $0.valueType.rawValue, "selector": $0.selector] })
+
+			// Insert or replace
+			table.insertOrReplaceRow(
+					[
+						(self.nameTableColumn, name),
+						(self.typeTableColumn, documentType),
+						(self.relevantPropertiesTableColumn, String(combining: relevantProperties, with: ",")),
+						(self.infoTableColumn, try! JSONSerialization.data(withJSONObject: info)),
+						(self.lastRevisionTableColumn, 0),
+					])
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func update(name :String, lastRevision :Int, in table :SQLiteTable) {
+			// Update
+			table.update([(self.lastRevisionTableColumn, lastRevision)],
+					where: SQLiteWhere(tableColumn: self.nameTableColumn, value: name))
+		}
 	}
 
 	// MARK: CacheContentsTable
@@ -271,6 +365,18 @@ class MDSSQLiteDatabaseManager {
 			}
 
 			return table
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static func update(infosByValue :[Int64 : [/* Name */ String : Any]], removedIDs :[Int64],
+				in table :SQLiteTable) {
+			// Update
+			if !removedIDs.isEmpty { table.deleteRows(self.idTableColumn, values: removedIDs) }
+			infosByValue.forEach() {
+				// Insert or replace row for this id
+				table.insertOrReplaceRow(
+						[(self.idTableColumn, $0.key)] + $0.value.map({ (table.tableColumn(for: $0.key), $0.value) }))
+			}
 		}
 	}
 
@@ -335,18 +441,29 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func info(forName name :String, in table :SQLiteTable) ->
-				(relevantProperties :[String], isIncludedSelector :String, isIncludedSelectorInfo :[String : Any],
-						lastRevision :Int)? {
+		static func info(for name :String, in table :SQLiteTable) ->
+				(type :String, relevantProperties :[String], isIncludedSelector :String,
+						isIncludedSelectorInfo :[String : Any], lastRevision :Int)? {
 			// Query
-			var	currentInfo
-						:(relevantProperties :[String], isIncludedSelector :String,
+			var	info
+						:(type :String, relevantProperties :[String], isIncludedSelector :String,
 								isIncludedSelectorInfo :[String : Any], lastRevision :Int)?
-			try! table.select(tableColumns: [self.versionTableColumn, self.lastRevisionTableColumn],
+			try! table.select(
+					tableColumns:
+							[
+								self.typeTableColumn,
+								self.relevantPropertiesTableColumn,
+								self.isIncludedSelectorTableColumn,
+								self.isIncludedSelectorInfoTableColumn,
+								self.lastRevisionTableColumn,
+							],
 					where: SQLiteWhere(tableColumn: self.nameTableColumn, value: name)) {
 						// Get info
+						let	type = $0.text(for: self.typeTableColumn)!
 						let	relevantProperties =
-								$0.text(for: self.relevantPropertiesTableColumn)!.components(separatedBy: ",")
+								$0.text(for: self.relevantPropertiesTableColumn)!
+										.components(separatedBy: ",")
+										.filter({ !$0.isEmpty })
 						let	isIncludedSelector = $0.text(for: self.isIncludedSelectorTableColumn)!
 						let	isIncludedSelectorInfo =
 									try! JSONSerialization.jsonObject(
@@ -355,10 +472,10 @@ class MDSSQLiteDatabaseManager {
 						let	lastRevision = Int($0.integer(for: self.lastRevisionTableColumn)!)
 
 						// Set current info
-						currentInfo = (relevantProperties, isIncludedSelector, isIncludedSelectorInfo, lastRevision)
+						info = (type, relevantProperties, isIncludedSelector, isIncludedSelectorInfo, lastRevision)
 					}
 
-			return currentInfo
+			return info
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
@@ -831,18 +948,29 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func info(forName name :String, in table :SQLiteTable) ->
-				(relevantProperties :[String], keysSelector :String, keysSelectorInfo :[String : Any],
+		static func info(for name :String, in table :SQLiteTable) ->
+				(type :String, relevantProperties :[String], keysSelector :String, keysSelectorInfo :[String : Any],
 						lastRevision :Int)? {
 			// Query
-			var	currentInfo
-						:(relevantProperties :[String], keysSelector :String, keysSelectorInfo :[String : Any],
-								lastRevision :Int)?
-			try! table.select(tableColumns: [self.versionTableColumn, self.lastRevisionTableColumn],
+			var	info
+						:(type :String, relevantProperties :[String], keysSelector :String,
+								keysSelectorInfo :[String : Any], lastRevision :Int)?
+			try! table.select(
+					tableColumns:
+							[
+								self.typeTableColumn,
+								self.relevantPropertiesTableColumn,
+								self.keysSelectorTableColumn,
+								self.keysSelectorInfoTableColumn,
+								self.lastRevisionTableColumn,
+							],
 					where: SQLiteWhere(tableColumn: self.nameTableColumn, value: name)) {
 						// Get info
+						let	type = $0.text(for: self.typeTableColumn)!
 						let	relevantProperties =
-								$0.text(for: self.relevantPropertiesTableColumn)!.components(separatedBy: ",")
+								$0.text(for: self.relevantPropertiesTableColumn)!
+										.components(separatedBy: ",")
+										.filter({ !$0.isEmpty })
 						let	keysSelector = $0.text(for: self.keysSelectorTableColumn)!
 						let	keysSelectorInfo =
 									try! JSONSerialization.jsonObject(
@@ -850,10 +978,10 @@ class MDSSQLiteDatabaseManager {
 						let	lastRevision = Int($0.integer(for: self.lastRevisionTableColumn)!)
 
 						// Set current info
-						currentInfo = (relevantProperties, keysSelector, keysSelectorInfo, lastRevision)
+						info = (type, relevantProperties, keysSelector, keysSelectorInfo, lastRevision)
 					}
 
-			return currentInfo
+			return info
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
@@ -914,7 +1042,7 @@ class MDSSQLiteDatabaseManager {
 			// Setup
 			let	idsToRemove = removedIDs + keysInfos.map({ $0.id })
 
-			// Update tables
+			// Update
 			if !idsToRemove.isEmpty { table.deleteRows(self.idTableColumn, values: idsToRemove) }
 			keysInfos.forEach() { keysInfo in keysInfo.keys.forEach() {
 				// Insert this key
@@ -1151,6 +1279,23 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func associationInfo(for name :String) -> (fromDocumentType :String, toDocumentType :String)? {
+		// Get info
+		if let info = AssociationsTable.info(for: name, in: self.associationsTable) {
+			// Found
+			let	associationContentsTable =
+						AssocationContentsTable.table(in: self.database, name: name,
+								internalsTable: self.internalsTable)
+			self.associationTablesByName.set(associationContentsTable, for: name)
+
+			return info
+		} else {
+			// Not found
+			return nil
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func associationUpdate(name :String, updates :[MDSAssociation.Update], fromDocumentType :String,
 			toDocumentType :String) {
 		// Setup
@@ -1229,11 +1374,13 @@ class MDSSQLiteDatabaseManager {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func associationIterateDocumentInfos(name :String, fromDocumentID :String, fromDocumentType :String,
-			toDocumentType :String, startIndex :Int, count :Int?, proc :(_ documentInfo :DocumentInfo) -> Void) {
+			toDocumentType :String, startIndex :Int, count :Int?, proc :(_ documentInfo :DocumentInfo) -> Void) throws {
 		// Setup
-		let	associationContentsTable = self.associationTablesByName.value(for: name)!
 		let	fromDocumentTables = documentTables(for: fromDocumentType)
-		let	fromID = DocumentTypeInfoTable.id(for: fromDocumentID, in: fromDocumentTables.infoTable)!
+		guard let fromID = DocumentTypeInfoTable.id(for: fromDocumentID, in: fromDocumentTables.infoTable) else {
+			throw MDSDocumentStorageError.unknownDocumentID(documentID: fromDocumentID)
+		}
+		let	associationContentsTable = self.associationTablesByName.value(for: name)!
 		let	toDocumentTables = documentTables(for: toDocumentType)
 
 		// Iterate rows
@@ -1250,12 +1397,15 @@ class MDSSQLiteDatabaseManager {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func associationIterateDocumentInfos(name :String, toDocumentID :String, toDocumentType :String,
-			fromDocumentType :String, startIndex :Int, count :Int?, proc :(_ documentInfo :DocumentInfo) -> Void) {
+			fromDocumentType :String, startIndex :Int, count :Int?, proc :(_ documentInfo :DocumentInfo) -> Void)
+			throws {
 		// Setup
-		let	fromDocumentTables = documentTables(for: fromDocumentType)
 		let	toDocumentTables = documentTables(for: toDocumentType)
+		guard let toID = DocumentTypeInfoTable.id(for: toDocumentID, in: toDocumentTables.infoTable) else {
+			throw MDSDocumentStorageError.unknownDocumentID(documentID: toDocumentID)
+		}
+		let	fromDocumentTables = documentTables(for: fromDocumentType)
 		let	associationContentsTable = self.associationTablesByName.value(for: name)!
-		let	toID = DocumentTypeInfoTable.id(for: toDocumentID, in: toDocumentTables.infoTable)!
 
 		// Iterate rows
 		try! associationContentsTable.select(tableColumns: DocumentTypeInfoTable.tableColumns,
@@ -1271,13 +1421,112 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func associationIterateIntegerValues(name :String, fromDocumentID :String, documentType :String,
+			cacheName :String, cachedValueName :String, proc :(_ value :Int) -> Void) throws {
+		// Setup
+		let	fromDocumentTables = documentTables(for: documentType)
+		guard let fromID = DocumentTypeInfoTable.id(for: fromDocumentID, in: fromDocumentTables.infoTable) else {
+			throw MDSDocumentStorageError.unknownDocumentID(documentID: fromDocumentID)
+		}
+		let	associationContentsTable = self.associationTablesByName.value(for: name)!
+		let	cacheContentsTable = self.cacheTablesByName.value(for: cacheName)!
+
+		try! associationContentsTable.select(
+				tableColumns: [cacheContentsTable.tableColumn(for: cachedValueName)],
+				innerJoin:
+						SQLiteInnerJoin(associationContentsTable,
+								tableColumn: AssocationContentsTable.toIDTableColumn, to: cacheContentsTable,
+								otherTableColumn: CacheContentsTable.idTableColumn),
+				where: SQLiteWhere(tableColumn: AssocationContentsTable.fromIDTableColumn, value: fromID))
+				{ proc(Int($0.integer(for: cacheContentsTable.tableColumn(for: cachedValueName))!)) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func cacheRegister(name :String, documentType :String, relevantProperties :[String], valueInfos :[CacheValueInfo])
+			-> Int {
 		// Get current info
-		let (storedVersion, storedLastRevision) = CollectionsTable.info(forName: name, in: self.collectionsTable)
+		let	currentInfo = CachesTable.info(for: name, in: self.cachesTable)
+
+		// Setup table
+		let	cacheContentsTable =
+					CacheContentsTable.table(in: self.database, name: name, valueInfos: valueInfos,
+							internalsTable: self.internalsTable)
+		self.cacheTablesByName.set(cacheContentsTable, for: name)
+
+		// Compose next steps
+		let	lastRevision :Int
+		let	updateMasterTable :Bool
+		if currentInfo == nil {
+			// New
+			lastRevision = 0
+			updateMasterTable = true
+		} else if (relevantProperties != currentInfo!.relevantProperties) || (valueInfos != currentInfo!.valueInfos) {
+			// Info has changed
+			lastRevision = 0
+			updateMasterTable = true
+		} else {
+			// No change
+			lastRevision = currentInfo!.lastRevision
+			updateMasterTable = false
+		}
+
+		// Check if need to update the master table
+		if updateMasterTable {
+			// New or updated
+			CachesTable.addOrUpdate(name: name, documentType: documentType, relevantProperties: relevantProperties,
+					valueInfos: valueInfos, in: self.cachesTable)
+
+			// Update table
+			if currentInfo != nil { cacheContentsTable.drop() }
+			cacheContentsTable.create()
+		}
+
+		return lastRevision
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func cacheInfo(for name :String) ->
+			(documentType :String, relevantProperties :[String], valueInfos :[CacheValueInfo], lastRevision :Int)? {
+		// Get info
+		if let info = CachesTable.info(for: name, in: self.cachesTable) {
+			// Found
+			let	cacheContentsTable =
+						CacheContentsTable.table(in: self.database, name: name, valueInfos: info.valueInfos,
+								internalsTable: self.internalsTable)
+			self.cacheTablesByName.set(cacheContentsTable, for: name)
+
+			return (info.type, info.relevantProperties, info.valueInfos, info.lastRevision)
+		} else {
+			// Not found
+			return nil
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func cacheUpdate(name :String, infosByValue :[Int64 : [/* Name */ String : Any]], removedIDs :[Int64],
+			lastRevision :Int) {
+		// Check if in batch
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+			// Update batch info
+			let	cacheUpdateInfo = batchInfo.cacheInfo[name] ?? ([:], [], 0)
+			batchInfo.cacheInfo[name] =
+					(cacheUpdateInfo.infosByValue
+									.merging(infosByValue,
+											uniquingKeysWith: { $0.merging($1, uniquingKeysWith: { $1 }) }),
+							cacheUpdateInfo.removedIDs + removedIDs, lastRevision)
+		} else {
+			// Update tables
+			CachesTable.update(name: name, lastRevision: lastRevision, in: self.cachesTable)
+			CacheContentsTable.update(infosByValue: infosByValue, removedIDs: removedIDs,
+					in: self.cacheTablesByName.value(for: name)!)
+		}
+	}
+
 	//------------------------------------------------------------------------------------------------------------------
 	func collectionRegister(name :String, documentType :String, relevantProperties :[String],
 				isIncludedSelector :String, isIncludedSelectorInfo :[String : Any], isUpToDate :Bool) -> Int {
 		// Get current info
-		let currentInfo = CollectionsTable.info(forName: name, in: self.collectionsTable)
+		let currentInfo = CollectionsTable.info(for: name, in: self.collectionsTable)
 
 		// Setup table
 		let	collectionContentsTable =
@@ -1319,6 +1568,26 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func collectionInfo(for name :String) ->
+			(documentType :String, relevantProperties :[String], isIncludedSelector :String,
+					isIncludedSelectorInfo :[String : Any], lastRevision :Int)? {
+		// Get info
+		if let info = CollectionsTable.info(for: name, in: self.collectionsTable) {
+			// Found
+			let	collectionContentsTable =
+						CollectionContentsTable.table(in: self.database, name: name,
+								internalsTable: self.internalsTable)
+			self.collectionTablesByName.set(collectionContentsTable, for: name)
+
+			return (info.type, info.relevantProperties, info.isIncludedSelector, info.isIncludedSelectorInfo,
+					info.lastRevision)
+		} else {
+			// Not found
+			return nil
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func collectionGetDocumentCount(for name :String) -> Int { self.collectionTablesByName.value(for: name)!.count() }
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1329,7 +1598,7 @@ class MDSSQLiteDatabaseManager {
 		let	collectionContentsTable = self.collectionTablesByName.value(for: name)!
 
 		// Iterate rows
-		try! collectionContentsTable.select(tableColumns: DocumentTypeInfoTable.tableColumns,
+		try! collectionContentsTable.select(
 				innerJoin:
 						SQLiteInnerJoin(collectionContentsTable, tableColumn: CollectionContentsTable.idTableColumn,
 								to: documentTables.infoTable),
@@ -1341,13 +1610,12 @@ class MDSSQLiteDatabaseManager {
 	//------------------------------------------------------------------------------------------------------------------
 	func collectionUpdate(name :String, includedIDs :[Int64], notIncludedIDs :[Int64], lastRevision :Int) {
 		// Check if in batch
-		if var batchInfo = self.batchInfoMap.value(for: Thread.current) {
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
 			// Update batch info
-			let	collectionUpdateInfo = batchInfo.collectionInfo[name]
+			let	collectionUpdateInfo = batchInfo.collectionInfo[name] ?? ([], [], 0)
 			batchInfo.collectionInfo[name] =
-					((collectionUpdateInfo?.includedIDs ?? []) + includedIDs,
-							(collectionUpdateInfo?.notIncludedIDs ?? []) + notIncludedIDs, lastRevision)
-			self.batchInfoMap.set(batchInfo, for: Thread.current)
+					(collectionUpdateInfo.includedIDs + includedIDs,
+							collectionUpdateInfo.notIncludedIDs + notIncludedIDs, lastRevision)
 		} else {
 			// Update tables
 			CollectionsTable.update(name: name, lastRevision: lastRevision, in: self.collectionsTable)
@@ -1374,22 +1642,10 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentIsKnown(documentType :String) -> Bool { self.documentLastRevisionMap.value(for: documentType) != nil }
-	
-	//------------------------------------------------------------------------------------------------------------------
 	func documentCount(for documentType :String) -> Int { self.documentTables(for: documentType).infoTable.count() }
 
 	//------------------------------------------------------------------------------------------------------------------
-//	func documentInfoIterate(documentType :String, innerJoin :SQLiteInnerJoin? = nil,
-//			where sqliteWhere :SQLiteWhere? = nil,
-//			proc :(_ cocumentInfo :DocumentInfo, _ resultsRow :SQLiteResultsRow) -> Void) {
-//		// Setup
-//		let	documentTables = self.documentTables(for: documentType)
-//
-//		// Retrieve and iterate
-//		try! documentTables.infoTable.select(innerJoin: innerJoin, where: sqliteWhere)
-//				{ proc(DocumentTypeInfoTable.documentInfo(for: $0), $0) }
-//	}
+	func isKnown(documentType :String) -> Bool { self.documentLastRevisionMap.value(for: documentType) != nil }
 
 	//------------------------------------------------------------------------------------------------------------------
 	func documentInfoIterate(documentType :String, documentIDs :[String],
@@ -1554,7 +1810,7 @@ class MDSSQLiteDatabaseManager {
 	func indexRegister(name :String, documentType :String, relevantProperties :[String], keysSelector :String,
 				keysSelectorInfo :[String : Any]) -> Int {
 		// Get current info
-		let currentInfo = IndexesTable.info(forName: name, in: self.collectionsTable)
+		let currentInfo = IndexesTable.info(for: name, in: self.indexesTable)
 
 		// Setup table
 		let	indexContentsTable =
@@ -1595,6 +1851,24 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func indexInfo(for name :String) ->
+			(documentType :String, relevantProperties :[String], keysSelector :String, keysSelectorInfo :[String : Any],
+					lastRevision :Int)? {
+		// Get info
+		if let info = IndexesTable.info(for: name, in: self.indexesTable) {
+			// Found
+			let	indexContentsTable =
+						IndexContentsTable.table(in: self.database, name: name, internalsTable: self.internalsTable)
+			self.indexTablesByName.set(indexContentsTable, for: name)
+
+			return (info.type, info.relevantProperties, info.keysSelector, info.keysSelectorInfo, info.lastRevision)
+		} else {
+			// Not found
+			return nil
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func indexIterateDocumentInfos(name :String, documentType :String, keys :[String],
 			proc :(_ key :String, _ documentInfo :DocumentInfo) -> Void) {
 		// Setup
@@ -1603,7 +1877,6 @@ class MDSSQLiteDatabaseManager {
 
 		// Iterate rows
 		try! indexContentsTable.select(
-				tableColumns: [IndexContentsTable.keyTableColumn] + DocumentTypeInfoTable.tableColumns,
 				innerJoin:
 						SQLiteInnerJoin(indexContentsTable, tableColumn: IndexContentsTable.idTableColumn,
 								to: documentTables.infoTable),
@@ -1614,13 +1887,12 @@ class MDSSQLiteDatabaseManager {
 	//------------------------------------------------------------------------------------------------------------------
 	func indexUpdate(name :String, keysInfos :[(keys :[String], id :Int64)], removedIDs :[Int64], lastRevision :Int) {
 		// Check if in batch
-		if var batchInfo = self.batchInfoMap.value(for: Thread.current) {
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
 			// Update batch info
 			let	indexInfo = batchInfo.indexInfo[name]
 			batchInfo.indexInfo[name] =
 					((indexInfo?.keysInfos ?? []) + keysInfos, (indexInfo?.removedIDs ?? []) + removedIDs,
 							lastRevision)
-			self.batchInfoMap.set(batchInfo, for: Thread.current)
 		} else {
 			// Update tables
 			IndexesTable.update(name: name, lastRevision: lastRevision, in: self.indexesTable)
@@ -1644,18 +1916,15 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-//	func note(documentType :String) { _ = documentTables(for: documentType) }
-
-	//------------------------------------------------------------------------------------------------------------------
 	func batch<T>(_ proc :() -> T) -> T {
 		// Setup
-		self.batchInfoMap.set(BatchInfo(), for: Thread.current)
+		let	batchInfo = BatchInfo()
+		self.batchInfoMap.set(batchInfo, for: Thread.current)
 
 		// Call proc
 		let	t = proc()
 
 		// Commit changes
-		let	batchInfo = self.batchInfoMap.value(for: Thread.current)!
 		self.batchInfoMap.set(nil, for: Thread.current)
 
 		batchInfo.documentLastRevisionTypesNeedingWrite.forEach() {
@@ -1665,7 +1934,8 @@ class MDSSQLiteDatabaseManager {
 		}
 		batchInfo.cacheInfo.forEach() {
 			// Update Cache
-			self.cacheUpdate(name: $0.key, infosByValue: $0.value.infosByValue, lastRevision: $0.value.lastRevision)
+			self.cacheUpdate(name: $0.key, infosByValue: $0.value.infosByValue, removedIDs: $0.value.removedIDs,
+					lastRevision: $0.value.lastRevision)
 		}
 		batchInfo.collectionInfo.forEach() {
 			// Update Collection
@@ -1680,65 +1950,6 @@ class MDSSQLiteDatabaseManager {
 
 		return t
 	}
-
-	//------------------------------------------------------------------------------------------------------------------
-//	func innerJoin(for documentType :String) -> SQLiteInnerJoin {
-//		// Setup
-//		let	documentTables = self.documentTables(for: documentType)
-//
-//		return SQLiteInnerJoin(documentTables.infoTable, tableColumn: DocumentTypeInfoTable.idTableColumn,
-//				to: documentTables.contentsTable)
-//	}
-
-	//------------------------------------------------------------------------------------------------------------------
-//	func innerJoin(for documentType :String, collectionName :String) -> SQLiteInnerJoin {
-//		// Setup
-//		let	documentTables = self.documentTables(for: documentType)
-//		let	collectionContentsTable = self.collectionTablesByName.value(for: collectionName)!
-//
-//		return SQLiteInnerJoin(documentTables.infoTable, tableColumn: DocumentTypeInfoTable.idTableColumn,
-//						to: documentTables.contentsTable)
-//				.and(infoTable, tableColumn: DocumentTypeInfoTable.idTableColumn, to: collectionContentsTable)
-//	}
-
-	//------------------------------------------------------------------------------------------------------------------
-//	func innerJoin(for documentType :String, indexName :String) -> SQLiteInnerJoin {
-//		// Setup
-//		let	documentTables = self.documentTables(for: documentType)
-//		let	indexContentsTable = self.indexTablesByName.value(for: indexName)!
-//
-//		return SQLiteInnerJoin(documentTables.infoTable, tableColumn: DocumentTypeInfoTable.idTableColumn,
-//						to: documentTables.contentsTable)
-//				.and(infoTable, tableColumn: DocumentTypeInfoTable.idTableColumn, to: indexContentsTable)
-//	}
-
-	//------------------------------------------------------------------------------------------------------------------
-//	func `where`(forDocumentActive active :Bool = true) -> SQLiteWhere {
-//		// Return SQLiteWhere
-//		return SQLiteWhere(tableColumn: DocumentTypeInfoTable.activeTableColumn, value: active ? 1 : 0)
-//	}
-
-	//------------------------------------------------------------------------------------------------------------------
-//	func `where`(forDocumentIDs documentIDs :[String]) -> SQLiteWhere {
-//		// Return SQLiteWhere
-//		return SQLiteWhere(tableColumn: DocumentTypeInfoTable.documentIDTableColumn, values: documentIDs)
-//	}
-
-	//------------------------------------------------------------------------------------------------------------------
-//	func `where`(forDocumentRevision revision :Int, comparison :String = ">", activeOnly :Bool) -> SQLiteWhere {
-//		// Return SQLiteWhere
-//		return activeOnly ?
-//			SQLiteWhere(tableColumn: DocumentTypeInfoTable.revisionTableColumn, comparison: comparison, value: revision)
-//					.and(tableColumn: DocumentTypeInfoTable.activeTableColumn, value: 1) :
-//			SQLiteWhere(tableColumn: DocumentTypeInfoTable.revisionTableColumn, comparison: comparison,
-//							value: revision)
-//	}
-
-	//------------------------------------------------------------------------------------------------------------------
-//	func `where`(forIndexKeys keys :[String]) -> SQLiteWhere {
-//		// Return SQLiteWhere
-//		return SQLiteWhere(tableColumn: IndexContentsTable.keyTableColumn, values: keys)
-//	}
 
 	// MARK: Private methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -1777,10 +1988,9 @@ class MDSSQLiteDatabaseManager {
 		let	nextRevision = (self.documentLastRevisionMap.value(for: documentType) ?? 0) + 1
 
 		// Check if in batch
-		if var batchInfo = self.batchInfoMap.value(for: Thread.current) {
+		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
 			// Update batch info
 			batchInfo.documentLastRevisionTypesNeedingWrite.insert(documentType)
-			self.batchInfoMap.set(batchInfo, for: Thread.current)
 		} else {
 			// Update
 			DocumentsTable.set(lastRevision: nextRevision, for: documentType, in: self.documentsTable)

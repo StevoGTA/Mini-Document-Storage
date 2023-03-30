@@ -19,13 +19,13 @@ struct Server : ParsableCommand {
 								version: "1.0")
 
 	// MARK: Arguments
-	// Ephemeral
-	@Flag(name: .shortAndLong, help: "Use Ephemeral Backing.")
-	var	ephemeral = false
-
-	// SQLite
-	@Flag(name: .shortAndLong, help: "Use SQLite Backing.")
-	var	sqlite = false
+	// Document Storage
+	enum DocumentStorage :String, ExpressibleByArgument {
+		case swiftEphemeral
+		case swiftSQLite
+	}
+    @Option
+    var	documentStorage :DocumentStorage
 
 	// MARK: Instance Methods
 	//--------------------------------------------------------------------------------------------------------------
@@ -35,25 +35,22 @@ struct Server : ParsableCommand {
 
 		// Setup MDS
 		httpServer.setupMDSEndpoints()
-		if self.ephemeral {
-			// Ephemeral
-			let	documentStorage = MDSEphemeral()
+		switch self.documentStorage {
+			case .swiftEphemeral:
+				// Swift Ephemeral
+				let	documentStorage = MDSEphemeral()
 
-			MDSHTTPServices.register(documentStorage: documentStorage, for: "Sandbox")
-		} else if self.sqlite {
-			// SQLite
-			let	libraryFolder = FileManager.default.folder(for: .libraryDirectory)
-			let	applicationFolder = libraryFolder.folder(withSubPath: "Mini Document Storage Test Server (Swift)")
-			try! FileManager.default.create(applicationFolder)
+				MDSHTTPServices.register(documentStorage: documentStorage, for: "Sandbox")
 
-			let	documentStorage = try! MDSSQLite(in: applicationFolder)
+			case .swiftSQLite:
+				// Swift SQLite
+				let	libraryFolder = FileManager.default.folder(for: .libraryDirectory)
+				let	applicationFolder = libraryFolder.folder(withSubPath: "Mini Document Storage Test Server (Swift)")
+				try! FileManager.default.create(applicationFolder)
 
-			MDSHTTPServices.register(documentStorage: documentStorage, for: "Sandbox")
-		} else {
-			// You fool!
-			print("Must specify one of --ephemeral or --sqlite")
+				let	documentStorage = try! MDSSQLite(in: applicationFolder)
 
-			return
+				MDSHTTPServices.register(documentStorage: documentStorage, for: "Sandbox")
 		}
 
 		// Log

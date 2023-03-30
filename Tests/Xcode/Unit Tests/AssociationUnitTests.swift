@@ -961,20 +961,28 @@ class AssociationUnitTests : XCTestCase {
 		let	associationName = "\(Parent.documentType)To\(Child.documentType.capitalizingFirstLetter)"
 		let	config = Config.current
 
-		// Register
-		let	registerError =
+		// Register Association
+		let	associationRegisterError =
 					config.httpEndpointClient.associationRegister(documentStorageID: config.documentStorageID,
 							name: associationName, fromDocumentType: Parent.documentType,
 							toDocumentType: Child.documentType)
-		XCTAssertNil(registerError, "register received error: \(registerError!)")
-		guard registerError == nil else { return }
+		XCTAssertNil(associationRegisterError, "association register received error: \(associationRegisterError!)")
+		guard associationRegisterError == nil else { return }
+
+		// Register Cache
+		let	cacheRegisterError =
+					config.httpEndpointClient.cacheRegister(documentStorageID: config.documentStorageID,
+							name: "ABC", documentType: Child.documentType, relevantProperties: ["size"],
+							valueInfos: [("size", .integer, "integerValueForProperty()")])
+		XCTAssertNil(cacheRegisterError, "cache register received error: \(cacheRegisterError!)")
+		guard cacheRegisterError == nil else { return }
 
 		// Perform
 		let	documentID = UUID().base64EncodedString
 		let	(info, error) =
 					config.httpEndpointClient.associationGetIntegerValue(documentStorageID: config.documentStorageID,
 							name: associationName, action: .sum, fromDocumentID: documentID,
-							cacheName: "ABC", cachedValueName: "ABC")
+							cacheName: "ABC", cachedValueName: "size")
 
 		// Evaluate results
 		XCTAssertNil(info, "did receive info")

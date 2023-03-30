@@ -22,8 +22,8 @@ class MDSIndex : Equatable {
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	init(name :String, documentType :String, relevantProperties :[String], lastRevision :Int,
-			keysProc :@escaping MDSDocument.KeysProc, keysInfo :[String : Any]) {
+	init(name :String, documentType :String, relevantProperties :[String], keysProc :@escaping MDSDocument.KeysProc,
+			keysInfo :[String : Any], lastRevision :Int) {
 		// Store
 		self.name = name
 		self.documentType = documentType
@@ -48,7 +48,7 @@ class MDSIndex : Equatable {
 			// Check if there is something to do
 			if ($0.changedProperties == nil) || !self.relevantProperties.intersection($0.changedProperties!).isEmpty {
 				// Update keys info
-				keysInfos.append((self.keysProc(type(of: $0.document).documentType, $0.document, self.keysInfo), $0.id))
+				keysInfos.append((self.keysProc(self.documentType, $0.document, self.keysInfo), $0.id))
 			}
 
 			// Update last revision
