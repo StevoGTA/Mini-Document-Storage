@@ -633,7 +633,7 @@ extension HTTPEndpointClient {
 	func associationGetIntegerValue(documentStorageID :String, name :String,
 			action :MDSAssociation.GetIntegerValueAction, fromDocumentID :String, cacheName :String,
 			cachedValueName :String, authorization :String? = nil) ->
-			(info :(isUpToDate :Bool, value :Int?)?, error :Error?) {
+			(info :(isUpToDate :Bool, value :Int64?)?, error :Error?) {
 		// Perform
 		return DispatchQueue.performBlocking() { completionProc in
 			// Queue

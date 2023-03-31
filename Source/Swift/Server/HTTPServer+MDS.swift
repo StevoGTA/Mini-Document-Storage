@@ -275,7 +275,7 @@ extension HTTPServer {
 				switch action {
 					case .sum:
 						// Sum
-						let	sum :Int =
+						let	sum :Int64 =
 								try documentStorage!.associationGetIntegerValue(for: info.name, action: action,
 										fromDocumentID: fromDocumentID, cacheName: cacheName,
 										cachedValueName: cachedValueName)

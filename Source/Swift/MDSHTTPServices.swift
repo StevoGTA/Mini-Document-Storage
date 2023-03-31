@@ -451,7 +451,7 @@ class MDSHTTPServices {
 	class MDSIntegerWithUpToDateHTTPEndpointRequest : MDSHTTPEndpointRequest, HTTPEndpointRequestProcessResults {
 
 		// MARK: Types
-		typealias	CompletionWithUpToDateProc = (_ info :(isUpToDate :Bool, value :Int?)?, _ error :Error?) -> Void
+		typealias	CompletionWithUpToDateProc = (_ info :(isUpToDate :Bool, value :Int64?)?, _ error :Error?) -> Void
 
 		// MARK: Properties
 		var	completionWithUpToDateProc :CompletionWithUpToDateProc = { _,_ in }
@@ -470,7 +470,7 @@ class MDSHTTPServices {
 						if data != nil {
 							// Try to compose string from response
 							if let string = String(data: data!, encoding: .utf8),
-									let value = Int(string) {
+									let value = Int64(string) {
 								// Success
 								self.completionWithUpToDateProc((true, value), nil)
 							} else {

@@ -249,7 +249,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationGetIntegerValue(for name :String, action :MDSAssociation.GetIntegerValueAction,
-			fromDocumentID :String, cacheName :String, cachedValueName :String) throws -> Int {
+			fromDocumentID :String, cacheName :String, cachedValueName :String) throws -> Int64 {
 		// Validate
 		guard self.associationsByNameMap.value(for: name) != nil else {
 			throw MDSDocumentStorageError.unknownAssociation(name: name)
@@ -267,13 +267,13 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Iterate values
 		let	associationItems = associationItems(for: name)
 		let	cacheValueInfos = self.cacheValuesMap.value(for: cacheName)!
-		var	sum = 0
+		var	sum :Int64 = 0
 		associationItems
 				.filter({ $0.fromDocumentID == fromDocumentID })
 				.forEach() {
 					// Get value and sum
 					let	valueInfos = cacheValueInfos[$0.toDocumentID]!
-					sum += (valueInfos[cachedValueName] as? Int) ?? 0
+					sum += (valueInfos[cachedValueName] as? Int64) ?? 0
 				}
 
 		return sum

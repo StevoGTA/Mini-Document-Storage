@@ -258,7 +258,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationGetIntegerValue(for name :String, action :MDSAssociation.GetIntegerValueAction,
-			fromDocumentID :String, cacheName :String, cachedValueName :String) -> Int {
+			fromDocumentID :String, cacheName :String, cachedValueName :String) -> Int64 {
 		// May need to try this more than once
 		while true {
 			// Query collection document count
