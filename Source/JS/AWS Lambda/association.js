@@ -146,22 +146,27 @@ exports.getValueV1 = async (event) => {
 	let	action = event.pathParameters.action;
 
 	let	queryStringParameters = event.queryStringParameters || {};
-	let	fromDocumentID = decodeURIComponent(queryStringParameters.fromID);
-	let	cacheName = decodeURIComponent(queryStringParameters.cacheName);
-	let	cachedValueName = decodeURIComponent(queryStringParameters.cachedValueName);
+	let	cacheName = queryStringParameters.cacheName ? decodeURIComponent(queryStringParameters.cacheName) : null;
+	
+	let	multiValueQueryStringParameters = event.multiValueQueryStringParameters || {};
+	let	fromDocumentIDs =
+				(multiValueQueryStringParameters.fromID || []).map(documentID => decodeURIComponent(documentID));
+	let	cachedValueNames =
+				(multiValueQueryStringParameters.cachedValueName || [])
+						.map(valueName => decodeURIComponent(valueName));
 
 	// Catch errors
 	try {
 		// Get Association value
-		let	[upToDate, value, error] =
-					await documentStorage.associationGetValue(documentStorageID, name, action, fromDocumentID,
-							cacheName, cachedValueName);
+		let	[upToDate, results, error] =
+					await galaxyDocumentStorage.associationGetValue(documentStorageID, name, action, fromDocumentIDs,
+							cacheName, cachedValueNames);
 		if (upToDate)
 			// Success
 			return {
 					statusCode: 200,
 					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
-					body: value,
+					body: JSON.stringify(results),
 			};
 		else if (!error)
 			// Not up to date

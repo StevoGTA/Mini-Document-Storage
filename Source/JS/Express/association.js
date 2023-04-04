@@ -130,22 +130,30 @@ export async function getValueV1(request, response) {
 	let	name = decodeURIComponent(request.params.name);
 	let	action = request.params.action;
 
-	let	fromDocumentID = request.query.fromID ? decodeURIComponent(request.query.fromID) : null;
+	var	fromDocumentIDs = request.query.fromID || [];
+	if (typeof fromDocumentIDs == 'string')
+		fromDocumentIDs = [fromDocumentIDs];
+	fromDocumentIDs = fromDocumentIDs.map(documentID => decodeURIComponent(documentID));
+
 	let	cacheName = request.query.cacheName ? decodeURIComponent(request.query.cacheName) : null;
-	let	cachedValueName = request.query.cachedValueName ? decodeURIComponent(request.query.cachedValueName) : null;
+
+	let	cachedValueNames = request.query.cachedValueName || [];
+	if (typeof cachedValueNames == 'string')
+		cachedValueNames = [cachedValueNames];
+	cachedValueNames = cachedValueNames.map(documentID => decodeURIComponent(documentID));
 
 	// Catch errors
 	try {
 		// Get Association value
-		let	[upToDate, value, error] =
+		let	[upToDate, results, error] =
 					await request.app.locals.documentStorage.associationGetValue(documentStorageID, name, action,
-							fromDocumentID, cacheName, cachedValueName);
+							fromDocumentIDs, cacheName, cachedValueNames);
 		if (upToDate)
 			// Success
 			response
 					.status(200)
 					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
-					.send("" + value);
+					.send(results);
 		else if (!error)
 			// Not up to date
 			response

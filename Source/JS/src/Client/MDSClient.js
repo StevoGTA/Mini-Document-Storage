@@ -918,10 +918,10 @@ async function processResponse(response) {
 		}
 
 		// Process results
-		if (info.error)
+		if (info?.error)
 			// Have error in response
 			throw new Error('HTTP response: ' + response.status + ', error: ' + info.error);
-		else if (info.message)
+		else if (info?.message)
 			// Have message in response
 			throw new Error('HTTP response: ' + response.status + ', message: ' + info.message);
 		else
