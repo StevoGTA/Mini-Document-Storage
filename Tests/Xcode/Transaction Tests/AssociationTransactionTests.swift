@@ -68,7 +68,7 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve from
 		let	(fromInfo1, fromError1) =
-					config.httpEndpointClient.associationGetDocumentInfo(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: config.documentStorageID,
 							name: associationName, fromDocumentID: parent.id)
 		XCTAssertNotNil(fromInfo1, "get from (1) did not receive info")
 		if fromInfo1 != nil {
@@ -82,7 +82,7 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve to
 		let	(toInfo1, toError1) =
-					config.httpEndpointClient.associationGetDocumentInfo(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: config.documentStorageID,
 							name: associationName, toDocumentID: child.id)
 		XCTAssertNotNil(toInfo1, "get to (1) did not receive info")
 		if toInfo1 != nil {
@@ -103,7 +103,7 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve from
 		let	(fromInfo2, fromError2) =
-					config.httpEndpointClient.associationGetDocumentInfo(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: config.documentStorageID,
 							name: associationName, fromDocumentID: parent.id)
 		XCTAssertNotNil(fromInfo2, "get from (2) did not receive info")
 		if fromInfo2 != nil {
@@ -113,7 +113,7 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve to
 		let	(toInfo2, toError2) =
-					config.httpEndpointClient.associationGetDocumentInfo(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: config.documentStorageID,
 							name: associationName, toDocumentID: child.id)
 		XCTAssertNotNil(toInfo2, "get to (2) did not receive info")
 		if toInfo2 != nil {
@@ -178,7 +178,7 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve from
 		let	(fromInfo1, fromError1) =
-					config.httpEndpointClient.associationGetDocument(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.associationGetDocuments(documentStorageID: config.documentStorageID,
 							name: associationName, fromDocumentID: parent.id)
 		XCTAssertNotNil(fromInfo1, "get from (1) did not receive info")
 		if fromInfo1 != nil {
@@ -192,7 +192,7 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve to
 		let	(toInfo1, toError1) =
-					config.httpEndpointClient.associationGetDocument(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.associationGetDocuments(documentStorageID: config.documentStorageID,
 							name: associationName, toDocumentID: child.id)
 		XCTAssertNotNil(toInfo1, "get to (1) did not receive info")
 		if toInfo1 != nil {
@@ -213,7 +213,7 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve from
 		let	(fromInfo2, fromError2) =
-					config.httpEndpointClient.associationGetDocument(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.associationGetDocuments(documentStorageID: config.documentStorageID,
 							name: associationName, fromDocumentID: parent.id)
 		XCTAssertNotNil(fromInfo2, "get from (2) did not receive info")
 		if fromInfo2 != nil {
@@ -223,7 +223,7 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve to
 		let	(toInfo2, toError2) =
-					config.httpEndpointClient.associationGetDocument(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.associationGetDocuments(documentStorageID: config.documentStorageID,
 							name: associationName, toDocumentID: child.id)
 		XCTAssertNotNil(toInfo2, "get to (2) did not receive info")
 		if toInfo2 != nil {
@@ -293,32 +293,23 @@ class AssociationTransactionTests : XCTestCase {
 		guard cacheRegisterError == nil else { return }
 
 		// Get Association Value (may not be up to date - depends on server implementation)
-		let	(getValueInfo1, getValueError1) =
-					config.httpEndpointClient.associationGetIntegerValue(documentStorageID: config.documentStorageID,
-							name: associationName, action: .sum, fromDocumentID: parent.id, cacheName: cacheName,
-							cachedValueName: "size")
-		XCTAssertNil(getValueError1, "get value (1) received error: \(getValueError1!)")
+		var	(getValueInfo1, getValueError1) =
+					config.httpEndpointClient.associationGetIntegerValues(documentStorageID: config.documentStorageID,
+							name: associationName, action: .sum, fromDocumentIDs: [parent.id], cacheName: cacheName,
+							cachedValueNames: ["size"])
+		while (getValueInfo1 != nil) && !getValueInfo1!.isUpToDate {
+			// Try again
+			(getValueInfo1, getValueError1) =
+					config.httpEndpointClient.associationGetIntegerValues(documentStorageID: config.documentStorageID,
+							name: associationName, action: .sum, fromDocumentIDs: [parent.id], cacheName: cacheName,
+							cachedValueNames: ["size"])
+		}
 		XCTAssertNotNil(getValueInfo1, "get value (1) did not receive info")
 		guard getValueInfo1 != nil else { return }
-		if getValueInfo1!.isUpToDate {
-			// Cache is up to date
-			XCTAssertEqual(getValueInfo1!.value, 123 + 456, "get value (1) did not receive correct value")
-		} else {
-			// Cache is not up to date
-			XCTAssertNil(getValueInfo1!.value, "get value (1) received value")
-
-			// Get Association Value (up to date)
-			let	(getValueInfo2, getValueError2) =
-						config.httpEndpointClient.associationGetIntegerValue(documentStorageID: config.documentStorageID,
-								name: associationName, action: .sum, fromDocumentID: parent.id, cacheName: cacheName,
-								cachedValueName: "size")
-			XCTAssertNil(getValueError2, "get value (2) received error: \(getValueError2!)")
-			XCTAssertNotNil(getValueInfo2, "get value (2) did not receive info")
-			guard getValueInfo2 != nil else { return }
-			XCTAssertTrue(getValueInfo2!.isUpToDate, "get value (2) is not up to date")
-			guard getValueInfo2!.isUpToDate else { return }
-			XCTAssertEqual(getValueInfo2!.value, 123 + 456, "get value (2) did not receive correct value")
-		}
+		XCTAssertNotNil(getValueInfo1!.cachedValues, "get value (1) did not receive cachedValues")
+		guard getValueInfo1!.cachedValues != nil else { return }
+		XCTAssertEqual(getValueInfo1!.cachedValues!["size"]!, 123 + 456, "get value (1) did not receive correct value")
+		XCTAssertNil(getValueError1, "get value (1) received error: \(getValueError1!)")
 
 		// Create another document
 		let	(childInfos2, childCreateError2) =
@@ -341,15 +332,18 @@ class AssociationTransactionTests : XCTestCase {
 		guard addErrors2.isEmpty else { return }
 
 		// Get Association Value (up to date)
-		let	(getValueInfo3, getValueError3) =
-					config.httpEndpointClient.associationGetIntegerValue(documentStorageID: config.documentStorageID,
-							name: associationName, action: .sum, fromDocumentID: parent.id, cacheName: cacheName,
-							cachedValueName: "size")
-		XCTAssertNil(getValueError3, "get value (3) received error: \(getValueError3!)")
-		XCTAssertNotNil(getValueInfo3, "get value (3) did not receive info")
-		guard getValueInfo3 != nil else { return }
-		XCTAssertTrue(getValueInfo3!.isUpToDate, "get value (3) is not up to date")
-		guard getValueInfo3!.isUpToDate else { return }
-		XCTAssertEqual(getValueInfo3!.value, 123 + 456 + 789, "get value (3) did not receive correct value")
+		let	(getValueInfo2, getValueError2) =
+					config.httpEndpointClient.associationGetIntegerValues(documentStorageID: config.documentStorageID,
+							name: associationName, action: .sum, fromDocumentIDs: [parent.id], cacheName: cacheName,
+							cachedValueNames: ["size"])
+		XCTAssertNotNil(getValueInfo2, "get value (2) did not receive info")
+		guard getValueInfo2 != nil else { return }
+		XCTAssertTrue(getValueInfo2!.isUpToDate, "get value (2) is not up to date")
+		guard getValueInfo2!.isUpToDate else { return }
+		XCTAssertNotNil(getValueInfo2!.cachedValues, "get value (2) did not receive cachedValues")
+		guard getValueInfo2!.cachedValues != nil else { return }
+		XCTAssertEqual(getValueInfo2!.cachedValues!["size"]!, 123 + 456 + 789,
+				"get value (2) did not receive correct value")
+		XCTAssertNil(getValueError2, "get value (2) received error: \(getValueError2!)")
 	}
 }

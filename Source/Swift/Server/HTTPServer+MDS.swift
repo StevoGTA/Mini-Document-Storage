@@ -244,15 +244,19 @@ extension HTTPServer {
 		}
 		register(associationGetEndpoint)
 
-		// Association get value
-		var	associationGetValueEndpoint = MDSHTTPServices.associationGetValueEndpoint
-		associationGetValueEndpoint.performProc = { info in
+		// Association get values
+		var	associationGetValuesEndpoint = MDSHTTPServices.associationGetValuesEndpoint
+		associationGetValuesEndpoint.performProc = { info in
 			// Validate info
 			let	(documentStorage, performResult) =
 						self.preflight(documentStorageID: info.documentStorageID, authorization: info.authorization)
 			guard performResult == nil else { return performResult! }
 
-			guard let fromDocumentID = info.fromDocumentID else {
+			guard let fromDocumentIDs = info.fromDocumentIDs else {
+				// fromDocumentIDs missing
+				return (.badRequest, nil, .json(["error": "Missing fromDocumentIDs"]))
+			}
+			guard !fromDocumentIDs.isEmpty else {
 				// fromDocumentID missing
 				return (.badRequest, nil, .json(["error": "Missing fromDocumentID"]))
 			}
@@ -264,7 +268,11 @@ extension HTTPServer {
 				// action missing
 				return (.badRequest, nil, .json(["error": "Invalid action"]))
 			}
-			guard let cachedValueName = info.cachedValueName else {
+			guard let cachedValueNames = info.cachedValueNames else {
+				// cachedValueName missing
+				return (.badRequest, nil, .json(["error": "Missing cachedValueNames"]))
+			}
+			guard !cachedValueNames.isEmpty else {
 				// cachedValueName missing
 				return (.badRequest, nil, .json(["error": "Missing cachedValueName"]))
 			}
@@ -275,19 +283,19 @@ extension HTTPServer {
 				switch action {
 					case .sum:
 						// Sum
-						let	sum :Int64 =
-								try documentStorage!.associationGetIntegerValue(for: info.name, action: action,
-										fromDocumentID: fromDocumentID, cacheName: cacheName,
-										cachedValueName: cachedValueName)
+						let	results :[String : Int64] =
+								try documentStorage!.associationGetIntegerValues(for: info.name, action: action,
+										fromDocumentIDs: fromDocumentIDs, cacheName: cacheName,
+										cachedValueNames: cachedValueNames)
 
-						return (.ok, nil, .integer(sum))
+						return (.ok, nil, .json(results))
 				}
 			} catch {
 				// Error
 				return (.badRequest, nil, .json(["error": "\(error)"]))
 			}
 		}
-		register(associationGetValueEndpoint)
+		register(associationGetValuesEndpoint)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

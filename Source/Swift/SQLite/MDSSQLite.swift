@@ -128,8 +128,8 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func associationGetIntegerValue(for name :String, action :MDSAssociation.GetIntegerValueAction,
-			fromDocumentID :String, cacheName :String, cachedValueName :String) throws -> Int64 {
+	public func associationGetIntegerValues(for name :String, action :MDSAssociation.GetIntegerValueAction,
+			fromDocumentIDs :[String], cacheName :String, cachedValueNames :[String]) throws -> [String : Int64] {
 		// Validate
 		guard let association = association(for: name) else {
 			throw MDSDocumentStorageError.unknownAssociation(name: name)
@@ -137,17 +137,20 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		guard let cache = cache(for: cacheName) else {
 			throw MDSDocumentStorageError.unknownCache(name: cacheName)
 		}
-		guard cache.valueInfo(for: cachedValueName) != nil else {
-			throw MDSDocumentStorageError.unknownCacheValueName(valueName: cachedValueName)
+		try cachedValueNames.forEach() {
+			// Check if have info for this cachedValueName
+			guard cache.valueInfo(for: $0) != nil else {
+				throw MDSDocumentStorageError.unknownCacheValueName(valueName: $0)
+			}
 		}
 
 		// Check action
 		switch action {
 			case .sum:
 				// Sum
-				return try self.databaseManager.associationSum(name: name, fromDocumentID: fromDocumentID,
+				return try self.databaseManager.associationSum(name: name, fromDocumentIDs: fromDocumentIDs,
 						documentType: association.fromDocumentType, cacheName: cacheName,
-						cachedValueName: cachedValueName)
+						cachedValueNames: cachedValueNames)
 		}
 	}
 
@@ -1094,7 +1097,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> Int? {
+	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> Int64? {
 		// Check for batch
 		let	value :Any?
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
@@ -1109,7 +1112,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			value = try! documentBacking(documentType: documentType, documentID: document.id).value(for: property)
 		}
 
-		return value as? Int
+		return value as? Int64
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

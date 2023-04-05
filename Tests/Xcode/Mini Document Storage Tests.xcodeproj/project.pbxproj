@@ -217,8 +217,8 @@
 		0ADC8EB728BED94100632551 /* URL+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55521627C5DA60003E497B /* URL+Extensions.swift */; };
 		0ADC8EB828BED94D00632551 /* RangeReplaceableCollection+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55520C27C5DA60003E497B /* RangeReplaceableCollection+Extensions.swift */; };
 		0ADC8EB928BED96100632551 /* HTTPURLResponse+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55521B27C5DA60003E497B /* HTTPURLResponse+Extensions.swift */; };
-		0ADC8EBB28BEDBA300632551 /* VaporHTTPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55522A27C5DA60003E497B /* VaporHTTPServer.swift */; };
 		0ADC8EBE28BEDC5300632551 /* Vapor in Frameworks */ = {isa = PBXBuildFile; productRef = 0ADC8EBD28BEDC5300632551 /* Vapor */; };
+		0AE1646A29DB9F4B008B0814 /* VaporHTTPServer-3.x.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AE1646829DB9F47008B0814 /* VaporHTTPServer-3.x.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -288,7 +288,6 @@
 		0A55522527C5DA60003E497B /* Tree.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tree.swift; sourceTree = "<group>"; };
 		0A55522627C5DA60003E497B /* UndoManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UndoManager.swift; sourceTree = "<group>"; };
 		0A55522827C5DA60003E497B /* FilesystemEventsTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilesystemEventsTracker.swift; sourceTree = "<group>"; };
-		0A55522A27C5DA60003E497B /* VaporHTTPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VaporHTTPServer.swift; sourceTree = "<group>"; };
 		0A55522C27C5DA60003E497B /* HTTPEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPEndpoint.swift; sourceTree = "<group>"; };
 		0A55522D27C5DA60003E497B /* HTTPEndpointClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPEndpointClient.swift; sourceTree = "<group>"; };
 		0A55522E27C5DA60003E497B /* NetServiceSubscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetServiceSubscriber.swift; sourceTree = "<group>"; };
@@ -360,6 +359,8 @@
 		0ACCD9152814EBBC001D52CB /* CollectionUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionUnitTests.swift; sourceTree = "<group>"; };
 		0ADC8E8628BED43600632551 /* Server (Swift) */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Server (Swift)"; sourceTree = BUILT_PRODUCTS_DIR; };
 		0ADC8E8828BED43600632551 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		0AE1646829DB9F47008B0814 /* VaporHTTPServer-3.x.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VaporHTTPServer-3.x.swift"; sourceTree = "<group>"; };
+		0AE1646929DB9F47008B0814 /* VaporHTTPServer-4.x.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VaporHTTPServer-4.x.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -589,7 +590,8 @@
 		0A55522927C5DA60003E497B /* AddOn - Vapor */ = {
 			isa = PBXGroup;
 			children = (
-				0A55522A27C5DA60003E497B /* VaporHTTPServer.swift */,
+				0AE1646829DB9F47008B0814 /* VaporHTTPServer-3.x.swift */,
+				0AE1646929DB9F47008B0814 /* VaporHTTPServer-4.x.swift */,
 			);
 			path = "AddOn - Vapor";
 			sourceTree = "<group>";
@@ -1052,6 +1054,7 @@
 				0ADC8EA728BED86500632551 /* File.swift in Sources */,
 				0ADC8EAF28BED8DC00632551 /* String+Extensions.swift in Sources */,
 				0ADC8EA128BED85200632551 /* SQLiteResultsRow.swift in Sources */,
+				0AE1646A29DB9F4B008B0814 /* VaporHTTPServer-3.x.swift in Sources */,
 				0ADC8EA228BED85200632551 /* SQLiteWhere.swift in Sources */,
 				0ADC8EB928BED96100632551 /* HTTPURLResponse+Extensions.swift in Sources */,
 				0ADC8EB828BED94D00632551 /* RangeReplaceableCollection+Extensions.swift in Sources */,
@@ -1061,7 +1064,6 @@
 				0ADC8E9928BED81C00632551 /* MDSSQLiteDocumentBacking.swift in Sources */,
 				0ADC8E9728BED81400632551 /* MDSDocument.swift in Sources */,
 				0ADC8EB328BED91300632551 /* LockingPrimitives.swift in Sources */,
-				0ADC8EBB28BEDBA300632551 /* VaporHTTPServer.swift in Sources */,
 				0ADC8EA028BED85200632551 /* SQLiteInnerJoin.swift in Sources */,
 				0ADC8EA928BED8B000632551 /* HTTPServer.swift in Sources */,
 				0A874330294AF48900DAB65D /* SQLiteLimit.swift in Sources */,

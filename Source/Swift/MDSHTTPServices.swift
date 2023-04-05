@@ -254,7 +254,7 @@ protocol MDSHTTPServicesHandler : MDSDocumentStorageCore, MDSDocumentStorage {
 			[MDSDocument.RevisionInfo]
 	func collectionGetDocumentFullInfos(name :String, startIndex :Int, count :Int?) throws -> [MDSDocument.FullInfo]
 
-	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> Int?
+	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> Int64?
 	func documentStringValue(for documentType :String, document :MDSDocument, property :String) -> String?
 	func documentUpdate(for documentType :String, documentUpdateInfos :[MDSDocument.UpdateInfo]) throws ->
 			[MDSDocument.FullInfo]
@@ -431,60 +431,6 @@ class MDSHTTPServices {
 						// Error
 						self.completionWithUpToDateProc(nil,
 								MDSError.failed(status: HTTPEndpointStatus(rawValue: statusCode)!))
-					} else if statusCode >= 500 {
-						// Internal error
-						self.completionWithUpToDateProc(nil, MDSError.internalError)
-					} else {
-						// Unknown response status
-						self.completionWithUpToDateProc(nil,
-								MDSError.unknownResponseStatus(status: HTTPEndpointStatus(rawValue: statusCode)!))
-					}
-				} else {
-					// Error
-					completionWithUpToDateProc(nil, error)
-				}
-			}
-		}
-	}
-
-	// MARK: - MDSIntegerWithUpToDateHTTPEndpointRequest
-	class MDSIntegerWithUpToDateHTTPEndpointRequest : MDSHTTPEndpointRequest, HTTPEndpointRequestProcessResults {
-
-		// MARK: Types
-		typealias	CompletionWithUpToDateProc = (_ info :(isUpToDate :Bool, value :Int64?)?, _ error :Error?) -> Void
-
-		// MARK: Properties
-		var	completionWithUpToDateProc :CompletionWithUpToDateProc = { _,_ in }
-
-		// MARK: HTTPEndpointRequestProcessResults methods
-		//--------------------------------------------------------------------------------------------------------------
-		func processResults(response :HTTPURLResponse?, data :Data?, error :Error?) {
-			// Check cancelled
-			if !self.isCancelled {
-				// Handle results
-				if response != nil {
-					// Have response
-					let	statusCode = response!.statusCode
-					if (statusCode >= 200) && (statusCode < 300) {
-						// Success
-						if data != nil {
-							// Try to compose string from response
-							if let string = String(data: data!, encoding: .utf8),
-									let value = Int64(string) {
-								// Success
-								self.completionWithUpToDateProc((true, value), nil)
-							} else {
-								// Unable to get string
-								self.completionWithUpToDateProc(nil,
-										HTTPEndpointRequestError.unableToProcessResponseData)
-							}
-						}
-					} else if statusCode == 409 {
-						// Not up to date
-						completionWithUpToDateProc((false, nil), nil)
-					} else if (statusCode >= 400) && (statusCode < 500) {
-						// Error
-						self.completionWithUpToDateProc(nil, mdsError(for: data))
 					} else if statusCode >= 500 {
 						// Internal error
 						self.completionWithUpToDateProc(nil, MDSError.internalError)
@@ -886,13 +832,14 @@ class MDSHTTPServices {
 				queryComponents: queryComponents, headers: headers)
 	}
 
-	// MARK: - Association Get Value
-	typealias AssociationGetValueEndpointInfo =
+	// MARK: - Association Get Values
+	typealias AssociationGetValuesEndpointInfo =
 				(documentStorageID :String, name :String, action :MDSAssociation.GetIntegerValueAction?,
-						fromDocumentID :String?, cacheName :String?, cachedValueName :String?, authorization :String?)
-	static	let	associationGetValueEndpoint =
+						fromDocumentIDs :[String]?, cacheName :String?, cachedValueNames :[String]?,
+						authorization :String?)
+	static	let	associationGetValuesEndpoint =
 						BasicHTTPEndpoint(method: .get, path: "/v1/association/:documentStorageID/:name/:action")
-								{ performInfo -> AssociationGetValueEndpointInfo in
+								{ performInfo -> AssociationGetValuesEndpointInfo in
 									// Retrieve and validate
 									let	documentStorageID = performInfo.pathComponents[2]
 									let	name = performInfo.pathComponents[3]
@@ -902,27 +849,26 @@ class MDSHTTPServices {
 
 									return (documentStorageID, name,
 											MDSAssociation.GetIntegerValueAction(rawValue: action),
-											queryItemsMap["fromID"] as? String,
+											queryItemsMap.stringArray(for: "fromID") ?? [],
 											queryItemsMap["cacheName"] as? String,
-											queryItemsMap["cachedValueName"] as? String,
+											queryItemsMap.stringArray(for: "cachedValueName") ?? [],
 											performInfo.headers["Authorization"])
 								}
-	static func httpEndpointRequestForAssociationGetIntegerValue(documentStorageID :String, name :String,
-			action :MDSAssociation.GetIntegerValueAction, fromDocumentID :String, cacheName :String,
-			cachedValueName :String, authorization :String? = nil) -> MDSIntegerWithUpToDateHTTPEndpointRequest {
+	static func httpEndpointRequestForAssociationGetIntegerValues(documentStorageID :String, name :String,
+			action :MDSAssociation.GetIntegerValueAction, fromDocumentIDs :[String], cacheName :String,
+			cachedValueNames :[String], authorization :String? = nil) -> MDSJSONHTTPEndpointRequest<[String : Int64]> {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.transformedForPath
 		let	nameUse = name.transformedForPath
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		return MDSIntegerWithUpToDateHTTPEndpointRequest(method: .get,
+		return MDSJSONHTTPEndpointRequest<[String : Int64]>(method: .get,
 				path: "/v1/association/\(documentStorageIDUse)/\(nameUse)/\(action.rawValue)",
 				queryComponents: [
-									"fromID": fromDocumentID,
 									"cacheName": cacheName,
-									"cachedValueName": cachedValueName,
+									"cachedValueName": cachedValueNames,
 								 ],
-				headers: headers)
+				multiValueQueryComponent: (key: "fromID", values: fromDocumentIDs), headers: headers)
 	}
 
 	// MARK: - Cache Register

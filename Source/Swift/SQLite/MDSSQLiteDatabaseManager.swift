@@ -1421,22 +1421,29 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func associationSum(name :String, fromDocumentID :String, documentType :String, cacheName :String,
-			cachedValueName :String) throws -> Int64 {
+	func associationSum(name :String, fromDocumentIDs :[String], documentType :String, cacheName :String,
+			cachedValueNames :[String]) throws -> [String : Int64] {
 		// Setup
 		let	fromDocumentTables = documentTables(for: documentType)
-		guard let fromID = DocumentTypeInfoTable.id(for: fromDocumentID, in: fromDocumentTables.infoTable) else {
-			throw MDSDocumentStorageError.unknownDocumentID(documentID: fromDocumentID)
-		}
+		let	fromIDs =
+					try fromDocumentIDs.map({
+						// Get fromID
+						guard let fromID = DocumentTypeInfoTable.id(for: $0, in: fromDocumentTables.infoTable) else {
+							throw MDSDocumentStorageError.unknownDocumentID(documentID: $0)
+						}
+
+						return fromID
+					})
 		let	associationContentsTable = self.associationTablesByName.value(for: name)!
 		let	cacheContentsTable = self.cacheTablesByName.value(for: cacheName)!
+		let	cacheContentsTableColumns = cachedValueNames.map({ cacheContentsTable.tableColumn(for: $0) })
 
-		return try! associationContentsTable.sum(tableColumn: cacheContentsTable.tableColumn(for: cachedValueName),
+		return try! associationContentsTable.sum(tableColumns: cacheContentsTableColumns,
 				innerJoin:
 						SQLiteInnerJoin(associationContentsTable,
 								tableColumn: AssocationContentsTable.toIDTableColumn, to: cacheContentsTable,
 								otherTableColumn: CacheContentsTable.idTableColumn),
-				where: SQLiteWhere(tableColumn: AssocationContentsTable.fromIDTableColumn, value: fromID))
+				where: SQLiteWhere(tableColumn: AssocationContentsTable.fromIDTableColumn, values: fromIDs))
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

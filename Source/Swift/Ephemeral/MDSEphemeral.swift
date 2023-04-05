@@ -248,35 +248,51 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func associationGetIntegerValue(for name :String, action :MDSAssociation.GetIntegerValueAction,
-			fromDocumentID :String, cacheName :String, cachedValueName :String) throws -> Int64 {
+	public func associationGetIntegerValues(for name :String, action :MDSAssociation.GetIntegerValueAction,
+			fromDocumentIDs :[String], cacheName :String, cachedValueNames :[String]) throws -> [String : Int64] {
+		// Setup
+		let	fromDocumentIDsUse = Set<String>(fromDocumentIDs)
+
 		// Validate
 		guard self.associationsByNameMap.value(for: name) != nil else {
 			throw MDSDocumentStorageError.unknownAssociation(name: name)
 		}
-		guard self.documentMapsLock.read({ self.documentBackingByIDMap[fromDocumentID] }) != nil else {
-			throw MDSDocumentStorageError.unknownDocumentID(documentID: fromDocumentID)
+		try self.documentMapsLock.read() {
+			// Iterate fromDocumentIDsUse
+			try fromDocumentIDsUse.forEach() {
+				// Check if have document with this id
+				guard self.documentBackingByIDMap[$0] != nil else {
+					throw MDSDocumentStorageError.unknownDocumentID(documentID: $0)
+				}
+			}
 		}
 		guard let cache = self.cachesByNameMap.value(for: cacheName) else {
 			throw MDSDocumentStorageError.unknownCache(name: cacheName)
 		}
-		guard cache.valueInfo(for: cachedValueName) != nil else {
-			throw MDSDocumentStorageError.unknownCacheValueName(valueName: cachedValueName)
+		try cachedValueNames.forEach() {
+			// Check if have info for this cachedValueName
+			guard cache.valueInfo(for: $0) != nil else {
+				throw MDSDocumentStorageError.unknownCacheValueName(valueName: $0)
+			}
 		}
 
 		// Iterate values
 		let	associationItems = associationItems(for: name)
 		let	cacheValueInfos = self.cacheValuesMap.value(for: cacheName)!
-		var	sum :Int64 = 0
+
+		// Process associationItems
+		var	results = [String : Int64]()
 		associationItems
-				.filter({ $0.fromDocumentID == fromDocumentID })
+				.filter({ fromDocumentIDsUse.contains($0.fromDocumentID) })
 				.forEach() {
 					// Get value and sum
 					let	valueInfos = cacheValueInfos[$0.toDocumentID]!
-					sum += (valueInfos[cachedValueName] as? Int64) ?? 0
+
+					// Iterate cachedValueNames
+					cachedValueNames.forEach() { results[$0] = (results[$0] ?? 0) + ((valueInfos[$0] as? Int64) ?? 0) }
 				}
 
-		return sum
+		return results
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1238,7 +1254,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> Int? {
+	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> Int64? {
 		// Check for batch
 		let	value :Any?
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
@@ -1253,7 +1269,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			value = self.documentMapsLock.read() { self.documentBackingByIDMap[document.id]?.propertyMap[property] }
 		}
 
-		return value as? Int
+		return value as? Int64
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

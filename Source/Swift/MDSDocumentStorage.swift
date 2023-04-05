@@ -86,8 +86,8 @@ public protocol MDSDocumentStorage {
 			proc :(_ document :MDSDocument) -> Void) throws
 	func associationIterate(for name :String, to toDocumentID :String, fromDocumentType :String,
 			proc :(_ document :MDSDocument) -> Void) throws
-	func associationGetIntegerValue(for name :String, action :MDSAssociation.GetIntegerValueAction,
-			fromDocumentID :String, cacheName :String, cachedValueName :String) throws -> Int64
+	func associationGetIntegerValues(for name :String, action :MDSAssociation.GetIntegerValueAction,
+			fromDocumentIDs :[String], cacheName :String, cachedValueNames :[String]) throws -> [String : Int64]
 
 	func cacheRegister(name :String, documentType :String, relevantProperties :[String],
 			valueInfos :[(name :String, valueType :MDSValueType, selector :String, proc :MDSDocument.ValueProc)]) throws
@@ -227,25 +227,6 @@ extension MDSDocumentStorage {
 				to: document.id, fromDocumentType: T.documentType, proc: { documents.append($0 as! T) })
 
 		return documents
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func associationGetIntegerValue<T : MDSDocument>(from document :T,
-			action :MDSAssociation.GetIntegerValueAction, toDocumentType :String, cachedValueName :String) throws ->
-					Int64 {
-		// Return value
-		return try associationGetIntegerValue(
-				for: associationName(fromDocumentType: T.documentType, toDocumentType: toDocumentType), action: action,
-				fromDocumentID: document.id, cacheName: T.documentType, cachedValueName: cachedValueName)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func associationGetIntegerValue<T : MDSDocument>(for name :String,
-			action :MDSAssociation.GetIntegerValueAction, from document :T, cacheName :String? = nil,
-			cachedValueName :String) throws -> Int64 {
-		// Return value
-		return try associationGetIntegerValue(for: name, action: action, fromDocumentID: document.id,
-				cacheName: cacheName ?? T.documentType, cachedValueName: cachedValueName)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

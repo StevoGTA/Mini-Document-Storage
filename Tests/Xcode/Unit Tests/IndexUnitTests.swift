@@ -283,7 +283,7 @@ class IndexUnitTests : XCTestCase {
 
 		// Perform
 		let	(isUpToDate, info, error) =
-					config.httpEndpointClient.indexGetDocumentInfo(documentStorageID: "ABC", name: "ABC", keys: ["ABC"])
+					config.httpEndpointClient.indexGetDocumentInfos(documentStorageID: "ABC", name: "ABC", keys: ["ABC"])
 
 		// Evaluate results
 		XCTAssertNil(isUpToDate, "received isUpToDate")
@@ -312,7 +312,7 @@ class IndexUnitTests : XCTestCase {
 
 		// Perform
 		let	(isUpToDate, info, error) =
-					config.httpEndpointClient.indexGetDocumentInfo(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.indexGetDocumentInfos(documentStorageID: config.documentStorageID,
 							name: name, keys: ["ABC"])
 
 		// Evaluate results
@@ -342,7 +342,7 @@ class IndexUnitTests : XCTestCase {
 
 		// Perform
 		let	(isUpToDate, info, error) =
-					config.httpEndpointClient.indexGetDocument(documentStorageID: "ABC", name: "ABC", keys: ["ABC"])
+					config.httpEndpointClient.indexGetDocuments(documentStorageID: "ABC", name: "ABC", keys: ["ABC"])
 
 		// Evaluate results
 		XCTAssertNil(isUpToDate, "received isUpToDate")
@@ -371,7 +371,7 @@ class IndexUnitTests : XCTestCase {
 
 		// Perform
 		let	(isUpToDate, info, error) =
-					config.httpEndpointClient.indexGetDocument(documentStorageID: config.documentStorageID, name: name,
+					config.httpEndpointClient.indexGetDocuments(documentStorageID: config.documentStorageID, name: name,
 							keys: ["ABC"])
 
 		// Evaluate results

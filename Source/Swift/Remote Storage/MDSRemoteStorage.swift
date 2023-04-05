@@ -167,24 +167,16 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 			proc :(_ document :MDSDocument) -> Void) {
 // TODO: Check if in batch and add batch changes
 		// Setup
-		let	documentCreateProc =
-					self.documentCreateProcMap.value(for: toDocumentType) ??
-							{ MDSDocument(id: $0, documentStorage: $1) }
+		let	documentCreateProc = documentCreateProc(for: toDocumentType)
 
 		// May need to try this more than once
 		var	startIndex = 0
 		while true {
 			// Retrieve info
 			let	(info, error) =
-						DispatchQueue.performBlocking() { completionProc in
-							// Queue
-							self.httpEndpointClient.queue(
-									MDSHTTPServices.httpEndpointRequestForAssociationGetDocumentInfos(
-											documentStorageID: self.documentStorageID, name: name,
-											fromDocumentID: fromDocumentID, startIndex: startIndex,
-											authorization: self.authorization))
-									{ completionProc(($0, $1)) }
-						}
+						self.httpEndpointClient.associationGetDocumentInfos(documentStorageID: self.documentStorageID,
+								name: name, fromDocumentID: fromDocumentID, startIndex: startIndex,
+								authorization: self.authorization)
 
 			// Handle results
 			if let (documentRevisionInfos, isComplete) = info {
@@ -214,24 +206,16 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 			proc :(_ document :MDSDocument) -> Void) {
 // TODO: Check if in batch and add batch changes
 		// Setup
-		let	documentCreateProc =
-					self.documentCreateProcMap.value(for: fromDocumentType) ??
-							{ MDSDocument(id: $0, documentStorage: $1) }
+		let	documentCreateProc = documentCreateProc(for: fromDocumentType)
 
 		// May need to try this more than once
 		var	startIndex = 0
 		while true {
 			// Retrieve info
 			let	(info, error) =
-						DispatchQueue.performBlocking() { completionProc in
-							// Queue
-							self.httpEndpointClient.queue(
-									MDSHTTPServices.httpEndpointRequestForAssociationGetDocumentInfos(
-											documentStorageID: self.documentStorageID, name: name,
-											toDocumentID: toDocumentID, startIndex: startIndex,
-											authorization: self.authorization))
-									{ completionProc(($0, $1)) }
-						}
+						self.httpEndpointClient.associationGetDocumentInfos(
+								documentStorageID: self.documentStorageID, name: name, toDocumentID: toDocumentID,
+								startIndex: startIndex, authorization: self.authorization)
 
 			// Handle results
 			if let (documentRevisionInfos, isComplete) = info {
@@ -257,21 +241,16 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func associationGetIntegerValue(for name :String, action :MDSAssociation.GetIntegerValueAction,
-			fromDocumentID :String, cacheName :String, cachedValueName :String) -> Int64 {
+	public func associationGetIntegerValues(for name :String, action :MDSAssociation.GetIntegerValueAction,
+			fromDocumentIDs :[String], cacheName :String, cachedValueNames :[String]) -> [String : Int64] {
 		// May need to try this more than once
 		while true {
 			// Query collection document count
 			let	(info, error) =
-						DispatchQueue.performBlocking() { completionProc in
-							// Call HTTP Endpoint Client
-							self.httpEndpointClient.queue(
-									MDSHTTPServices.httpEndpointRequestForAssociationGetIntegerValue(
+						self.httpEndpointClient.associationGetIntegerValues(
 											documentStorageID: self.documentStorageID, name: name, action: action,
-											fromDocumentID: fromDocumentID, cacheName: cacheName,
-											cachedValueName: cachedValueName, authorization: self.authorization))
-									{ completionProc(($0, $1)) }
-						}
+										fromDocumentIDs: fromDocumentIDs, cacheName: cacheName,
+										cachedValueNames: cachedValueNames, authorization: self.authorization)
 
 			// Handle results
 			if info != nil {
@@ -281,13 +260,13 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 					continue
 				} else {
 					// Success
-					return info!.value ?? 0
+					return info!.cachedValues ?? [:]
 				}
 			} else {
 				// Error
 				self.recentErrors.append(error!)
 
-				return 0
+				return [:]
 			}
 		}
 	}
@@ -336,23 +315,12 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 		while true {
 			// Query collection document count
 			let	(info, error) =
-						DispatchQueue.performBlocking() { completionProc in
-							// Call HTTP Endpoint Client
-							self.httpEndpointClient.queue(
-									MDSHTTPServices.httpEndpointRequestForCollectionGetDocumentCount(
-											documentStorageID: self.documentStorageID, name: name,
-											authorization: self.authorization))
-									{ completionProc(($0, $1)) }
-						}
-			if error != nil {
-				// Error
-				self.recentErrors.append(error!)
-
-				return 0
-			}
+						self.httpEndpointClient.collectionGetDocumentCount(
+								documentStorageID: self.documentStorageID, name: name,authorization: self.authorization)
 
 			// Handle results
-			let	(isUpToDate, count) = info!
+			if let (isUpToDate, count) = info {
+				// Success
 			if !isUpToDate {
 				// Not up to date
 				continue
@@ -360,27 +328,28 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 				// Success
 				return count!
 			}
+			} else {
+				// Error
+				self.recentErrors.append(error!)
+
+				return 0
+			}
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func collectionIterate(name :String, documentType :String, proc :(_ document :MDSDocument) -> Void) {
 		// Setup
-		let	documentCreateProc = self.documentCreateProcMap.value(for: documentType)!
+		let	documentCreateProc = self.documentCreateProc(for: documentType)
 
 		// May need to try this more than once
 		var	startIndex = 0
 		while true {
 			// Retrieve info
 			let	(isUpToDate, info, error)  =
-						DispatchQueue.performBlocking() { completionProc in
-							// Queue
-							self.httpEndpointClient.queue(
-									MDSHTTPServices.httpEndpointRequestForCollectionGetDocumentInfos(
-											documentStorageID: self.documentStorageID, name: name,
-											startIndex: startIndex, authorization: self.authorization))
-									{ completionProc(($0, $1, $2)) }
-						}
+						self.httpEndpointClient.collectionGetDocumentInfos(
+								documentStorageID: self.documentStorageID, name: name, startIndex: startIndex,
+								authorization: self.authorization)
 
 			// Handle results
 			if !(isUpToDate ?? true) {
@@ -653,7 +622,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentAttachmentContent(for documentType :String, documentID :String, attachmentID :String) -> Data? {
+	public func documentAttachmentContent(for documentType :String, documentID :String, attachmentID :String) -> Data {
 // TODO: What about batch
 		// Check cache
 		if let content = self.remoteStorageCache.attachmentContent(for: attachmentID) { return content }
@@ -781,7 +750,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	public func indexIterate(name :String, documentType :String, keys :[String],
 			proc :(_ key :String, _ document :MDSDocument) -> Void) {
 		// Setup
-		let	documentCreateProc = self.documentCreateProcMap.value(for: documentType)!
+		let	documentCreateProc = documentCreateProc(for: documentType)
 		var	keysRemaining = Set<String>(keys.filter({ !$0.isEmpty }))
 		guard !keysRemaining.isEmpty else { return }
 
