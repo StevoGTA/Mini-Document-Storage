@@ -218,7 +218,7 @@
 		0ADC8EB828BED94D00632551 /* RangeReplaceableCollection+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55520C27C5DA60003E497B /* RangeReplaceableCollection+Extensions.swift */; };
 		0ADC8EB928BED96100632551 /* HTTPURLResponse+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55521B27C5DA60003E497B /* HTTPURLResponse+Extensions.swift */; };
 		0ADC8EBE28BEDC5300632551 /* Vapor in Frameworks */ = {isa = PBXBuildFile; productRef = 0ADC8EBD28BEDC5300632551 /* Vapor */; };
-		0AE1646A29DB9F4B008B0814 /* VaporHTTPServer-3.x.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AE1646829DB9F47008B0814 /* VaporHTTPServer-3.x.swift */; };
+		0AED2DBE29E61C2B00E07C13 /* VaporHTTPServer-4.x.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AE1646929DB9F47008B0814 /* VaporHTTPServer-4.x.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -1054,7 +1054,6 @@
 				0ADC8EA728BED86500632551 /* File.swift in Sources */,
 				0ADC8EAF28BED8DC00632551 /* String+Extensions.swift in Sources */,
 				0ADC8EA128BED85200632551 /* SQLiteResultsRow.swift in Sources */,
-				0AE1646A29DB9F4B008B0814 /* VaporHTTPServer-3.x.swift in Sources */,
 				0ADC8EA228BED85200632551 /* SQLiteWhere.swift in Sources */,
 				0ADC8EB928BED96100632551 /* HTTPURLResponse+Extensions.swift in Sources */,
 				0ADC8EB828BED94D00632551 /* RangeReplaceableCollection+Extensions.swift in Sources */,
@@ -1095,6 +1094,7 @@
 				0ADC8E9028BED80200632551 /* MDSDocumentStorage.swift in Sources */,
 				0A82EDA928C83857008F0218 /* HTTPServer+MDS.swift in Sources */,
 				0ADC8EB728BED94100632551 /* URL+Extensions.swift in Sources */,
+				0AED2DBE29E61C2B00E07C13 /* VaporHTTPServer-4.x.swift in Sources */,
 				0ADC8E9628BED81400632551 /* MDSCollection.swift in Sources */,
 				0ADC8EB528BED92400632551 /* URLComponents+Extensions.swift in Sources */,
 				0ADC8E9828BED81C00632551 /* MDSSQLite.swift in Sources */,
@@ -1673,7 +1673,7 @@
 			repositoryURL = "https://github.com/vapor/vapor.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 3.3.1;
+				minimumVersion = 4.0.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

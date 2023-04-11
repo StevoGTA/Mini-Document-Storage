@@ -315,9 +315,9 @@ Document Update
 	//		]
 
 Document Attachment Add
-	POST /v1/document/:documentStorageID/:documentType/:documentID/attachment
+	POST /v1/document/:documentStorageID/:type/:documentID/attachment
 	//	=> documentStorageID (path)
-	//	=> documentType (path)
+	//	=> type (path)
 	//	=> documentID (path)
 	//	=> json (body)
 	//		{
@@ -336,9 +336,9 @@ Document Attachment Add
 	//		}
 
 Document Attachment Get
-	GET /v1/document/:documentStorageID/:documentType/:documentID/attachment/:attachmentID
+	GET /v1/document/:documentStorageID/:type/:documentID/attachment/:attachmentID
 	//	=> documentStorageID (path)
-	//	=> documentType (path)
+	//	=> type (path)
 	//	=> documentID (path)
 	//	=> attachmentID (path)
 	//	=> authorization (header) (optional)
@@ -346,9 +346,9 @@ Document Attachment Get
 	//	<= data
 
 Document Attachment Update
-	PATCH /v1/document/:documentStorageID/:documentType/:documentID/attachment/:attachmentID
+	PATCH /v1/document/:documentStorageID/:type/:documentID/attachment/:attachmentID
 	//	=> documentStorageID (path)
-	//	=> documentType (path)
+	//	=> type (path)
 	//	=> documentID (path)
 	//	=> attachmentID (path)
 	//	=> json (body)
@@ -367,9 +367,9 @@ Document Attachment Update
 	//		}
 
 Document Attachment Remove
-	DELETE /v1/document/:documentStorageID/:documentType/:documentID/attachment/:attachmentID
+	DELETE /v1/document/:documentStorageID/:type/:documentID/attachment/:attachmentID
 	//	=> documentStorageID (path)
-	//	=> documentType (path)
+	//	=> type (path)
 	//	=> documentID (path)
 	//	=> attachmentID (path)
 	//	=> authorization (header) (optional)

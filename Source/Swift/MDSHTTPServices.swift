@@ -1182,7 +1182,7 @@ class MDSHTTPServices {
 						content :Data?, authorization :String?)
 	static	let	documentAttachmentAddEndpoint =
 						JSONHTTPEndpoint<[String : Any], DocumentAttachmentAddEndpointInfo>(method: .post,
-								path: "/v1/document/:documentStorageID/:documentType/:documentID/attachment")
+								path: "/v1/document/:documentStorageID/:type/:documentID/attachment")
 								{ (performInfo, info) -> DocumentAttachmentAddEndpointInfo in
 									// Retrieve and validate
 									let	documentStorageID = performInfo.pathComponents[2]
@@ -1214,7 +1214,7 @@ class MDSHTTPServices {
 						authorization :String?)
 	static	let	documentAttachmentGetEndpoint =
 						BasicHTTPEndpoint<DocumentAttachmentGetEndpointInfo>(method: .get,
-								path: "/v1/document/:documentStorageID/:documentType/:documentID/attachment/:attachmentID")
+								path: "/v1/document/:documentStorageID/:type/:documentID/attachment/:attachmentID")
 								{ performInfo -> DocumentAttachmentGetEndpointInfo in
 									// Retrieve and validate
 									let	documentStorageID = performInfo.pathComponents[2]
@@ -1245,7 +1245,7 @@ class MDSHTTPServices {
 						info :[String : Any]?, content :Data?, authorization :String?)
 	static	let	documentAttachmentUpdateEndpoint =
 						JSONHTTPEndpoint<[String : Any], DocumentAttachmentUpdateEndpointInfo>(method: .patch,
-								path: "/v1/document/:documentStorageID/:documentType/:documentID/attachment/:attachmentID")
+								path: "/v1/document/:documentStorageID/:type/:documentID/attachment/:attachmentID")
 								{ (performInfo, info) -> DocumentAttachmentUpdateEndpointInfo in
 									// Retrieve and validate
 									let	documentStorageID = performInfo.pathComponents[2]
@@ -1279,7 +1279,7 @@ class MDSHTTPServices {
 						authorization :String?)
 	static	let	documentAttachmentRemoveEndpoint =
 						BasicHTTPEndpoint<DocumentAttachmentRemoveEndpointInfo>(method: .delete,
-								path: "/v1/document/:documentStorageID/:documentType/:documentID/attachment/:attachmentID")
+								path: "/v1/document/:documentStorageID/:type/:documentID/attachment/:attachmentID")
 								{ performInfo -> DocumentAttachmentRemoveEndpointInfo in
 									// Retrieve and validate
 									let	documentStorageID = performInfo.pathComponents[2]

@@ -12,10 +12,10 @@ import Foundation
 class Config {
 
 	// MARK: Properties
-	static	let	current = swift
+	static	let	current = local
 
-	// JS testing when running server in VS Code
-	static	let	js =
+	// Server testing when running external server
+	static	let	server =
 						Config(
 								httpEndpointClient:
 										HTTPEndpointClient(scheme: "http", hostName: "localhost", port: 1138,
@@ -23,8 +23,8 @@ class Config {
 								documentStorageID: "Sandbox", defaultDocumentType: "test",
 								supportsLongDocumentIDs: false)
 
-	// Swift testing when running server in Xcode project
-	static	let	swift =
+	// Local testing when running server in Xcode project
+	static	let	local =
 						Config(
 								httpEndpointClient:
 										HTTPEndpointClient(scheme: "http", hostName: "localhost", port: 34343),
