@@ -61,23 +61,29 @@ class MDSCache : Equatable {
 	
 	//------------------------------------------------------------------------------------------------------------------
 	func update<U>(_ updateInfos :[MDSUpdateInfo<U>]) ->
-			(infosByID :[/* ID */ U : [/* Name */ String : Any]], lastRevision :Int) {
+			(infosByID :[/* ID */ U : [/* Name */ String : Any]]?, lastRevision :Int?) {
 		// Compose results
 		var	infosByID = [/* ID */ U : [/* Name */ String : Any]]()
+		var	lastRevision :Int?
 		updateInfos.forEach() { updateInfo in
-			// Collect value infos
-			var	valuesByName = [/* Name */ String : Any]()
-			self.valueInfos.forEach() {
-				// Add entry for this value info
-				valuesByName[$0.name] = $0.proc(self.documentType, updateInfo.document, $0.name)
-			}
+			// Check if there is something to do
+			if (updateInfo.changedProperties == nil) ||
+					!self.relevantProperties.intersection(updateInfo.changedProperties!).isEmpty {
+				// Collect value infos
+				var	valuesByName = [/* Name */ String : Any]()
+				self.valueInfos.forEach() {
+					// Add entry for this value info
+					valuesByName[$0.name] = $0.proc(self.documentType, updateInfo.document, $0.name)
+				}
 
-			infosByID[updateInfo.id] = valuesByName
+				infosByID[updateInfo.id] = valuesByName
+			}
 
 			// Update last revision
 			self.lastRevision = max(self.lastRevision, updateInfo.revision)
+			lastRevision = self.lastRevision
 		}
 
-		return (infosByID, self.lastRevision)
+		return (!infosByID.isEmpty ? infosByID : nil, lastRevision)
 	}
 }

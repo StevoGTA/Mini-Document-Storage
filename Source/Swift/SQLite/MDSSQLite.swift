@@ -1317,12 +1317,15 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	private func cacheUpdate(_ cache :MDSCache,
 			updateInfo :(updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64])) {
-		// Update
+		// Update Cache
 		let	(infosByValue, lastRevision) = cache.update(updateInfo.updateInfos)
 
-		// Update database
-		self.databaseManager.cacheUpdate(name: cache.name, infosByValue: infosByValue,
-				removedIDs: updateInfo.removedIDs, lastRevision: lastRevision)
+		// Check if have updates
+		if !updateInfo.removedIDs.isEmpty || (lastRevision != nil) {
+			// Update database
+			self.databaseManager.cacheUpdate(name: cache.name, infosByValue: infosByValue,
+					removedIDs: updateInfo.removedIDs, lastRevision: lastRevision)
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1365,15 +1368,20 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	private func collectionUpdate(_ collection :MDSCollection,
 			updateInfo :(updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64])) {
-		// Update
-		if let (includedIDs, notIncludedIDs, lastRevision) = collection.update(updateInfo.updateInfos) {
+		// Update Collection
+		var	(includedIDs, notIncludedIDs, lastRevision) = collection.update(updateInfo.updateInfos)
+
+		// Process results
+		if !updateInfo.removedIDs.isEmpty {
+			// Add removedIDs
+			notIncludedIDs = (notIncludedIDs ?? []) + updateInfo.removedIDs
+		}
+
+		// Check if have updates
+		if (notIncludedIDs != nil) || (lastRevision != nil) {
 			// Update database
 			self.databaseManager.collectionUpdate(name: collection.name, includedIDs: includedIDs,
-					notIncludedIDs: notIncludedIDs + updateInfo.removedIDs, lastRevision: lastRevision)
-		} else if !updateInfo.removedIDs.isEmpty {
-			// Update database
-			self.databaseManager.collectionUpdate(name: collection.name, includedIDs: [],
-					notIncludedIDs: updateInfo.removedIDs, lastRevision: collection.lastRevision)
+					notIncludedIDs: notIncludedIDs, lastRevision: lastRevision)
 		}
 	}
 
@@ -1513,15 +1521,14 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	private func indexUpdate(_ index :MDSIndex,
 			updateInfo :(updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64])) {
-		// Update
-		if let (keysInfos, lastRevision) = index.update(updateInfo.updateInfos) {
+		// Update Index
+		let	(keysInfos, lastRevision) = index.update(updateInfo.updateInfos)
+
+		// Check if have updates
+		if !updateInfo.removedIDs.isEmpty || (lastRevision != nil) {
 			// Update database
 			self.databaseManager.indexUpdate(name: index.name, keysInfos: keysInfos, removedIDs: updateInfo.removedIDs,
 					lastRevision: lastRevision)
-		} else if !updateInfo.removedIDs.isEmpty {
-			// Update database
-			self.databaseManager.indexUpdate(name: index.name, keysInfos: [], removedIDs: updateInfo.removedIDs,
-					lastRevision: index.lastRevision)
 		}
 	}
 

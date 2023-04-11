@@ -92,10 +92,10 @@ class MDSSQLiteDatabaseManager {
 					(infoTable :SQLiteTable, contentsTable :SQLiteTable, attachmentsTable :SQLiteTable)
 
 	private	typealias CacheUpdateInfo =
-						(infosByValue :[Int64 : [/* Name */ String : Any]], removedIDs :[Int64], lastRevision :Int)
-	private	typealias CollectionUpdateInfo = (includedIDs :[Int64], notIncludedIDs :[Int64], lastRevision :Int)
+						(infosByValue :[Int64 : [/* Name */ String : Any]], removedIDs :[Int64], lastRevision :Int?)
+	private	typealias CollectionUpdateInfo = (includedIDs :[Int64], notIncludedIDs :[Int64], lastRevision :Int?)
 	private	typealias IndexUpdateInfo =
-						(keysInfos :[(keys :[String], id :Int64)], removedIDs :[Int64], lastRevision :Int)
+						(keysInfos :[(keys :[String], id :Int64)], removedIDs :[Int64], lastRevision :Int?)
 
 	// MARK: BatchInfo
 	private class BatchInfo {
@@ -1508,22 +1508,28 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func cacheUpdate(name :String, infosByValue :[Int64 : [/* Name */ String : Any]], removedIDs :[Int64],
-			lastRevision :Int) {
+	func cacheUpdate(name :String, infosByValue :[Int64 : [/* Name */ String : Any]]?, removedIDs :[Int64],
+			lastRevision :Int?) {
 		// Check if in batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
 			// Update batch info
-			let	cacheUpdateInfo = batchInfo.cacheInfo[name] ?? ([:], [], 0)
+			let	cacheUpdateInfo = batchInfo.cacheInfo[name] ?? ([:], [], nil)
 			batchInfo.cacheInfo[name] =
 					(cacheUpdateInfo.infosByValue
-									.merging(infosByValue,
+									.merging(infosByValue ?? [:],
 											uniquingKeysWith: { $0.merging($1, uniquingKeysWith: { $1 }) }),
 							cacheUpdateInfo.removedIDs + removedIDs, lastRevision)
 		} else {
 			// Update tables
-			CachesTable.update(name: name, lastRevision: lastRevision, in: self.cachesTable)
-			CacheContentsTable.update(infosByValue: infosByValue, removedIDs: removedIDs,
-					in: self.cacheTablesByName.value(for: name)!)
+			if lastRevision != nil {
+				// Update Caches table
+				CachesTable.update(name: name, lastRevision: lastRevision!, in: self.cachesTable)
+			}
+			if (infosByValue != nil) || !removedIDs.isEmpty {
+				// Update Cache contents table
+				CacheContentsTable.update(infosByValue: infosByValue ?? [:], removedIDs: removedIDs,
+						in: self.cacheTablesByName.value(for: name)!)
+			}
 		}
 	}
 
@@ -1613,19 +1619,25 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func collectionUpdate(name :String, includedIDs :[Int64], notIncludedIDs :[Int64], lastRevision :Int) {
+	func collectionUpdate(name :String, includedIDs :[Int64]?, notIncludedIDs :[Int64]?, lastRevision :Int?) {
 		// Check if in batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
 			// Update batch info
-			let	collectionUpdateInfo = batchInfo.collectionInfo[name] ?? ([], [], 0)
+			let	collectionUpdateInfo = batchInfo.collectionInfo[name] ?? ([], [], nil)
 			batchInfo.collectionInfo[name] =
-					(collectionUpdateInfo.includedIDs + includedIDs,
-							collectionUpdateInfo.notIncludedIDs + notIncludedIDs, lastRevision)
+					(collectionUpdateInfo.includedIDs + (includedIDs ?? []),
+							collectionUpdateInfo.notIncludedIDs + (notIncludedIDs ?? []), lastRevision)
 		} else {
 			// Update tables
-			CollectionsTable.update(name: name, lastRevision: lastRevision, in: self.collectionsTable)
-			CollectionContentsTable.update(includedIDs: includedIDs, notIncludedIDs: notIncludedIDs,
-					in: self.collectionTablesByName.value(for: name)!)
+			if lastRevision != nil {
+				// Update Collections table
+				CollectionsTable.update(name: name, lastRevision: lastRevision!, in: self.collectionsTable)
+			}
+			if (includedIDs != nil) || (notIncludedIDs != nil) {
+				// Update Collection contents table
+				CollectionContentsTable.update(includedIDs: includedIDs ?? [], notIncludedIDs: notIncludedIDs ?? [],
+						in: self.collectionTablesByName.value(for: name)!)
+			}
 		}
 	}
 
@@ -1890,19 +1902,26 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func indexUpdate(name :String, keysInfos :[(keys :[String], id :Int64)], removedIDs :[Int64], lastRevision :Int) {
+	func indexUpdate(name :String, keysInfos :[(keys :[String], id :Int64)]?, removedIDs :[Int64]?,
+			lastRevision :Int?) {
 		// Check if in batch
 		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
 			// Update batch info
-			let	indexInfo = batchInfo.indexInfo[name]
+			let	indexInfo = batchInfo.indexInfo[name] ?? ([], [], nil)
 			batchInfo.indexInfo[name] =
-					((indexInfo?.keysInfos ?? []) + keysInfos, (indexInfo?.removedIDs ?? []) + removedIDs,
+					(indexInfo.keysInfos + (keysInfos ?? []), indexInfo.removedIDs + (removedIDs ?? []),
 							lastRevision)
 		} else {
 			// Update tables
-			IndexesTable.update(name: name, lastRevision: lastRevision, in: self.indexesTable)
-			IndexContentsTable.update(keysInfos: keysInfos, removedIDs: removedIDs,
-					in: self.indexTablesByName.value(for: name)!)
+			if lastRevision != nil {
+				// Update Indexes table
+				IndexesTable.update(name: name, lastRevision: lastRevision!, in: self.indexesTable)
+			}
+			if (keysInfos != nil) || (removedIDs != nil) {
+				// Update Index contents table
+				IndexContentsTable.update(keysInfos: keysInfos ?? [], removedIDs: removedIDs ?? [],
+						in: self.indexTablesByName.value(for: name)!)
+			}
 		}
 	}
 	//------------------------------------------------------------------------------------------------------------------

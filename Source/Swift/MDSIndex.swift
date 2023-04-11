@@ -41,9 +41,10 @@ class MDSIndex : Equatable {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	func update<U>(_ updateInfos :[MDSUpdateInfo<U>]) -> (keysInfos :[(keys :[String], id :U)], lastRevision :Int)? {
+	func update<U>(_ updateInfos :[MDSUpdateInfo<U>]) -> (keysInfos :[(keys :[String], id :U)]?, lastRevision :Int?) {
 		// Compose results
 		var	keysInfos = [(keys :[String], id :U)]()
+		var	lastRevision :Int?
 		updateInfos.forEach() {
 			// Check if there is something to do
 			if ($0.changedProperties == nil) || !self.relevantProperties.intersection($0.changedProperties!).isEmpty {
@@ -53,14 +54,9 @@ class MDSIndex : Equatable {
 
 			// Update last revision
 			self.lastRevision = max(self.lastRevision, $0.revision)
+			lastRevision = self.lastRevision
 		}
 
-		if !keysInfos.isEmpty {
-			// Have info
-			return (keysInfos, self.lastRevision)
-		} else {
-			// No info
-			return nil
-		}
+		return (keysInfos, lastRevision)
 	}
 }

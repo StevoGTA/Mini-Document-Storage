@@ -41,10 +41,11 @@ class MDSCollection : Equatable {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	func update<U>(_ updateInfos :[MDSUpdateInfo<U>]) -> (includedIDs :[U], notIncludedIDs :[U], lastRevision :Int)? {
+	func update<U>(_ updateInfos :[MDSUpdateInfo<U>]) -> (includedIDs :[U]?, notIncludedIDs :[U]?, lastRevision :Int?) {
 		// Compose results
 		var	includedIDs = [U]()
 		var	notIncludedIDs = [U]()
+		var	lastRevision :Int?
 		updateInfos.forEach() {
 			// Check if there is something to do
 			if ($0.changedProperties == nil) || !self.relevantProperties.intersection($0.changedProperties!).isEmpty {
@@ -60,9 +61,9 @@ class MDSCollection : Equatable {
 
 			// Update last revision
 			self.lastRevision = max(self.lastRevision, $0.revision)
+			lastRevision = self.lastRevision
 		}
 
-		return (!includedIDs.isEmpty || !notIncludedIDs.isEmpty) ?
-				(includedIDs, notIncludedIDs, self.lastRevision) : nil
+		return (!includedIDs.isEmpty ? includedIDs : nil, !notIncludedIDs.isEmpty ? notIncludedIDs : nil, lastRevision)
 	}
 }

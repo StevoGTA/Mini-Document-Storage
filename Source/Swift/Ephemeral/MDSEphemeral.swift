@@ -1434,22 +1434,31 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func cacheUpdate(_ cache :MDSCache, updateInfos :[MDSUpdateInfo<String>]) {
-		// Get infos
+		// Update Cache
 		let	(infosByValue, _) = cache.update(updateInfos)
 
-		// Update
-		self.cacheValuesMap.update(for: cache.name, with: { ($0 ?? [:])
-				.merging(infosByValue, uniquingKeysWith: { $1 }) })
+		// Check if have updates
+		if infosByValue != nil {
+			// Update storage
+			self.cacheValuesMap.update(for: cache.name, with: { ($0 ?? [:])
+					.merging(infosByValue!, uniquingKeysWith: { $1 }) })
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func collectionUpdate(_ collection :MDSCollection, updateInfos :[MDSUpdateInfo<String>]) {
-		// Update
-		if let (includedIDs, notIncludedIDs, _) = collection.update(updateInfos) {
+		// Update Collection
+		let	(includedIDs, notIncludedIDs, _) = collection.update(updateInfos)
+
+		// Check if have updates
+		if (includedIDs != nil) || (notIncludedIDs != nil) {
+			// Setup
+			let	notIncludedIDsUse = Set<String>(notIncludedIDs ?? [])
+
 			// Update storage
 			self.collectionValuesMap.update(for: collection.name) {
 				// Compose updated values
-				let	updatedValues = ($0 ?? []).filter({ !notIncludedIDs.contains($0) }) + Array(includedIDs)
+				let	updatedValues = ($0 ?? []).filter({ !notIncludedIDsUse.contains($0) }) + (includedIDs ?? [])
 
 				return !updatedValues.isEmpty ? updatedValues : nil
 			}
@@ -1458,16 +1467,19 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func indexUpdate(_ index :MDSIndex, updateInfos :[MDSUpdateInfo<String>]) {
-		// Update
-		if let (keysInfos, _) = index.update(updateInfos) {
+		// Update Index
+		let	(keysInfos, _) = index.update(updateInfos)
+
+		// Check if have updates
+		if keysInfos != nil {
 			// Update storage
-			let	documentIDs = Set<String>(keysInfos.map({ $0.id }))
+			let	documentIDs = Set<String>(keysInfos!.map({ $0.id }))
 			self.indexValuesMap.update(for: index.name) {
 				// Filter out document IDs included in update
 				var	updatedValueInfo = ($0 ?? [:]).filter({ !documentIDs.contains($0.value) })
 
 				// Add/Update keys => document IDs
-				keysInfos.forEach() { keys, value in keys.forEach() { updatedValueInfo[$0] = value } }
+				keysInfos!.forEach() { keys, value in keys.forEach() { updatedValueInfo[$0] = value } }
 
 				return !updatedValueInfo.isEmpty ? updatedValueInfo : nil
 			}
