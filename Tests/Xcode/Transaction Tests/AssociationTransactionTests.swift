@@ -68,8 +68,8 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve from
 		let	(fromInfo1, fromError1) =
-					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: config.documentStorageID,
-							name: associationName, fromDocumentID: parent.id)
+					config.httpEndpointClient.associationGetDocumentRevisionInfos(
+							documentStorageID: config.documentStorageID, name: associationName, fromDocumentID: parent.id)
 		XCTAssertNotNil(fromInfo1, "get from (1) did not receive info")
 		if fromInfo1 != nil {
 			XCTAssertEqual(fromInfo1!.documentRevisionInfos.count, 1, "get from (1) did not receive 1 info")
@@ -82,8 +82,8 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve to
 		let	(toInfo1, toError1) =
-					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: config.documentStorageID,
-							name: associationName, toDocumentID: child.id)
+					config.httpEndpointClient.associationGetDocumentRevisionInfos(
+							documentStorageID: config.documentStorageID, name: associationName, toDocumentID: child.id)
 		XCTAssertNotNil(toInfo1, "get to (1) did not receive info")
 		if toInfo1 != nil {
 			XCTAssertEqual(toInfo1!.documentRevisionInfos.count, 1, "get to (1) did not receive 1 info")
@@ -103,8 +103,8 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve from
 		let	(fromInfo2, fromError2) =
-					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: config.documentStorageID,
-							name: associationName, fromDocumentID: parent.id)
+					config.httpEndpointClient.associationGetDocumentRevisionInfos(
+							documentStorageID: config.documentStorageID, name: associationName, fromDocumentID: parent.id)
 		XCTAssertNotNil(fromInfo2, "get from (2) did not receive info")
 		if fromInfo2 != nil {
 			XCTAssertEqual(fromInfo2!.documentRevisionInfos.count, 0, "get from (2) received info")
@@ -113,8 +113,8 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve to
 		let	(toInfo2, toError2) =
-					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: config.documentStorageID,
-							name: associationName, toDocumentID: child.id)
+					config.httpEndpointClient.associationGetDocumentRevisionInfos(
+							documentStorageID: config.documentStorageID, name: associationName, toDocumentID: child.id)
 		XCTAssertNotNil(toInfo2, "get to (2) did not receive info")
 		if toInfo2 != nil {
 			XCTAssertEqual(toInfo2!.documentRevisionInfos.count, 0, "get to (2) received info")
@@ -178,8 +178,9 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve from
 		let	(fromInfo1, fromError1) =
-					config.httpEndpointClient.associationGetDocuments(documentStorageID: config.documentStorageID,
-							name: associationName, fromDocumentID: parent.id)
+					config.httpEndpointClient.associationGetDocumentFullInfos(
+							documentStorageID: config.documentStorageID, name: associationName,
+							fromDocumentID: parent.id)
 		XCTAssertNotNil(fromInfo1, "get from (1) did not receive info")
 		if fromInfo1 != nil {
 			XCTAssertEqual(fromInfo1!.documentFullInfos.count, 1, "get from (1) did not receive 1 info")
@@ -192,8 +193,8 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve to
 		let	(toInfo1, toError1) =
-					config.httpEndpointClient.associationGetDocuments(documentStorageID: config.documentStorageID,
-							name: associationName, toDocumentID: child.id)
+					config.httpEndpointClient.associationGetDocumentFullInfos(
+							documentStorageID: config.documentStorageID, name: associationName, toDocumentID: child.id)
 		XCTAssertNotNil(toInfo1, "get to (1) did not receive info")
 		if toInfo1 != nil {
 			XCTAssertEqual(toInfo1!.documentFullInfos.count, 1, "get to (1) did not receive 1 info")
@@ -213,8 +214,9 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve from
 		let	(fromInfo2, fromError2) =
-					config.httpEndpointClient.associationGetDocuments(documentStorageID: config.documentStorageID,
-							name: associationName, fromDocumentID: parent.id)
+					config.httpEndpointClient.associationGetDocumentFullInfos(
+							documentStorageID: config.documentStorageID, name: associationName,
+							fromDocumentID: parent.id)
 		XCTAssertNotNil(fromInfo2, "get from (2) did not receive info")
 		if fromInfo2 != nil {
 			XCTAssertEqual(fromInfo2!.documentFullInfos.count, 0, "get from (2) received info")
@@ -223,8 +225,8 @@ class AssociationTransactionTests : XCTestCase {
 
 		// Retrieve to
 		let	(toInfo2, toError2) =
-					config.httpEndpointClient.associationGetDocuments(documentStorageID: config.documentStorageID,
-							name: associationName, toDocumentID: child.id)
+					config.httpEndpointClient.associationGetDocumentFullInfos(
+							documentStorageID: config.documentStorageID, name: associationName, toDocumentID: child.id)
 		XCTAssertNotNil(toInfo2, "get to (2) did not receive info")
 		if toInfo2 != nil {
 			XCTAssertEqual(toInfo2!.documentFullInfos.count, 0, "get to (2) received info")

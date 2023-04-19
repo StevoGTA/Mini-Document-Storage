@@ -328,7 +328,7 @@ module.exports = class DocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentGetSinceRevision(documentStorageID, documentType, sinceRevision, count) {
+	async documentGetSinceRevision(documentStorageID, documentType, sinceRevision, count, fullInfo) {
 		// Setup
 		let	statementPerformer = this.statementPerformerProc();
 		statementPerformer.use(documentStorageID);
@@ -342,7 +342,7 @@ module.exports = class DocumentStorage {
 						await statementPerformer.batch(true,
 								() =>
 										{ return internals.documents.getSinceRevision(statementPerformer, documentType,
-												sinceRevision, count); }
+												sinceRevision, count, fullInfo); }
 						);
 			
 			return results;
@@ -358,7 +358,7 @@ module.exports = class DocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentGetForDocumentIDs(documentStorageID, documentType, documentIDs) {
+	async documentGetForDocumentIDs(documentStorageID, documentType, documentIDs, fullInfo) {
 		// Setup
 		let	statementPerformer = this.statementPerformerProc();
 		statementPerformer.use(documentStorageID);
@@ -372,7 +372,7 @@ module.exports = class DocumentStorage {
 						await statementPerformer.batch(true,
 								() =>
 										{ return internals.documents.getForDocumentIDs(statementPerformer, documentType,
-												documentIDs); });
+												documentIDs, fullInfo); });
 			
 			return results;
 		} catch (error) {

@@ -70,20 +70,52 @@ class DocumentTransactionTests : XCTestCase {
 		}
 		XCTAssertNil(getDocumentCountError, "get document count returned error: \(getDocumentCountError!)")
 
-		// Get documents since revision 0
-		let	(getSinceRevisionDocumentInfo, getSinceRevisionError) =
-					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
+		// Get document revision infos since revision 0
+		let	(getSinceRevisionInfo1, getSinceRevisionError1) =
+					config.httpEndpointClient.documentGetDocumentRevisionInfos(
+							documentStorageID: config.documentStorageID, documentType: config.defaultDocumentType,
+							sinceRevision: 0)
+		XCTAssertNotNil(getSinceRevisionInfo1, "get revision infos since revision did not receive info")
+		if getSinceRevisionInfo1 != nil {
+			XCTAssert(getSinceRevisionInfo1!.documentRevisionInfos.count > 0,
+					"get revision infos since revision did not receive any documentInfos")
+
+			let	document = getSinceRevisionInfo1!.documentRevisionInfos.first(where: { $0.documentID == documentID! })
+			XCTAssertNotNil(document, "get revision infos since revision did not receive expected document")
+		}
+		XCTAssertNil(getSinceRevisionError1,
+				"get revision infos since revision received error \(getSinceRevisionError1!)")
+
+		// Get document revision infos for document ID
+		let	(getDocumentIDsDocumentRevisionInfos, getDocumentIDsErrors) =
+					config.httpEndpointClient.documentGetDocumentRevisionInfos(
+							documentStorageID: config.documentStorageID, documentType: config.defaultDocumentType,
+							documentIDs: [documentID!])
+		XCTAssertNotNil(getDocumentIDsDocumentRevisionInfos,
+				"get revision infos for document IDs did not receive document revision infos")
+		if getDocumentIDsDocumentRevisionInfos != nil {
+			XCTAssert(getDocumentIDsDocumentRevisionInfos!.count > 0,
+					"get revision infos for document IDs did not receive any document revision infos")
+
+			let	document = getDocumentIDsDocumentRevisionInfos!.first(where: { $0.documentID == documentID! })
+			XCTAssertNotNil(document, "get revision infos for document IDs did not receive expected document")
+		}
+		XCTAssertEqual(getDocumentIDsErrors.count, 0,
+				"get revision infos for document IDs received error \(getDocumentIDsErrors.first!)")
+
+		// Get document full infos since revision 0
+		let	(getSinceRevisionInfo2, getSinceRevisionError2) =
+					config.httpEndpointClient.documentGetDocumentFullInfos(documentStorageID: config.documentStorageID,
 							documentType: config.defaultDocumentType, sinceRevision: 0)
-		XCTAssertNotNil(getSinceRevisionDocumentInfo, "get since revision did not receive info")
-		if getSinceRevisionDocumentInfo != nil {
-			XCTAssert(getSinceRevisionDocumentInfo!.documentFullInfos.count > 0,
+		XCTAssertNotNil(getSinceRevisionInfo2, "get since revision did not receive info")
+		if getSinceRevisionInfo2 != nil {
+			XCTAssert(getSinceRevisionInfo2!.documentFullInfos.count > 0,
 					"get since revision did not receive any documentInfos")
 
-			let	document =
-						getSinceRevisionDocumentInfo!.documentFullInfos.first(where: { $0.documentID == documentID! })
+			let	document = getSinceRevisionInfo2!.documentFullInfos.first(where: { $0.documentID == documentID! })
 			XCTAssertNotNil(document, "get since revision did not receive expected document")
 		}
-		XCTAssertNil(getSinceRevisionError, "get since revision received error \(getSinceRevisionError!)")
+		XCTAssertNil(getSinceRevisionError2, "get since revision received error \(getSinceRevisionError2!)")
 
 		// Update document
 		let	(updateDocumentInfos, updateError) =
@@ -134,9 +166,20 @@ class DocumentTransactionTests : XCTestCase {
 		XCTAssertNil(updateError, "update received error \(updateError!)")
 
 		// Get documents by ID
-		let	(getDocumentIDsDocumentInfos, getDocumentIDsError) =
-					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
-							documentType: config.defaultDocumentType, documentIDs: [documentID!])
+		let	(getDocumentIDsDocumentInfos, getDocumentIDsError2) =
+					DispatchQueue.performBlocking()
+							{ (completionProc :@escaping (([[String : Any]]?, Error?)) -> Void) in
+								// Setup
+								let	documentsHTTPEndpointRequest =
+											MDSHTTPServices.httpEndpointRequestForDocumentGetDocumentFullInfos(
+													documentStorageID: config.documentStorageID,
+													documentType: config.defaultDocumentType,
+													documentIDs: [documentID!])
+								documentsHTTPEndpointRequest.completionProc = { completionProc(($0, $1)) }
+
+								config.httpEndpointClient.queue(documentsHTTPEndpointRequest)
+							}
+
 		XCTAssertNotNil(getDocumentIDsDocumentInfos, "get documents by ID did not receive documentInfos")
 		if getDocumentIDsDocumentInfos != nil {
 			XCTAssertEqual(getDocumentIDsDocumentInfos!.count, 1, "get documents by ID did not receive 1 documentInfos")
@@ -176,7 +219,7 @@ class DocumentTransactionTests : XCTestCase {
 				}
 			}
 		}
-		XCTAssertNil(getDocumentIDsError, "get documents by ID received error \(getDocumentIDsError!)")
+		XCTAssertNil(getDocumentIDsError2, "get documents by ID received error \(getDocumentIDsError2!)")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

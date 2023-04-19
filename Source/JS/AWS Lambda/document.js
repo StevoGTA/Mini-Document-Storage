@@ -100,6 +100,7 @@ exports.getV1 = async (event) => {
 	let	queryStringParameters = event.queryStringParameters || {};
 	let	sinceRevision = parseInt(queryStringParameters.sinceRevision);
 	let	count = queryStringParameters.count;
+	let	fullInfo = queryStringParameters.fullInfo == 1;
 
 	let	multiValueQueryStringParameters = event.multiValueQueryStringParameters || {};
 	let	documentIDs = (multiValueQueryStringParameters.id || []) .map(documentID => decodeURIComponent(documentID));
@@ -111,7 +112,7 @@ exports.getV1 = async (event) => {
 			// Since revision
 			let	[totalCount, results, error] =
 						await documentStorage.documentGetSinceRevision(documentStorageID, documentType, sinceRevision,
-								count);
+								count, fullInfo);
 			if (!error)
 				// Success
 				return {
@@ -138,7 +139,8 @@ exports.getV1 = async (event) => {
 		} else {
 			// DocumentIDs
 			let	[results, error] =
-						await documentStorage.documentGetForDocumentIDs(documentStorageID, documentType, documentIDs);
+						await documentStorage.documentGetForDocumentIDs(documentStorageID, documentType, documentIDs,
+								fullInfo);
 			if (results)
 				// Success
 				return {

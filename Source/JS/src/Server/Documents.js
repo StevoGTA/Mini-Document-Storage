@@ -143,7 +143,7 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getSinceRevision(statementPerformer, documentType, sinceRevision, count) {
+	async getSinceRevision(statementPerformer, documentType, sinceRevision, count, fullInfo) {
 		// Validate
 		if (typeof(sinceRevision) != 'number')
 			return [null, null, 'Missing revision'];
@@ -180,38 +180,58 @@ module.exports = class Documents {
 		var	ids = [];
 		var	documentsByID = {};
 		try {
-			// Perform
-			let	results =
-						await statementPerformer.select(true, tablesInfo.infoTable,
-								[
-									tablesInfo.infoTable.idTableColumn,
-									tablesInfo.infoTable.documentIDTableColumn,
-									tablesInfo.infoTable.revisionTableColumn,
-									tablesInfo.infoTable.activeTableColumn,
-									tablesInfo.contentTable.creationDateTableColumn,
-									tablesInfo.contentTable.modificationDateTableColumn,
-									tablesInfo.contentTable.jsonTableColumn,
-								],
-								statementPerformer.innerJoin(tablesInfo.contentTable,
-										tablesInfo.contentTable.idTableColumn),
-								where,
-								statementPerformer.orderBy(tablesInfo.infoTable.revisionTableColumn),
-								count ? statementPerformer.limit(null, count) : null);
+			// Check for full info
+			if (fullInfo) {
+				// Perform for full info
+				let	results =
+							await statementPerformer.select(true, tablesInfo.infoTable,
+									[
+										tablesInfo.infoTable.idTableColumn,
+										tablesInfo.infoTable.documentIDTableColumn,
+										tablesInfo.infoTable.revisionTableColumn,
+										tablesInfo.infoTable.activeTableColumn,
+										tablesInfo.contentTable.creationDateTableColumn,
+										tablesInfo.contentTable.modificationDateTableColumn,
+										tablesInfo.contentTable.jsonTableColumn,
+									],
+									statementPerformer.innerJoin(tablesInfo.contentTable,
+											tablesInfo.contentTable.idTableColumn),
+									where,
+									statementPerformer.orderBy(tablesInfo.infoTable.revisionTableColumn),
+									count ? statementPerformer.limit(null, count) : null);
 
-			// Handle results
-			for (let result of results) {
-				// Update info
-				ids.push(result.id);
-				documentsByID[result.id] =
-						{
-							documentID: result.documentID,
-							revision: result.revision,
-							active: result.active,
-							creationDate: result.creationDate,
-							modificationDate: result.modificationDate,
-							json: JSON.parse(result.json.toString()),
-							attachments: {},
-						};
+				// Handle results
+				for (let result of results) {
+					// Update info
+					ids.push(result.id);
+					documentsByID[result.id] =
+							{
+								documentID: result.documentID,
+								revision: result.revision,
+								active: result.active,
+								creationDate: result.creationDate,
+								modificationDate: result.modificationDate,
+								json: JSON.parse(result.json.toString()),
+								attachments: {},
+							};
+				}
+			} else {
+				// Perform for revision info
+				let	results =
+							await statementPerformer.select(true, tablesInfo.infoTable,
+									[
+										tablesInfo.infoTable.idTableColumn,
+										tablesInfo.infoTable.documentIDTableColumn,
+										tablesInfo.infoTable.revisionTableColumn,
+									],
+									where,
+									statementPerformer.orderBy(tablesInfo.infoTable.revisionTableColumn),
+									count ? statementPerformer.limit(null, count) : null);
+
+				// Handle results
+				for (let result of results)
+					// Update info
+					documentsByID[result.id] = {documentID: result.documentID, revision: result.revision};
 			}
 		} catch (error) {
 			// Check error
@@ -223,36 +243,39 @@ module.exports = class Documents {
 				throw error;
 		}
 
-		// Retrieve attachments
-		try {
-			// Perform
-			let	results =
-						await statementPerformer.select(true, tablesInfo.attachmentTable,
-								[
-									tablesInfo.attachmentTable.idTableColumn,
-									tablesInfo.attachmentTable.attachmentIDTableColumn,
-									tablesInfo.attachmentTable.revisionTableColumn,
-									tablesInfo.attachmentTable.infoTableColumn,
-								],
-								statementPerformer.where(tablesInfo.attachmentTable.idTableColumn, ids));
-			
-			// Handle results
-			for (let result of results)
-				// Add attachment info
-				documentsByID[result.id].attachments[result.attachmentID] =
-						{revision: result.revision, info: JSON.parse(result.info.toString())};
-		} catch (error) {
-			// Check error
-			if (!error.message.startsWith('ER_NO_SUCH_TABLE'))
-				// Other error
-				throw error;
+		// Check for full info
+		if (fullInfo) {
+			// Retrieve attachments
+			try {
+				// Perform
+				let	results =
+							await statementPerformer.select(true, tablesInfo.attachmentTable,
+									[
+										tablesInfo.attachmentTable.idTableColumn,
+										tablesInfo.attachmentTable.attachmentIDTableColumn,
+										tablesInfo.attachmentTable.revisionTableColumn,
+										tablesInfo.attachmentTable.infoTableColumn,
+									],
+									statementPerformer.where(tablesInfo.attachmentTable.idTableColumn, ids));
+				
+				// Handle results
+				for (let result of results)
+					// Add attachment info
+					documentsByID[result.id].attachments[result.attachmentID] =
+							{revision: result.revision, info: JSON.parse(result.info.toString())};
+			} catch (error) {
+				// Check error
+				if (!error.message.startsWith('ER_NO_SUCH_TABLE'))
+					// Other error
+					throw error;
+			}
 		}
 
 		return [totalCount, Object.values(documentsByID)];
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getForDocumentIDs(statementPerformer, documentType, documentIDs) {
+	async getForDocumentIDs(statementPerformer, documentType, documentIDs, fullInfo) {
 		// Validate
 		if (documentIDs.length == 0)
 			return [null, 'Missing id(s)'];
@@ -265,37 +288,57 @@ module.exports = class Documents {
 		var	documentsByID = {};
 		let	missingDocumentIDsSet = new Set(documentIDs);
 		try {
-			// Retrieve relevant documents
-			let	results =
-						await statementPerformer.select(true, tablesInfo.infoTable,
-								[
-									tablesInfo.infoTable.idTableColumn,
-									tablesInfo.infoTable.documentIDTableColumn,
-									tablesInfo.infoTable.revisionTableColumn,
-									tablesInfo.infoTable.activeTableColumn,
-									tablesInfo.contentTable.creationDateTableColumn,
-									tablesInfo.contentTable.modificationDateTableColumn,
-									tablesInfo.contentTable.jsonTableColumn,
-								],
-								statementPerformer.innerJoin(tablesInfo.contentTable,
-									tablesInfo.contentTable.idTableColumn),
-								statementPerformer.where(tablesInfo.infoTable.documentIDTableColumn, documentIDs));
+			// Check for full info
+			if (fullInfo) {
+				// Perform for full info
+				let	results =
+							await statementPerformer.select(true, tablesInfo.infoTable,
+									[
+										tablesInfo.infoTable.idTableColumn,
+										tablesInfo.infoTable.documentIDTableColumn,
+										tablesInfo.infoTable.revisionTableColumn,
+										tablesInfo.infoTable.activeTableColumn,
+										tablesInfo.contentTable.creationDateTableColumn,
+										tablesInfo.contentTable.modificationDateTableColumn,
+										tablesInfo.contentTable.jsonTableColumn,
+									],
+									statementPerformer.innerJoin(tablesInfo.contentTable,
+										tablesInfo.contentTable.idTableColumn),
+									statementPerformer.where(tablesInfo.infoTable.documentIDTableColumn, documentIDs));
 
-			// Compose results
-			for (let result of results) {
-				// Update info
-				ids.push(result.id);
-				documentsByID[result.id] =
-						{
-							documentID: result.documentID,
-							revision: result.revision,
-							active: result.active,
-							creationDate: result.creationDate,
-							modificationDate: result.modificationDate,
-							json: JSON.parse(result.json.toString()),
-							attachments: {},
-						};
-				missingDocumentIDsSet.delete(result.documentID);
+				// Compose results
+				for (let result of results) {
+					// Update info
+					ids.push(result.id);
+					documentsByID[result.id] =
+							{
+								documentID: result.documentID,
+								revision: result.revision,
+								active: result.active,
+								creationDate: result.creationDate,
+								modificationDate: result.modificationDate,
+								json: JSON.parse(result.json.toString()),
+								attachments: {},
+							};
+					missingDocumentIDsSet.delete(result.documentID);
+				}
+			} else {
+				// Perform for revision info
+				let	results =
+							await statementPerformer.select(true, tablesInfo.infoTable,
+									[
+										tablesInfo.infoTable.idTableColumn,
+										tablesInfo.infoTable.documentIDTableColumn,
+										tablesInfo.infoTable.revisionTableColumn,
+									],
+									statementPerformer.where(tablesInfo.infoTable.documentIDTableColumn, documentIDs));
+
+				// Compose results
+				for (let result of results) {
+					// Update info
+					documentsByID[result.id] = {documentID: result.documentID, revision: result.revision};
+					missingDocumentIDsSet.delete(result.documentID);
+				}
 			}
 
 			// Validate results
@@ -312,29 +355,33 @@ module.exports = class Documents {
 				throw error;
 		}
 
-		// Retrieve attachments
-		try {
-			// Perform
-			let	results =
-						await statementPerformer.select(true, tablesInfo.attachmentTable,
-								[
-									tablesInfo.attachmentTable.idTableColumn,
-									tablesInfo.attachmentTable.attachmentIDTableColumn,
-									tablesInfo.attachmentTable.revisionTableColumn,
-									tablesInfo.attachmentTable.infoTableColumn,
-								],
-								statementPerformer.where(tablesInfo.attachmentTable.idTableColumn, ids));
-			
-			// Handle results
-			for (let result of results)
-				// Add attachment info
-				documentsByID[result.id].attachments[result.attachmentID] =
-						{revision: result.revision, info: JSON.parse(result.info.toString())};
-		} catch (error) {
-			// Check error
-			if (!error.message.startsWith('ER_NO_SUCH_TABLE'))
-				// Other error
-				throw error;
+
+		// Check for full info
+		if (fullInfo) {
+			// Retrieve attachments
+			try {
+				// Perform
+				let	results =
+							await statementPerformer.select(true, tablesInfo.attachmentTable,
+									[
+										tablesInfo.attachmentTable.idTableColumn,
+										tablesInfo.attachmentTable.attachmentIDTableColumn,
+										tablesInfo.attachmentTable.revisionTableColumn,
+										tablesInfo.attachmentTable.infoTableColumn,
+									],
+									statementPerformer.where(tablesInfo.attachmentTable.idTableColumn, ids));
+				
+				// Handle results
+				for (let result of results)
+					// Add attachment info
+					documentsByID[result.id].attachments[result.attachmentID] =
+							{revision: result.revision, info: JSON.parse(result.info.toString())};
+			} catch (error) {
+				// Check error
+				if (!error.message.startsWith('ER_NO_SUCH_TABLE'))
+					// Other error
+					throw error;
+			}
 		}
 
 		return [Object.values(documentsByID), null];

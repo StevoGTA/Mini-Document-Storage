@@ -566,12 +566,22 @@ extension HTTPServer {
 
 				// Check requested flavor
 				if let documentIDs = info.documentIDs {
-					// Iterate documentIDs
-					let	infos =
-								try documentStorage!.documentFullInfos(for: info.documentType, documentIDs: documentIDs)
-										.map({ $0.httpServicesInfo })
+					// Check fullInfo
+					if info.fullInfo {
+						// Get full infos
+						let	documentFullInfos =
+									try documentStorage!.documentFullInfos(for: info.documentType,
+											documentIDs: documentIDs)
 
-					return (.ok, nil, .json(infos))
+						return (.ok, nil, .json(documentFullInfos.map({ $0.httpServicesInfo })))
+					} else {
+						// Get revision infos
+						let	documentRevisionInfos =
+									try documentStorage!.documentRevisionInfos(for: info.documentType,
+											documentIDs: documentIDs)
+
+						return (.ok, nil, .json(documentRevisionInfos.map({ $0.httpServicesInfo })))
+					}
 				} else if let revision = info.sinceRevision {
 					// Validate info
 					guard revision >= 0 else {
@@ -584,16 +594,28 @@ extension HTTPServer {
 						return (.badRequest, nil, .json(["error": "Invalid count: \(info.count!)"]))
 					}
 
-					// Iterate documents since revision
-					let	infos =
-								try documentStorage!.documentFullInfos(for: info.documentType, sinceRevision: revision,
-												count: info.count)
-										.map({ $0.httpServicesInfo })
+					// Check fullInfo
+					if info.fullInfo {
+						// Get full infos
+						let	documentFullInfos =
+									try documentStorage!.documentFullInfos(for: info.documentType,
+											sinceRevision: revision, count: info.count)
 
-					return (.ok,
-							[HTTPURLResponse.contentRangeHeader(for: "documents", start: 0, length: Int64(infos.count),
-									size: Int64(count))],
-							.json(infos))
+						return (.ok,
+								[HTTPURLResponse.contentRangeHeader(for: "documents", start: 0,
+										length: Int64(documentFullInfos.count), size: Int64(count))],
+								.json(documentFullInfos.map({ $0.httpServicesInfo })))
+					} else {
+						// Get revision infos
+						let	documentRevisionInfos =
+									try documentStorage!.documentRevisionInfos(for: info.documentType,
+											sinceRevision: revision, count: info.count)
+
+						return (.ok,
+								[HTTPURLResponse.contentRangeHeader(for: "documents", start: 0,
+										length: Int64(documentRevisionInfos.count), size: Int64(count))],
+								.json(documentRevisionInfos.map({ $0.httpServicesInfo })))
+					}
 				} else {
 					// Must specify one or the other
 					return (.badRequest, nil, .json(["error": "Missing id(s)"]))

@@ -466,56 +466,18 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentIterate(for documentType :String, documentIDs :[String],
-			documentCreateProc :MDSDocument.CreateProc?,
-			proc :(_ document :MDSDocument?, _ documentFullInfo :MDSDocument.FullInfo) -> Void) throws {
-		// Validate
-		guard self.documentMapsLock.read({ self.documentIDsByTypeMap[documentType] }) != nil else {
-			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
-		}
-
-		// Retrieve document backings
-		let	documentBackings =
-				try self.documentMapsLock.read() { try documentIDs.map() { documentID -> DocumentBacking in
-					// Validate
-					guard let documentBacking = self.documentBackingByIDMap[documentID] else {
-						throw MDSDocumentStorageError.unknownDocumentID(documentID: documentID)
-					}
-
-					return documentBacking
-				} }
-
+			documentCreateProc :MDSDocument.CreateProc?, proc :(_ document :MDSDocument?) -> Void) throws {
 		// Iterate document backings
-		documentBackings.forEach() { proc(documentCreateProc?($0.documentID, self), $0.documentFullInfo) }
+		try documentBackingsIterate(for: documentType, documentIDs: documentIDs,
+				proc: { proc(documentCreateProc?($0.documentID, self)) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentIterate(for documentType :String, sinceRevision :Int, count :Int?, activeOnly: Bool,
-			documentCreateProc :MDSDocument.CreateProc?,
-			proc :(_ document :MDSDocument?, _ documentFullInfo :MDSDocument.FullInfo) -> Void) throws {
-		// Retrieve document backings
-		let	documentBackings =
-					try self.documentMapsLock.read() { () -> [DocumentBacking] in
-						// Collect DocumentBackings
-						guard let documentBackings = self.documentIDsByTypeMap[documentType] else {
-							throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
-						}
-
-						return documentBackings
-								.map({ self.documentBackingByIDMap[$0]! })
-								.filter({ ($0.revision > sinceRevision) && (!activeOnly || $0.active) })
-								.map({ $0 })
-					}
-
-		// Check if have count
-		if count != nil {
-			// Have count
-			documentBackings.sorted(by: { $0.revision < $1.revision })[..<count!]
-					.forEach({ proc(documentCreateProc?($0.documentID, self), $0.documentFullInfo) })
-		} else {
-			// Don't have count
-			documentBackings
-					.forEach({ proc(documentCreateProc?($0.documentID, self), $0.documentFullInfo) })
-		}
+			documentCreateProc :MDSDocument.CreateProc?, proc :(_ document :MDSDocument?) -> Void) throws {
+		// Iterate document backings
+		try documentBackingsIterate(for: documentType, sinceRevision: sinceRevision, count: count,
+				activeOnly: activeOnly, proc: { proc(documentCreateProc?($0.documentID, self)) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1254,6 +1216,48 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func documentRevisionInfos(for documentType :String, documentIDs :[String]) throws -> [MDSDocument.RevisionInfo] {
+		// Iterate document backings
+		var	documentRevisionInfos = [MDSDocument.RevisionInfo]()
+		try documentBackingsIterate(for: documentType, documentIDs: documentIDs)
+				{ documentRevisionInfos.append($0.documentRevisionInfo) }
+
+		return documentRevisionInfos
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentRevisionInfos(for documentType :String, sinceRevision :Int, count :Int?) throws ->
+			[MDSDocument.RevisionInfo] {
+		// Iterate document backings
+		var	documentRevisionInfos = [MDSDocument.RevisionInfo]()
+		try documentBackingsIterate(for: documentType, sinceRevision: sinceRevision, count: count, activeOnly: false)
+				{ documentRevisionInfos.append($0.documentRevisionInfo) }
+
+		return documentRevisionInfos
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentFullInfos(for documentType :String, documentIDs :[String]) throws -> [MDSDocument.FullInfo] {
+		// Iterate document backings
+		var	documentFullInfos = [MDSDocument.FullInfo]()
+		try documentBackingsIterate(for: documentType, documentIDs: documentIDs)
+				{ documentFullInfos.append($0.documentFullInfo) }
+
+		return documentFullInfos
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentFullInfos(for documentType :String, sinceRevision :Int, count :Int?) throws ->
+			[MDSDocument.FullInfo] {
+		// Iterate document backings
+		var	documentFullInfos = [MDSDocument.FullInfo]()
+		try documentBackingsIterate(for: documentType, sinceRevision: sinceRevision, count: count, activeOnly: false)
+				{ documentFullInfos.append($0.documentFullInfo) }
+
+		return documentFullInfos
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> Int64? {
 		// Check for batch
 		let	value :Any?
@@ -1466,6 +1470,56 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	private func documentBackingsIterate(for documentType :String, documentIDs :[String],
+			proc :(_ documentBacking :DocumentBacking) -> Void) throws {
+		// Validate
+		guard self.documentMapsLock.read({ self.documentIDsByTypeMap[documentType] }) != nil else {
+			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
+		}
+
+		// Retrieve document backings
+		let	documentBackings =
+				try self.documentMapsLock.read() { try documentIDs.map() { documentID -> DocumentBacking in
+					// Validate
+					guard let documentBacking = self.documentBackingByIDMap[documentID] else {
+						throw MDSDocumentStorageError.unknownDocumentID(documentID: documentID)
+					}
+
+					return documentBacking
+				} }
+
+		// Iterate document backings
+		documentBackings.forEach({ proc($0) })
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func documentBackingsIterate(for documentType :String, sinceRevision :Int, count :Int?, activeOnly: Bool,
+			proc :(_ documentBacking :DocumentBacking) -> Void) throws {
+		// Retrieve document backings
+		let	documentBackings =
+					try self.documentMapsLock.read() { () -> [DocumentBacking] in
+						// Collect DocumentBackings
+						guard let documentBackings = self.documentIDsByTypeMap[documentType] else {
+							throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
+						}
+
+						return documentBackings
+								.map({ self.documentBackingByIDMap[$0]! })
+								.filter({ ($0.revision > sinceRevision) && (!activeOnly || $0.active) })
+								.map({ $0 })
+					}
+
+		// Check if have count
+		if count != nil {
+			// Have count
+			documentBackings.sorted(by: { $0.revision < $1.revision })[..<count!].forEach({ proc($0) })
+		} else {
+			// Don't have count
+			documentBackings.forEach({ proc($0) })
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	private func indexUpdate(_ index :MDSIndex, updateInfos :[MDSUpdateInfo<String>]) {
 		// Update Index
 		let	(keysInfos, _) = index.update(updateInfos)
@@ -1502,11 +1556,12 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Collect update infos
 		let	documentCreateProc = self.documentCreateProc(for: documentType)
 		var	updateInfos = [MDSUpdateInfo<String>]()
-		try! documentIterate(for: documentType, sinceRevision: 0, count: nil, activeOnly: false,
-				documentCreateProc: documentCreateProc, proc: {
+		try! documentBackingsIterate(for: documentType, sinceRevision: sinceRevision, count: nil, activeOnly: false,
+				proc: {
 					// Append MDSUpdateInfo
 					updateInfos.append(
-							MDSUpdateInfo<String>(document: $0!, revision: $1.revision, id: $1.documentID))
+							MDSUpdateInfo<String>(document: documentCreateProc($0.documentID, self),
+									revision: $0.revision, id: $0.documentID))
 				})
 
 		return updateInfos

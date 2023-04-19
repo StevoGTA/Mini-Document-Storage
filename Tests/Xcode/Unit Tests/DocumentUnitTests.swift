@@ -277,7 +277,7 @@ class DocumentUnitTests : XCTestCase {
 
 		// Perform
 		let	(info, error) =
-					config.httpEndpointClient.documentGet(documentStorageID: "ABC",
+					config.httpEndpointClient.documentGetDocumentFullInfos(documentStorageID: "ABC",
 							documentType: config.defaultDocumentType, sinceRevision: 0)
 
 		// Evaluate results
@@ -305,7 +305,7 @@ class DocumentUnitTests : XCTestCase {
 
 		// Perform
 		let	(info, error) =
-					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.documentGetDocumentFullInfos(documentStorageID: config.documentStorageID,
 							documentType: documentType, sinceRevision: 0)
 
 		// Evaluate results
@@ -343,7 +343,7 @@ class DocumentUnitTests : XCTestCase {
 
 		// Get since revision
 		let	(info, error) =
-					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.documentGetDocumentFullInfos(documentStorageID: config.documentStorageID,
 							documentType: config.defaultDocumentType, sinceRevision: -1)
 
 		// Evaluate results
@@ -380,7 +380,7 @@ class DocumentUnitTests : XCTestCase {
 
 		// Get since revision
 		let	(info, error) =
-					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
+					config.httpEndpointClient.documentGetDocumentFullInfos(documentStorageID: config.documentStorageID,
 							documentType: config.defaultDocumentType, sinceRevision: 0, count: -1)
 
 		// Evaluate results
@@ -406,12 +406,12 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.current
 
 		// Perform
-		let	(documentInfos, error) =
-					config.httpEndpointClient.documentGet(documentStorageID: "ABC",
+		let	(documentFullInfos, error) =
+					config.httpEndpointClient.documentGetDocumentFullInfos(documentStorageID: "ABC",
 							documentType: config.defaultDocumentType, documentIDs: ["ABC"])
 
 		// Evaluate results
-		XCTAssertNil(documentInfos, "received documentInfos")
+		XCTAssertNil(documentFullInfos, "received documentFullInfos")
 
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
@@ -434,12 +434,12 @@ class DocumentUnitTests : XCTestCase {
 		let	documentType = UUID().uuidString
 
 		// Perform
-		let	(documentInfos, error) =
-					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
+		let	(documentFullInfos, error) =
+					config.httpEndpointClient.documentGetDocumentFullInfos(documentStorageID: config.documentStorageID,
 							documentType: documentType, documentIDs: ["ABC"])
 
 		// Evaluate results
-		XCTAssertNil(documentInfos, "received documentInfos")
+		XCTAssertNil(documentFullInfos, "received documentFullInfos")
 
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
@@ -462,12 +462,12 @@ class DocumentUnitTests : XCTestCase {
 		let	config = Config.current
 
 		// Perform
-		let	(documentInfos, error) =
-					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
+		let	(documentFullInfos, error) =
+					config.httpEndpointClient.documentGetDocumentFullInfos(documentStorageID: config.documentStorageID,
 							documentType: config.defaultDocumentType, documentIDs: [])
 
 		// Evaluate results
-		XCTAssertNil(documentInfos, "received documentInfos")
+		XCTAssertNil(documentFullInfos, "received documentFullInfos")
 
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
@@ -498,12 +498,12 @@ class DocumentUnitTests : XCTestCase {
 		guard createError == nil else { return }
 
 		// Perform
-		let	(documentInfos, error) =
-					config.httpEndpointClient.documentGet(documentStorageID: config.documentStorageID,
+		let	(documentFullInfos, error) =
+					config.httpEndpointClient.documentGetDocumentFullInfos(documentStorageID: config.documentStorageID,
 							documentType: config.defaultDocumentType, documentIDs: [documentID])
 
 		// Evaluate results
-		XCTAssertNil(documentInfos, "received documentInfos")
+		XCTAssertNil(documentFullInfos, "received documentFullInfos")
 
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {

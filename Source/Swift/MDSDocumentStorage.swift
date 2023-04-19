@@ -102,10 +102,9 @@ public protocol MDSDocumentStorage {
 			proc :MDSDocument.CreateProc) -> [(document :MDSDocument, documentOverviewInfo :MDSDocument.OverviewInfo?)]
 	func documentGetCount(for documentType :String) throws -> Int
 	func documentIterate(for documentType :String, documentIDs :[String], documentCreateProc :MDSDocument.CreateProc?,
-			proc :(_ document :MDSDocument?, _ documentFullInfo :MDSDocument.FullInfo) -> Void) throws
+			proc :(_ document :MDSDocument?) -> Void) throws
 	func documentIterate(for documentType :String, sinceRevision :Int, count :Int?, activeOnly: Bool,
-			documentCreateProc :MDSDocument.CreateProc?,
-			proc :(_ document :MDSDocument?, _ documentFullInfo :MDSDocument.FullInfo) -> Void) throws
+			documentCreateProc :MDSDocument.CreateProc?, proc :(_ document :MDSDocument?) -> Void) throws
 
 	func documentCreationDate(for document :MDSDocument) -> Date
 	func documentModificationDate(for document :MDSDocument) -> Date
@@ -308,7 +307,7 @@ extension MDSDocumentStorage {
 
 		// Iterate all documents
 		try documentIterate(for: T.documentType, sinceRevision: 0, count: nil, activeOnly: activeOnly,
-				documentCreateProc: { T(id: $0, documentStorage: $1) }, proc: { documents.append($0 as! T); _ = $1 })
+				documentCreateProc: { T(id: $0, documentStorage: $1) }, proc: { documents.append($0 as! T) })
 
 		return documents
 	}
@@ -318,31 +317,9 @@ extension MDSDocumentStorage {
 		// Retrieve document
 		var	document :T?
 		try documentIterate(for: T.documentType, documentIDs: [documentID],
-				documentCreateProc: { T(id: $0, documentStorage: $1) },
-				proc: { document = ($0! as! T); _ = $1 })
+				documentCreateProc: { T(id: $0, documentStorage: $1) }, proc: { document = ($0! as! T) })
 
 		return document!
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func documentFullInfos(for documentType :String, documentIDs :[String]) throws -> [MDSDocument.FullInfo] {
-		// Collect infos
-		var	documentFullInfos = [MDSDocument.FullInfo]()
-		try documentIterate(for: documentType, documentIDs: documentIDs, documentCreateProc: nil)
-				{ documentFullInfos.append($1) }
-
-		return documentFullInfos
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func documentFullInfos(for documentType :String, sinceRevision :Int, count :Int?) throws ->
-			[MDSDocument.FullInfo] {
-		// Collect infos
-		var	documentFullInfos = [MDSDocument.FullInfo]()
-		try documentIterate(for: documentType, sinceRevision: sinceRevision, count: count, activeOnly: false,
-				documentCreateProc: nil) { documentFullInfos.append($1) }
-
-		return documentFullInfos
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -352,7 +329,7 @@ extension MDSDocumentStorage {
 
 		// Iterate documents for document ids
 		try documentIterate(for: T.documentType, documentIDs: documentIDs,
-				documentCreateProc: { T(id: $0, documentStorage: $1) }, proc: { documents.append($0 as! T); _ = $1 })
+				documentCreateProc: { T(id: $0, documentStorage: $1) }, proc: { documents.append($0 as! T) })
 
 		return documents
 	}

@@ -334,7 +334,7 @@ class CollectionUnitTests : XCTestCase {
 
 		// Perform
 		let	(isUpToDate, info, error) =
-					config.httpEndpointClient.collectionGetDocumentInfos(documentStorageID: "ABC", name: "ABC")
+					config.httpEndpointClient.collectionGetDocumentRevisionInfos(documentStorageID: "ABC", name: "ABC")
 
 		// Evaluate results
 		XCTAssertNil(isUpToDate, "received isUpToDate")
@@ -363,8 +363,8 @@ class CollectionUnitTests : XCTestCase {
 
 		// Perform
 		let	(isUpToDate, info, error) =
-					config.httpEndpointClient.collectionGetDocumentInfos(documentStorageID: config.documentStorageID,
-							name: name)
+					config.httpEndpointClient.collectionGetDocumentRevisionInfos(
+							documentStorageID: config.documentStorageID, name: name)
 
 		// Evaluate results
 		XCTAssertNil(isUpToDate, "received isUpToDate")
@@ -413,8 +413,8 @@ class CollectionUnitTests : XCTestCase {
 
 		// Get Document Info
 		let	(isUpToDate, info, error) =
-					config.httpEndpointClient.collectionGetDocumentInfos(documentStorageID: config.documentStorageID,
-							name: collectionName, startIndex: -1)
+					config.httpEndpointClient.collectionGetDocumentRevisionInfos(
+							documentStorageID: config.documentStorageID, name: collectionName, startIndex: -1)
 
 		// Evaluate results
 		XCTAssertNil(isUpToDate, "received isUpToDate")
@@ -463,8 +463,8 @@ class CollectionUnitTests : XCTestCase {
 
 		// Get Document Info
 		let	(isUpToDate, info, error) =
-					config.httpEndpointClient.collectionGetDocumentInfos(documentStorageID: config.documentStorageID,
-							name: collectionName, count: -1)
+					config.httpEndpointClient.collectionGetDocumentRevisionInfos(
+							documentStorageID: config.documentStorageID, name: collectionName, count: -1)
 
 		// Evaluate results
 		XCTAssertNil(isUpToDate, "received isUpToDate")
@@ -492,7 +492,7 @@ class CollectionUnitTests : XCTestCase {
 
 		// Perform
 		let	(isUpToDate, info, error) =
-					config.httpEndpointClient.collectionGetDocuments(documentStorageID: "ABC", name: "ABC")
+					config.httpEndpointClient.collectionGetDocumentFullInfos(documentStorageID: "ABC", name: "ABC")
 
 		// Evaluate results
 		XCTAssertNil(isUpToDate, "received isUpToDate")
@@ -521,8 +521,8 @@ class CollectionUnitTests : XCTestCase {
 
 		// Perform
 		let	(isUpToDate, info, error) =
-					config.httpEndpointClient.collectionGetDocuments(documentStorageID: config.documentStorageID,
-							name: name)
+					config.httpEndpointClient.collectionGetDocumentFullInfos(
+							documentStorageID: config.documentStorageID, name: name)
 
 		// Evaluate results
 		XCTAssertNil(isUpToDate, "received isUpToDate")
@@ -571,8 +571,8 @@ class CollectionUnitTests : XCTestCase {
 
 		// Get Document Info
 		let	(isUpToDate, info, error) =
-					config.httpEndpointClient.collectionGetDocuments(documentStorageID: config.documentStorageID,
-							name: collectionName, startIndex: -1)
+					config.httpEndpointClient.collectionGetDocumentFullInfos(
+							documentStorageID: config.documentStorageID, name: collectionName, startIndex: -1)
 
 		// Evaluate results
 		XCTAssertNil(isUpToDate, "received isUpToDate")
@@ -621,8 +621,8 @@ class CollectionUnitTests : XCTestCase {
 
 		// Get Document Info
 		let	(isUpToDate, info, error) =
-					config.httpEndpointClient.collectionGetDocuments(documentStorageID: config.documentStorageID,
-							name: collectionName, count: -1)
+					config.httpEndpointClient.collectionGetDocumentFullInfos(
+							documentStorageID: config.documentStorageID, name: collectionName, count: -1)
 
 		// Evaluate results
 		XCTAssertNil(isUpToDate, "received isUpToDate")

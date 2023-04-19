@@ -47,8 +47,8 @@ class CollectionTransactionTests : XCTestCase {
 
 		// Retrieve documents
 		let	(getDocumentInfosIsUpToDate, getDocumentInfosInfo, getDocumentInfosError) =
-					config.httpEndpointClient.collectionGetDocumentInfos(documentStorageID: config.documentStorageID,
-							name: collectionName)
+					config.httpEndpointClient.collectionGetDocumentRevisionInfos(
+							documentStorageID: config.documentStorageID, name: collectionName)
 		XCTAssertNotNil(getDocumentInfosIsUpToDate, "get document infos did not return isUpToDate")
 		if getDocumentInfosIsUpToDate != nil {
 			XCTAssertTrue(getDocumentInfosIsUpToDate!, "get document infos isUpToDate is not true")
@@ -72,13 +72,13 @@ class CollectionTransactionTests : XCTestCase {
 
 		// Retrieve documents (may not be up to date - depends on server implementation)
 		var	(getDocumentsIsUpToDate, getDocumentsInfo, getDocumentsError) =
-					config.httpEndpointClient.collectionGetDocuments(documentStorageID: config.documentStorageID,
-							name: collectionName)
+					config.httpEndpointClient.collectionGetDocumentFullInfos(
+							documentStorageID: config.documentStorageID, name: collectionName)
 		while (getDocumentsIsUpToDate != nil) && !getDocumentsIsUpToDate! {
 			// Try again
 			(getDocumentsIsUpToDate, getDocumentsInfo, getDocumentsError) =
-					config.httpEndpointClient.collectionGetDocuments(documentStorageID: config.documentStorageID,
-							name: collectionName)
+					config.httpEndpointClient.collectionGetDocumentFullInfos(
+							documentStorageID: config.documentStorageID, name: collectionName)
 		}
 		XCTAssertNotNil(getDocumentsInfo, "get documents did not return info")
 		let	getDocumentsDocumentIDs =

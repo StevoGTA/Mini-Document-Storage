@@ -89,6 +89,7 @@ export async function getV1(request, response) {
 
 	let	sinceRevision = parseInt(request.query.sinceRevision);
 	let	count = request.query.count;
+	let	fullInfo = request.query.fullInfo == 1;
 	
 	var	documentIDs = request.query.id || [];
 	if (typeof documentIDs == 'string')
@@ -102,7 +103,7 @@ export async function getV1(request, response) {
 			// Since revision
 			let	[totalCount, results, error] =
 						await request.app.locals.documentStorage.documentGetSinceRevision(documentStorageID,
-								documentType, sinceRevision, count);
+								documentType, sinceRevision, count, fullInfo);
 			if (!error)
 				// Success
 				response
@@ -126,7 +127,7 @@ export async function getV1(request, response) {
 			// DocumentIDs
 			let	[results, error] =
 						await request.app.locals.documentStorage.documentGetForDocumentIDs(documentStorageID,
-								documentType, documentIDs);
+								documentType, documentIDs, fullInfo);
 			if (results)
 				// Success
 				response

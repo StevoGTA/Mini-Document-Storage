@@ -174,9 +174,9 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 		while true {
 			// Retrieve info
 			let	(info, error) =
-						self.httpEndpointClient.associationGetDocumentInfos(documentStorageID: self.documentStorageID,
-								name: name, fromDocumentID: fromDocumentID, startIndex: startIndex,
-								authorization: self.authorization)
+						self.httpEndpointClient.associationGetDocumentRevisionInfos(
+								documentStorageID: self.documentStorageID, name: name, fromDocumentID: fromDocumentID,
+								startIndex: startIndex, authorization: self.authorization)
 
 			// Handle results
 			if let (documentRevisionInfos, isComplete) = info {
@@ -213,7 +213,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 		while true {
 			// Retrieve info
 			let	(info, error) =
-						self.httpEndpointClient.associationGetDocumentInfos(
+						self.httpEndpointClient.associationGetDocumentRevisionInfos(
 								documentStorageID: self.documentStorageID, name: name, toDocumentID: toDocumentID,
 								startIndex: startIndex, authorization: self.authorization)
 
@@ -248,7 +248,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 			// Query collection document count
 			let	(info, error) =
 						self.httpEndpointClient.associationGetIntegerValues(
-											documentStorageID: self.documentStorageID, name: name, action: action,
+								documentStorageID: self.documentStorageID, name: name, action: action,
 										fromDocumentIDs: fromDocumentIDs, cacheName: cacheName,
 										cachedValueNames: cachedValueNames, authorization: self.authorization)
 
@@ -321,13 +321,13 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 			// Handle results
 			if let (isUpToDate, count) = info {
 				// Success
-			if !isUpToDate {
-				// Not up to date
-				continue
-			} else {
-				// Success
-				return count!
-			}
+				if !isUpToDate {
+					// Not up to date
+					continue
+				} else {
+					// Success
+					return count!
+				}
 			} else {
 				// Error
 				self.recentErrors.append(error!)
@@ -347,7 +347,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 		while true {
 			// Retrieve info
 			let	(isUpToDate, info, error)  =
-						self.httpEndpointClient.collectionGetDocumentInfos(
+						self.httpEndpointClient.collectionGetDocumentRevisionInfos(
 								documentStorageID: self.documentStorageID, name: name, startIndex: startIndex,
 								authorization: self.authorization)
 
@@ -456,15 +456,13 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentIterate(for documentType :String, documentIDs :[String],
-			documentCreateProc :MDSDocument.CreateProc?,
-			proc :(_ document :MDSDocument?, _ documentFullInfo :MDSDocument.FullInfo) -> Void) {
+			documentCreateProc :MDSDocument.CreateProc?, proc :(_ document :MDSDocument?) -> Void) throws {
 // TODO
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentIterate(for documentType :String, sinceRevision :Int, count :Int?, activeOnly: Bool,
-			documentCreateProc :MDSDocument.CreateProc?,
-			proc :(_ document :MDSDocument?, _ documentFullInfo :MDSDocument.FullInfo) -> Void) {
+			documentCreateProc :MDSDocument.CreateProc?, proc :(_ document :MDSDocument?) -> Void) throws {
 // TODO
 	}
 
@@ -1176,20 +1174,15 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Queue document retrieval
 		self.httpEndpointClient.queue(
-				MDSHTTPServices.httpEndpointRequestForDocumentGet(documentStorageID: self.documentStorageID,
-						documentType: documentType, documentIDs: documentIDs, authorization: self.authorization),
-				partialResultsProc: {
-					// Handle results
-					if $0 != nil {
-						// Add to array
-						documentFullInfos.append($0!)
+				MDSHTTPServices.httpEndpointRequestForDocumentGetDocumentFullInfos(
+						documentStorageID: self.documentStorageID, documentType: documentType, documentIDs: documentIDs,
+						authorization: self.authorization),
+				documentFullInfosProc: {
+					// Add to array
+					documentFullInfos.append($0)
 
-						// Signal
-						semaphore.signal()
-					}
-
-					// Ignore error here (will collect below)
-					_ = $1
+					// Signal
+					semaphore.signal()
 				}, completionProc: {
 					// Add errors
 					self.recentErrors += $0

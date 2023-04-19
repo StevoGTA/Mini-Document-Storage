@@ -1698,7 +1698,7 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentInfoIterate(documentType :String, sinceRevision :Int, activeOnly: Bool,
+	func documentInfoIterate(documentType :String, sinceRevision :Int, count :Int?, activeOnly: Bool,
 			proc :(_ documentInfo :DocumentInfo) -> Void) {
 		// Setup
 		let	documentTables = documentTables(for: documentType)
@@ -1712,8 +1712,8 @@ class MDSSQLiteDatabaseManager {
 									.and(tableColumn: DocumentTypeInfoTable.activeTableColumn, value: 1) :
 							SQLiteWhere(tableColumn: DocumentTypeInfoTable.revisionTableColumn, comparison: ">",
 											value: sinceRevision),
-				orderBy: SQLiteOrderBy(tableColumn: DocumentTypeInfoTable.revisionTableColumn))
-				{ proc(DocumentTypeInfoTable.documentInfo(for: $0)) }
+				orderBy: SQLiteOrderBy(tableColumn: DocumentTypeInfoTable.revisionTableColumn),
+				limit: SQLiteLimit(limit: count ?? -1)) { proc(DocumentTypeInfoTable.documentInfo(for: $0)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

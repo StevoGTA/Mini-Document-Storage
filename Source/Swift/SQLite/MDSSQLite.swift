@@ -362,8 +362,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentIterate(for documentType :String, documentIDs :[String],
-			documentCreateProc :MDSDocument.CreateProc?,
-			proc :(_ document :MDSDocument?, _ documentFullInfo :MDSDocument.FullInfo) -> Void) throws {
+			documentCreateProc :MDSDocument.CreateProc?, proc :(_ document :MDSDocument?) -> Void) throws {
 		// Validate
 		guard self.databaseManager.isKnown(documentType: documentType) else {
 			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
@@ -373,25 +372,25 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		let	batchInfo = self.batchInfoMap.value(for: Thread.current)
 
 		// Iterate initial document IDs
-		var	documentIDsToCache = Set<String>()
+		var	documentIDsToCache = [String]()
 		documentIDs.forEach() {
 			// Check what we have currently
-			if let documentInfo = batchInfo?.documentGetInfo(for: $0) {
+			if batchInfo?.documentGetInfo(for: $0) != nil {
 				// Have document in batch
-				proc(documentCreateProc?($0, self), documentInfo.documentBacking!.documentFullInfo)
-			} else if let documentBacking = self.documentBackingCache.documentBacking(for: $0) {
+				proc(documentCreateProc?($0, self))
+			} else if self.documentBackingCache.documentBacking(for: $0) != nil {
 				// Have documentBacking in cache
-				proc(documentCreateProc?($0, self), documentBacking.documentFullInfo)
+				proc(documentCreateProc?($0, self))
 			} else {
 				// Will need to retrieve from database
-				documentIDsToCache.insert($0)
+				documentIDsToCache.append($0)
 			}
 		}
 
 		// Iterate documentIDs not found in batch or cache
-		documentBackingsIterate(documentType: documentType, documentIDs: Array(documentIDsToCache)) {
+		documentBackingsIterate(documentType: documentType, documentIDs: documentIDsToCache) {
 			// Call proc
-			proc(documentCreateProc?($0.documentID, self), $0.documentFullInfo)
+			proc(documentCreateProc?($0.documentID, self))
 
 			// Update
 			documentIDsToCache.remove($0.documentID)
@@ -405,27 +404,15 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentIterate(for documentType :String, sinceRevision :Int, count :Int?, activeOnly: Bool,
-			documentCreateProc :MDSDocument.CreateProc?,
-			proc :(_ document :MDSDocument?, _ documentFullInfo :MDSDocument.FullInfo) -> Void) throws {
+			documentCreateProc :MDSDocument.CreateProc?, proc :(_ document :MDSDocument?) -> Void) throws {
 		// Validate
 		guard self.databaseManager.isKnown(documentType: documentType) else {
 			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
 		}
 
-		// Check if have count
-		if count != nil {
-			// Have count
-			var	documentBackings = [MDSSQLiteDocumentBacking]()
-			documentBackingsIterate(documentType: documentType, sinceRevision: sinceRevision,
-					activeOnly: activeOnly) { documentBackings.append($0) }
-
-			documentBackings[..<count!]
-					.forEach({ proc(documentCreateProc?($0.documentID, self), $0.documentFullInfo) })
-		} else {
-			// Don't have count
-			documentBackingsIterate(documentType: documentType, sinceRevision: sinceRevision, activeOnly: activeOnly)
-					{ proc(documentCreateProc?($0.documentID, self), $0.documentFullInfo) }
-		}
+		// Iterate document backings
+		documentBackingsIterate(documentType: documentType, sinceRevision: sinceRevision, count: count,
+				activeOnly: activeOnly) { proc(documentCreateProc?($0.documentID, self)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1097,6 +1084,91 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func documentRevisionInfos(for documentType :String, documentIDs :[String]) throws -> [MDSDocument.RevisionInfo] {
+		// Validate
+		guard self.databaseManager.isKnown(documentType: documentType) else {
+			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
+		}
+
+		// Iterate
+		var	documentRevisionInfos = [MDSDocument.RevisionInfo]()
+		self.databaseManager.documentInfoIterate(documentType: documentType, documentIDs: documentIDs)
+				{ documentRevisionInfos.append($0.documentRevisionInfo) }
+
+		return documentRevisionInfos
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentRevisionInfos(for documentType :String, sinceRevision :Int, count :Int?) throws ->
+			[MDSDocument.RevisionInfo] {
+		// Validate
+		guard self.databaseManager.isKnown(documentType: documentType) else {
+			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
+		}
+
+		// Iterate
+		var	documentRevisionInfos = [MDSDocument.RevisionInfo]()
+		self.databaseManager.documentInfoIterate(documentType: documentType, sinceRevision: sinceRevision, count: count,
+				activeOnly: false) { documentRevisionInfos.append($0.documentRevisionInfo) }
+
+		return documentRevisionInfos
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentFullInfos(for documentType :String, documentIDs :[String]) throws -> [MDSDocument.FullInfo] {
+		// Validate
+		guard self.databaseManager.isKnown(documentType: documentType) else {
+			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
+		}
+
+		// Iterate initial document IDs
+		var	documentFullInfos = [MDSDocument.FullInfo]()
+		var	documentIDsToCache = [String]()
+		documentIDs.forEach() {
+			// Check what we have currently
+			if let documentBacking = self.documentBackingCache.documentBacking(for: $0) {
+				// Have documentBacking in cache
+				documentFullInfos.append(documentBacking.documentFullInfo)
+			} else {
+				// Will need to retrieve from database
+				documentIDsToCache.append($0)
+			}
+		}
+
+		// Iterate documentIDs not found in batch or cache
+		documentBackingsIterate(documentType: documentType, documentIDs: documentIDsToCache) {
+			// Call proc
+			documentFullInfos.append($0.documentFullInfo)
+
+			// Update
+			documentIDsToCache.remove($0.documentID)
+		}
+
+		// Check if have any that we didn't find
+		if let documentID = documentIDsToCache.first {
+			throw MDSDocumentStorageError.unknownDocumentID(documentID: documentID)
+		}
+
+		return documentFullInfos
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentFullInfos(for documentType :String, sinceRevision :Int, count :Int?) throws ->
+			[MDSDocument.FullInfo] {
+		// Validate
+		guard self.databaseManager.isKnown(documentType: documentType) else {
+			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
+		}
+
+		// Iterate document backings
+		var	documentFullInfos = [MDSDocument.FullInfo]()
+		documentBackingsIterate(documentType: documentType, sinceRevision: sinceRevision, count: count,
+				activeOnly: false) { documentFullInfos.append($0.documentFullInfo) }
+
+		return documentFullInfos
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> Int64? {
 		// Check for batch
 		let	value :Any?
@@ -1268,8 +1340,8 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Iterate document backings
-		documentBackingsIterate(documentType: association.toDocumentType, infos: documentInfos.map({ ($0, "") }))
-				{ proc($0); _ = $1 }
+		documentBackingsIterate(documentType: association.toDocumentType, infos: documentInfos.map({ ("", $0) }))
+				{ proc($1) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1285,8 +1357,8 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Iterate document backings
-		documentBackingsIterate(documentType: association.fromDocumentType, infos: documentInfos.map({ ($0, "") }))
-				{ proc($0); _ = $1 }
+		documentBackingsIterate(documentType: association.fromDocumentType, infos: documentInfos.map({ ("", $0) }))
+				{ proc($1) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1362,7 +1434,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Iterate document backings
-		documentBackingsIterate(documentType: documentType, infos: documentInfos.map({ ($0, "") })) { proc($0); _ = $1 }
+		documentBackingsIterate(documentType: documentType, infos: documentInfos.map({ ("", $0) })) { proc($1) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1417,34 +1489,32 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 				{ documentInfos.append($0) }
 
 		// Iterate document backings
-		documentBackingsIterate(documentType: documentType, infos: documentInfos.map({ ($0, "") }))
-				{ proc($0); _ = $1 }
+		documentBackingsIterate(documentType: documentType, infos: documentInfos.map({ ("", $0) })) { proc($1) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func documentBackingsIterate(documentType :String, sinceRevision :Int, activeOnly: Bool,
+	private func documentBackingsIterate(documentType :String, sinceRevision :Int, count :Int? = nil, activeOnly: Bool,
 			proc :(_ documentBacking :MDSSQLiteDocumentBacking) -> Void) {
 		// Collect DocumentInfos
 		var	documentInfos = [MDSSQLiteDatabaseManager.DocumentInfo]()
 		self.databaseManager.documentInfoIterate(documentType: documentType, sinceRevision: sinceRevision,
-				activeOnly: activeOnly) { documentInfos.append($0) }
+				count: count, activeOnly: activeOnly) { documentInfos.append($0) }
 
 		// Iterate document backings
-		documentBackingsIterate(documentType: documentType, infos: documentInfos.map({ ($0, "") }))
-				{ proc($0); _ = $1 }
+		documentBackingsIterate(documentType: documentType, infos: documentInfos.map({ ("", $0) })) { proc($1) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	private func documentBackingsIterate<T>(documentType :String,
-			infos :[(documentInfo :MDSSQLiteDatabaseManager.DocumentInfo, t :T)],
-			proc :(_ documentBacking :MDSSQLiteDocumentBacking, _ t : T) -> Void) {
+	private func documentBackingsIterate(documentType :String,
+			infos :[(key :String, documentInfo :MDSSQLiteDatabaseManager.DocumentInfo)],
+			proc :(_ key :String, _ documentBacking :MDSSQLiteDocumentBacking) -> Void) {
 		// Iterate infos
-		var	infosNotFound = [(documentInfo :MDSSQLiteDatabaseManager.DocumentInfo, t :T)]()
+		var	infosNotFound = [(key :String, documentInfo :MDSSQLiteDatabaseManager.DocumentInfo)]()
 		infos.forEach() {
 			// Check cache
 			if let documentBacking = self.documentBackingCache.documentBacking(for: $0.documentInfo.documentID) {
 				// Have in cache
-				proc(documentBacking, $0.t)
+				proc($0.key, documentBacking)
 			} else {
 				// Don't have in cache
 				infosNotFound.append($0)
@@ -1476,7 +1546,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			self.documentBackingCache.add([documentBacking])
 
 			// Call proc
-			proc(documentBacking, $0.t)
+			proc($0.key, documentBacking)
 		}
 	}
 
@@ -1514,8 +1584,8 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Iterate document backings
-		documentBackingsIterate(documentType: documentType, infos: documentInfosByKey.map({ ($0.value, $0.key) }))
-				{ proc($1, $0) }
+		documentBackingsIterate(documentType: documentType, infos: documentInfosByKey.map({ ($0.key, $0.value) }))
+				{ proc($0, $1) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

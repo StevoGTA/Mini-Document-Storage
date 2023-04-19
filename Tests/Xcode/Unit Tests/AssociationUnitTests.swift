@@ -360,7 +360,7 @@ class AssociationUnitTests : XCTestCase {
 		let	parent = Parent(id: "ABC", documentStorage: documentStorage)
 
 		let	(info, error) =
-					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: "ABC", name: "ABC",
+					config.httpEndpointClient.associationGetDocumentRevisionInfos(documentStorageID: "ABC", name: "ABC",
 							fromDocumentID: parent.id)
 
 		// Evaluate results
@@ -391,8 +391,8 @@ class AssociationUnitTests : XCTestCase {
 		let	parent = Parent(id: "ABC", documentStorage: documentStorage)
 
 		let	(info, error) =
-					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: config.documentStorageID,
-							name: name, fromDocumentID: parent.id)
+					config.httpEndpointClient.associationGetDocumentRevisionInfos(
+							documentStorageID: config.documentStorageID, name: name, fromDocumentID: parent.id)
 
 		// Evaluate results
 		XCTAssertNil(info, "did receive info")
@@ -441,8 +441,9 @@ class AssociationUnitTests : XCTestCase {
 		// Perform
 		let	documentID = UUID().base64EncodedString
 		let	(info, error) =
-					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: config.documentStorageID,
-							name: associationName, fromDocumentID: documentID )
+					config.httpEndpointClient.associationGetDocumentRevisionInfos(
+							documentStorageID: config.documentStorageID, name: associationName,
+							fromDocumentID: documentID )
 
 		// Evaluate results
 		XCTAssertNil(info, "did receive info")
@@ -472,7 +473,7 @@ class AssociationUnitTests : XCTestCase {
 		let	parent = Parent(id: "ABC", documentStorage: documentStorage)
 
 		let	(info, error) =
-					config.httpEndpointClient.associationGetDocuments(documentStorageID: "ABC", name: "ABC",
+					config.httpEndpointClient.associationGetDocumentFullInfos(documentStorageID: "ABC", name: "ABC",
 							fromDocumentID: parent.id)
 
 		// Evaluate results
@@ -503,8 +504,8 @@ class AssociationUnitTests : XCTestCase {
 		let	parent = Parent(id: "ABC", documentStorage: documentStorage)
 
 		let	(info, error) =
-					config.httpEndpointClient.associationGetDocuments(documentStorageID: config.documentStorageID,
-							name: name, fromDocumentID: parent.id)
+					config.httpEndpointClient.associationGetDocumentFullInfos(
+							documentStorageID: config.documentStorageID, name: name, fromDocumentID: parent.id)
 
 		// Evaluate results
 		XCTAssertNil(info, "did receive info")
@@ -553,8 +554,9 @@ class AssociationUnitTests : XCTestCase {
 		// Perform
 		let	documentID = UUID().base64EncodedString
 		let	(info, error) =
-					config.httpEndpointClient.associationGetDocuments(documentStorageID: config.documentStorageID,
-							name: associationName, fromDocumentID: documentID )
+					config.httpEndpointClient.associationGetDocumentFullInfos(
+							documentStorageID: config.documentStorageID, name: associationName,
+							fromDocumentID: documentID)
 
 		// Evaluate results
 		XCTAssertNil(info, "did receive info")
@@ -584,7 +586,7 @@ class AssociationUnitTests : XCTestCase {
 		let	child = Child(id: "ABC", documentStorage: documentStorage)
 
 		let	(info, error) =
-					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: "ABC", name: "ABC",
+					config.httpEndpointClient.associationGetDocumentRevisionInfos(documentStorageID: "ABC", name: "ABC",
 							toDocumentID: child.id)
 
 		// Evaluate results
@@ -615,8 +617,8 @@ class AssociationUnitTests : XCTestCase {
 		let	child = Child(id: "ABC", documentStorage: documentStorage)
 
 		let	(info, error) =
-					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: config.documentStorageID,
-							name: name, toDocumentID: child.id)
+					config.httpEndpointClient.associationGetDocumentRevisionInfos(
+							documentStorageID: config.documentStorageID, name: name, toDocumentID: child.id)
 
 		// Evaluate results
 		XCTAssertNil(info, "did receive info")
@@ -665,8 +667,9 @@ class AssociationUnitTests : XCTestCase {
 		// Perform
 		let	documentID = UUID().base64EncodedString
 		let	(info, error) =
-					config.httpEndpointClient.associationGetDocumentInfos(documentStorageID: config.documentStorageID,
-							name: associationName, toDocumentID: documentID )
+					config.httpEndpointClient.associationGetDocumentRevisionInfos(
+							documentStorageID: config.documentStorageID, name: associationName,
+							toDocumentID: documentID)
 
 		// Evaluate results
 		XCTAssertNil(info, "did receive info")
@@ -696,7 +699,7 @@ class AssociationUnitTests : XCTestCase {
 		let	child = Child(id: "ABC", documentStorage: documentStorage)
 
 		let	(info, error) =
-					config.httpEndpointClient.associationGetDocuments(documentStorageID: "ABC", name: "ABC",
+					config.httpEndpointClient.associationGetDocumentFullInfos(documentStorageID: "ABC", name: "ABC",
 							toDocumentID: child.id)
 
 		// Evaluate results
@@ -727,8 +730,8 @@ class AssociationUnitTests : XCTestCase {
 		let	child = Child(id: "ABC", documentStorage: documentStorage)
 
 		let	(info, error) =
-					config.httpEndpointClient.associationGetDocuments(documentStorageID: config.documentStorageID,
-							name: name, toDocumentID: child.id)
+					config.httpEndpointClient.associationGetDocumentFullInfos(
+							documentStorageID: config.documentStorageID, name: name, toDocumentID: child.id)
 
 		// Evaluate results
 		XCTAssertNil(info, "did receive info")
@@ -777,8 +780,9 @@ class AssociationUnitTests : XCTestCase {
 		// Perform
 		let	documentID = UUID().base64EncodedString
 		let	(info, error) =
-					config.httpEndpointClient.associationGetDocuments(documentStorageID: config.documentStorageID,
-							name: associationName, toDocumentID: documentID )
+					config.httpEndpointClient.associationGetDocumentFullInfos(
+							documentStorageID: config.documentStorageID, name: associationName,
+							toDocumentID: documentID)
 
 		// Evaluate results
 		XCTAssertNil(info, "did receive info")
