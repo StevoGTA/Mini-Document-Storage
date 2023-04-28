@@ -328,7 +328,7 @@ module.exports = class DocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentGetSinceRevision(documentStorageID, documentType, sinceRevision, count, fullInfo) {
+	async documentGetSinceRevision(documentStorageID, documentType, sinceRevision, count = null, fullInfo = true) {
 		// Setup
 		let	statementPerformer = this.statementPerformerProc();
 		statementPerformer.use(documentStorageID);
@@ -358,7 +358,7 @@ module.exports = class DocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentGetForDocumentIDs(documentStorageID, documentType, documentIDs, fullInfo) {
+	async documentGetForDocumentIDs(documentStorageID, documentType, documentIDs, fullInfo = true) {
 		// Setup
 		let	statementPerformer = this.statementPerformerProc();
 		statementPerformer.use(documentStorageID);

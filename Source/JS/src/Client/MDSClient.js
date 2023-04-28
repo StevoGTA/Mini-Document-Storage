@@ -33,6 +33,19 @@ class MDSClient {
 	setHeaders(headers) { this.headers = headers || {}; }
 
 	//------------------------------------------------------------------------------------------------------------------
+	async queueDELETE(subPath) {
+		// Setup
+		let	url = this.urlBase + subPath;
+		let	options = {method: 'DELETE', headers: this.headers};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
+		await processResponse(response);
+
+		return response;
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	async queueGET(subPath) {
 		// Setup
 		let	url = this.urlBase + subPath;
@@ -73,6 +86,23 @@ class MDSClient {
 		headers['Content-Type'] = 'application/json';
 
 		let	options = {method: 'POST', headers: headers, body: JSON.stringify(bodyObject)};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
+		await processResponse(response);
+
+		return response;
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async queuePUT(subPath, bodyObject) {
+		// Setup
+		let	url = this.urlBase + subPath;
+
+		let	headers = {...this.headers};
+		headers['Content-Type'] = 'application/json';
+
+		let	options = {method: 'PUT', headers: headers, body: JSON.stringify(bodyObject)};
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
@@ -519,13 +549,15 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentGetSinceRevision(documentType, sinceRevision, count, documentCreationProc, documentStorageID) {
+	async documentGetSinceRevision(documentType, sinceRevision, count, documentCreationProc, documentStorageID,
+			fullInfo = true) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
 		var	url =
 					this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
-							encodeURIComponent(documentType) + '?sinceRevision=' + sinceRevision;
+							encodeURIComponent(documentType) + '?sinceRevision=' + sinceRevision +
+							'&fullInfo=' + (fullInfo ? 1 : 0);
 		if (count) url += '&count=' + count;
 
 		let	options = {headers: this.headers};
@@ -542,13 +574,15 @@ class MDSClient {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async documentGetAllSinceRevision(documentType, sinceRevision, batchCount, documentCreationProc, documentStorageID,
-			proc) {
+			fullInfo, proc) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		let	urlBase =
 					this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
-							encodeURIComponent(documentType) +
-							(batchCount ? '?count=' + batchCount + '&sinceRevision=' : '?sinceRevision=');
+							encodeURIComponent(documentType) + '?' +
+							(batchCount ? 'count=' + batchCount + '&' : '') +
+							'fullInfo=' + (fullInfo ? 1 : 0) + '&' +
+							'sinceRevision=';
 		let	options = {headers: this.headers};
 
 		var	sinceRevisionUse = sinceRevision;
@@ -603,7 +637,9 @@ class MDSClient {
 			let	documentIDsSlice = documentIDsUse.slice(i, i + 10);
 			let	url = 
 						this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
-								encodeURIComponent(documentType) + '?id=' + documentIDsSlice.join('&id=');
+								encodeURIComponent(documentType) +
+								'?id=' + documentIDsSlice.join('&id=') +
+								'&fullInfo=1';
 
 			// Queue the call
 			let	response = await this.queue.add(() => fetch(url, options));
