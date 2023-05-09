@@ -1363,7 +1363,7 @@ class MDSHTTPServices {
 		let	documentTypeUse = documentType.transformedForPath
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
-		var	queryComponents :[String : Any] = ["sinceRevision": sinceRevision]
+		var	queryComponents :[String : Any] = ["sinceRevision": sinceRevision, "fullInfo": 1]
 		queryComponents["count"] = count
 
 		return GetDocumentsSinceRevisionHTTPEndpointRequest(method: .get,
@@ -1378,7 +1378,7 @@ class MDSHTTPServices {
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 
 		return GetDocumentsForDocumentIDsHTTPEndpointRequest(method: .get,
-				path: "/v1/document/\(documentStorageIDUse)/\(documentTypeUse)",
+				path: "/v1/document/\(documentStorageIDUse)/\(documentTypeUse)", queryComponents: ["fullInfo": 1],
 				multiValueQueryComponent: ("id", documentIDs), headers: headers)
 	}
 
