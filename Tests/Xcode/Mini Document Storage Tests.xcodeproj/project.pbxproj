@@ -513,7 +513,7 @@
 				0A55525E27C5DA60003E497B /* README.md */,
 			);
 			name = "Swift Toolbox";
-			path = "3rd Party/Swift Toolbox";
+			path = "../../../Swift Toolbox";
 			sourceTree = "<group>";
 		};
 		0A55520327C5DA60003E497B /* Source */ = {
