@@ -70,11 +70,6 @@ module.exports = class Indexes {
 		// Setup
 		let	internals = this.internals;
 
-		// Validate document type
-		var	lastDocumentRevision = await internals.documents.getLastRevision(statementPerformer, documentType);
-		if (lastDocumentRevision == null)
-			return 'Unknown documentType: ' + documentType;
-
 		// Check if need to create Indexes table
 		await internals.createTableIfNeeded(statementPerformer, this.indexesTable);
 
@@ -88,13 +83,10 @@ module.exports = class Indexes {
 							],
 							statementPerformer.where(this.indexesTable.nameTableColumn, name));
 		if (results.length == 0) {
-			// Add
-			lastDocumentRevision = 0;
-			
 			// Create index
 			let	index =
 						new Index(statementPerformer, name, documentType, relevantProperties,
-								this.keysSelectorInfo[keysSelector], keysSelectorInfo, lastDocumentRevision);
+								this.keysSelectorInfo[keysSelector], keysSelectorInfo, 0);
 
 			// Update database
 			statementPerformer.queueInsertInto(this.indexesTable,
@@ -106,15 +98,14 @@ module.exports = class Indexes {
 						{tableColumn: this.indexesTable.keysSelectorTableColumn, value: keysSelector},
 						{tableColumn: this.indexesTable.keysSelectorInfoTableColumn,
 								value: JSON.stringify(keysSelectorInfo)},
-						{tableColumn: this.indexesTable.lastDocumentRevisionTableColumn, value: lastDocumentRevision},
+						{tableColumn: this.indexesTable.lastDocumentRevisionTableColumn, value: 0},
 				]);
 			index.queueCreate(statementPerformer);
 		} else if (keysSelector != results[0].keysSelector) {
 			// Update to new keysSelector
-			lastDocumentRevision = 0;
 			let	index =
 						new Index(statementPerformer, name, documentType, relevantProperties,
-								this.keysSelectorInfo[keysSelector], keysSelectorInfo, lastDocumentRevision);
+								this.keysSelectorInfo[keysSelector], keysSelectorInfo, 0);
 
 			statementPerformer.queueUpdate(this.indexesTable,
 					[
@@ -123,7 +114,7 @@ module.exports = class Indexes {
 						{tableColumn: this.indexesTable.keysSelectorTableColumn, value: keysSelector},
 						{tableColumn: this.indexesTable.keysSelectorInfoTableColumn,
 								value: JSON.stringify(keysSelectorInfo)},
-						{tableColumn: this.indexesTable.lastDocumentRevisionTableColumn, value: lastDocumentRevision},
+						{tableColumn: this.indexesTable.lastDocumentRevisionTableColumn, value: 0},
 					],
 					statementPerformer.where(this.indexesTable.nameTableColumn, name));
 			index.queueTruncate(statementPerformer);

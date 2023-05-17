@@ -39,7 +39,7 @@ module.exports = class MDSDocument {
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
 	constructor(info) {
-		// Check type
+		// Check situation
 		if (info == null) {
 			// New
 			let uuidBytes = UuidTool.toBytes(UuidTool.newUuid());
@@ -78,7 +78,7 @@ module.exports = class MDSDocument {
 	// Subclass methods
 	//------------------------------------------------------------------------------------------------------------------
 	value(property) {
-		// Check what the situation is
+		// Check situation
 		if (property in this.updated)
 			// Have updated value
 			return this.updated[property];
@@ -116,7 +116,7 @@ module.exports = class MDSDocument {
 	createInfo() {
 		// Return info
 		return {
-			documentID: this.documentID,
+			documentID: this.info.documentID,
 			json: this.updated,
 		};
 	}

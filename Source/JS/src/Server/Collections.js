@@ -74,10 +74,9 @@ module.exports = class Collections {
 		// Setup
 		let	internals = this.internals;
 
-		// Validate document type
 		var	lastDocumentRevision = await internals.documents.getLastRevision(statementPerformer, documentType);
 		if (lastDocumentRevision == null)
-			return 'Unknown documentType: ' + documentType;
+			lastDocumentRevision = 0;
 
 		// Check if need to create Collections table
 		await internals.createTableIfNeeded(statementPerformer, this.collectionsTable);

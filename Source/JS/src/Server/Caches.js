@@ -82,11 +82,6 @@ module.exports = class Caches {
 		// Setup
 		let	internals = this.internals;
 
-		// Validate document type
-		let	lastDocumentRevision = await internals.documents.getLastRevision(statementPerformer, documentType);
-		if (lastDocumentRevision == null)
-			return 'Unknown documentType: ' + documentType;
-
 		// Check if need to create Caches table
 		await internals.createTableIfNeeded(statementPerformer, this.cachesTable);
 
