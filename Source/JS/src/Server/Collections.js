@@ -190,7 +190,7 @@ module.exports = class Collections {
 			return [false, null, null];
 		} else
 			// No document of this type yet
-			return [false, null, null];
+			return [true, 0, null];
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -260,7 +260,7 @@ module.exports = class Collections {
 			return [false, null, null, null];
 		} else
 			// No document of this type yet
-			return [false, null, null, null];
+			return [true, 0, [], null];
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

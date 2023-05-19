@@ -515,7 +515,6 @@ class MDSClient {
 		for (let document of documents)
 			// Update info
 			documentsByID[document.documentID] = document;
-		
 		for (let result of results)
 			// Update document
 			documentsByID[result.documentID].updateFromCreate(result);
@@ -840,7 +839,6 @@ class MDSClient {
 							encodeURIComponent(name) + '?fullInfo=0' + '?key=' + keysUse.join('&key=');
 		let	options = {headers: this.headers};
 
-
 		// Loop until up-to-date
 		while (true) {
 			// Queue the call
@@ -866,7 +864,6 @@ class MDSClient {
 					this.urlBase + '/v1/index/' + encodeURIComponent(documentStorageIDUse) + '/' +
 							encodeURIComponent(name) + '?fullInfo=1' + '?key=' + keysUse.join('&key=');
 		let	options = {headers: this.headers};
-
 
 		// Loop until up-to-date
 		while (true) {

@@ -218,7 +218,7 @@ module.exports = class Indexes {
 			return [false, null, null];
 		} else
 			// No document of this type yet
-			return [false, null, null];
+			return [true, {}, null];
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
