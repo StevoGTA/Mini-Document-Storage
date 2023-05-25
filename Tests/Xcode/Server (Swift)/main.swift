@@ -1,6 +1,6 @@
 //
 //  main.swift
-//  Server (Swift)
+//  Mini Document Storage Tests
 //
 //  Created by Stevo on 8/30/22.
 //
@@ -23,6 +23,7 @@ struct Server : ParsableCommand {
 	enum DocumentStorage :String, ExpressibleByArgument {
 		case swiftEphemeral
 		case swiftSQLite
+		case cppEphemeral
 	}
     @Option
     var	documentStorage :DocumentStorage
@@ -35,12 +36,12 @@ struct Server : ParsableCommand {
 
 		// Setup MDS
 		httpServer.setupMDSEndpoints()
+
+		let	documentStorage :MDSHTTPServicesHandler
 		switch self.documentStorage {
 			case .swiftEphemeral:
 				// Swift Ephemeral
-				let	documentStorage = MDSEphemeral()
-
-				MDSHTTPServices.register(documentStorage: documentStorage, for: "Sandbox")
+				documentStorage = MDSEphemeral()
 
 			case .swiftSQLite:
 				// Swift SQLite
@@ -48,10 +49,14 @@ struct Server : ParsableCommand {
 				let	applicationFolder = libraryFolder.folder(withSubPath: "Mini Document Storage Test Server (Swift)")
 				try! FileManager.default.create(applicationFolder)
 
-				let	documentStorage = try! MDSSQLite(in: applicationFolder)
+				documentStorage = try! MDSSQLite(in: applicationFolder)
 
-				MDSHTTPServices.register(documentStorage: documentStorage, for: "Sandbox")
+			case .cppEphemeral:
+				// C++ Ephemeral
+				documentStorage = MDSHTTPServicesHandlerObjC(documentStorageObjC: MDSEphemeralCpp())
+
 		}
+		MDSHTTPServices.register(documentStorage: documentStorage, for: "Sandbox")
 
 		// Log
 		print("Server listening on port 34343")
