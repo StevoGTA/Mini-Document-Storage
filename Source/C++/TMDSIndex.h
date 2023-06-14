@@ -65,7 +65,7 @@ template <typename T> class TMDSIndex {
 												// Update keys info
 												keysInfos +=
 														KeysInfo<T>(mKeysProc(iterator->mDocument, mKeysProcUserData),
-																iterator->mValue);
+																iterator->mID);
 											}
 
 											// Update last revision

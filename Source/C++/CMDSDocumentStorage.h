@@ -67,6 +67,9 @@ class CMDSDocumentStorage {
 
 	// Methods
 	public:
+													// Lifecycle methods
+		virtual										~CMDSDocumentStorage() {}
+
 													// Instance methods
 		virtual	const	CString&					getID() const = 0;
 
@@ -202,5 +205,4 @@ class CMDSDocumentStorage {
 	protected:
 													// Lifecycle methods
 													CMDSDocumentStorage() {}
-		virtual										~CMDSDocumentStorage() {}
 };

@@ -44,16 +44,16 @@ class CMDSEphemeralDocumentBacking {
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - Types
 
-typedef	TMDSBatchInfo<CDictionary>								CMDSEphemeralBatchInfo;
-typedef	CMDSEphemeralBatchInfo::DocumentInfo<CDictionary>		CMDSEphemeralBatchDocumentInfo;
+typedef	TMDSBatchInfo<CDictionary>									CMDSEphemeralBatchInfo;
+typedef	CMDSEphemeralBatchInfo::DocumentInfo<CDictionary>			CMDSEphemeralBatchDocumentInfo;
 
-typedef	TMDSCollection<CString, TNArray<CString> >				CMDSEphemeralCollection;
-typedef	CMDSEphemeralCollection::UpdateInfo<TNArray<CString> >	CMDSEphemeralCollectionUpdateInfo;
+typedef	TMDSCollection<CString, TNArray<CString> >					CMDSEphemeralCollection;
+typedef	CMDSEphemeralCollection::UpdateResults<TNArray<CString> >	CMDSEphemeralCollectionUpdateResults;
 
-typedef	TMDSIndex<CString>										CMDSEphemeralIndex;
-typedef	CMDSEphemeralIndex::UpdateInfo<CString>					CMDSEphemeralIndexUpdateInfo;
+typedef	TMDSIndex<CString>											CMDSEphemeralIndex;
+typedef	CMDSEphemeralIndex::UpdateInfo<CString>						CMDSEphemeralIndexUpdateInfo;
 
-typedef	TMDSUpdateInfo<CString>									CMDSEphemeralUpdateInfo;
+typedef	TMDSUpdateInfo<CString>										CMDSEphemeralUpdateInfo;
 
 //----------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------
@@ -106,7 +106,7 @@ struct AssociationPair {
 													const CMDSDocument& document, CMDSDocument::ChangeKind changeKind);
 
 		static	OV<TSet<CString> >			updateCollectionValues(const OR<TNSet<CString> >& currentValues,
-													const CMDSEphemeralCollectionUpdateInfo* updateInfo);
+													const CMDSEphemeralCollectionUpdateResults* updateResults);
 		static	OV<TSet<CString> >			removeCollectionValues(const OR<TNSet<CString> >& currentValues,
 													const TSet<CString>* documentIDs);
 		static	OV<TDictionary<CString> >	updateIndexValues(const OR<TDictionary<CString> >& currentValue,
@@ -188,11 +188,11 @@ void CMDSEphemeralInternals::updateCollections(const CString& documentType,
 	for (TIteratorD<CMDSEphemeralCollection> iterator = collections->getIterator(); iterator.hasValue();
 			iterator.advance()) {
 		// Query update info
-		CMDSEphemeralCollectionUpdateInfo	updateInfo = iterator->update(updateInfos);
+		CMDSEphemeralCollectionUpdateResults	updateResults = iterator->update(updateInfos);
 
 		// Update storage
 		mCollectionValuesMap.update(iterator->getName(),
-				(TNLockingDictionary<TNSet<CString> >::UpdateProc) updateCollectionValues, &updateInfo);
+				(TNLockingDictionary<TNSet<CString> >::UpdateProc) updateCollectionValues, &updateResults);
 	}
 }
 
@@ -264,20 +264,21 @@ void CMDSEphemeralInternals::notifyDocumentChanged(const CString& documentType, 
 
 //----------------------------------------------------------------------------------------------------------------------
 OV<TSet<CString> > CMDSEphemeralInternals::updateCollectionValues(const OR<TNSet<CString> >& currentValues,
-		const CMDSEphemeralCollectionUpdateInfo* updateInfo)
+		const CMDSEphemeralCollectionUpdateResults* updateResults)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	// Check if have current values
-	TNSet<CString>	updatedValues;
-	if (currentValues.hasReference())
-		// Have current values
-		updatedValues =
-				currentValues->removeFrom(updateInfo->mNotIncludedValues).insertFrom(updateInfo->mIncludedValues);
-	else
-		// Don't have current values
-		updatedValues = TNSet<CString>(updateInfo->mIncludedValues);
-
-	return !updatedValues.isEmpty() ? OV<TSet<CString> >(updatedValues) : OV<TSet<CString> >();
+//	// Check if have current values
+//	TNSet<CString>	updatedValues;
+//	if (currentValues.hasReference())
+//		// Have current values
+//		updatedValues =
+//				currentValues->removeFrom(updateResults->mNotIncludedIDs).insertFrom(updateResults->mIncludedIDs);
+//	else
+//		// Don't have current values
+//		updatedValues = TNSet<CString>(updateResults->mIncludedIDs);
+//
+//	return !updatedValues.isEmpty() ? OV<TSet<CString> >(updatedValues) : OV<TSet<CString> >();
+return OV<TSet<CString> >();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1004,19 +1005,19 @@ void CMDSEphemeral::registerCollection(const CString& name, const CMDSDocument::
 		const CDictionary& isIncludedSelectorInfo, CMDSDocument::IsIncludedProc isIncludedProc, void* userData)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	// Ensure this collectino has not already been registered
-	if (mInternals->mCollectionsByNameMap.contains(name)) return;
-
-	// Create collection
-	CMDSEphemeralCollection	collection(name, documentInfo.getDocumentType(), relevantProperties, 0, isIncludedProc,
-									userData);
-
-	// Add to maps
-	mInternals->mCollectionsByNameMap.set(name, collection);
-	mInternals->mCollectionsByDocumentTypeMap.add(documentInfo.getDocumentType(), collection);
-
-	// Update creation proc map
-	mInternals->mDocumentInfoMap.set(documentInfo.getDocumentType(), documentInfo);
+//	// Ensure this collectino has not already been registered
+//	if (mInternals->mCollectionsByNameMap.contains(name)) return;
+//
+//	// Create collection
+//	CMDSEphemeralCollection	collection(name, documentInfo.getDocumentType(), relevantProperties, isIncludedProc,
+//									userData, userData, isIncludedSelectorInfo, 0);
+//
+//	// Add to maps
+//	mInternals->mCollectionsByNameMap.set(name, collection);
+//	mInternals->mCollectionsByDocumentTypeMap.add(documentInfo.getDocumentType(), collection);
+//
+//	// Update creation proc map
+//	mInternals->mDocumentInfoMap.set(documentInfo.getDocumentType(), documentInfo);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

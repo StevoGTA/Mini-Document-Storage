@@ -110,7 +110,8 @@ class CMDSDocument : public CHashable {
 		typedef	CMDSDocument*	(*CreateProc)(const CString& id, CMDSDocumentStorage& documentStorage);
 		typedef	void			(*Proc)(CMDSDocument& document, void* userData);
 		typedef	void			(*ChangedProc)(const CMDSDocument& document, ChangeKind changeKind, void* userData);
-		typedef	bool			(*IsIncludedProc)(const CMDSDocument& document, void* userData);
+		typedef	bool			(*IsIncludedProc)(const CMDSDocument& document, void* userData,
+										const CDictionary& info);
 		typedef	TArray<CString>	(*KeysProc)(const CMDSDocument& document, void* userData);
 		typedef	void			(*KeyProc)(const CString& key, const CMDSDocument& document, void* userData);
 
@@ -282,19 +283,19 @@ class CMDSDocument : public CHashable {
 
 template <typename T> struct TMDSUpdateInfo {
 	// Lifecycle methods
-	TMDSUpdateInfo(const CMDSDocument& document, UInt32 revision, T value,
+	TMDSUpdateInfo(const CMDSDocument& document, UInt32 revision, T id,
 			const TSet<CString> changedProperties) :
-		mDocument(document), mRevision(revision), mValue(value),
+		mDocument(document), mRevision(revision), mID(id),
 				mChangedProperties(OV<TSet<CString> >(changedProperties))
 		{}
-	TMDSUpdateInfo(const CMDSDocument& document, UInt32 revision, T value) :
-		mDocument(document), mRevision(revision), mValue(value), mChangedProperties(OV<TSet<CString> >())
+	TMDSUpdateInfo(const CMDSDocument& document, UInt32 revision, T id) :
+		mDocument(document), mRevision(revision), mID(id), mChangedProperties(OV<TSet<CString> >())
 		{}
 
 	// Properties
 	const	CMDSDocument&		mDocument;
 			UInt32				mRevision;
-			T					mValue;
+			T					mID;
 			OV<TSet<CString> >	mChangedProperties;
 };
 
