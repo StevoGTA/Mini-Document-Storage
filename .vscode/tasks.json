@@ -5,7 +5,7 @@
 	"tasks": [
 		// JavaScript
 		{
-			"label": "JavaScript - Deploy",
+			"label": "JavaScript - Publish to npm",
 			"type": "shell",
 			"command": "npm publish",
 			"options": {"cwd": "${workspaceFolder}/Source/JS"}
