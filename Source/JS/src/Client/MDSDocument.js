@@ -15,7 +15,7 @@ module.exports = class MDSDocument {
 
 	// Properties
 	get documentID() { return this.info.documentID; }							// String
-	get	revision() { return this.info.revision; }								// Integer
+	get	revision() { return this.info.revision; }								// Integer (null if not yet created)
 
 	get isActive() { return this.info.active == 1; }							// Bool
 	setActive(active) {
@@ -33,8 +33,8 @@ module.exports = class MDSDocument {
 			this.activeChanged = true;
 		}
 
-	get creationDate() { return new Date(this.info.creationDate); }				// Date
-	get	modificationDate() { return new Date(this.info.modificationDate); }		// Date
+	get	creationDate() { return new Date(this.info.creationDate); }				// Date (null if not yet created)
+	get	modificationDate() { return new Date(this.info.modificationDate); }		// Date (null if not yet created)
 
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -112,6 +112,9 @@ module.exports = class MDSDocument {
 	}
 
 	// Internal methods
+	//------------------------------------------------------------------------------------------------------------------
+	hasCreateInfo() { return !self.creationDate; }
+
 	//------------------------------------------------------------------------------------------------------------------
 	createInfo() {
 		// Return info
