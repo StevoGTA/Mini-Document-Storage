@@ -12,10 +12,13 @@ import Foundation
 // MARK: MDSSQLite
 public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
+	// MARK: Types
+	private	typealias BatchInfo = MDSBatchInfo<MDSSQLiteDocumentBacking>
+
 	// MARK: Properties
 	private	var	associationsByNameMap = LockingDictionary</* Name */ String, MDSAssociation>()
 
-	private	let	batchInfoMap = LockingDictionary<Thread, MDSBatchInfo<MDSSQLiteDocumentBacking>>()
+	private	let	batchInfoMap = LockingDictionary<Thread, BatchInfo>()
 
 	private	let	cachesByNameMap = LockingDictionary</* Name */ String, MDSCache>()
 	private	let	cachesByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSCache>()
@@ -64,27 +67,24 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func associationUpdate(for name :String, updates :[MDSAssociation.Update]) throws {
+	public func associationGet(for name :String) throws -> [MDSAssociation.Item] {
 		// Validate
 		guard let association = association(for: name) else {
 			throw MDSDocumentStorageError.unknownAssociation(name: name)
 		}
 
-		// Update
-		self.databaseManager.associationUpdate(name: name, updates: updates,
-				fromDocumentType: association.fromDocumentType, toDocumentType: association.toDocumentType)
-	}
+		// Get association items
+		var	associationItems =
+					self.databaseManager.associationGet(name: name, fromDocumentType: association.fromDocumentType,
+							toDocumentType: association.toDocumentType)
 
-	//------------------------------------------------------------------------------------------------------------------
-	public func associationGet(for name :String, startIndex :Int, count :Int?) throws ->
-			(totalCount :Int, associationItems :[MDSAssociation.Item]) {
-		// Validate
-		guard let association = association(for: name) else {
-			throw MDSDocumentStorageError.unknownAssociation(name: name)
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
+			// Apply batch changes
+			associationItems = batchInfo.associationItems(applyingChangesTo: associationItems, for: name)
 		}
 
-		return self.databaseManager.associationGet(name: name, fromDocumentType: association.fromDocumentType,
-				toDocumentType: association.toDocumentType, startIndex: startIndex, count: count)
+		return associationItems
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -95,16 +95,24 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			throw MDSDocumentStorageError.unknownAssociation(name: name)
 		}
 
-		// Collect document IDs
-		var	documentIDs = [String]()
-		try autoreleasepool() {
-			try associationIterate(association: association, fromDocumentID: fromDocumentID, startIndex: 0, count: nil)
-					{ documentIDs.append($0.documentID) }
+		// Get association items
+		var	associationItems =
+					try self.databaseManager.associationGet(name: name, fromDocumentID: fromDocumentID,
+							fromDocumentType: association.fromDocumentType, toDocumentType: association.toDocumentType)
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
+			// Apply batch changes
+			associationItems = batchInfo.associationItems(applyingChangesTo: associationItems, for: name)
 		}
 
 		// Iterate document IDs
 		let	documentCreateProc = self.documentCreateProc(for: toDocumentType)
-		autoreleasepool() { documentIDs.forEach() { proc(documentCreateProc($0, self)) } }
+		autoreleasepool() {
+			associationItems
+					.filter({ $0.fromDocumentID == fromDocumentID })
+					.forEach() { proc(documentCreateProc($0.toDocumentID, self)) }
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -114,17 +122,24 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		guard let association = association(for: name) else {
 			throw MDSDocumentStorageError.unknownAssociation(name: name)
 		}
+		// Get association items
+		var	associationItems =
+					try self.databaseManager.associationGet(name: name, fromDocumentType: association.fromDocumentType,
+							toDocumentID: toDocumentID, toDocumentType: association.toDocumentType)
 
-		// Collect document IDs
-		var	documentIDs = [String]()
-		try autoreleasepool() {
-			try associationIterate(association: association, toDocumentID: toDocumentID,  startIndex: 0, count: nil)
-					{ documentIDs.append($0.documentID) }
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
+			// Apply batch changes
+			associationItems = batchInfo.associationItems(applyingChangesTo: associationItems, for: name)
 		}
 
 		// Iterate document IDs
 		let	documentCreateProc = self.documentCreateProc(for: fromDocumentType)
-		autoreleasepool() { documentIDs.forEach() { proc(documentCreateProc($0, self)) } }
+		autoreleasepool() {
+			associationItems
+					.filter({ $0.toDocumentID == toDocumentID })
+					.forEach() { proc(documentCreateProc($0.fromDocumentID, self)) }
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -144,13 +159,51 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			}
 		}
 
+		// Process batch updates
+		let	(associationAdds, associationRemoves) =
+					self.batchInfoMap.value(for: .current)?.associationUpdates(for: name) ?? ([], [])
+		let	fromDocumentIDsUse :[String]
+		if !associationAdds.isEmpty || !associationRemoves.isEmpty {
+			// Remove document revision infos that have been removed
+			let	associationRemoveDocumentIDs = Set(associationRemoves.map({ $0.fromDocumentID }))
+
+			// Update document IDs
+			fromDocumentIDsUse =
+					Array(Set(fromDocumentIDs.filter({ !associationRemoveDocumentIDs.contains($0) }) +
+							associationAdds.map({ $0.fromDocumentID })))
+		} else {
+			// Not in batch or no updates
+			fromDocumentIDsUse = fromDocumentIDs
+		}
+
 		// Check action
 		switch action {
 			case .sum:
 				// Sum
-				return try self.databaseManager.associationSum(name: name, fromDocumentIDs: fromDocumentIDs,
+				return try self.databaseManager.associationSum(name: name, fromDocumentIDs: fromDocumentIDsUse,
 						documentType: association.fromDocumentType, cacheName: cacheName,
 						cachedValueNames: cachedValueNames)
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func associationUpdate(for name :String, updates :[MDSAssociation.Update]) throws {
+		// Validate
+		guard let association = association(for: name) else {
+			throw MDSDocumentStorageError.unknownAssociation(name: name)
+		}
+
+		// Check if have updates
+		guard !updates.isEmpty else { return }
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
+			// In batch
+			batchInfo.associationNoteUpdated(for: name, updates: updates)
+		} else {
+			// Not in batch
+			self.databaseManager.associationUpdate(name: name, updates: updates,
+					fromDocumentType: association.fromDocumentType, toDocumentType: association.toDocumentType)
 		}
 	}
 
@@ -237,6 +290,9 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		guard let collection = collection(for: name) else {
 			throw MDSDocumentStorageError.unknownCollection(name: name)
 		}
+		guard self.batchInfoMap.value(for: .current) == nil else {
+			throw MDSDocumentStorageError.illegalInBatch
+		}
 
 		// Bring up to date
 		autoreleasepool() {
@@ -252,6 +308,9 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Validate
 		guard let collection = collection(for: name) else {
 			throw MDSDocumentStorageError.unknownCollection(name: name)
+		}
+		guard self.batchInfoMap.value(for: .current) == nil else {
+			throw MDSDocumentStorageError.illegalInBatch
 		}
 
 		// Bring up to date
@@ -274,14 +333,14 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentCreate(documentType :String, documentCreateInfos :[MDSDocument.CreateInfo],
-			proc :MDSDocument.CreateProc) ->
+			proc :MDSDocument.CreateProc) throws ->
 			[(document :MDSDocument, documentOverviewInfo :MDSDocument.OverviewInfo?)] {
 		// Setup
 		let	date = Date()
 		var	infos = [(document :MDSDocument, documentOverviewInfo :MDSDocument.OverviewInfo?)]()
 
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
 			// In batch
 			documentCreateInfos.forEach() {
 				// Setup
@@ -356,20 +415,23 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		guard self.databaseManager.isKnown(documentType: documentType) else {
 			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
 		}
+		guard self.batchInfoMap.value(for: .current) == nil else {
+			throw MDSDocumentStorageError.illegalInBatch
+		}
 
 		return self.databaseManager.documentCount(for: documentType)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentIterate(for documentType :String, documentIDs :[String],
-			documentCreateProc :MDSDocument.CreateProc?, proc :(_ document :MDSDocument?) -> Void) throws {
+			documentCreateProc :MDSDocument.CreateProc, proc :(_ document :MDSDocument) -> Void) throws {
 		// Validate
 		guard self.databaseManager.isKnown(documentType: documentType) else {
 			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
 		}
 
 		// Setup
-		let	batchInfo = self.batchInfoMap.value(for: Thread.current)
+		let	batchInfo = self.batchInfoMap.value(for: .current)
 
 		// Iterate initial document IDs
 		var	documentIDsToCache = [String]()
@@ -377,10 +439,10 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			// Check what we have currently
 			if batchInfo?.documentGetInfo(for: $0) != nil {
 				// Have document in batch
-				proc(documentCreateProc?($0, self))
+				proc(documentCreateProc($0, self))
 			} else if self.documentBackingCache.documentBacking(for: $0) != nil {
 				// Have documentBacking in cache
-				proc(documentCreateProc?($0, self))
+				proc(documentCreateProc($0, self))
 			} else {
 				// Will need to retrieve from database
 				documentIDsToCache.append($0)
@@ -390,7 +452,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Iterate documentIDs not found in batch or cache
 		documentBackingsIterate(documentType: documentType, documentIDs: documentIDsToCache) {
 			// Call proc
-			proc(documentCreateProc?($0.documentID, self))
+			proc(documentCreateProc($0.documentID, self))
 
 			// Update
 			documentIDsToCache.remove($0.documentID)
@@ -403,25 +465,28 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentIterate(for documentType :String, sinceRevision :Int, count :Int?, activeOnly: Bool,
-			documentCreateProc :MDSDocument.CreateProc?, proc :(_ document :MDSDocument?) -> Void) throws {
+	public func documentIterate(for documentType :String, activeOnly: Bool, documentCreateProc :MDSDocument.CreateProc,
+			proc :(_ document :MDSDocument) -> Void) throws {
 		// Validate
 		guard self.databaseManager.isKnown(documentType: documentType) else {
 			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
 		}
+		guard self.batchInfoMap.value(for: .current) == nil else {
+			throw MDSDocumentStorageError.illegalInBatch
+		}
 
 		// Iterate document backings
-		documentBackingsIterate(documentType: documentType, sinceRevision: sinceRevision, count: count,
-				activeOnly: activeOnly) { proc(documentCreateProc?($0.documentID, self)) }
+		documentBackingsIterate(documentType: documentType, sinceRevision: 0, count: nil, activeOnly: activeOnly)
+				{ proc(documentCreateProc($0.documentID, self)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentCreationDate(for document :MDSDocument) -> Date {
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
-				let batchDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
+		if let batchInfo = self.batchInfoMap.value(for: .current),
+				let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
 			// In batch
-			return batchDocumentInfo.creationDate
+			return batchInfoDocumentInfo.creationDate
 		} else if self.documentsBeingCreatedPropertyMapMap.value(for: document.id) != nil {
 			// Being created
 			return Date()
@@ -435,10 +500,10 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentModificationDate(for document :MDSDocument) -> Date {
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
-				let batchDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
+		if let batchInfo = self.batchInfoMap.value(for: .current),
+				let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
 			// In batch
-			return batchDocumentInfo.modificationDate
+			return batchInfoDocumentInfo.modificationDate
 		} else if self.documentsBeingCreatedPropertyMapMap.value(for: document.id) != nil {
 			// Being created
 			return Date()
@@ -452,10 +517,10 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentValue(for property :String, of document :MDSDocument) -> Any? {
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
-				let batchDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
+		if let batchInfo = self.batchInfoMap.value(for: .current),
+				let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
 			// In batch
-			return batchDocumentInfo.value(for: property)
+			return batchInfoDocumentInfo.value(for: property)
 		} else if let propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: document.id) {
 			// Being created
 			return propertyMap[property]
@@ -481,7 +546,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentSet<T : MDSDocument>(_ value :Any?, for property :String, of document :T) {
+	public func documentSet<T : MDSDocument>(_ value :Any?, for property :String, of document :T) throws {
 		// Setup
 		let	documentType = type(of: document).documentType
 		let	documentID = document.id
@@ -500,11 +565,11 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
 			// In batch
-			if let batchDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
+			if let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
 				// Have document in batch
-				batchDocumentInfo.set(valueUse, for: property)
+				batchInfoDocumentInfo.set(valueUse, for: property)
 			} else {
 				// Don't have document in batch
 				let	documentBacking = try! self.documentBacking(documentType: documentType, documentID: documentID)
@@ -543,7 +608,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
 			// In batch
 			if let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
 				// Have document in batch
@@ -574,7 +639,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
+		if let batchInfo = self.batchInfoMap.value(for: .current),
 				let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
 			// Have document in batch
 			return batchInfoDocumentInfo.attachmentInfoMap(
@@ -597,7 +662,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
+		if let batchInfo = self.batchInfoMap.value(for: .current),
 				let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
 			// Have document in batch
 			if let content = batchInfoDocumentInfo.attachmentContent(for: attachmentID) {
@@ -629,7 +694,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
 			// In batch
 			if let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
 				// Have document in batch
@@ -679,7 +744,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
 			// In batch
 			if let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
 				// Have document in batch
@@ -718,17 +783,17 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentRemove(_ document :MDSDocument) {
+	public func documentRemove(_ document :MDSDocument) throws {
 		// Setup
 		let	documentType = type(of: document).documentType
 		let	documentID = document.id
 
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
 			// In batch
-			if let batchDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
+			if let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
 				// Have document in batch
-				batchDocumentInfo.remove()
+				batchInfoDocumentInfo.remove()
 			} else {
 				// Don't have document in batch
 				let	documentBacking = try! self.documentBacking(documentType: documentType, documentID: documentID)
@@ -794,6 +859,9 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		guard let index = index(for: name) else {
 			throw MDSDocumentStorageError.unknownIndex(name: name)
 		}
+		guard self.batchInfoMap.value(for: .current) == nil else {
+			throw MDSDocumentStorageError.illegalInBatch
+		}
 
 		// Bring up to date
 		autoreleasepool() { indexUpdate(index, updateInfo: self.updateInfo(for: index.documentType, sinceRevision: 0)) }
@@ -811,13 +879,13 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func info(for keys :[String]) -> [String : String] {
+	public func info(for keys :[String]) throws -> [String : String] {
 		// Return dictionary
 		return [String : String](keys){ self.databaseManager.infoString(for: $0) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func infoSet(_ info :[String : String]) {
+	public func infoSet(_ info :[String : String]) throws {
 		// Iterate keys and values
 		info.forEach() { self.databaseManager.infoSet($0.value, for: $0.key) }
 	}
@@ -832,7 +900,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func internalSet(_ info :[String : String]) {
+	public func internalSet(_ info :[String : String]) throws {
 		// Iterate keys and values
 		info.forEach() { self.databaseManager.internalSet($0.value, for: $0.key) }
 	}
@@ -840,10 +908,10 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func batch(_ proc :() throws -> MDSBatchResult) rethrows {
 		// Setup
-		let	batchInfo = MDSBatchInfo<MDSSQLiteDocumentBacking>()
+		let	batchInfo = BatchInfo()
 
 		// Store
-		self.batchInfoMap.set(batchInfo, for: Thread.current)
+		self.batchInfoMap.set(batchInfo, for: .current)
 
 		// Run lean
 		var	result = MDSBatchResult.commit
@@ -857,7 +925,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			// Batch changes
 			self.databaseManager.batch() {
 				// Iterate all document changes
-				batchInfo.documentIterateChanges() { documentType, batchDocumentInfosMap in
+				batchInfo.documentIterateChanges() { documentType, batchInfoDocumentInfosMap in
 					// Setup
 					let	documentCreateProc = documentCreateProc(for: documentType)
 					let	documentChangedProcs = self.documentChangedProcs(for: documentType)
@@ -870,15 +938,15 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 										{ self.update(for: documentType, updateInfo: ([], $0)) }
 
 					// Update documents
-					batchDocumentInfosMap.forEach() { documentID, batchDocumentInfo in
+					batchInfoDocumentInfosMap.forEach() { documentID, batchInfoDocumentInfo in
 						// Check removed
-						if !batchDocumentInfo.removed {
+						if !batchInfoDocumentInfo.removed {
 							// Add/update document
-							if let documentBacking = batchDocumentInfo.documentBacking {
+							if let documentBacking = batchInfoDocumentInfo.documentBacking {
 								// Update document
 								documentBacking.update(documentType: documentType,
-										updatedPropertyMap: batchDocumentInfo.updatedPropertyMap,
-										removedProperties: batchDocumentInfo.removedProperties,
+										updatedPropertyMap: batchInfoDocumentInfo.updatedPropertyMap,
+										removedProperties: batchInfoDocumentInfo.removedProperties,
 										with: self.databaseManager)
 
 								// Create document
@@ -886,11 +954,29 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 								// Add updates to BatchQueue
 								let	changedProperties =
-											Set<String>((batchDocumentInfo.updatedPropertyMap ?? [:]).keys)
-													.union(batchDocumentInfo.removedProperties ?? Set<String>())
+											Set<String>((batchInfoDocumentInfo.updatedPropertyMap ?? [:]).keys)
+													.union(batchInfoDocumentInfo.removedProperties ?? Set<String>())
 								updateBatchQueue.add(
 										MDSUpdateInfo<Int64>(document: document, revision: documentBacking.revision,
 												id: documentBacking.id, changedProperties: changedProperties))
+
+								// Process attachments
+								batchInfoDocumentInfo.removeAttachmentInfos.forEach() {
+									// Remove attachment
+									documentBacking.attachmentRemove(documentType: documentType,
+											attachmentID: $0.attachmentID, with: self.databaseManager)
+								}
+								batchInfoDocumentInfo.addAttachmentInfos.forEach() {
+									// Add attachment
+									_ = documentBacking.attachmentAdd(documentType: documentType, info: $0.info,
+											content: $0.content, with: self.databaseManager)
+								}
+								batchInfoDocumentInfo.updateAttachmentInfos.forEach() {
+									// Update attachment
+									_ = documentBacking.attachmentUpdate(documentType: documentType,
+											attachmentID: $0.attachmentID, updatedInfo: $0.info,
+											updatedContent: $0.content, with: self.databaseManager)
+								}
 
 								// Call document changed procs
 								documentChangedProcs?.forEach() { $0(document, .updated) }
@@ -898,9 +984,9 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 								// Add document
 								let	documentBacking =
 											MDSSQLiteDocumentBacking(documentType: documentType, documentID: documentID,
-													creationDate: batchDocumentInfo.creationDate,
-													modificationDate: batchDocumentInfo.modificationDate,
-													propertyMap: batchDocumentInfo.updatedPropertyMap ?? [:],
+													creationDate: batchInfoDocumentInfo.creationDate,
+													modificationDate: batchInfoDocumentInfo.modificationDate,
+													propertyMap: batchInfoDocumentInfo.updatedPropertyMap ?? [:],
 													with: self.databaseManager)
 								self.documentBackingCache.add([documentBacking])
 
@@ -912,10 +998,17 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 										MDSUpdateInfo<Int64>(document: document, revision: documentBacking.revision,
 												id: documentBacking.id, changedProperties: nil))
 
+								// Process attachments
+								batchInfoDocumentInfo.addAttachmentInfos.forEach() {
+									// Add attachment
+									_ = documentBacking.attachmentAdd(documentType: documentType, info: $0.info,
+											content: $0.content, with: self.databaseManager)
+								}
+
 								// Call document changed procs
 								documentChangedProcs?.forEach() { $0(document, .created) }
 							}
-						} else if let documentBacking = batchDocumentInfo.documentBacking {
+						} else if let documentBacking = batchInfoDocumentInfo.documentBacking {
 							// Remove document
 							self.databaseManager.documentRemove(documentType: documentType, id: documentBacking.id)
 							self.documentBackingCache.remove([documentID])
@@ -924,12 +1017,12 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 							removeBatchQueue.add(documentBacking.id)
 
 							// Check if have documentChangedProcs
-							if documentChangedProcs != nil {
+							if let documentChangedProcs {
 								// Create document
 								let	document = documentCreateProc(documentID, self)
 
 								// Call document changed procs
-								documentChangedProcs?.forEach() { $0(document, .removed) }
+								documentChangedProcs.forEach() { $0(document, .removed) }
 							}
 						}
 					}
@@ -943,7 +1036,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Remove - must wait to do this until the batch has been fully processed in case processing Collections and
 		//	Indexes ends up referencing other documents that have not yet been committed.
-		self.batchInfoMap.set(nil, for: Thread.current)
+		self.batchInfoMap.set(nil, for: .current)
 	}
 
 	// MARK: MDSHTTPServicesHandler methods
@@ -1172,10 +1265,10 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> Int64? {
 		// Check for batch
 		let	value :Any?
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
-				let batchDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
+		if let batchInfo = self.batchInfoMap.value(for: .current),
+				let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
 			// In batch
-			value = batchDocumentInfo.value(for: property)
+			value = batchInfoDocumentInfo.value(for: property)
 		} else if let propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: document.id) {
 			// Being created
 			value = propertyMap[property]
@@ -1191,10 +1284,10 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	func documentStringValue(for documentType :String, document :MDSDocument, property :String) -> String? {
 		// Check for batch
 		let	value :Any?
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
-				let batchDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
+		if let batchInfo = self.batchInfoMap.value(for: .current),
+				let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
 			// In batch
-			value = batchDocumentInfo.value(for: property)
+			value = batchInfoDocumentInfo.value(for: property)
 		} else if let propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: document.id) {
 			// Being created
 			value = propertyMap[property]
@@ -1607,17 +1700,17 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			(updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64]) {
 		// Setup
 		let	documentCreateProc = self.documentCreateProc(for: documentType)
-		let	batchInfo = self.batchInfoMap.value(for: Thread.current)
+		let	batchInfo = self.batchInfoMap.value(for: .current)
 
 		// Collect update infos
 		var	updateInfos = [MDSUpdateInfo<Int64>]()
 		var	removedIDs = [Int64]()
 		documentBackingsIterate(documentType: documentType, sinceRevision: sinceRevision, activeOnly: false) {
 			// Query batch info
-			let batchDocumentInfo = batchInfo?.documentGetInfo(for: $0.documentID)
+			let batchInfoDocumentInfo = batchInfo?.documentGetInfo(for: $0.documentID)
 
 			// Ensure we want to process this document
-			if !(batchDocumentInfo?.removed ?? !$0.active) {
+			if !(batchInfoDocumentInfo?.removed ?? !$0.active) {
 				// Append info
 				updateInfos.append(
 						MDSUpdateInfo<Int64>(document: documentCreateProc($0.documentID, self), revision: $0.revision,

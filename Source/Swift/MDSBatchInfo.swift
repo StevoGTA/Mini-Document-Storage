@@ -245,9 +245,31 @@ class MDSBatchInfo<T> {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func associationGetChanges(for name :String) -> [MDSAssociation.Update]? {
-		// Return updates
-		return self.associationUpdatesByAssociationName[name]
+	func associationItems(applyingChangesTo associationItems :[MDSAssociation.Item], for name :String) ->
+			[MDSAssociation.Item] {
+		// Setup
+		var	associationItemsUpdated = associationItems
+		self.associationUpdatesByAssociationName[name]?.forEach() {
+			// Process update
+			if $0.action == .add {
+				// Add
+				associationItemsUpdated.append($0.item)
+			} else {
+				// Remove
+				associationItemsUpdated.remove($0.item)
+			}
+		}
+
+		return associationItemsUpdated
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func associationUpdates(for name :String) -> (adds :[MDSAssociation.Item], removes :[MDSAssociation.Item]) {
+		// Setup
+		let	associationUpdates = self.associationUpdatesByAssociationName[name] ?? []
+
+		return (associationUpdates.filter({ $0.action == .add }).map({ $0.item }),
+				associationUpdates.filter({ $0.action == .remove} ).map({ $0.item }))
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

@@ -227,10 +227,13 @@ extension HTTPServer {
 										.json(documentRevisionInfos.map({ $0.httpServicesInfo })))
 					}
 				} else {
-					// Whole thing
-					let	(totalCount, associationItems) =
-								try documentStorage!.associationGet(for: info.name, startIndex: info.startIndex,
-										count: info.count)
+					// Some part of all the associations
+					var	associationItems = try documentStorage!.associationGet(for: info.name)
+					let	totalCount = associationItems.count
+					associationItems =
+							(info.count != nil) ?
+									Array(associationItems[info.startIndex...(info.startIndex + info.count!)]) :
+									Array(associationItems[info.startIndex...])
 
 					return (.ok,
 							[HTTPURLResponse.contentRangeHeader(for: "documents", start: Int64(info.startIndex),
@@ -519,7 +522,7 @@ extension HTTPServer {
 
 			// Create documents
 			let	infos =
-						documentStorage!.documentCreate(documentType: info.documentType,
+						try! documentStorage!.documentCreate(documentType: info.documentType,
 										documentCreateInfos: info.documentCreateInfos)
 								.map({ $0.httpServicesInfo })
 
@@ -866,7 +869,7 @@ extension HTTPServer {
 				return (.badRequest, nil, .json(["error": "Missing key(s)"]))
 			}
 
-			return (.ok, nil, .json(documentStorage!.info(for: keys)))
+			return (.ok, nil, .json(try! documentStorage!.info(for: keys)))
 		}
 		register(infoGetEndpoint)
 
@@ -884,7 +887,7 @@ extension HTTPServer {
 			}
 
 			// Update
-			documentStorage!.infoSet(info.info)
+			try! documentStorage!.infoSet(info.info)
 
 			return (.ok, nil, nil)
 		}
@@ -907,7 +910,7 @@ extension HTTPServer {
 			}
 
 			// Update
-			documentStorage!.internalSet(info.info)
+			try! documentStorage!.internalSet(info.info)
 
 			return (.ok, nil, nil)
 		}

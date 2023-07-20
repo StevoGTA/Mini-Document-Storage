@@ -5,10 +5,16 @@
 	"tasks": [
 		// JavaScript
 		{
+			"label": "Run Express Server for Dev",
+			"type": "shell",
+			"command": "MYSQL_HOST=10.211.55.14 MYSQL_USER=mds MYSQL_PASSWORD=mds PORT=1138 nodemon Express/server.js",
+			"options": {"cwd": "${workspaceFolder}/Source/JS"},
+		},
+		{
 			"label": "JavaScript - Publish to npm",
 			"type": "shell",
 			"command": "npm publish",
-			"options": {"cwd": "${workspaceFolder}/Source/JS"}
+			"options": {"cwd": "${workspaceFolder}/Source/JS"},
 		},
 		
 		// Python
@@ -16,7 +22,7 @@
 			"label": "Python - Clean",
 			"type": "shell",
 			"command": "rm -rf dist",
-			"options": {"cwd": "${workspaceFolder}/Source/Python"}
+			"options": {"cwd": "${workspaceFolder}/Source/Python"},
 		},
 		{
 			"label": "Python - Build",

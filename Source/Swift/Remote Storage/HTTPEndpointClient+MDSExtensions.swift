@@ -134,8 +134,8 @@ extension HTTPEndpointClient {
 	func queue(_ associationGetHTTPEndpointRequest :MDSHTTPServices.AssociationGetHTTPEndpointRequest,
 			identifier :String = "", priority :Priority = .normal,
 			completionProc
-					:@escaping (_ info :(associationItems :[MDSAssociation.Item], isComplete :Bool)?, _ error :Error?)
-							-> Void) {
+					:@escaping (_ info :(associationItems :[MDSAssociation.Item], isComplete :Bool)?,
+							_ error :Error?) -> Void) {
 		// Setup
 		associationGetHTTPEndpointRequest.completionWithCountProc = { info, error in
 			// Handle results

@@ -15,7 +15,9 @@ extension MDSDocument.AttachmentInfoMap {
 	// MARK: Properties
 	var	data :Data
 				{ try! JSONSerialization.data(
-						withJSONObject: self.mapValues({ ["revision": $0.revision, "info": $0.info] }), options: []) }
+						withJSONObject:
+								self.mapValues({ ["revision": $0.revision, "info": $0.info] as [String : Any] }),
+								options: []) }
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------

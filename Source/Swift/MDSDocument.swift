@@ -160,9 +160,9 @@ open class MDSDocument : Hashable {
 		// Return value
 		return self.documentStorage.documentValue(for: property, of: self) as? [Any]
 	}
-	public func set<T>(_ value :[T]?, for property :String) {
+	public func set<T>(_ value :[T]?, for property :String) throws {
 		// Set value
-		self.documentStorage.documentSet(value, for: property, of: self)
+		try self.documentStorage.documentSet(value, for: property, of: self)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -171,12 +171,12 @@ open class MDSDocument : Hashable {
 		self.documentStorage.documentValue(for: property, of: self) as? Bool
 	}
 	@discardableResult
-	public func set(_ value :Bool?, for property :String) -> Bool? {
+	public func set(_ value :Bool?, for property :String) throws -> Bool? {
 		// Check if different
 		let	previousValue = bool(for: property)
 		if value != previousValue {
 			// Set value
-			self.documentStorage.documentSet(value, for: property, of: self)
+			try self.documentStorage.documentSet(value, for: property, of: self)
 		}
 
 		return previousValue
@@ -185,12 +185,12 @@ open class MDSDocument : Hashable {
 	//------------------------------------------------------------------------------------------------------------------
 	public func data(for property :String) -> Data? { self.documentStorage.documentData(for: property, of: self) }
 	@discardableResult
-	public func set(_ value :Data?, for property :String) -> Data? {
+	public func set(_ value :Data?, for property :String) throws -> Data? {
 		// Check if different
 		let	previousValue = data(for: property)
 		if value != previousValue {
 			// Set value
-			self.documentStorage.documentSet(value?.base64EncodedString(), for: property, of: self)
+			try self.documentStorage.documentSet(value?.base64EncodedString(), for: property, of: self)
 		}
 
 		return previousValue
@@ -199,12 +199,12 @@ open class MDSDocument : Hashable {
 	//------------------------------------------------------------------------------------------------------------------
 	public func date(for property :String) -> Date? { self.documentStorage.documentDate(for: property, of: self) }
 	@discardableResult
-	public func set(_ value :Date?, for property :String) -> Date? {
+	public func set(_ value :Date?, for property :String) throws -> Date? {
 		// Check if different
 		let	previousValue = date(for: property)
 		if value != previousValue {
 			// Set value
-			self.documentStorage.documentSet(value, for: property, of: self)
+			try self.documentStorage.documentSet(value, for: property, of: self)
 		}
 
 		return previousValue
@@ -216,12 +216,12 @@ open class MDSDocument : Hashable {
 		return self.documentStorage.documentValue(for: property, of: self) as? Double
 	}
 	@discardableResult
-	public func set(_ value :Double?, for property :String) -> Double? {
+	public func set(_ value :Double?, for property :String) throws -> Double? {
 		// Check if different
 		let	previousValue = double(for: property)
 		if value != previousValue {
 			// Set value
-			self.documentStorage.documentSet(value, for: property, of: self)
+			try self.documentStorage.documentSet(value, for: property, of: self)
 		}
 
 		return previousValue
@@ -242,7 +242,7 @@ open class MDSDocument : Hashable {
 		return NSError(domain: domain, code: code, userInfo: userInfo)
 	}
 	@discardableResult
-	public func set(_ value :NSError?, for property :String) -> NSError? {
+	public func set(_ value :NSError?, for property :String) throws -> NSError? {
 		// Check if different
 		let	previousValue = nsError(for: property)
 		if value != previousValue {
@@ -255,10 +255,10 @@ open class MDSDocument : Hashable {
 										   ]
 				info[NSLocalizedDescriptionKey] = value!.userInfo[NSLocalizedDescriptionKey]
 
-				self.documentStorage.documentSet(info, for: property, of: self)
+				try self.documentStorage.documentSet(info, for: property, of: self)
 			} else {
 				// No value
-				self.documentStorage.documentSet(nil, for: property, of: self)
+				try self.documentStorage.documentSet(nil, for: property, of: self)
 			}
 		}
 
@@ -271,12 +271,12 @@ open class MDSDocument : Hashable {
 		self.documentStorage.documentValue(for: property, of: self) as? Int
 	}
 	@discardableResult
-	public func set(_ value :Int?, for property :String) -> Int? {
+	public func set(_ value :Int?, for property :String) throws -> Int? {
 		// Check if different
 		let	previousValue = int(for: property)
 		if value != previousValue {
 			// Set value
-			self.documentStorage.documentSet(value, for: property, of: self)
+			try self.documentStorage.documentSet(value, for: property, of: self)
 		}
 
 		return previousValue
@@ -288,12 +288,12 @@ open class MDSDocument : Hashable {
 		self.documentStorage.documentValue(for: property, of: self) as? Int64
 	}
 	@discardableResult
-	public func set(_ value :Int64?, for property :String) -> Int64? {
+	public func set(_ value :Int64?, for property :String) throws -> Int64? {
 		// Check if different
 		let	previousValue = int64(for: property)
 		if value != previousValue {
 			// Set value
-			self.documentStorage.documentSet(value, for: property, of: self)
+			try self.documentStorage.documentSet(value, for: property, of: self)
 		}
 
 		return previousValue
@@ -304,9 +304,9 @@ open class MDSDocument : Hashable {
 		// Return value
 		return self.documentStorage.documentValue(for: property, of: self) as? [String : Any]
 	}
-	public func set(_ value :[String : Any]?, for property :String) {
+	public func set(_ value :[String : Any]?, for property :String) throws {
 		// Set value
-		self.documentStorage.documentSet(value, for: property, of: self)
+		try self.documentStorage.documentSet(value, for: property, of: self)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -320,9 +320,9 @@ open class MDSDocument : Hashable {
 			return nil
 		}
 	}
-	public func set<T>(_ value :Set<T>?, for property :String) {
+	public func set<T>(_ value :Set<T>?, for property :String) throws {
 		// Set value
-		self.documentStorage.documentSet((value != nil) ? Array(value!) : nil, for: property, of: self)
+		try self.documentStorage.documentSet((value != nil) ? Array(value!) : nil, for: property, of: self)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -331,12 +331,12 @@ open class MDSDocument : Hashable {
 		return self.documentStorage.documentValue(for: property, of: self) as? String
 	}
 	@discardableResult
-	public func set(_ value :String?, for property :String) -> String? {
+	public func set(_ value :String?, for property :String) throws -> String? {
 		// Check if different
 		let	previousValue = string(for: property)
 		if value != previousValue {
 			// Set value
-			self.documentStorage.documentSet(value, for: property, of: self)
+			try self.documentStorage.documentSet(value, for: property, of: self)
 		}
 
 		return previousValue
@@ -348,12 +348,12 @@ open class MDSDocument : Hashable {
 		self.documentStorage.documentValue(for: property, of: self) as? UInt
 	}
 	@discardableResult
-	public func set(_ value :UInt?, for property :String) -> UInt? {
+	public func set(_ value :UInt?, for property :String) throws -> UInt? {
 		// Check if different
 		let	previousValue = uint(for: property)
 		if value != previousValue {
 			// Set value
-			self.documentStorage.documentSet(value, for: property, of: self)
+			try self.documentStorage.documentSet(value, for: property, of: self)
 		}
 		
 		return previousValue
@@ -366,12 +366,12 @@ open class MDSDocument : Hashable {
 
 		return try self.documentStorage.document(for: documentID)
 	}
-	public func set<T : MDSDocument>(_ document :T?, for property :String) {
+	public func set<T : MDSDocument>(_ document :T?, for property :String) throws {
 		// Check if different
 		guard document?.id != string(for: property) else { return }
 
 		// Set value
-		self.documentStorage.documentSet(document?.id, for: property, of: self)
+		try self.documentStorage.documentSet(document?.id, for: property, of: self)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -381,9 +381,9 @@ open class MDSDocument : Hashable {
 
 		return try! self.documentStorage.documents(for: documentIDs)
 	}
-	public func set<T : MDSDocument>(_ documents :[T]?, for property :String) {
+	public func set<T : MDSDocument>(_ documents :[T]?, for property :String) throws {
 		// Set value
-		self.documentStorage.documentSet(documents?.map({ $0.id }), for: property, of: self)
+		try self.documentStorage.documentSet(documents?.map({ $0.id }), for: property, of: self)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -401,9 +401,9 @@ open class MDSDocument : Hashable {
 
 		return storedMap.mapValues() { documentMap[$0]! }
 	}
-	public func set<T : MDSDocument>(documentMap :[String : T]?, for property :String) {
+	public func set<T : MDSDocument>(documentMap :[String : T]?, for property :String) throws {
 		// Set value
-		self.documentStorage.documentSet(documentMap?.mapValues({ $0.id }), for: property, of: self)
+		try self.documentStorage.documentSet(documentMap?.mapValues({ $0.id }), for: property, of: self)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -500,10 +500,13 @@ open class MDSDocument : Hashable {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func remove(for property :String) { self.documentStorage.documentSet(nil, for: property, of: self) }
+	public func remove(for property :String) throws {
+		// Update
+		try self.documentStorage.documentSet(nil, for: property, of: self)
+	}
 	
 	//------------------------------------------------------------------------------------------------------------------
-	public func remove() { self.documentStorage.documentRemove(self) }
+	public func remove() throws { try self.documentStorage.documentRemove(self) }
 }
 
 //----------------------------------------------------------------------------------------------------------------------

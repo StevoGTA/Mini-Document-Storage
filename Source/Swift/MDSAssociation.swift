@@ -40,25 +40,23 @@ public class MDSAssociation : Equatable {
 		let	action :Action
 		let	item :Item
 
+		// MARK: Class methods
+		//--------------------------------------------------------------------------------------------------------------
+		static public func add(from fromDocument :MDSDocument, to toDocument :MDSDocument) -> Update {
+			return Update(.add, fromDocumentID: fromDocument.id, toDocumentID: toDocument.id)
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		static public func remove(from fromDocument :MDSDocument, to toDocument :MDSDocument) -> Update {
+			return Update(.remove, fromDocumentID: fromDocument.id, toDocumentID: toDocument.id)
+		}
+
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
-		init(action :Action, fromDocumentID :String, toDocumentID :String) {
+		init(_ action :Action, fromDocumentID :String, toDocumentID :String) {
 			// Store
 			self.action = action
 			self.item = Item(fromDocumentID: fromDocumentID, toDocumentID: toDocumentID)
-		}
-
-		// MARK: Class methods
-		//--------------------------------------------------------------------------------------------------------------
-		static func add(from fromDocument :MDSDocument, to toDocument :MDSDocument) -> Update {
-			// Return Update
-			return Update(action: .add, fromDocumentID: fromDocument.id, toDocumentID: toDocument.id)
-		}
-
-		//--------------------------------------------------------------------------------------------------------------
-		static func remove(from fromDocument :MDSDocument, to toDocument :MDSDocument) -> Update {
-			// Return Update
-			return Update(action: .remove, fromDocumentID: fromDocument.id, toDocumentID: toDocument.id)
 		}
 	}
 
