@@ -627,7 +627,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 									id: document.id, changedProperties: [property])])
 
 			// Call document changed procs
-			self.documentChangedProcs(for: T.documentType)?.forEach() { $0(document, .updated) }
+			self.documentChangedProcs(for: documentType)?.forEach() { $0(document, .updated) }
 		}
 	}
 

@@ -210,7 +210,7 @@ extension MDSDocument.UpdateInfo {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSError
-enum MDSError : Error {
+public enum MDSError : Error {
 	case invalidRequest(error :String)
 	case responseWasEmpty
 	case didNotReceiveSizeInHeader

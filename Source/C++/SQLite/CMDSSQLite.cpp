@@ -334,7 +334,7 @@ void CMDSSQLiteInternals::updateCollections(const CString& documentType,
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get collections
-	const	OR<TArray<CMDSSQLiteCollection> >	collections = mCollectionsByDocumentTypeMap.get(documentType);
+	const	OR<TNArray<CMDSSQLiteCollection> >	collections = mCollectionsByDocumentTypeMap.get(documentType);
 	if (!collections.hasReference())
 		// No collections for this document type
 		return;
@@ -406,7 +406,7 @@ void CMDSSQLiteInternals::removeFromCollections(const CString& documentType,
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get collections for this document type
-	const	OR<TArray<CMDSSQLiteCollection> >	collections = mCollectionsByDocumentTypeMap.get(documentType);
+	const	OR<TNArray<CMDSSQLiteCollection> >	collections = mCollectionsByDocumentTypeMap.get(documentType);
 	if (!collections.hasReference())
 		// No collections for this document type
 		return;
@@ -442,7 +442,7 @@ void CMDSSQLiteInternals::updateIndexes(const CString& documentType, const TArra
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get indexes
-	const	OR<TArray<CMDSSQLiteIndex> >	indexes = mIndexesByDocumentTypeMap.get(documentType);
+	const	OR<TNArray<CMDSSQLiteIndex> >	indexes = mIndexesByDocumentTypeMap.get(documentType);
 	if (!indexes.hasReference())
 		// No indexes for this document type
 		return;
@@ -510,7 +510,7 @@ void CMDSSQLiteInternals::removeFromIndexes(const CString& documentType, const T
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get indexes for this document type
-	const	OR<TArray<CMDSSQLiteIndex> >	indexes = mIndexesByDocumentTypeMap.get(documentType);
+	const	OR<TNArray<CMDSSQLiteIndex> >	indexes = mIndexesByDocumentTypeMap.get(documentType);
 	if (!indexes.hasReference())
 		// No indexes for this document type
 		return;
@@ -528,7 +528,7 @@ void CMDSSQLiteInternals::notifyDocumentChanged(const CString& documentType, con
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get document changed procs for this document type
-	const	OR<TArray<CMDSDocument::ChangedProcInfo> >	changedProcInfos =
+	const	OR<TNArray<CMDSDocument::ChangedProcInfo> >	changedProcInfos =
 																mDocumentChangedProcInfosMap.get(documentType);
 	if (!changedProcInfos.hasReference())
 		// No document changed procs for this document type
@@ -931,7 +931,7 @@ OV<CData> CMDSSQLite::getData(const CString& property, const CMDSDocument& docum
 	// Get value
 	OV<SValue>	value = getValue(property, document);
 
-	return value.hasInstance() ? OV<CData>(CData(value->getString())) : OV<CData>();
+	return value.hasValue() ? OV<CData>(CData(value->getString())) : OV<CData>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -940,7 +940,7 @@ OV<UniversalTime> CMDSSQLite::getUniversalTime(const CString& property, const CM
 {
 	// Get value
 	OV<SValue>	value = getValue(property, document);
-	if (!value.hasInstance())
+	if (!value.hasValue())
 		return OV<UniversalTime>();
 
 	OV<SGregorianDate>	gregorianDate =
@@ -962,10 +962,10 @@ void CMDSSQLite::set(const CString& property, const OV<SValue>& value, const CMD
 
 	// Transform
 	OV<SValue>	valueUse;
-	if (value.hasInstance() && (value->getType() == SValue::kData))
+	if (value.hasValue() && (value->getType() == SValue::kData))
 		// Data
 		valueUse = OV<SValue>(value->getData().getBase64String());
-	else if (value.hasInstance() && (setValueInfo == kUniversalTime))
+	else if (value.hasValue() && (setValueInfo == kUniversalTime))
 		// UniversalTime
 		valueUse =
 				OV<SValue>(
