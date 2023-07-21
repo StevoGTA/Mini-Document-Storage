@@ -133,7 +133,7 @@ class MDSDocument:
 		self.is_new = False
 
 		# Reset
-		self.updated.clear()
+		self.updated = {}
 		self.removed.clear()
 
 	#-------------------------------------------------------------------------------------------------------------------
