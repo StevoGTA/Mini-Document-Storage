@@ -211,11 +211,6 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	public func cacheRegister(name :String, documentType :String, relevantProperties :[String],
 			valueInfos :[(name :String, valueType :MDSValueType, selector :String, proc :MDSDocument.ValueProc)])
 			throws {
-		// Validate
-		guard self.databaseManager.isKnown(documentType: documentType) else {
-			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
-		}
-
 		// Remove current cache if found
 		if let cache = self.cachesByNameMap.value(for: name) {
 			// Remove
@@ -250,11 +245,6 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	public func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
 			isIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
-		// Validate
-		guard self.databaseManager.isKnown(documentType: documentType) else {
-			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
-		}
-
 		// Remove current collection if found
 		if let collection = self.collectionsByNameMap.value(for: name) {
 			// Remove
@@ -822,11 +812,6 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func indexRegister(name :String, documentType :String, relevantProperties :[String],
 			keysInfo :[String : Any], keysSelector :String, keysProc :@escaping MDSDocument.KeysProc) throws {
-		// Validate
-		guard self.databaseManager.isKnown(documentType: documentType) else {
-			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
-		}
-
 		// Remove current index if found
 		if let index = self.indexesByNameMap.value(for: name) {
 			// Remove
