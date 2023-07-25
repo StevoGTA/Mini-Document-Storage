@@ -141,7 +141,7 @@ class MDSClient {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async associationUpdate(name, updates, documentStorageID) {
-		// Check for updates
+		// Check if have updates
 		if (updates.length == 0)
 			// No updates
 			return;
@@ -481,8 +481,9 @@ class MDSClient {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async documentCreate(documentType, documents, documentStorageID) {
-		// Check if have documents
-		if (documents.length == 0)
+		// Collect documents to create
+		let	documentsToCreate = documents.filter(document => document.hasCreateInfo());
+		if (documentsToCreate.length == 0)
 			// No documents
 			return;
 
@@ -500,7 +501,7 @@ class MDSClient {
 					{
 						method: 'POST',
 						headers: headers,
-						body: JSON.stringify(documents.map(document => document.createInfo())),
+						body: JSON.stringify(documentsToCreate.map(document => document.createInfo())),
 					};
 
 		// Queue the call
@@ -512,10 +513,9 @@ class MDSClient {
 
 		// Update documents
 		var	documentsByID = {};
-		for (let document of documents)
+		for (let document of documentsToCreate)
 			// Update info
 			documentsByID[document.documentID] = document;
-		
 		for (let result of results)
 			// Update document
 			documentsByID[result.documentID].updateFromCreate(result);
@@ -657,10 +657,10 @@ class MDSClient {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async documentUpdate(documentType, documents, documentStorageID) {
-		// Collect updates
+		// Collect documents to update
 		let	documentsToUpdate = documents.filter(document => document.hasUpdateInfo());
 		if (documentsToUpdate.length == 0)
-			// No updates
+			// No documents
 			return;
 
 		// Setup
@@ -840,7 +840,6 @@ class MDSClient {
 							encodeURIComponent(name) + '?fullInfo=0' + '?key=' + keysUse.join('&key=');
 		let	options = {headers: this.headers};
 
-
 		// Loop until up-to-date
 		while (true) {
 			// Queue the call
@@ -866,7 +865,6 @@ class MDSClient {
 					this.urlBase + '/v1/index/' + encodeURIComponent(documentStorageIDUse) + '/' +
 							encodeURIComponent(name) + '?fullInfo=1' + '?key=' + keysUse.join('&key=');
 		let	options = {headers: this.headers};
-
 
 		// Loop until up-to-date
 		while (true) {

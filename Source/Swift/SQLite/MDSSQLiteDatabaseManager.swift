@@ -202,10 +202,10 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func get(from table :SQLiteTable) -> [(fromID :Int64, toID :Int64)] {
+		static func get(from table :SQLiteTable, where sqliteWhere :SQLiteWhere? = nil) -> [(fromID :Int64, toID :Int64)] {
 			// Iterate all rows
 			var	items = [(fromID :Int64, toID :Int64)]()
-			try! table.select() {
+			try! table.select(where: sqliteWhere) {
 				// Process values
 				let	fromID = $0.integer(for: self.fromIDTableColumn)!
 				let	toID = $0.integer(for: self.toIDTableColumn)!
@@ -659,6 +659,26 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
+		static func documentRevisionInfos(for ids :[Int64], in table :SQLiteTable) ->
+				[Int64 : (documentID :String, revision :Int)] {
+			// Retrieve id
+			var	documentRevisionInfosByID = [Int64 : (documentID :String, revision :Int)]()
+			try! table.select(tableColumns: [self.idTableColumn, self.documentIDTableColumn, self.revisionTableColumn],
+					where: SQLiteWhere(tableColumn: self.idTableColumn, values: ids))
+					{
+						// Process values
+						let	id = $0.integer(for: self.idTableColumn)!
+						let	revision = Int($0.integer(for: self.revisionTableColumn)!)
+						let	documentID = $0.text(for: self.documentIDTableColumn)!
+
+						// Update Map
+						documentRevisionInfosByID[id] = (documentID, revision)
+					}
+
+			return documentRevisionInfosByID
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
 		static func documentInfo(for resultsRow :SQLiteResultsRow) -> DocumentInfo {
 			// Process results
 			let	id :Int64 = resultsRow.integer(for: self.idTableColumn)!
@@ -778,7 +798,7 @@ class MDSSQLiteDatabaseManager {
 			table.update(
 					[
 						(self.modificationDateTableColumn, Date().rfc3339Extended),
-						(self.jsonTableColumn, try! JSONSerialization.data(withJSONObject: [:], options: []))
+						(self.jsonTableColumn, try! JSONSerialization.data(withJSONObject: [String:Any](), options: []))
 					],
 					where: SQLiteWhere(tableColumn: self.idTableColumn, value: id))
 		}
@@ -1296,41 +1316,7 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func associationUpdate(name :String, updates :[MDSAssociation.Update], fromDocumentType :String,
-			toDocumentType :String) {
-		// Setup
-		let	fromDocumentTables = documentTables(for: fromDocumentType)
-		let	fromIDsByDocumentID =
-					DocumentTypeInfoTable.ids(for: Array(Set<String>(updates.map({ $0.item.fromDocumentID }))),
-							in: fromDocumentTables.infoTable)
-
-		let	toDocumentTables = documentTables(for: toDocumentType)
-		let	toIDsByDocumentID =
-					DocumentTypeInfoTable.ids(for: Array(Set<String>(updates.map({ $0.item.toDocumentID }))),
-							in: toDocumentTables.infoTable)
-
-		let	associationContentsTable = self.associationTablesByName.value(for: name)!
-
-		// Update Association
-		AssocationContentsTable.remove(
-				items:
-						updates
-								.filter({ $0.action == .remove })
-								.map({ (fromIDsByDocumentID[$0.item.fromDocumentID]!,
-										toIDsByDocumentID[$0.item.toDocumentID]!) }),
-				in: associationContentsTable)
-		AssocationContentsTable.add(
-				items:
-						updates
-								.filter({ $0.action == .add })
-								.map({ (fromIDsByDocumentID[$0.item.fromDocumentID]!,
-										toIDsByDocumentID[$0.item.toDocumentID]!) }),
-				in: associationContentsTable)
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func associationGet(name :String, fromDocumentType :String, toDocumentType :String, startIndex :Int, count :Int?) ->
-			(totalCount :Int, associationItems :[MDSAssociation.Item]) {
+	func associationGet(name :String, fromDocumentType :String, toDocumentType :String) -> [MDSAssociation.Item] {
 		// Setup
 		let	fromDocumentTables = documentTables(for: fromDocumentType)
 		let	toDocumentTables = documentTables(for: toDocumentType)
@@ -1345,9 +1331,55 @@ class MDSSQLiteDatabaseManager {
 					DocumentTypeInfoTable.documentIDs(for: Array(Set<Int64>(items.map({ $0.toID }))),
 							in: toDocumentTables.infoTable)
 
-		return (items.count,
-				items.map({ MDSAssociation.Item(fromDocumentID: fromDocumentIDsByID[$0.fromID]!,
-						toDocumentID: toDocumentIDsByID[$0.toID]!) }))
+		return items.map(
+				{ MDSAssociation.Item(fromDocumentID: fromDocumentIDsByID[$0.fromID]!,
+						toDocumentID: toDocumentIDsByID[$0.toID]!) })
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func associationGet(name :String, fromDocumentID :String, fromDocumentType :String, toDocumentType :String) throws
+			-> [MDSAssociation.Item] {
+		// Setup
+		let	fromDocumentTables = documentTables(for: fromDocumentType)
+		guard let fromID = DocumentTypeInfoTable.id(for: fromDocumentID, in: fromDocumentTables.infoTable) else {
+			throw MDSDocumentStorageError.unknownDocumentID(documentID: fromDocumentID)
+		}
+		let	toDocumentTables = documentTables(for: toDocumentType)
+		let	associationContentsTable = self.associationTablesByName.value(for: name)!
+
+		// Get all
+		let	items =
+					AssocationContentsTable.get(from: associationContentsTable,
+							where: SQLiteWhere(tableColumn: AssocationContentsTable.fromIDTableColumn, value: fromID))
+		let	toDocumentIDsByID =
+					DocumentTypeInfoTable.documentIDs(for: Array(Set<Int64>(items.map({ $0.toID }))),
+							in: toDocumentTables.infoTable)
+
+		return items.map(
+				{ MDSAssociation.Item(fromDocumentID: fromDocumentID, toDocumentID: toDocumentIDsByID[$0.toID]!) })
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func associationGet(name :String, fromDocumentType :String, toDocumentID :String, toDocumentType :String) throws ->
+			[MDSAssociation.Item] {
+		// Setup
+		let	fromDocumentTables = documentTables(for: fromDocumentType)
+		let	toDocumentTables = documentTables(for: toDocumentType)
+		guard let toID = DocumentTypeInfoTable.id(for: toDocumentID, in: toDocumentTables.infoTable) else {
+			throw MDSDocumentStorageError.unknownDocumentID(documentID: toDocumentID)
+		}
+		let	associationContentsTable = self.associationTablesByName.value(for: name)!
+
+		// Get all
+		let	items =
+					AssocationContentsTable.get(from: associationContentsTable,
+							where: SQLiteWhere(tableColumn: AssocationContentsTable.toIDTableColumn, value: toID))
+		let	fromDocumentIDsByID =
+					DocumentTypeInfoTable.documentIDs(for: Array(Set<Int64>(items.map({ $0.fromID }))),
+							in: fromDocumentTables.infoTable)
+
+		return items.map(
+				{ MDSAssociation.Item(fromDocumentID: fromDocumentIDsByID[$0.fromID]!, toDocumentID: toDocumentID) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1419,6 +1451,40 @@ class MDSSQLiteDatabaseManager {
 				limit: SQLiteLimit(limit: count ?? -1, offset: startIndex))
 				{ proc(DocumentTypeInfoTable.documentInfo(for: $0)) }
 	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func associationUpdate(name :String, updates :[MDSAssociation.Update], fromDocumentType :String,
+			toDocumentType :String) {
+		// Setup
+		let	fromDocumentTables = documentTables(for: fromDocumentType)
+		let	fromIDsByDocumentID =
+					DocumentTypeInfoTable.ids(for: Array(Set<String>(updates.map({ $0.item.fromDocumentID }))),
+							in: fromDocumentTables.infoTable)
+
+		let	toDocumentTables = documentTables(for: toDocumentType)
+		let	toIDsByDocumentID =
+					DocumentTypeInfoTable.ids(for: Array(Set<String>(updates.map({ $0.item.toDocumentID }))),
+							in: toDocumentTables.infoTable)
+
+		let	associationContentsTable = self.associationTablesByName.value(for: name)!
+
+		// Update Association
+		AssocationContentsTable.remove(
+				items:
+						updates
+								.filter({ $0.action == .remove })
+								.map({ (fromIDsByDocumentID[$0.item.fromDocumentID]!,
+										toIDsByDocumentID[$0.item.toDocumentID]!) }),
+				in: associationContentsTable)
+		AssocationContentsTable.add(
+				items:
+						updates
+								.filter({ $0.action == .add })
+								.map({ (fromIDsByDocumentID[$0.item.fromDocumentID]!,
+										toIDsByDocumentID[$0.item.toDocumentID]!) }),
+				in: associationContentsTable)
+	}
+
 
 	//------------------------------------------------------------------------------------------------------------------
 	func associationSum(name :String, fromDocumentIDs :[String], documentType :String, cacheName :String,
@@ -1511,7 +1577,7 @@ class MDSSQLiteDatabaseManager {
 	func cacheUpdate(name :String, infosByValue :[Int64 : [/* Name */ String : Any]]?, removedIDs :[Int64],
 			lastRevision :Int?) {
 		// Check if in batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
 			// Update batch info
 			let	cacheUpdateInfo = batchInfo.cacheInfo[name] ?? ([:], [], nil)
 			batchInfo.cacheInfo[name] =
@@ -1621,7 +1687,7 @@ class MDSSQLiteDatabaseManager {
 	//------------------------------------------------------------------------------------------------------------------
 	func collectionUpdate(name :String, includedIDs :[Int64]?, notIncludedIDs :[Int64]?, lastRevision :Int?) {
 		// Check if in batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
 			// Update batch info
 			let	collectionUpdateInfo = batchInfo.collectionInfo[name] ?? ([], [], nil)
 			batchInfo.collectionInfo[name] =
@@ -1905,7 +1971,7 @@ class MDSSQLiteDatabaseManager {
 	func indexUpdate(name :String, keysInfos :[(keys :[String], id :Int64)]?, removedIDs :[Int64]?,
 			lastRevision :Int?) {
 		// Check if in batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
 			// Update batch info
 			let	indexInfo = batchInfo.indexInfo[name] ?? ([], [], nil)
 			batchInfo.indexInfo[name] =
@@ -1943,13 +2009,13 @@ class MDSSQLiteDatabaseManager {
 	func batch<T>(_ proc :() -> T) -> T {
 		// Setup
 		let	batchInfo = BatchInfo()
-		self.batchInfoMap.set(batchInfo, for: Thread.current)
+		self.batchInfoMap.set(batchInfo, for: .current)
 
 		// Call proc
 		let	t = proc()
 
 		// Commit changes
-		self.batchInfoMap.set(nil, for: Thread.current)
+		self.batchInfoMap.set(nil, for: .current)
 
 		batchInfo.documentLastRevisionTypesNeedingWrite.forEach() {
 			// Update
@@ -2012,7 +2078,7 @@ class MDSSQLiteDatabaseManager {
 		let	nextRevision = (self.documentLastRevisionMap.value(for: documentType) ?? 0) + 1
 
 		// Check if in batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
 			// Update batch info
 			batchInfo.documentLastRevisionTypesNeedingWrite.insert(documentType)
 		} else {

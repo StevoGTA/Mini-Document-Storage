@@ -203,6 +203,9 @@ class CMDSDocument : public CHashable {
 						OV<TArray<CString> >			getArrayOfStrings(const CString& property) const;
 						void							set(const CString& property, const TArray<CString>& value)
 																const;
+						OV<TArray<CDictionary> >		getArrayOfDictionaries(const CString& property) const;
+						void							set(const CString& property, const TArray<CDictionary>& value)
+																const;
 
 						OV<bool>						getBool(const CString& property) const;
 						OV<bool>						set(const CString& property, bool value) const;

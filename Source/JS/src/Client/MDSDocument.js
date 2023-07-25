@@ -15,7 +15,7 @@ module.exports = class MDSDocument {
 
 	// Properties
 	get documentID() { return this.info.documentID; }							// String
-	get	revision() { return this.info.revision; }								// Integer
+	get	revision() { return this.info.revision; }								// Integer (null if not yet created)
 
 	get isActive() { return this.info.active == 1; }							// Bool
 	setActive(active) {
@@ -33,13 +33,13 @@ module.exports = class MDSDocument {
 			this.activeChanged = true;
 		}
 
-	get creationDate() { return new Date(this.info.creationDate); }				// Date
-	get	modificationDate() { return new Date(this.info.modificationDate); }		// Date
+	get	creationDate() { return new Date(this.info.creationDate); }				// Date (null if not yet created)
+	get	modificationDate() { return new Date(this.info.modificationDate); }		// Date (null if not yet created)
 
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
 	constructor(info) {
-		// Check type
+		// Check situation
 		if (info == null) {
 			// New
 			let uuidBytes = UuidTool.toBytes(UuidTool.newUuid());
@@ -78,7 +78,7 @@ module.exports = class MDSDocument {
 	// Subclass methods
 	//------------------------------------------------------------------------------------------------------------------
 	value(property) {
-		// Check what the situation is
+		// Check situation
 		if (property in this.updated)
 			// Have updated value
 			return this.updated[property];
@@ -113,10 +113,13 @@ module.exports = class MDSDocument {
 
 	// Internal methods
 	//------------------------------------------------------------------------------------------------------------------
+	hasCreateInfo() { return !self.creationDate; }
+
+	//------------------------------------------------------------------------------------------------------------------
 	createInfo() {
 		// Return info
 		return {
-			documentID: this.documentID,
+			documentID: this.info.documentID,
 			json: this.updated,
 		};
 	}

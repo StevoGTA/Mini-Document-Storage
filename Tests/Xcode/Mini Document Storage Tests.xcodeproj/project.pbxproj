@@ -8,9 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		0A1F7FDD27E40244007F8920 /* DocumentUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1F7FDC27E40244007F8920 /* DocumentUnitTests.swift */; };
-		0A1F7FE427E40514007F8920 /* MDSRemoteStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551EF27C5D8E7003E497B /* MDSRemoteStorage.swift */; };
-		0A1F7FE527E40515007F8920 /* MDSRemoteStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551EF27C5D8E7003E497B /* MDSRemoteStorage.swift */; };
-		0A1F7FE627E40515007F8920 /* MDSRemoteStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551EF27C5D8E7003E497B /* MDSRemoteStorage.swift */; };
 		0A1F7FE727E40519007F8920 /* MDSRemoteStorageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551F127C5D8E7003E497B /* MDSRemoteStorageCache.swift */; };
 		0A1F7FE827E40519007F8920 /* MDSRemoteStorageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551F127C5D8E7003E497B /* MDSRemoteStorageCache.swift */; };
 		0A1F7FE927E4051A007F8920 /* MDSRemoteStorageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551F127C5D8E7003E497B /* MDSRemoteStorageCache.swift */; };
@@ -78,6 +75,7 @@
 		0A36CDFA2A1F348D005C7A40 /* CUUID.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F36F2A0E133C00E4F149 /* CUUID.cpp */; };
 		0A36CDFB2A1F34A1005C7A40 /* CMDSDocument.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A9C637C2A19EC6E00800DBA /* CMDSDocument.cpp */; };
 		0A36CDFC2A1F34B9005C7A40 /* CUUID-Apple.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F3402A0E133B00E4F149 /* CUUID-Apple.cpp */; };
+		0A2F30642A145D9400855E9B /* MDSRemoteStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551EF27C5D8E7003E497B /* MDSRemoteStorage.swift */; };
 		0A4313B028E3C1BC00CD1A6B /* MDSAssociation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4313AF28E3C1BC00CD1A6B /* MDSAssociation.swift */; };
 		0A4313B128E3C1BC00CD1A6B /* MDSAssociation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4313AF28E3C1BC00CD1A6B /* MDSAssociation.swift */; };
 		0A4313B228E3C1BC00CD1A6B /* MDSAssociation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4313AF28E3C1BC00CD1A6B /* MDSAssociation.swift */; };
@@ -2034,7 +2032,6 @@
 				0A5E184927C716CA0089E550 /* HTTPEndpointClient+MDSExtensions.swift in Sources */,
 				0A1F800A27E40543007F8920 /* SQLiteTrigger.swift in Sources */,
 				0ACCD9162814EBBC001D52CB /* CollectionUnitTests.swift in Sources */,
-				0A1F7FE427E40514007F8920 /* MDSRemoteStorage.swift in Sources */,
 				0A96E1E7282B391B00640CBA /* CacheUnitTests.swift in Sources */,
 				0A55527027C5DC2D003E497B /* RangeReplaceableCollection+Extensions.swift in Sources */,
 				0A1F7FDD27E40244007F8920 /* DocumentUnitTests.swift in Sources */,
@@ -2078,7 +2075,6 @@
 				0A91AB7A28127F7000FE1549 /* Child.swift in Sources */,
 				0A9668162818CA45001CBC7B /* IndexTransactionTests.swift in Sources */,
 				0A5E187A27C71F7F0089E550 /* Dictionary+Extensions.swift in Sources */,
-				0A1F7FE527E40515007F8920 /* MDSRemoteStorage.swift in Sources */,
 				0A9668142818CA3C001CBC7B /* CollectionTransactionTests.swift in Sources */,
 				0A1F801027E40544007F8920 /* SQLiteTable.swift in Sources */,
 				0A5E187227C71F5D0089E550 /* HTTPEndpointClient.swift in Sources */,
@@ -2123,6 +2119,7 @@
 				0A1F801727E40544007F8920 /* SQLiteOrderBy.swift in Sources */,
 				0A5E188C27C71FBA0089E550 /* LockingArray.swift in Sources */,
 				0A5E187527C71F610089E550 /* HTTPEndpointHandler.swift in Sources */,
+				0A2F30642A145D9400855E9B /* MDSRemoteStorage.swift in Sources */,
 				0A5E188527C71F950089E550 /* String+Extensions.swift in Sources */,
 				0A5E182F27C70D500089E550 /* Performance_Tests.swift in Sources */,
 				0A91AB7728127F6600FE1549 /* Parent.swift in Sources */,
@@ -2137,7 +2134,6 @@
 				0A1F7FFD27E40528007F8920 /* MDSIndex.swift in Sources */,
 				0A5E187F27C71F860089E550 /* FileManager+Extensions.swift in Sources */,
 				0A5E187B27C71F800089E550 /* Dictionary+Extensions.swift in Sources */,
-				0A1F7FE627E40515007F8920 /* MDSRemoteStorage.swift in Sources */,
 				0A1F801927E40544007F8920 /* SQLiteTable.swift in Sources */,
 				0A5E187327C71F5E0089E550 /* HTTPEndpointClient.swift in Sources */,
 				0A5E185127C716FB0089E550 /* HTTPURLResponse+Extensions.swift in Sources */,

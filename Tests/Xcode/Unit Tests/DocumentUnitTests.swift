@@ -596,14 +596,13 @@ class DocumentUnitTests : XCTestCase {
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSJSONHTTPEndpointRequest<[[String : Any]]>(method: .patch,
 							path: "/v1/document/\(config.documentStorageID)/\(config.defaultDocumentType)",
-							jsonBody:
-									[
+							jsonBody: [
 										[
-											"updated": [:],
-											"removed": [],
+											"updated": [String:Any](),
+											"removed": [String](),
 											"active": 1,
-										]
-									])
+										] as [String : Any]
+									  ])
 		let	(documentInfos, error) =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue
@@ -648,14 +647,13 @@ class DocumentUnitTests : XCTestCase {
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSJSONHTTPEndpointRequest<[[String : Any]]>(method: .patch,
 							path: "/v1/document/\(config.documentStorageID)/\(config.defaultDocumentType)",
-							jsonBody:
-									[
+							jsonBody: [
 										[
 											"documentID": documentID,
-											"removed": [],
+											"removed": [String](),
 											"active": 1,
-										]
-									])
+										] as [String : Any]
+									  ])
 		let	(documentInfos, error) =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue
@@ -688,14 +686,13 @@ class DocumentUnitTests : XCTestCase {
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSJSONHTTPEndpointRequest<[[String : Any]]>(method: .patch,
 							path: "/v1/document/\(config.documentStorageID)/\(config.defaultDocumentType)",
-							jsonBody:
-									[
+							jsonBody: [
 										[
 											"documentID": documentID,
-											"updated": [:],
+											"updated": [String:Any](),
 											"active": 1,
-										]
-									])
+										] as [String : Any]
+									  ])
 		let	(documentInfos, error) =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue
@@ -728,14 +725,13 @@ class DocumentUnitTests : XCTestCase {
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSJSONHTTPEndpointRequest<[[String : Any]]>(method: .patch,
 							path: "/v1/document/\(config.documentStorageID)/\(config.defaultDocumentType)",
-							jsonBody:
-									[
+							jsonBody: [
 										[
 											"documentID": documentID,
-											"updated": [:],
-											"removed": [],
-										]
-									])
+											"updated": [String:Any](),
+											"removed": [String](),
+										] as [String : Any]
+									  ])
 		let	(documentInfos, error) =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue
@@ -912,7 +908,8 @@ class DocumentUnitTests : XCTestCase {
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSJSONHTTPEndpointRequest<[String : Any]>(method: .post,
 							path: "/v1/document/\(config.documentStorageID)/\(config.defaultDocumentType)/\(documentIDUse)/attachment",
-							jsonBody: ["info": [:]])
+							jsonBody: ["info": [String:Any]()] as [String : Any])
+
 		let	(info, error) =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue
@@ -1305,7 +1302,8 @@ class DocumentUnitTests : XCTestCase {
 		let	httpEndpointRequest =
 					MDSHTTPServices.MDSJSONHTTPEndpointRequest<[String : Any]>(method: .patch,
 							path: "/v1/document/\(config.documentStorageID)/\(config.defaultDocumentType)/\(documentIDUse)/attachment/\(attachmentIDUse)",
-							jsonBody: ["info": [:]])
+							jsonBody: ["info": [String:Any]()] as [String : Any])
+
 		let	(updateAttachmentInfo, updateAttachmentError) =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue

@@ -97,7 +97,7 @@ class CInfoTable {
 										table.select(tableColumns, 1, CSQLiteWhere(mKeyTableColumn, key),
 												(CSQLiteResultsRow::Proc) getInfoString, &string);
 
-										return string.hasInstance() ? OV<UInt32>(string->getUInt32()) : OV<UInt32>();
+										return string.hasValue() ? OV<UInt32>(string->getUInt32()) : OV<UInt32>();
 									}
 		static	OV<CString>		getString(const CString& key, CSQLiteTable& table)
 									{
@@ -112,7 +112,7 @@ class CInfoTable {
 		static	void			set(const CString& key, const OV<SValue>& value, CSQLiteTable& table)
 									{
 										// Check if storing or removing
-										if (value.hasInstance()) {
+										if (value.hasValue()) {
 											// Storing
 											TableColumnAndValue	tableColumnsAndValues[] =
 																		{

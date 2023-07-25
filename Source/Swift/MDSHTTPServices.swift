@@ -210,7 +210,7 @@ extension MDSDocument.UpdateInfo {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSError
-enum MDSError : Error {
+public enum MDSError : Error {
 	case invalidRequest(error :String)
 	case responseWasEmpty
 	case didNotReceiveSizeInHeader
@@ -717,7 +717,7 @@ class MDSHTTPServices {
 		guard let fromDocumentID = info["fromID"] as? String else { return (nil, "Missing fromID") }
 		guard let toDocumentID = info["toID"] as? String else { return (nil, "Missing toID") }
 
-		return (MDSAssociation.Update(action: action, fromDocumentID: fromDocumentID, toDocumentID: toDocumentID), nil)
+		return (MDSAssociation.Update(action, fromDocumentID: fromDocumentID, toDocumentID: toDocumentID), nil)
 	}
 
 	// MARK: - Association Get
@@ -917,7 +917,7 @@ class MDSHTTPServices {
 							"documentType": documentType,
 							"relevantProperties": relevantProperties,
 							"valueInfos": valueInfosTransformed,
-						  ])
+						  ] as [String : Any])
 	}
 	static func cacheRegisterGetValueInfo(for info :[String : Any]) ->
 			(valueInfo :CacheRegisterEndpointValueInfo?, error :String?) {
@@ -967,7 +967,7 @@ class MDSHTTPServices {
 							"isUpToDate": isUpToDate ? 1 : 0,
 							"isIncludedSelector": isIncludedSelector,
 							"isIncludedSelectorInfo": isIncludedSelectorInfo,
-					  ])
+						  ] as [String : Any])
 	}
 
 	// MARK: - Collection Get Document Count
@@ -1237,7 +1237,7 @@ class MDSHTTPServices {
 
 		return MDSJSONHTTPEndpointRequest<[String : Any]>(method: .post,
 				path: "/v1/document/\(documentStorageIDUse)/\(documentTypeUse)/\(documentIDUse)/attachment",
-				headers: headers, jsonBody: ["info": info, "content": content.base64EncodedString()])
+				headers: headers, jsonBody: ["info": info, "content": content.base64EncodedString()] as [String : Any])
 	}
 
 	// MARK: - Document Attachment Get
@@ -1302,7 +1302,7 @@ class MDSHTTPServices {
 
 		return MDSJSONHTTPEndpointRequest<[String : Any]>(method: .patch,
 				path: "/v1/document/\(documentStorageIDUse)/\(documentTypeUse)/\(documentIDUse)/attachment/\(attachmentIDUse)",
-				headers: headers, jsonBody: ["info": info, "content": content.base64EncodedString()])
+				headers: headers, jsonBody: ["info": info, "content": content.base64EncodedString()] as [String : Any])
 	}
 
 	// MARK: - Document Attachment Remove
@@ -1366,7 +1366,7 @@ class MDSHTTPServices {
 							"relevantProperties": relevantProperties,
 							"keysSelector": keysSelector,
 							"keysSelectorInfo": keysSelectorInfo,
-						  ])
+						  ] as [String : Any])
 	}
 
 	// MARK: - Index Get

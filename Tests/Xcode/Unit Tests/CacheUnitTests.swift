@@ -49,14 +49,14 @@ class CacheUnitTests : XCTestCase {
 							path: "/v1/cache/\(config.documentStorageID)",
 							jsonBody: [
 										"documentType": config.defaultDocumentType,
-										"relevantProperties": [],
+										"relevantProperties": [String](),
 										"valueInfos":
 												[
 													"name": "ABC",
 													"valueType": "integer",
 													"selector": "ABC",
 												],
-									  ])
+									  ] as [String : Any])
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue
@@ -89,14 +89,14 @@ class CacheUnitTests : XCTestCase {
 							path: "/v1/cache/\(config.documentStorageID)",
 							jsonBody: [
 										"name": "ABC",
-										"relevantProperties": [],
+										"relevantProperties": [String](),
 										"valueInfos":
 												[
 													"name": "ABC",
 													"valueType": "integer",
 													"selector": "ABC",
 												],
-									  ])
+									  ] as [String : Any])
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue
@@ -110,33 +110,6 @@ class CacheUnitTests : XCTestCase {
 				case MDSError.invalidRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing documentType",
-							"did not receive expected error message: \(message)")
-
-				default:
-					// Other error
-					XCTFail("received unexpected error: \(error!)")
-			}
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func testRegisterUnknownDocumentType() throws {
-		// Setup
-		let	config = Config.current
-		let	documentType = UUID().uuidString
-
-		// Perform
-		let	error =
-					config.httpEndpointClient.cacheRegister(documentStorageID: config.documentStorageID, name: "ABC",
-							documentType: documentType, valueInfos: [("ABC", .integer, "integerValueForProperty()")])
-
-		// Evaluate results
-		XCTAssertNotNil(error, "did not receive error")
-		if error != nil {
-			switch error! {
-				case MDSError.invalidRequest(let message):
-					// Expected error
-					XCTAssertEqual(message, "Unknown documentType: \(documentType)",
 							"did not receive expected error message: \(message)")
 
 				default:
@@ -164,7 +137,7 @@ class CacheUnitTests : XCTestCase {
 													"valueType": "integer",
 													"selector": "ABC",
 												],
-									  ])
+									  ] as [String : Any])
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue
@@ -199,8 +172,8 @@ class CacheUnitTests : XCTestCase {
 							jsonBody: [
 										"name": "ABC",
 										"documentType": config.defaultDocumentType,
-										"relevantProperties": [],
-									  ])
+										"relevantProperties": [String](),
+									  ] as [String : Any])
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue
@@ -234,9 +207,9 @@ class CacheUnitTests : XCTestCase {
 							jsonBody: [
 										"name": "ABC",
 										"documentType": config.defaultDocumentType,
-										"relevantProperties": [],
-										"valueInfos": [:],
-									  ])
+										"relevantProperties": [String](),
+										"valueInfos": [String:Any](),
+									  ] as [String : Any])
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue
@@ -270,9 +243,9 @@ class CacheUnitTests : XCTestCase {
 							jsonBody: [
 										"name": "ABC",
 										"documentType": config.defaultDocumentType,
-										"relevantProperties": [],
+										"relevantProperties": [String](),
 										"valueInfos": [["valueType": "ABC", "selector": "ABC"]],
-									  ])
+									  ] as [String : Any])
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue
@@ -306,9 +279,9 @@ class CacheUnitTests : XCTestCase {
 							jsonBody: [
 										"name": "ABC",
 										"documentType": config.defaultDocumentType,
-										"relevantProperties": [],
+										"relevantProperties": [String](),
 										"valueInfos": [["name": "ABC", "selector": "ABC"]],
-									  ])
+									  ] as [String : Any])
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue
@@ -343,9 +316,9 @@ class CacheUnitTests : XCTestCase {
 							jsonBody: [
 										"name": "ABC",
 										"documentType": config.defaultDocumentType,
-										"relevantProperties": [],
+										"relevantProperties": [String](),
 										"valueInfos": [["name": "ABC", "valueType": "ABC", "selector": "ABC"]],
-									  ])
+									  ] as [String : Any])
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue
@@ -380,9 +353,9 @@ class CacheUnitTests : XCTestCase {
 							jsonBody: [
 										"name": "ABC",
 										"documentType": config.defaultDocumentType,
-										"relevantProperties": [],
+										"relevantProperties": [String](),
 										"valueInfos": [["name": "ABC", "valueType": "integer"]],
-									  ])
+									  ] as [String : Any])
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue
@@ -417,9 +390,9 @@ class CacheUnitTests : XCTestCase {
 							jsonBody: [
 										"name": "ABC",
 										"documentType": config.defaultDocumentType,
-										"relevantProperties": [],
+										"relevantProperties": [String](),
 										"valueInfos": [["name": "ABC", "valueType": "integer", "selector": "ABC"]],
-									  ])
+									  ] as [String : Any])
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue

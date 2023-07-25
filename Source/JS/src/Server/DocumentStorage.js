@@ -734,7 +734,7 @@ function documentPropertyIsValue(info, selectorInfo) {
 	let	property = selectorInfo.property;
 	let	value = selectorInfo.value;
 	
-	return property && value && (info[property] == value);
+	return property && (value != null) && (info[property] == value);
 }
 
 // Built-in Index functions
@@ -747,5 +747,5 @@ function keysForDocumentProperty(info, selectorInfo) {
 	// Retrieve value
 	let	value = info[property];
 
-	return value ? [value] : [];
+	return (value != null) ? [value] : [];
 }

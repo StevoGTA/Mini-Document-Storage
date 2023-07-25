@@ -134,8 +134,8 @@ extension HTTPEndpointClient {
 	func queue(_ associationGetHTTPEndpointRequest :MDSHTTPServices.AssociationGetHTTPEndpointRequest,
 			identifier :String = "", priority :Priority = .normal,
 			completionProc
-					:@escaping (_ info :(associationItems :[MDSAssociation.Item], isComplete :Bool)?, _ error :Error?)
-							-> Void) {
+					:@escaping (_ info :(associationItems :[MDSAssociation.Item], isComplete :Bool)?,
+							_ error :Error?) -> Void) {
 		// Setup
 		associationGetHTTPEndpointRequest.completionWithCountProc = { info, error in
 			// Handle results
@@ -441,7 +441,7 @@ extension HTTPEndpointClient {
 			partialResultsProc :@escaping (_ documentUpdateReturnInfo :[MDSDocument.UpdateReturnInfo]) -> Void,
 			completionProc :@escaping(_ errors :[Error]) -> Void) {
 		// Setup
-		let	documentUpdateInfosChunks = documentUpdateInfos.chunk(by: 100)
+		let	documentUpdateInfosChunks = documentUpdateInfos.chunk(by: 10)
 		let	pendingCount = LockingNumeric<Int>(documentUpdateInfosChunks.count)
 		let	errors = LockingArray<Error>()
 

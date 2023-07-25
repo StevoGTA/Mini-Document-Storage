@@ -18,7 +18,8 @@ import Foundation
 public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	// MARK: Types
-	typealias MDSEphemeralBatchInfo = MDSBatchInfo<[String : Any]>
+	private	typealias BatchInfo = MDSBatchInfo<[String : Any]>
+	private	typealias BatchInfoDocumentInfo = BatchInfo.DocumentInfo<[String : Any]>
 
 	// MARK: DocumentBacking
 	private class DocumentBacking : MDSDocumentBacking {
@@ -113,7 +114,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	private	var	associationsByNameMap = LockingDictionary</* Name */ String, MDSAssociation>()
 	private	var	associationItemsByNameMap = LockingArrayDictionary</* Name */ String, MDSAssociation.Item>()
 
-	private	let	batchInfoMap = LockingDictionary<Thread, MDSEphemeralBatchInfo>()
+	private	let	batchInfoMap = LockingDictionary<Thread, BatchInfo>()
 
 	private	let	cachesByNameMap = LockingDictionary</* Name */ String, MDSCache>()
 	private	let	cachesByDocumentTypeMap = LockingArrayDictionary</* Document type */ String, MDSCache>()
@@ -164,43 +165,22 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func associationUpdate(for name :String, updates :[MDSAssociation.Update]) throws {
+	public func associationGet(for name :String) throws -> [MDSAssociation.Item] {
 		// Validate
 		guard self.associationsByNameMap.value(for: name) != nil else {
 			throw MDSDocumentStorageError.unknownAssociation(name: name)
 		}
+
+		// Get association items
+		var	associationItems = self.documentMapsLock.read() { self.associationItems(for: name) }
 
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
-			// In batch
-			batchInfo.associationNoteUpdated(for: name, updates: updates)
-		} else {
-			// Not in batch
-			self.associationItemsByNameMap.remove(updates.filter({ $0.action == .remove }).map({ $0.item }), for: name)
-			self.associationItemsByNameMap.append(updates.filter({ $0.action == .add }).map({ $0.item }), for: name)
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	public func associationGet(for name :String, startIndex :Int, count :Int?) throws ->
-			(totalCount :Int, associationItems :[MDSAssociation.Item]) {
-		// Validate
-		guard self.associationsByNameMap.value(for: name) != nil else {
-			throw MDSDocumentStorageError.unknownAssociation(name: name)
-		}
-		guard startIndex >= 0 else {
-			throw MDSDocumentStorageError.invalidStartIndex(startIndex: startIndex)
-		}
-		guard (count == nil) || (count! > 0) else {
-			throw MDSDocumentStorageError.invalidCount(count: count!)
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
+			// Apply batch changes
+			associationItems = batchInfo.associationItems(applyingChangesTo: associationItems, for: name)
 		}
 
-		let	associationItems = associationItems(for: name)
-
-		return (associationItems.count,
-				(count != nil) ?
-						Array(associationItems[startIndex...(startIndex + count!)]) :
-						Array(associationItems[startIndex...]))
+		return associationItems
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -217,8 +197,16 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			throw MDSDocumentStorageError.invalidDocumentType(documentType: toDocumentType)
 		}
 
-		// Iterate values
-		let	associationItems = associationItems(for: name)
+		// Get association items
+		var	associationItems = self.documentMapsLock.read() { self.associationItems(for: name) }
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
+			// Apply batch changes
+			associationItems = batchInfo.associationItems(applyingChangesTo: associationItems, for: name)
+		}
+
+		// Iterate association items
 		let	documentCreateProc = self.documentCreateProc(for: toDocumentType)
 		associationItems
 				.filter({ $0.fromDocumentID == fromDocumentID })
@@ -239,8 +227,16 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			throw MDSDocumentStorageError.invalidDocumentType(documentType: fromDocumentType)
 		}
 
-		// Iterate values
-		let	associationItems = associationItems(for: name)
+		// Get association items
+		var	associationItems = self.documentMapsLock.read() { self.associationItems(for: name) }
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
+			// Apply batch changes
+			associationItems = batchInfo.associationItems(applyingChangesTo: associationItems, for: name)
+		}
+
+		// Iterate association items
 		let	documentCreateProc = self.documentCreateProc(for: fromDocumentType)
 		associationItems
 				.filter({ $0.toDocumentID == toDocumentID })
@@ -276,11 +272,17 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			}
 		}
 
-		// Iterate values
-		let	associationItems = associationItems(for: name)
-		let	cacheValueInfos = self.cacheValuesMap.value(for: cacheName)!
+		// Get association items
+		var	associationItems = self.documentMapsLock.read() { self.associationItems(for: name) }
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
+			// Apply batch changes
+			associationItems = batchInfo.associationItems(applyingChangesTo: associationItems, for: name)
+		}
 
 		// Process associationItems
+		let	cacheValueInfos = self.cacheValuesMap.value(for: cacheName)!
 		var	results = [String : Int64]()
 		associationItems
 				.filter({ fromDocumentIDsUse.contains($0.fromDocumentID) })
@@ -296,14 +298,30 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func associationUpdate(for name :String, updates :[MDSAssociation.Update]) throws {
+		// Validate
+		guard self.associationsByNameMap.value(for: name) != nil else {
+			throw MDSDocumentStorageError.unknownAssociation(name: name)
+		}
+
+		// Check if have updates
+		guard !updates.isEmpty else { return }
+
+		// Check for batch
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
+			// In batch
+			batchInfo.associationNoteUpdated(for: name, updates: updates)
+		} else {
+			// Not in batch
+			self.associationItemsByNameMap.remove(updates.filter({ $0.action == .remove }).map({ $0.item }), for: name)
+			self.associationItemsByNameMap.append(updates.filter({ $0.action == .add }).map({ $0.item }), for: name)
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func cacheRegister(name :String, documentType :String, relevantProperties :[String],
 			valueInfos :[(name :String, valueType :MDSValueType, selector :String, proc :MDSDocument.ValueProc)])
 			throws {
-		// Validate
-		guard self.documentIDsByTypeMap[documentType] != nil else {
-			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
-		}
-
 		// Remove current cache if found
 		if let cache = self.cachesByNameMap.value(for: name) {
 			// Remove
@@ -327,11 +345,6 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	public func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
 			isIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
-		// Validate
-		guard self.documentIDsByTypeMap[documentType] != nil else {
-			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
-		}
-
 		// Remove current collection if found
 		if let collection = self.collectionsByNameMap.value(for: name) {
 			// Remove
@@ -358,12 +371,14 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func collectionGetDocumentCount(for name :String) throws -> Int {
 		// Validate
-		guard self.collectionsByNameMap.value(for: name) != nil else {
+		guard let documentIDs = self.collectionValuesMap.value(for: name) else {
 			throw MDSDocumentStorageError.unknownCollection(name: name)
 		}
+		guard self.batchInfoMap.value(for: .current) == nil else {
+			throw MDSDocumentStorageError.illegalInBatch
+		}
 
-		// Return count
-		return self.collectionValuesMap.value(for: name)!.count
+		return documentIDs.count
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -371,6 +386,9 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Validate
 		guard let documentIDs = self.collectionValuesMap.value(for: name) else {
 			throw MDSDocumentStorageError.unknownCollection(name: name)
+		}
+		guard self.batchInfoMap.value(for: .current) == nil else {
+			throw MDSDocumentStorageError.illegalInBatch
 		}
 
 		// Setup
@@ -382,14 +400,14 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentCreate(documentType :String, documentCreateInfos :[MDSDocument.CreateInfo],
-			proc :MDSDocument.CreateProc) ->
+			proc :MDSDocument.CreateProc) throws ->
 			[(document :MDSDocument, documentOverviewInfo :MDSDocument.OverviewInfo?)] {
 		// Setup
 		let	date = Date()
 		var	infos = [(document :MDSDocument, documentOverviewInfo :MDSDocument.OverviewInfo?)]()
 
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
 			// In batch
 			documentCreateInfos.forEach() {
 				// Setup
@@ -460,30 +478,54 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		guard let documentIDs = self.documentMapsLock.read({ self.documentIDsByTypeMap[documentType] }) else {
 			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
 		}
+		guard self.batchInfoMap.value(for: .current) == nil else {
+			throw MDSDocumentStorageError.illegalInBatch
+		}
 
 		return documentIDs.count
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentIterate(for documentType :String, documentIDs :[String],
-			documentCreateProc :MDSDocument.CreateProc?, proc :(_ document :MDSDocument?) -> Void) throws {
+			documentCreateProc :MDSDocument.CreateProc, proc :(_ document :MDSDocument) -> Void) throws {
+		// Setup
+		let	batchInfo = self.batchInfoMap.value(for: .current)
+
+		// Iterate initial document IDs
+		var	documentIDsToIterate = [String]()
+		documentIDs.forEach() {
+			// Check what we have currently
+			if batchInfo?.documentGetInfo(for: $0) != nil {
+				// Have document in batch
+				proc(documentCreateProc($0, self))
+			} else {
+				// Will need to iterate
+				documentIDsToIterate.append($0)
+			}
+		}
+
 		// Iterate document backings
-		try documentBackingsIterate(for: documentType, documentIDs: documentIDs,
-				proc: { proc(documentCreateProc?($0.documentID, self)) })
+		try documentBackingsIterate(for: documentType, documentIDs: documentIDsToIterate,
+				proc: { proc(documentCreateProc($0.documentID, self)) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentIterate(for documentType :String, sinceRevision :Int, count :Int?, activeOnly: Bool,
-			documentCreateProc :MDSDocument.CreateProc?, proc :(_ document :MDSDocument?) -> Void) throws {
+	public func documentIterate(for documentType :String, activeOnly: Bool, documentCreateProc :MDSDocument.CreateProc,
+			proc :(_ document :MDSDocument) -> Void) throws {
+		// Validate
+		guard self.batchInfoMap.value(for: .current) == nil else {
+			throw MDSDocumentStorageError.illegalInBatch
+		}
+
 		// Iterate document backings
-		try documentBackingsIterate(for: documentType, sinceRevision: sinceRevision, count: count,
-				activeOnly: activeOnly, proc: { proc(documentCreateProc?($0.documentID, self)) })
+		try documentBackingsIterate(for: documentType, sinceRevision: 0, count: nil, activeOnly: activeOnly,
+				proc: { proc(documentCreateProc($0.documentID, self)) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentCreationDate(for document :MDSDocument) -> Date {
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
+		if let batchInfo = self.batchInfoMap.value(for: .current),
 				let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
 			// In batch
 			return batchInfoDocumentInfo.creationDate
@@ -499,7 +541,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentModificationDate(for document :MDSDocument) -> Date {
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
+		if let batchInfo = self.batchInfoMap.value(for: .current),
 				let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
 			// In batch
 			return batchInfoDocumentInfo.modificationDate
@@ -515,7 +557,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentValue(for property :String, of document :MDSDocument) -> Any? {
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
+		if let batchInfo = self.batchInfoMap.value(for: .current),
 				let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
 			// In batch
 			return batchInfoDocumentInfo.value(for: property)
@@ -541,12 +583,12 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentSet<T : MDSDocument>(_ value :Any?, for property :String, of document :T) {
+	public func documentSet<T : MDSDocument>(_ value :Any?, for property :String, of document :T) throws {
 		// Setup
 		let	documentType = type(of: document).documentType
 
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
 			// In batch
 			if let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
 				// Have document in batch
@@ -585,7 +627,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 									id: document.id, changedProperties: [property])])
 
 			// Call document changed procs
-			self.documentChangedProcs(for: T.documentType)?.forEach() { $0(document, .updated) }
+			self.documentChangedProcs(for: documentType)?.forEach() { $0(document, .updated) }
 		}
 	}
 
@@ -598,7 +640,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
 			// In batch
 			if let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
 				// Have document in batch
@@ -645,7 +687,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
+		if let batchInfo = self.batchInfoMap.value(for: .current),
 				let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
 			// Have document in batch
 			return batchInfoDocumentInfo.attachmentInfoMap(
@@ -672,7 +714,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
+		if let batchInfo = self.batchInfoMap.value(for: .current),
 				let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
 			// Have document in batch
 			if let content = batchInfoDocumentInfo.attachmentContent(for: attachmentID) {
@@ -710,7 +752,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
 			// In batch
 			if let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
 				// Have document in batch
@@ -764,7 +806,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
 			// In batch
 			if let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: documentID) {
 				// Have document in batch
@@ -806,12 +848,12 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentRemove(_ document :MDSDocument) {
+	public func documentRemove(_ document :MDSDocument) throws {
 		// Setup
 		let	documentType = type(of: document).documentType
 
 		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current) {
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
 			// In batch
 			if let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
 				// Have document in batch
@@ -838,11 +880,6 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func indexRegister(name :String, documentType :String, relevantProperties :[String],
 			keysInfo :[String : Any], keysSelector :String, keysProc :@escaping MDSDocument.KeysProc) throws {
-		// Validate
-		guard self.documentIDsByTypeMap[documentType] != nil else {
-			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
-		}
-
 		// Remove current index if found
 		if let index = self.indexesByNameMap.value(for: name) {
 			// Remove
@@ -869,6 +906,9 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		guard let items = self.indexValuesMap.value(for: name) else {
 			throw MDSDocumentStorageError.unknownIndex(name: name)
 		}
+		guard self.batchInfoMap.value(for: .current) == nil else {
+			throw MDSDocumentStorageError.illegalInBatch
+		}
 
 		// Setup
 		let	documentCreateProc = self.documentCreateProc(for: documentType)
@@ -886,10 +926,10 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func info(for keys :[String]) -> [String : String] { self.info.filter({ keys.contains($0.key) }) }
+	public func info(for keys :[String]) throws -> [String : String] { self.info.filter({ keys.contains($0.key) }) }
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func infoSet(_ info :[String : String]) { self.info.merge(info, uniquingKeysWith: { $1 }) }
+	public func infoSet(_ info :[String : String]) throws { self.info.merge(info, uniquingKeysWith: { $1 }) }
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func remove(keys :[String]) { keys.forEach() { self.info[$0] = nil } }
@@ -901,15 +941,15 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func internalSet(_ info :[String : String]) { self.internal.merge(info, uniquingKeysWith: { $1 }) }
+	public func internalSet(_ info :[String : String]) throws { self.internal.merge(info, uniquingKeysWith: { $1 }) }
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func batch(_ proc :() throws -> MDSBatchResult) rethrows {
 		// Setup
-		let	batchInfo = MDSEphemeralBatchInfo()
+		let	batchInfo = BatchInfo()
 
 		// Store
-		self.batchInfoMap.set(batchInfo, for: Thread.current)
+		self.batchInfoMap.set(batchInfo, for: .current)
 
 		// Run lean
 		var	result = MDSBatchResult.commit
@@ -930,8 +970,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 				var	removedDocumentIDs = Set<String>()
 
 				let	process
-							:(_ documentID :String,
-									_ batchInfoDocumentInfo :MDSEphemeralBatchInfo.DocumentInfo<[String : Any]>,
+							:(_ documentID :String, _ batchInfoDocumentInfo :BatchInfoDocumentInfo,
 									_ documentBacking :DocumentBacking,
 									_ changedProperties :Set<String>?, _ changeKind :MDSDocument.ChangeKind) -> Void =
 							{ documentID, batchInfoDocumentInfo, documentBacking, changedProperties, changeKind in
@@ -1015,9 +1054,8 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 							self.documentBackingByIDMap[documentID]?.active = false
 
 							// Check if have changed procs
-							if let documentChangedProcs = self.documentChangedProcs(for: documentType) {
+							if let documentChangedProcs {
 								// Create document
-								let	documentCreateProc = self.documentCreateProc(for: documentType)
 								let	document = documentCreateProc(documentID, self)
 
 								// Call document changed procs
@@ -1042,7 +1080,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Remove
-		self.batchInfoMap.set(nil, for: Thread.current)
+		self.batchInfoMap.set(nil, for: .current)
 	}
 
 	// MARK: MDSHTTPServicesHandler methods
@@ -1261,7 +1299,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> Int64? {
 		// Check for batch
 		let	value :Any?
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
+		if let batchInfo = self.batchInfoMap.value(for: .current),
 				let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
 			// In batch
 			value = batchInfoDocumentInfo.value(for: property)
@@ -1280,7 +1318,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	func documentStringValue(for documentType :String, document :MDSDocument, property :String) -> String? {
 		// Check for batch
 		let	value :Any?
-		if let batchInfo = self.batchInfoMap.value(for: Thread.current),
+		if let batchInfo = self.batchInfoMap.value(for: .current),
 				let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
 			// In batch
 			value = batchInfoDocumentInfo.value(for: property)
@@ -1422,15 +1460,9 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		var associationItems = self.associationItemsByNameMap.values(for: name)!
 
 		// Process batch updates
-		self.batchInfoMap.value(for: Thread.current)?.associationGetChanges(for: name)?.forEach() {
-			// Process update
-			if $0.action == .add {
-				// Add
-				associationItems.append($0.item)
-			} else {
-				// Remove
-				associationItems.remove($0.item)
-			}
+		if let batchInfo = self.batchInfoMap.value(for: .current) {
+			// Apply batch changes
+			associationItems = batchInfo.associationItems(applyingChangesTo: associationItems, for: name)
 		}
 
 		return associationItems

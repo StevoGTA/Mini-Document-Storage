@@ -54,7 +54,7 @@ class CMDSDocumentStorage {
 			};
 
 			// Properties
-			CString	mName;
+			CString		mName;
 			ValueType	mValueType;
 			CString		mSelector;
 //			???			mProc;
@@ -81,6 +81,7 @@ class CMDSDocumentStorage {
 
 		virtual			I<CMDSDocument>				newDocument(const CMDSDocument::InfoForNew& infoForNew) = 0;
 
+		virtual			OV<UInt32>					getDocumentCount(const CMDSDocument::Info& documentInfo) const = 0;
 		virtual			OI<CMDSDocument>			getDocument(const CString& documentID,
 															const CMDSDocument::Info& documentInfo) const = 0;
 

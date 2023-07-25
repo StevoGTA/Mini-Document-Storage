@@ -97,6 +97,25 @@ void CMDSDocument::set(const CString& property, const TArray<CString>& value) co
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+OV<TArray<CDictionary> > CMDSDocument::getArrayOfDictionaries(const CString& property) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Get value
+	OV<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	AssertFailIf(value.hasValue() && (value->getType() != SValue::kArrayOfDictionaries));
+
+	return value.hasValue() ? OV<TArray<CDictionary> >(value->getArrayOfDictionaries()) : OV<TArray<CDictionary> >();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocument::set(const CString& property, const TArray<CDictionary>& value) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Set value
+	mInternals->mDocumentStorage.set(property, OV<SValue>(value), *this);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 OV<bool> CMDSDocument::getBool(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {

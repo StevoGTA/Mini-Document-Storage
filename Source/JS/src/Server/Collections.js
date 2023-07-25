@@ -74,10 +74,9 @@ module.exports = class Collections {
 		// Setup
 		let	internals = this.internals;
 
-		// Validate document type
 		var	lastDocumentRevision = await internals.documents.getLastRevision(statementPerformer, documentType);
 		if (lastDocumentRevision == null)
-			return 'Unknown documentType: ' + documentType;
+			lastDocumentRevision = 0;
 
 		// Check if need to create Collections table
 		await internals.createTableIfNeeded(statementPerformer, this.collectionsTable);
@@ -191,7 +190,7 @@ module.exports = class Collections {
 			return [false, null, null];
 		} else
 			// No document of this type yet
-			return [false, null, null];
+			return [true, 0, null];
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -261,7 +260,7 @@ module.exports = class Collections {
 			return [false, null, null, null];
 		} else
 			// No document of this type yet
-			return [false, null, null, null];
+			return [true, 0, [], null];
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

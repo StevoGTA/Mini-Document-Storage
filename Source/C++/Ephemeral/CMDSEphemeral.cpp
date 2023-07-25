@@ -611,6 +611,20 @@ I<CMDSDocument> CMDSEphemeral::newDocument(const CMDSDocument::InfoForNew& infoF
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+OV<UInt32> CMDSEphemeral::getDocumentCount(const CMDSDocument::Info& documentInfo) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Collect document IDs
+	mInternals->mDocumentMapsLock.lockForReading();
+	const	OR<TNSet<CString> >	documentIDs = mInternals->mDocumentIDsByTypeMap[documentInfo.getDocumentType()];
+			OV<UInt32>			documentCount =
+										documentIDs.hasReference() ? OV<UInt32>(documentIDs->getCount()) : OV<UInt32>();
+	mInternals->mDocumentMapsLock.unlockForReading();
+
+	return documentCount;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 OI<CMDSDocument> CMDSEphemeral::getDocument(const CString& documentID, const CMDSDocument::Info& documentInfo) const
 //----------------------------------------------------------------------------------------------------------------------
 {

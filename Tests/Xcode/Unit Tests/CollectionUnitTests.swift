@@ -47,11 +47,11 @@ class CollectionUnitTests : XCTestCase {
 					MDSHTTPServices.MDSSuccessHTTPEndpointRequest(method: .put, path: "/v1/collection/\(config.documentStorageID)",
 							jsonBody: [
 										"documentType": config.defaultDocumentType,
-										"relevantProperties": [],
+										"relevantProperties": [String](),
 										"isUpToDate": 1,
 										"isIncludedSelector": "ABC",
-										"isIncludedSelectorInfo": [:],
-								  ])
+										"isIncludedSelectorInfo": [String:Any](),
+									  ] as [String : Any])
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue
@@ -84,11 +84,11 @@ class CollectionUnitTests : XCTestCase {
 							path: "/v1/collection/\(config.documentStorageID)",
 							jsonBody: [
 										"name": "ABC",
-										"relevantProperties": [],
+										"relevantProperties": [String](),
 										"isUpToDate": 1,
 										"isIncludedSelector": "ABC",
-										"isIncludedSelectorInfo": [:],
-								  ])
+										"isIncludedSelectorInfo": [String:Any](),
+									  ] as [String : Any])
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue
@@ -102,33 +102,6 @@ class CollectionUnitTests : XCTestCase {
 				case MDSError.invalidRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing documentType",
-							"did not receive expected error message: \(message)")
-
-				default:
-					// Other error
-					XCTFail("received unexpected error: \(error!)")
-			}
-		}
-	}
-
-	//------------------------------------------------------------------------------------------------------------------	//------------------------------------------------------------------------------------------------------------------
-	func testRegisterUnknownDocumentType() throws {
-		// Setup
-		let	config = Config.current
-		let	documentType = UUID().uuidString
-
-		// Perform
-		let	error =
-					config.httpEndpointClient.collectionRegister(documentStorageID: config.documentStorageID,
-							name: "ABC", documentType: documentType, isIncludedSelector: "documentPropertyIsValue()")
-
-		// Evaluate results
-		XCTAssertNotNil(error, "did not receive error")
-		if error != nil {
-			switch error! {
-				case MDSError.invalidRequest(let message):
-					// Expected error
-					XCTAssertEqual(message, "Unknown documentType: \(documentType)",
 							"did not receive expected error message: \(message)")
 
 				default:
@@ -152,8 +125,8 @@ class CollectionUnitTests : XCTestCase {
 										"documentType": config.defaultDocumentType,
 										"isUpToDate": 1,
 										"isIncludedSelector": "ABC",
-										"isIncludedSelectorInfo": [:],
-								  ])
+										"isIncludedSelectorInfo": [String:Any](),
+									  ] as [String : Any])
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue
@@ -188,10 +161,10 @@ class CollectionUnitTests : XCTestCase {
 							jsonBody: [
 										"name": "ABC",
 										"documentType": config.defaultDocumentType,
-										"relevantProperties": [],
+										"relevantProperties": [String](),
 										"isUpToDate": 1,
-										"isIncludedSelectorInfo": [:],
-								  ])
+										"isIncludedSelectorInfo": [String:Any](),
+									  ] as [String : Any])
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue
@@ -226,10 +199,10 @@ class CollectionUnitTests : XCTestCase {
 							jsonBody: [
 										"name": "ABC",
 										"documentType": config.defaultDocumentType,
-										"relevantProperties": [],
+										"relevantProperties": [String](),
 										"isUpToDate": 1,
 										"isIncludedSelector": "documentPropertyIsValue()",
-								  ])
+									  ] as [String : Any])
 		let	error =
 					DispatchQueue.performBlocking() { completionProc in
 						// Queue

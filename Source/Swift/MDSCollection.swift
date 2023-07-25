@@ -15,7 +15,7 @@ class MDSCollection : Equatable {
 			let	documentType :String
 			let	relevantProperties: Set<String>
 
-			var	lastRevision :Int
+	private	var	lastRevision :Int
 
 	private	let	isIncludedProc :MDSDocument.IsIncludedProc
 	private	let	isIncludedInfo :[String : Any]

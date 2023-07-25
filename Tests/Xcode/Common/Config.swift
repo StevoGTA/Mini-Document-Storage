@@ -12,7 +12,7 @@ import Foundation
 class Config {
 
 	// MARK: Properties
-	static	let	current = server
+	static	let	current = local
 
 	// Server testing when running external server
 	static	let	server =
