@@ -347,7 +347,22 @@ class MDSClient:
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def index_get_documents(self, name, keys, document_creation_function, document_storage_id = None):
-		pass
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+
+		# Loop until up-to-date
+		while (True):
+			# Queue request
+			async with self.session.get(f'/v1/index/{document_storage_id_use}/{name}', headers = self.headers,
+					params = {'key': keys, 'fullInfo': 1}) as response:
+				# Handle results
+				if (response.status != 409):
+					# Process response
+					await self.process_response(response)
+
+					results = await response.json()
+
+					return {k: document_creation_function(v) for k, v in results.items()}
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def info_get(self, keys, document_storage_id = None):
