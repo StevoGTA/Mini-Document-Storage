@@ -116,7 +116,7 @@ public protocol MDSDocumentStorage {
 	func documentValue(for property :String, of document :MDSDocument) -> Any?
 	func documentData(for property :String, of document :MDSDocument) -> Data?
 	func documentDate(for property :String, of document :MDSDocument) -> Date?
-	func documentSet<T : MDSDocument>(_ value :Any?, for property :String, of document :T) throws
+	func documentSet<T : MDSDocument>(_ value :Any?, for property :String, of document :T)
 
 	func documentAttachmentAdd(for documentType :String, documentID :String, info :[String : Any], content :Data) throws
 			-> MDSDocument.AttachmentInfo
@@ -287,6 +287,14 @@ extension MDSDocumentStorage {
 		return try documentCreate(documentType: documentType, documentCreateInfos: documentCreateInfos,
 						proc: { MDSDocument(id: $0, documentStorage: $1) })
 				.map({ $0.documentOverviewInfo! })
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func documentCreate<T : MDSDocument>(proc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T) throws
+			-> T {
+		// Create document
+		try documentCreate(documentType: T.documentType, documentCreateInfos: [MDSDocument.CreateInfo()],
+				proc: proc)[0].document as! T
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

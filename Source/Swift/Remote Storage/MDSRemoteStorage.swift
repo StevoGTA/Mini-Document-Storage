@@ -630,7 +630,13 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentSet<T : MDSDocument>(_ value :Any?, for property :String, of document :T) throws {
+	public func documentSet<T : MDSDocument>(_ value :Any?, for property :String, of document :T) {
+		// Check for batch
+		guard let let batchInfo = self.batchInfoMap.value(for: .current) else {
+			// Nope!
+			fatalError("MDSRemoteStorage - action must be performed in a batch")
+		}
+
 		// Transform
 		let	valueUse :Any?
 		if let data = value as? Data {
@@ -644,36 +650,19 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 			valueUse = value
 		}
 
-		// Check for batch
-		if let batchInfo = self.batchInfoMap.value(for: .current) {
-			// In batch
-			if let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
-				// Have document in batch
-				batchInfoDocumentInfo.set(valueUse, for: property)
-			} else {
-				// Don't have document in batch
-				let	documentBacking =
-							try! self.documentBacking(for: type(of: document).documentType, documentID: document.id)
-				batchInfo.documentAdd(documentType: documentBacking.type, documentID: document.id,
-								documentBacking: documentBacking, creationDate: documentBacking.creationDate,
-								modificationDate: documentBacking.modificationDate,
-								initialPropertyMap: documentBacking.propertyMap)
-						.set(valueUse, for: property)
-			}
-		} else if var propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: document.id) {
-			// Creating
-			propertyMap[property] = valueUse
-			self.documentsBeingCreatedPropertyMapMap.set(propertyMap, for: document.id)
+		// Store update
+		if let batchInfoDocumentInfo = batchInfo.documentGetInfo(for: document.id) {
+			// Have document in batch
+			batchInfoDocumentInfo.set(valueUse, for: property)
 		} else {
-			// Not in batch and not creating
+			// Don't have document in batch
 			let	documentBacking =
 						try! self.documentBacking(for: type(of: document).documentType, documentID: document.id)
-			let	documentUpdateInfo =
-						(valueUse != nil) ?
-								MDSDocument.UpdateInfo(documentID: document.id, updated: [property : valueUse!]) :
-								MDSDocument.UpdateInfo(documentID: document.id, removed: [property])
-			try documentUpdate(documentType: documentBacking.type,
-					documentUpdateInfos: [DocumentUpdateInfo(documentUpdateInfo, documentBacking)])
+			batchInfo.documentAdd(documentType: documentBacking.type, documentID: document.id,
+							documentBacking: documentBacking, creationDate: documentBacking.creationDate,
+							modificationDate: documentBacking.modificationDate,
+							initialPropertyMap: documentBacking.propertyMap)
+					.set(valueUse, for: property)
 		}
 	}
 

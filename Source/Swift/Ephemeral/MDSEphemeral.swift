@@ -583,7 +583,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentSet<T : MDSDocument>(_ value :Any?, for property :String, of document :T) throws {
+	public func documentSet<T : MDSDocument>(_ value :Any?, for property :String, of document :T) {
 		// Setup
 		let	documentType = type(of: document).documentType
 
