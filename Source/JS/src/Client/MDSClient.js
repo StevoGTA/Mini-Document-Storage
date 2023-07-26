@@ -164,13 +164,13 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async associationGetDocumentInfos(name, startIndex, count, documentStorageID) {
+	async associationGetDocumentInfos(name, startIndex, count, fullInfo, documentStorageID) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		
 		var	url =
 					this.urlBase + '/v1/association/' + encodeURIComponent(documentStorageIDUse) + '/' +
-							encodeURIComponent(name);
+							encodeURIComponent(name) + '?fullInfo=' + (fullInfo ? 1 : 0);
 		if (startIndex) url += '&startIndex=' + startIndex;
 		if (count) url += '&count=' + count;
 
@@ -394,7 +394,6 @@ class MDSClient {
 							encodeURIComponent(name);
 		let	options = {method: 'HEAD', headers: this.headers};
 
-
 		// Loop until up-to-date
 		while (true) {
 			// Queue the call
@@ -405,7 +404,7 @@ class MDSClient {
 				// Process response
 				if (!response.ok)
 					// Some error, but no additional info
-					throw new Error('Unable to get count');
+					throw new Error('HTTP response: ' + response.status);
 
 				// Decode header
 				let	contentRange = response.headers.get('content-range');
@@ -535,7 +534,7 @@ class MDSClient {
 		let	response = await this.queue.add(() => fetch(url, options));
 		if (!response.ok)
 			// Some error, but no additional info
-			throw new Error('Unable to get count');
+			throw new Error('HTTP response: ' + response.status);
 
 		// Decode header
 		let	contentRange = response.headers.get('content-range');

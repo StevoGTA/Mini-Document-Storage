@@ -60,7 +60,7 @@ class MDSDocument:
 	#-------------------------------------------------------------------------------------------------------------------
 	def __init__(self, info = None):
 		# Check situation
-		if (info == None):
+		if info == None:
 			# New
 			document_id = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8').strip('=')
 
@@ -85,13 +85,13 @@ class MDSDocument:
 	#-------------------------------------------------------------------------------------------------------------------
 	def value(self, property):
 		# Check situation
-		if (property in self.updated):
+		if property in self.updated:
 			# Have updated value
 			return self.updated[property]
-		elif (property in self.removed):
+		elif property in self.removed:
 			# Was removed
 			return None
-		elif (property in self.info['json']):
+		elif property in self.info['json']:
 			# Not updated
 			return self.info['json'][property]
 		else:
@@ -101,7 +101,7 @@ class MDSDocument:
 	#-------------------------------------------------------------------------------------------------------------------
 	def set(self, property, value = None):
 		# Check value
-		if (value != None):
+		if value != None:
 			# Have value
 			self.updated[property] = value
 			self.removed.discard(property)
@@ -142,19 +142,21 @@ class MDSDocument:
 		update_info = {'documentID': self.info['documentID']}
 
 		# Check if have updated properties
-		if (self.updated):
+		if self.updated:
 			# Have updated properties
 			update_info['updated'] = self.updated
 		
 		# Check if have removed properties
-		if (self.removed):
+		if self.removed:
 			# Have removed properties
 			update_info['removed'] = list(self.removed)
 		
 		# Check if active changed
-		if (self.active_changed):
+		if self.active_changed:
 			# Active changed
 			update_info['active'] = self.info['active']
+		
+		return update_info
 
 	#-------------------------------------------------------------------------------------------------------------------
 	def update_from_update(self, info):

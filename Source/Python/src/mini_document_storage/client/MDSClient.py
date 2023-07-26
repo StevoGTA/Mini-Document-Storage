@@ -120,11 +120,28 @@ class MDSClient:
 			await self.process_response(response)
 
 	#-------------------------------------------------------------------------------------------------------------------
-	async def association_get_document_infos(self, name, start_index, count, document_storage_id = None):
-		pass
+	async def association_get_document_infos(self, name, start_index = 0, count = None, full_info = False,
+			document_storage_id = None):
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+
+		params = {'startIndex': start_index, 'fullInfo': 1 if full_info else 0}
+		if count:
+			params['count'] = count
+
+		# Queue request
+		async with self.session.get(f'/v1/association/{document_storage_id_use}/{name}', headers = self.headers,
+				params = params) as response:
+			# Handle results
+			if response.status != 409:
+				# Process response
+				await self.process_response(response)
+
+				return await response.json()
 
 	#-------------------------------------------------------------------------------------------------------------------
-	async def association_get_document_infos_from(self, name, document, start_index, count, document_storage_id = None):
+	async def association_get_document_infos_from(self, name, document, start_index = 0, count = None,
+			document_storage_id = None):
 		pass
 
 	#-------------------------------------------------------------------------------------------------------------------
@@ -133,7 +150,8 @@ class MDSClient:
 		pass
 
 	#-------------------------------------------------------------------------------------------------------------------
-	async def association_get_document_infos_to(self, name, document, start_index, count, document_storage_id = None):
+	async def association_get_document_infos_to(self, name, document, start_index = 0, count = None,
+			document_storage_id = None):
 		pass
 
 	#-------------------------------------------------------------------------------------------------------------------
@@ -172,16 +190,76 @@ class MDSClient:
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def collection_get_document_count(self, name, document_storage_id = None):
-		pass
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+
+		# Loop until up-to-date
+		while True:
+			# Queue request
+			async with self.session.head(f'/v1/collection/{document_storage_id_use}/{name}',
+					headers = self.headers) as response:
+				# Handle results
+				if response.status != 409:
+					# Process response
+					if not response.ok:
+						# Some error, but no additional info
+						raise Exception(f'HTTP response: {response.status}')
+					
+					# Decode header
+					content_range = response.headers.get('content-range', '')
+					content_range_parts = content_range.split('/')
+					if len(content_range_parts) == 2:
+						# Have count
+						return int(content_range_parts[1])
+					else:
+						# Don't have count
+						raise Exception('Unable to get count from response')
 
 	#-------------------------------------------------------------------------------------------------------------------
-	async def collection_get_document_infos(self, name, start_index, count, document_storage_id = None):
-		pass
+	async def collection_get_document_infos(self, name, start_index = 0, count = None, document_storage_id = None):
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+
+		params = {'startIndex': start_index, 'fullInfo': 0}
+		if count:
+			params['count'] = count
+
+		# Loop until up-to-date
+		while True:
+			# Queue request
+			async with self.session.get(f'/v1/collection/{document_storage_id_use}/{name}', headers = self.headers,
+					params = params) as response:
+				# Handle results
+				if response.status != 409:
+					# Process response
+					await self.process_response(response)
+
+					return await response.json()
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def collection_get_documents(self, name, start_index, count, document_creation_function,
 			document_storage_id = None):
-		pass
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+
+		params = {'startIndex': start_index, 'fullInfo': 1}
+		if count:
+			params['count'] = count
+
+		# Loop until up-to-date
+		while True:
+			# Queue request
+			async with self.session.get(f'/v1/collection/{document_storage_id_use}/{name}', headers = self.headers,
+					params = params) as response:
+				# Handle results
+				if response.status != 409:
+					# Process response
+					await self.process_response(response)
+
+					# Decode
+					infos = await response.json()
+
+					return list(map(lambda info: document_creation_function(info), infos))
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def document_create(self, document_type, documents, document_storage_id = None):
@@ -349,12 +427,12 @@ class MDSClient:
 		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
 
 		# Loop until up-to-date
-		while (True):
+		while True:
 			# Queue request
 			async with self.session.get(f'/v1/index/{document_storage_id_use}/{name}', headers = self.headers,
 					params = {'key': keys, 'fullInfo': 0}) as response:
 				# Handle results
-				if (response.status != 409):
+				if response.status != 409:
 					# Process response
 					await self.process_response(response)
 
@@ -366,12 +444,12 @@ class MDSClient:
 		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
 
 		# Loop until up-to-date
-		while (True):
+		while True:
 			# Queue request
 			async with self.session.get(f'/v1/index/{document_storage_id_use}/{name}', headers = self.headers,
 					params = {'key': keys, 'fullInfo': 1}) as response:
 				# Handle results
-				if (response.status != 409):
+				if response.status != 409:
 					# Process response
 					await self.process_response(response)
 
@@ -395,7 +473,7 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def process_response(self, response):
 		# Check status
-		if (response.status != 200):
+		if not response.ok:
 			# Catch errors
 			info = {}
 			try:
