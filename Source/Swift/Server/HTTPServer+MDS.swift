@@ -44,6 +44,17 @@ extension MDSHTTPServices {
 
 										return documentPropertyValue == value
 									}),
+							("documentPropertyIsOneOfValues()",
+									{ [unowned documentStorage] documentType, document, info in
+										// Setup
+										guard let property = info["property"] as? String else { return false }
+										guard let values = info["values"] as? [String] else { return false }
+										guard let documentPropertyValue =
+												documentStorage.documentStringValue(for: documentType,
+														document: document, property: property) else { return false }
+
+										return values.contains(documentPropertyValue)
+									}),
 						] +
 						isIncludedProcs)
 		documentStorage.register(

@@ -38,6 +38,7 @@ module.exports = class DocumentStorage {
 				Object.assign(
 						{
 							'documentPropertyIsValue()': documentPropertyIsValue,
+							'documentPropertyIsOneOfValues()': documentPropertyIsOneOfValues,
 						},
 						collectionIsIncludedSelectorInfo || {});
 		this.indexKeysSelectorInfo =
@@ -735,6 +736,15 @@ function documentPropertyIsValue(info, selectorInfo) {
 	let	value = selectorInfo.value;
 	
 	return property && (value != null) && (info[property] == value);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+function documentPropertyIsOneOfValues(info, selectorInfo) {
+	// Setup
+	let	property = selectorInfo.property;
+	let	values = selectorInfo.values;
+
+	return property && values && Array.isArray(values) && (info[property] != null) && values.includes(info[property]);
 }
 
 // Built-in Index functions
