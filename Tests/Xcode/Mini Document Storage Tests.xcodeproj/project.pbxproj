@@ -775,6 +775,7 @@
 		0AAC273128B6EEEF006ADEF9 /* InternalUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InternalUnitTests.swift; sourceTree = "<group>"; };
 		0AAC273328B6F2C4006ADEF9 /* InternalTransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InternalTransactionTests.swift; sourceTree = "<group>"; };
 		0AAF04952A70DE34000AF19F /* MDSBatch.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MDSBatch.swift; sourceTree = "<group>"; };
+		0AB3D2452A70E19900347E86 /* SMDSAssociation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SMDSAssociation.h; sourceTree = "<group>"; };
 		0ACCD91328137C6B001D52CB /* IndexUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexUnitTests.swift; sourceTree = "<group>"; };
 		0ACCD9152814EBBC001D52CB /* CollectionUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionUnitTests.swift; sourceTree = "<group>"; };
 		0ADC8E8628BED43600632551 /* Server (Swift) */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Server (Swift)"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1775,6 +1776,7 @@
 				0A9C637C2A19EC6E00800DBA /* CMDSDocument.cpp */,
 				0A9C638A2A19EC6E00800DBA /* CMDSDocumentStorage.h */,
 				0A9C638C2A19EC6F00800DBA /* CMDSDocumentStorage.cpp */,
+				0AB3D2452A70E19900347E86 /* SMDSAssociation.h */,
 				0A9C638E2A19EC6F00800DBA /* SMDSValue.h */,
 				0A9C638B2A19EC6E00800DBA /* TMDSBatchInfo.h */,
 				0A9C63862A19EC6E00800DBA /* TMDSCollection.h */,

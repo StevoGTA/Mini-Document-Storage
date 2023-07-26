@@ -102,14 +102,14 @@ return 0
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentIterate(for documentType :String, documentIDs :[String], documentCreateProc :MDSDocument.CreateProc?,
-			proc :(_ document :MDSDocument?) -> Void) throws {
+	func documentIterate(for documentType :String, documentIDs :[String], documentCreateProc :MDSDocument.CreateProc,
+			proc :(_ document :MDSDocument) -> Void) throws {
 		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentIterate(for documentType :String, sinceRevision :Int, count :Int?, activeOnly: Bool,
-			documentCreateProc :MDSDocument.CreateProc?, proc :(_ document :MDSDocument?) -> Void) throws {
+	func documentIterate(for documentType :String, activeOnly: Bool, documentCreateProc :MDSDocument.CreateProc,
+			proc :(_ document :MDSDocument) -> Void) throws {
 		fatalError("Unimplemented")
 	}
 
@@ -218,7 +218,7 @@ return [:]
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func batch(_ proc :() throws -> MDSBatchResult) rethrows {
+	func batch(_ proc :() throws -> MDSBatch<Any>.Result) rethrows {
 		fatalError("Unimplemented")
 	}
 
