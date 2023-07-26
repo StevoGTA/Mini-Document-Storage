@@ -56,6 +56,7 @@
 		0A1F802327E40577007F8920 /* UUID+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55521727C5DA60003E497B /* UUID+Extensions.swift */; };
 		0A1F802427E40577007F8920 /* UUID+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55521727C5DA60003E497B /* UUID+Extensions.swift */; };
 		0A1F802527E40578007F8920 /* UUID+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55521727C5DA60003E497B /* UUID+Extensions.swift */; };
+		0A2F30642A145D9400855E9B /* MDSRemoteStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551EF27C5D8E7003E497B /* MDSRemoteStorage.swift */; };
 		0A2F307C2A17429600855E9B /* CString.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F3702A0E133C00E4F149 /* CString.cpp */; };
 		0A2F307D2A1742CA00855E9B /* CArray.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F3962A0E133C00E4F149 /* CArray.cpp */; };
 		0A2F307E2A17430E00855E9B /* CString-Apple.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F33B2A0E133B00E4F149 /* CString-Apple.cpp */; };
@@ -73,9 +74,7 @@
 		0A36CDF82A1F3201005C7A40 /* CMDSEphemeral.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A9C63892A19EC6E00800DBA /* CMDSEphemeral.cpp */; };
 		0A36CDF92A1F3210005C7A40 /* CMDSDocumentStorage.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A9C638C2A19EC6F00800DBA /* CMDSDocumentStorage.cpp */; };
 		0A36CDFA2A1F348D005C7A40 /* CUUID.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F36F2A0E133C00E4F149 /* CUUID.cpp */; };
-		0A36CDFB2A1F34A1005C7A40 /* CMDSDocument.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A9C637C2A19EC6E00800DBA /* CMDSDocument.cpp */; };
 		0A36CDFC2A1F34B9005C7A40 /* CUUID-Apple.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F3402A0E133B00E4F149 /* CUUID-Apple.cpp */; };
-		0A2F30642A145D9400855E9B /* MDSRemoteStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551EF27C5D8E7003E497B /* MDSRemoteStorage.swift */; };
 		0A4313B028E3C1BC00CD1A6B /* MDSAssociation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4313AF28E3C1BC00CD1A6B /* MDSAssociation.swift */; };
 		0A4313B128E3C1BC00CD1A6B /* MDSAssociation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4313AF28E3C1BC00CD1A6B /* MDSAssociation.swift */; };
 		0A4313B228E3C1BC00CD1A6B /* MDSAssociation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4313AF28E3C1BC00CD1A6B /* MDSAssociation.swift */; };
@@ -2228,7 +2227,6 @@
 				0A2F30822A17436800855E9B /* CHashing.cpp in Sources */,
 				0A2F30812A17435300855E9B /* SValue.cpp in Sources */,
 				0ADC8E9128BED81400632551 /* MDSIndex.swift in Sources */,
-				0A36CDFB2A1F34A1005C7A40 /* CMDSDocument.cpp in Sources */,
 				0A4313B328E3C1BC00CD1A6B /* MDSAssociation.swift in Sources */,
 				0ADC8EAA28BED8B400632551 /* HTTPEndpointRequest.swift in Sources */,
 				0ADC8E9C28BED84100632551 /* LockingDictionary.swift in Sources */,
