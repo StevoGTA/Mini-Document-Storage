@@ -695,7 +695,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 					throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
 				}
 
-				batchDocumentInfo.attachmentUpdate(attachmentID: attachmentID, currentRevision: attachmentInfo.revision,
+				batchDocumentInfo.attachmentUpdate(id: attachmentID, currentRevision: attachmentInfo.revision,
 						info: updatedInfo, content: updatedContent)
 			} else {
 				// Don't have document in batch
@@ -708,7 +708,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 								creationDate: documentBacking.creationDate,
 								modificationDate: documentBacking.modificationDate,
 								initialPropertyMap: documentBacking.propertyMap)
-						.attachmentUpdate(attachmentID: attachmentID, currentRevision: attachmentInfo.revision,
+						.attachmentUpdate(id: attachmentID, currentRevision: attachmentInfo.revision,
 								info: updatedInfo, content: updatedContent)
 			}
 
@@ -745,7 +745,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 					throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
 				}
 
-				batchDocumentInfo.attachmentRemove(attachmentID: attachmentID)
+				batchDocumentInfo.attachmentRemove(id: attachmentID)
 			} else {
 				// Don't have document in batch
 				let	documentBacking = try self.documentBacking(documentType: documentType, documentID: documentID)
@@ -757,7 +757,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 								creationDate: documentBacking.creationDate,
 								modificationDate: documentBacking.modificationDate,
 								initialPropertyMap: documentBacking.propertyMap)
-						.attachmentRemove(attachmentID: attachmentID)
+						.attachmentRemove(id: attachmentID)
 			}
 		} else {
 			// Not in batch
@@ -948,8 +948,8 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 								// Process attachments
 								batchDocumentInfo.removeAttachmentInfos.forEach() {
 									// Remove attachment
-									documentBacking.attachmentRemove(documentType: documentType,
-											attachmentID: $0.attachmentID, with: self.databaseManager)
+									documentBacking.attachmentRemove(documentType: documentType, attachmentID: $0.id,
+											with: self.databaseManager)
 								}
 								batchDocumentInfo.addAttachmentInfos.forEach() {
 									// Add attachment
@@ -959,7 +959,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 								batchDocumentInfo.updateAttachmentInfos.forEach() {
 									// Update attachment
 									_ = documentBacking.attachmentUpdate(documentType: documentType,
-											attachmentID: $0.attachmentID, updatedInfo: $0.info,
+											attachmentID: $0.id, updatedInfo: $0.info,
 											updatedContent: $0.content, with: self.databaseManager)
 								}
 

@@ -9,10 +9,10 @@
 // MARK: MDSAssociation
 public class MDSAssociation : Equatable {
 
-	// MARK: Properties
-	let	name :String
-	let	fromDocumentType :String
-	let	toDocumentType :String
+	// MARK: GetIntegerValueAction
+	public enum GetIntegerValueAction : String {
+		case sum = "sum"
+	}
 
 	// MARK: Item
 	public struct Item : Equatable {
@@ -20,11 +20,6 @@ public class MDSAssociation : Equatable {
 		// MARK: Properties
 		let	fromDocumentID :String
 		let	toDocumentID :String
-	}
-
-	// MARK: GetIntegerValueAction
-	public enum GetIntegerValueAction : String {
-		case sum = "sum"
 	}
 
 	// MARK: Update
@@ -59,6 +54,11 @@ public class MDSAssociation : Equatable {
 			self.item = Item(fromDocumentID: fromDocumentID, toDocumentID: toDocumentID)
 		}
 	}
+
+	// MARK: Properties
+	let	name :String
+	let	fromDocumentType :String
+	let	toDocumentType :String
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------

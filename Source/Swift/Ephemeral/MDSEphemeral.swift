@@ -19,7 +19,6 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	// MARK: Types
 	private	typealias Batch = MDSBatch<[String : Any]>
-	private	typealias BatchDocumentInfo = Batch.DocumentInfo<[String : Any]>
 
 	// MARK: DocumentBacking
 	private class DocumentBacking : MDSDocumentBacking {
@@ -763,7 +762,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 					throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
 				}
 
-				batchDocumentInfo.attachmentUpdate(attachmentID: attachmentID, currentRevision: attachmentInfo.revision,
+				batchDocumentInfo.attachmentUpdate(id: attachmentID, currentRevision: attachmentInfo.revision,
 						info: updatedInfo, content: updatedContent)
 			} else {
 				// Don't have document in batch
@@ -774,7 +773,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 				batch.documentAdd(documentType: documentType, documentID: documentID, creationDate: date,
 								modificationDate: date, initialPropertyMap: documentBacking.propertyMap)
-						.attachmentUpdate(attachmentID: attachmentID, currentRevision: attachmentInfo.revision,
+						.attachmentUpdate(id: attachmentID, currentRevision: attachmentInfo.revision,
 								info: updatedInfo, content: updatedContent)
 			}
 
@@ -816,7 +815,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 					throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
 				}
 
-				batchDocumentInfo.attachmentRemove(attachmentID: attachmentID)
+				batchDocumentInfo.attachmentRemove(id: attachmentID)
 			} else {
 				// Don't have document in batch
 				guard documentBacking.attachmentMap[attachmentID] != nil else {
@@ -829,7 +828,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 								initialPropertyMap:
 										self.documentMapsLock.read()
 											{ self.documentBackingByIDMap[documentID]?.propertyMap })
-						.attachmentRemove(attachmentID: attachmentID)
+						.attachmentRemove(id: attachmentID)
 			}
 		} else {
 			// Not in batch
@@ -969,7 +968,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 				var	removedDocumentIDs = Set<String>()
 
 				let	process
-							:(_ documentID :String, _ batchDocumentInfo :BatchDocumentInfo,
+							:(_ documentID :String, _ batchDocumentInfo :Batch.DocumentInfo,
 									_ documentBacking :DocumentBacking,
 									_ changedProperties :Set<String>?, _ changeKind :MDSDocument.ChangeKind) -> Void =
 							{ documentID, batchDocumentInfo, documentBacking, changedProperties, changeKind in
@@ -977,7 +976,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 								batchDocumentInfo.removeAttachmentInfos.forEach() {
 									// Remove attachment
 									documentBacking.attachmentRemove(revision: documentBacking.revision,
-											attachmentID: $0.attachmentID)
+											attachmentID: $0.id)
 								}
 								batchDocumentInfo.addAttachmentInfos.forEach() {
 									// Add attachment
@@ -987,7 +986,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 								batchDocumentInfo.updateAttachmentInfos.forEach() {
 									// Update attachment
 									_ = documentBacking.attachmentUpdate(revision: documentBacking.revision,
-											attachmentID: $0.attachmentID, updatedInfo: $0.info,
+											attachmentID: $0.id, updatedInfo: $0.info,
 											updatedContent: $0.content)
 								}
 
