@@ -1,5 +1,5 @@
 //
-//  MDSBatchInfo.swift
+//  MDSBatch.swift
 //  Mini Document Storage
 //
 //  Created by Stevo on 10/9/19.
@@ -9,8 +9,14 @@
 import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: MDSBatchInfo
-class MDSBatchInfo<T> {
+// MARK: MDSBatch
+public class MDSBatch<T> {
+
+	// MARK: MDSBatchResult
+	public enum Result {
+		case commit
+		case cancel
+	}
 
 	// MARK: AddAttachmentInfo
 	struct AddAttachmentInfo {

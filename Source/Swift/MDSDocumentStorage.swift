@@ -9,14 +9,7 @@
 import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: MDSBatchResult
-public enum MDSBatchResult {
-	case commit
-	case cancel
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSDocumentStorageError
+// MARK: MDSDocumentStorageError
 public enum MDSDocumentStorageError : Error {
 	case invalidCount(count :Int)
 	case invalidDocumentType(documentType :String)
@@ -140,7 +133,7 @@ public protocol MDSDocumentStorage {
 	func internalGet(for keys :[String]) -> [String : String]
 	func internalSet(_ info :[String : String]) throws
 
-	func batch(_ proc :() throws -> MDSBatchResult) rethrows
+	func batch(_ proc :() throws -> MDSBatch<Any>.Result) rethrows
 
 	func register<T : MDSDocument>(
 			documentCreateProc :@escaping (_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
