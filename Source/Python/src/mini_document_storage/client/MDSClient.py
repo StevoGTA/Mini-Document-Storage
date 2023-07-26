@@ -153,7 +153,22 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def collection_register(self, name, document_type, relevant_properties, is_up_to_date, is_included_selector,
 			is_included_selector_info, document_storage_id = None):
-		pass
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+		json = {
+			'name': name,
+			'documentType': document_type,
+			'relevantProperties': relevant_properties,
+			'isUpToDate': is_up_to_date,
+			'isIncludedSelector': is_included_selector,
+			'isIncludedSelectorInfo': is_included_selector_info,
+		}
+
+		# Queue request
+		async with self.session.put(f'/v1/collection/{document_storage_id_use}', headers = self.headers,
+				json = json) as response:
+			# Process response
+			await self.process_response(response)
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def collection_get_document_count(self, name, document_storage_id = None):
