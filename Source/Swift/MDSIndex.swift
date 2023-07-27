@@ -13,12 +13,12 @@ class MDSIndex : Equatable {
 	// MARK: Properties
 			let	name :String
 			let	documentType :String
-			let	relevantProperties :Set<String>
 
-			var	lastRevision :Int
-
+	private	let	relevantProperties :Set<String>
 	private	let	keysProc :MDSDocument.KeysProc
 	private	let	keysInfo :[String : Any]
+
+	private	var	lastRevision :Int
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -27,12 +27,12 @@ class MDSIndex : Equatable {
 		// Store
 		self.name = name
 		self.documentType = documentType
+
 		self.relevantProperties = Set<String>(relevantProperties)
-
-		self.lastRevision = lastRevision
-
 		self.keysProc = keysProc
 		self.keysInfo = keysInfo
+
+		self.lastRevision = lastRevision
 	}
 
 	// MARK: Equatable implementation

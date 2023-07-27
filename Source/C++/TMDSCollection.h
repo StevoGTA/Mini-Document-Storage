@@ -9,53 +9,67 @@
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: TMDSCollection
 
-template <typename T, typename U> class TMDSCollection {
+template <typename T, typename AT> class TMDSCollection : public CEquatable {
 	// UpdateResults
 	public:
-		template <typename V> struct UpdateResults {
-			// Lifecycle methods
-			UpdateResults(const OV<V>& includedIDs, const OV<V>& notIncludedIDs, const OV<UInt32>& lastRevision) :
-				mIncludedIDs(includedIDs), mNotIncludedIDs(notIncludedIDs), mLastRevision(lastRevision)
-				{}
-			UpdateResults(const UpdateResults& other) :
-				mIncludedIDs(other.mIncludedIDs), mNotIncludedIDs(other.mNotIncludedIDs),
-						mLastRevision(other.mLastRevision)
-				{}
+		struct UpdateResults {
+									// Lifecycle methods
+									UpdateResults(const OV<AT>& includedIDs, const OV<AT>&notIncludedIDs,
+											const OV<UInt32>& lastRevision) :
+										mIncludedIDs(includedIDs), mNotIncludedIDs(notIncludedIDs),
+												mLastRevision(lastRevision)
+										{}
+									UpdateResults(const UpdateResults& other) :
+										mIncludedIDs(other.mIncludedIDs), mNotIncludedIDs(other.mNotIncludedIDs),
+												mLastRevision(other.mLastRevision)
+										{}
+
+								// Instance methods
+			const	OV<AT>&		getIncludedIDs() const
+									{ return mIncludedIDs; }
+			const	OV<AT>&		getNotIncludedIDs() const
+									{ return mNotIncludedIDs; }
+			const	OV<UInt32>&	getLastRevision() const
+									{ return mLastRevision; }
 
 			// Properties
-			OV<V>		mIncludedIDs;
-			OV<V>		mNotIncludedIDs;
-			OV<UInt32>	mLastRevision;
+			private:
+				OV<AT>		mIncludedIDs;
+				OV<AT>		mNotIncludedIDs;
+				OV<UInt32>	mLastRevision;
 		};
 
 	// Methods
 	public:
-									// Lifecycle methods
-									TMDSCollection(const CString& name, const CString& documentType,
-											const TArray<CString>& relevantProperties,
-											CMDSDocument::IsIncludedProc isIncludedProc, void* isIncludedProcUserData,
-											const CDictionary& isIncludedInfo, UInt32 lastRevision) :
-										mName(name), mDocumentType(documentType),
-												mRelevantProperties(relevantProperties),
-												mLastRevision(lastRevision),
-												mIsIncludedProc(isIncludedProc),
-												mIsIncludedProcUserData(isIncludedProcUserData),
-												mIsIncludedInfo(isIncludedInfo)
-										{}
+								// Lifecycle methods
+								TMDSCollection(const CString& name, const CString& documentType,
+										const TArray<CString>& relevantProperties,
+										CMDSDocument::IsIncludedProc documentIsIncludedProc,
+										void* documentIsIncludedProcUserData,
+										const CDictionary& documentIsIncludedInfo, UInt32 lastRevision) :
+									mName(name), mDocumentType(documentType),
+											mRelevantProperties(relevantProperties),
+											mDocumentIsIncludedProc(documentIsIncludedProc),
+											mDocumentIsIncludedProcUserData(documentIsIncludedProcUserData),
+											mDocumentIsIncludedInfo(documentIsIncludedInfo),
+											mLastRevision(lastRevision)
+									{}
 
-									// Instance methods
-		const	CString&			getName() const
-										{ return mName; }
-		const	CString&			getDocumentType() const
-										{ return mDocumentType; }
-				UInt32				getLastRevision() const
-										{ return mLastRevision; }
+								// CEquatable methods
+				bool			operator==(const CEquatable& other) const
+									{ return mName == ((const TMDSCollection<T, AT>&) other).mName; }
 
-				UpdateResults<U>	update(const TArray<TMDSUpdateInfo<T> >& updateInfos)
+								// Instance methods
+		const	CString&		getName() const
+									{ return mName; }
+		const	CString&		getDocumentType() const
+									{ return mDocumentType; }
+
+				UpdateResults	update(const TArray<TMDSUpdateInfo<T> >& updateInfos)
 										{
 											// Compose results
-											U			includedIDs;
-											U			notIncludedIDs;
+											AT			includedIDs;
+											AT			notIncludedIDs;
 											OV<UInt32>	lastRevision;
 											for (TIteratorD<TMDSUpdateInfo<T> > iterator = updateInfos.getIterator();
 													iterator.hasValue(); iterator.advance()) {
@@ -64,8 +78,8 @@ template <typename T, typename U> class TMDSCollection {
 														(mRelevantProperties.intersects(
 																*iterator->mChangedProperties))) {
 													// Query
-													if (mIsIncludedProc(iterator->mDocument, mIsIncludedProcUserData,
-															mIsIncludedInfo))
+													if (mDocumentIsIncludedProc(iterator->mDocument,
+															mDocumentIsIncludedInfo, mDocumentIsIncludedProcUserData))
 														// Included
 														includedIDs += iterator->mID;
 													else
@@ -78,21 +92,21 @@ template <typename T, typename U> class TMDSCollection {
 												lastRevision.setValue(mLastRevision);
 											}
 
-											return UpdateResults<U>(
-													!includedIDs.isEmpty() ? OV<U>(includedIDs) : OV<U>(),
-													!notIncludedIDs.isEmpty() ? OV<U>(notIncludedIDs) : OV<U>(),
+											return UpdateResults(
+													!includedIDs.isEmpty() ? OV<AT>(includedIDs) : OV<AT>(),
+													!notIncludedIDs.isEmpty() ? OV<AT>(notIncludedIDs) : OV<AT>(),
 													lastRevision);
 										}
 
 	// Properties
 	private:
-				CString							mName;
-		const	CString&						mDocumentType;
-				TNSet<CString>					mRelevantProperties;
+		CString							mName;
+		CString							mDocumentType;
 
-				UInt32							mLastRevision;
+		TNSet<CString>					mRelevantProperties;
+		CMDSDocument::IsIncludedProc	mDocumentIsIncludedProc;
+		void*							mDocumentIsIncludedProcUserData;
+		CDictionary						mDocumentIsIncludedInfo;
 
-				CMDSDocument::IsIncludedProc	mIsIncludedProc;
-				void*							mIsIncludedProcUserData;
-				CDictionary						mIsIncludedInfo;
+		UInt32							mLastRevision;
 };

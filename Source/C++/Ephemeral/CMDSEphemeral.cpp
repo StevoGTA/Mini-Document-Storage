@@ -8,7 +8,8 @@
 #include "CUUID.h"
 #include "SError.h"
 #include "TLockingDictionary.h"
-#include "TMDSBatchInfo.h"
+#include "TMDSBatch.h"
+#include "TMDSCache.h"
 #include "TMDSCollection.h"
 #include "TMDSIndex.h"
 
@@ -44,8 +45,8 @@ class CMDSEphemeralDocumentBacking {
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - Types
 
-typedef	TMDSBatchInfo<CDictionary>									CMDSEphemeralBatchInfo;
-typedef	CMDSEphemeralBatchInfo::DocumentInfo<CDictionary>			CMDSEphemeralBatchDocumentInfo;
+typedef	TMDSBatch<CDictionary>										CMDSEphemeralBatch;
+typedef	CMDSEphemeralBatch::DocumentInfo							CMDSEphemeralBatchDocumentInfo;
 
 typedef	TMDSCollection<CString, TNArray<CString> >					CMDSEphemeralCollection;
 typedef	CMDSEphemeralCollection::UpdateResults<TNArray<CString> >	CMDSEphemeralCollectionUpdateResults;
@@ -130,7 +131,7 @@ struct AssociationPair {
 				CString													mID;
 				TNDictionary<CString>									mInfo;
 
-				TNLockingDictionary<CMDSEphemeralBatchInfo>				mBatchInfoMap;
+				TNLockingDictionary<CMDSEphemeralBatch>					mBatchMap;
 
 				TNDictionary<CMDSEphemeralDocumentBacking>				mDocumentBackingByIDMap;
 				TNLockingArrayDictionary<CMDSDocument::ChangedProcInfo>	mDocumentChangedProcInfosMap;
@@ -421,7 +422,7 @@ OV<SError> CMDSEphemeralInternals::batchMap(const CString& documentType,
 									changedProperties);
 
 					// Call document changed procs
-					internals->notifyDocumentChanged(documentType, *document, CMDSDocument::kUpdated);
+					internals->notifyDocumentChanged(documentType, *document, CMDSDocument::kChangeKindUpdated);
 				}
 			} else {
 				// Add document
@@ -449,7 +450,7 @@ OV<SError> CMDSEphemeralInternals::batchMap(const CString& documentType,
 					updateInfos += CMDSEphemeralUpdateInfo(*document, documentBacking.mRevision, documentID);
 
 					// Call document changed procs
-					internals->notifyDocumentChanged(documentType, *document, CMDSDocument::kUpdated);
+					internals->notifyDocumentChanged(documentType, *document, CMDSDocument::kChangeKindUpdated);
 				}
 			}
 		} else {
@@ -470,7 +471,7 @@ OV<SError> CMDSEphemeralInternals::batchMap(const CString& documentType,
 					documents += I<CMDSDocument>(document);
 
 					// Call document changed procs
-					internals->notifyDocumentChanged(documentType, *document, CMDSDocument::kRemoved);
+					internals->notifyDocumentChanged(documentType, *document, CMDSDocument::kChangeKindRemoved);
 				}
 			}
 		}
@@ -562,10 +563,10 @@ I<CMDSDocument> CMDSEphemeral::newDocument(const CMDSDocument::InfoForNew& infoF
 	UniversalTime	universalTime = SUniversalTime::getCurrent();
 
 	// Check for batch
-	const	OR<CMDSEphemeralBatchInfo>	batchInfo = mInternals->mBatchInfoMap[CThread::getCurrentRefAsString()];
-	if (batchInfo.hasReference()) {
+	const	OR<CMDSEphemeralBatch>	batch = mInternals->mBatchMap[CThread::getCurrentRefAsString()];
+	if (batch.hasReference()) {
 		// In batch
-		batchInfo->addDocument(infoForNew.getDocumentType(), documentID, universalTime, universalTime);
+		batch->addDocument(infoForNew.getDocumentType(), documentID, universalTime, universalTime);
 
 		return I<CMDSDocument>(infoForNew.create(documentID, *this));
 	} else {
@@ -604,7 +605,7 @@ I<CMDSDocument> CMDSEphemeral::newDocument(const CMDSDocument::InfoForNew& infoF
 		mInternals->updateIndexes(infoForNew.getDocumentType(), TSArray<CMDSEphemeralUpdateInfo>(updateInfo));
 
 		// Call document changed procs
-		mInternals->notifyDocumentChanged(infoForNew.getDocumentType(), *document, CMDSDocument::kCreated);
+		mInternals->notifyDocumentChanged(infoForNew.getDocumentType(), *document, CMDSDocument::kChangeKindCreated);
 
 		return I<CMDSDocument>(document);
 	}
@@ -636,10 +637,10 @@ UniversalTime CMDSEphemeral::getCreationUniversalTime(const CMDSDocument& docume
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check for batch
-	const	OR<CMDSEphemeralBatchInfo>			batchInfo = mInternals->mBatchInfoMap[CThread::getCurrentRefAsString()];
+	const	OR<CMDSEphemeralBatch>				batch = mInternals->mBatchMap[CThread::getCurrentRefAsString()];
 	const	OR<CMDSEphemeralBatchDocumentInfo>	batchDocumentInfo =
-														batchInfo.hasReference() ?
-																batchInfo->getDocumentInfo(document.getID()) :
+														batch.hasReference() ?
+																batch->getDocumentInfo(document.getID()) :
 																OR<CMDSEphemeralBatchDocumentInfo>();
 	if (batchDocumentInfo.hasReference())
 		// In batch
@@ -667,10 +668,10 @@ UniversalTime CMDSEphemeral::getModificationUniversalTime(const CMDSDocument& do
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check for batch
-	const	OR<CMDSEphemeralBatchInfo>			batchInfo = mInternals->mBatchInfoMap[CThread::getCurrentRefAsString()];
+	const	OR<CMDSEphemeralBatch>				batch = mInternals->mBatchMap[CThread::getCurrentRefAsString()];
 	const	OR<CMDSEphemeralBatchDocumentInfo>	batchDocumentInfo =
-														batchInfo.hasReference() ?
-																batchInfo->getDocumentInfo(document.getID()) :
+														batch.hasReference() ?
+																batch->getDocumentInfo(document.getID()) :
 																OR<CMDSEphemeralBatchDocumentInfo>();
 	if (batchDocumentInfo.hasReference())
 		// In batch
@@ -698,10 +699,10 @@ OV<SValue> CMDSEphemeral::getValue(const CString& property, const CMDSDocument& 
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check for batch
-	const	OR<CMDSEphemeralBatchInfo>			batchInfo = mInternals->mBatchInfoMap[CThread::getCurrentRefAsString()];
+	const	OR<CMDSEphemeralBatch>				batch = mInternals->mBatchMap[CThread::getCurrentRefAsString()];
 	const	OR<CMDSEphemeralBatchDocumentInfo>	batchDocumentInfo =
-														batchInfo.hasReference() ?
-																batchInfo->getDocumentInfo(document.getID()) :
+														batch.hasReference() ?
+																batch->getDocumentInfo(document.getID()) :
 																OR<CMDSEphemeralBatchDocumentInfo>();
 	if (batchDocumentInfo.hasReference())
 		// In batch
@@ -759,19 +760,19 @@ void CMDSEphemeral::set(const CString& property, const OV<SValue>& value, const 
 	const	CString&	documentID = document.getID();
 
 	// Check for batch
-	const	OR<CMDSEphemeralBatchInfo>	batchInfo = mInternals->mBatchInfoMap[CThread::getCurrentRefAsString()];
-	if (batchInfo.hasReference()) {
+	const	OR<CMDSEphemeralBatch>	batch = mInternals->mBatchMap[CThread::getCurrentRefAsString()];
+	if (batch.hasReference()) {
 		// In batch
-		const	OR<CMDSEphemeralBatchDocumentInfo>	batchDocumentInfo = batchInfo->getDocumentInfo(documentID);
+		const	OR<CMDSEphemeralBatchDocumentInfo>	batchDocumentInfo = batch->getDocumentInfo(documentID);
 		if (batchDocumentInfo.hasReference())
 			// Have document in batch
 			batchDocumentInfo->set(property, value);
 		else {
 			// Don't have document in batch
 			UniversalTime	universalTime = SUniversalTime::getCurrent();
-			batchInfo->addDocument(documentType, documentID, OI<CDictionary>(CDictionary()), universalTime,
+			batch->addDocument(documentType, documentID, OI<CDictionary>(CDictionary()), universalTime,
 					universalTime,
-					(CMDSEphemeralBatchInfo::DocumentPropertyValueProc)
+					(CMDSEphemeralBatch::DocumentPropertyValueProc)
 							CMDSEphemeralInternals::getDocumentBackingPropertyValue, mInternals)
 				.set(property, value);
 		}
@@ -797,7 +798,7 @@ void CMDSEphemeral::set(const CString& property, const OV<SValue>& value, const 
 		mInternals->updateIndexes(documentType, TSArray<CMDSEphemeralUpdateInfo>(updateInfo));
 
 		// Call document changed procs
-		mInternals->notifyDocumentChanged(documentType, document, CMDSDocument::kUpdated);
+		mInternals->notifyDocumentChanged(documentType, document, CMDSDocument::kChangeKindUpdated);
 	}
 }
 
@@ -810,17 +811,17 @@ void CMDSEphemeral::remove(const CMDSDocument& document)
 	const	CString&	documentID = document.getID();
 
 	// Check for batch
-	const	OR<CMDSEphemeralBatchInfo>	batchInfo = mInternals->mBatchInfoMap[CThread::getCurrentRefAsString()];
-	if (batchInfo.hasReference()) {
+	const	OR<CMDSEphemeralBatch>	batch = mInternals->mBatchMap[CThread::getCurrentRefAsString()];
+	if (batch.hasReference()) {
 		// In batch
-		const	OR<CMDSEphemeralBatchDocumentInfo>	batchDocumentInfo = batchInfo->getDocumentInfo(documentID);
+		const	OR<CMDSEphemeralBatchDocumentInfo>	batchDocumentInfo = batch->getDocumentInfo(documentID);
 		if (batchDocumentInfo.hasReference())
 			// Have document in batch
 			batchDocumentInfo->remove();
 		else {
 			// Don't have document in batch
 			UniversalTime	universalTime = SUniversalTime::getCurrent();
-			batchInfo->addDocument(documentType, documentID, universalTime, universalTime).remove();
+			batch->addDocument(documentType, documentID, universalTime, universalTime).remove();
 		}
 	} else {
 		// Not in batch
@@ -837,7 +838,7 @@ void CMDSEphemeral::remove(const CMDSDocument& document)
 		mInternals->updateIndexes(documentIDs);
 
 		// Call document changed procs
-		mInternals->notifyDocumentChanged(documentType, document, CMDSDocument::kRemoved);
+		mInternals->notifyDocumentChanged(documentType, document, CMDSDocument::kChangeKindRemoved);
 	}
 }
 
@@ -891,21 +892,21 @@ void CMDSEphemeral::batch(BatchProc batchProc, void* userData)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Setup
-	CMDSEphemeralBatchInfo	batchInfo;
+	CMDSEphemeralBatch	batch;
 
 	// Store
-	mInternals->mBatchInfoMap.set(CThread::getCurrentRefAsString(), batchInfo);
+	mInternals->mBatchMap.set(CThread::getCurrentRefAsString(), batch);
 
 	// Call proc
 	BatchResult	batchResult = batchProc(userData);
 
 	// Remove
-	mInternals->mBatchInfoMap.remove(CThread::getCurrentRefAsString());
+	mInternals->mBatchMap.remove(CThread::getCurrentRefAsString());
 
 	// Check result
 	if (batchResult == kCommit)
 		// Iterate all document changes
-		batchInfo.iterate((CMDSEphemeralBatchDocumentInfo::MapProc) CMDSEphemeralInternals::batchMap, mInternals);
+		batch.iterate((CMDSEphemeralBatchDocumentInfo::MapProc) CMDSEphemeralInternals::batchMap, mInternals);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

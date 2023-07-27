@@ -571,7 +571,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	public func documentCreationDate(for document :MDSDocument) -> Date {
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current),
-				let batchDocumentInfo = batch.documentGetInfo(for: document.id) {
+				let batchDocumentInfo = batch.documentInfoGet(for: document.id) {
 			// In batch
 			return batchDocumentInfo.creationDate
 		} else if self.documentsBeingCreatedPropertyMapMap.value(for: document.id) != nil {
@@ -587,7 +587,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	public func documentModificationDate(for document :MDSDocument) -> Date {
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current),
-				let batchDocumentInfo = batch.documentGetInfo(for: document.id) {
+				let batchDocumentInfo = batch.documentInfoGet(for: document.id) {
 			// In batch
 			return batchDocumentInfo.modificationDate
 		} else if self.documentsBeingCreatedPropertyMapMap.value(for: document.id) != nil {
@@ -604,7 +604,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	public func documentValue(for property :String, of document :MDSDocument) -> Any? {
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current),
-				let batchDocumentInfo = batch.documentGetInfo(for: document.id) {
+				let batchDocumentInfo = batch.documentInfoGet(for: document.id) {
 			// In batch
 			return batchDocumentInfo.value(for: property)
 		} else if let propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: document.id) {
@@ -634,7 +634,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentSet<T : MDSDocument>(_ value :Any?, for property :String, of document :T) {
 		// Check for batch
-		guard let let batch = self.batchMap.value(for: .current) else {
+		guard let batch = self.batchMap.value(for: .current) else {
 			// Nope!
 			fatalError("MDSRemoteStorage - action must be performed in a batch")
 		}
@@ -653,7 +653,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Store update
-		if let batchDocumentInfo = batch.documentGetInfo(for: document.id) {
+		if let batchDocumentInfo = batch.documentInfoGet(for: document.id) {
 			// Have document in batch
 			batchDocumentInfo.set(valueUse, for: property)
 		} else {
@@ -674,7 +674,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current) {
 			// In batch
-			if let batchDocumentInfo = batch.documentGetInfo(for: documentID) {
+			if let batchDocumentInfo = batch.documentInfoGet(for: documentID) {
 				// Have document in batch
 				return batchDocumentInfo.attachmentAdd(info: info, content: content)
 			} else {
@@ -699,9 +699,9 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 			MDSDocument.AttachmentInfoMap {
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current),
-				let batchDocumentInfo = batch.documentGetInfo(for: documentID) {
+				let batchDocumentInfo = batch.documentInfoGet(for: documentID) {
 			// Have document in batch
-			return batchDocumentInfo.attachmentInfoMap(
+			return batchDocumentInfo.documentAttachmentInfoMap(
 					applyingChangesTo:
 							try! self.documentBacking(for: documentType, documentID: documentID).attachmentInfoMap)
 		} else if self.documentsBeingCreatedPropertyMapMap.value(for: documentID) != nil {
@@ -718,7 +718,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 			Data {
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current),
-				let batchDocumentInfo = batch.documentGetInfo(for: documentID) {
+				let batchDocumentInfo = batch.documentInfoGet(for: documentID) {
 			// Have document in batch
 			if let content = batchDocumentInfo.attachmentContent(for: attachmentID) {
 				// Found
@@ -751,11 +751,11 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current) {
 			// In batch
-			if let batchDocumentInfo = batch.documentGetInfo(for: documentID) {
+			if let batchDocumentInfo = batch.documentInfoGet(for: documentID) {
 				// Have document in batch
 				let	attachmentInfo =
 							try documentAttachmentInfoMap(for: documentType, documentID: documentID)[attachmentID]!
-				batchDocumentInfo.attachmentUpdate(attachmentID: attachmentID, currentRevision: attachmentInfo.revision,
+				batchDocumentInfo.attachmentUpdate(id: attachmentID, currentRevision: attachmentInfo.revision,
 						info: updatedInfo, content: updatedContent)
 			} else {
 				// Don't have document in batch
@@ -766,7 +766,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 								documentBacking: documentBacking, creationDate: documentBacking.creationDate,
 								modificationDate: documentBacking.modificationDate,
 								initialPropertyMap: documentBacking.propertyMap)
-						.attachmentUpdate(attachmentID: attachmentID, currentRevision: attachmentInfo.revision,
+						.attachmentUpdate(id: attachmentID, currentRevision: attachmentInfo.revision,
 								info: updatedInfo, content: updatedContent)
 			}
 
@@ -783,9 +783,9 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current) {
 			// In batch
-			if let batchDocumentInfo = batch.documentGetInfo(for: documentID) {
+			if let batchDocumentInfo = batch.documentInfoGet(for: documentID) {
 				// Have document in batch
-				batchDocumentInfo.attachmentRemove(attachmentID: attachmentID)
+				batchDocumentInfo.attachmentRemove(id: attachmentID)
 			} else {
 				// Don't have document in batch
 				let	documentBacking = try self.documentBacking(for: documentType, documentID: documentID)
@@ -793,7 +793,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 								documentBacking: documentBacking, creationDate: documentBacking.creationDate,
 								modificationDate: documentBacking.modificationDate,
 								initialPropertyMap: documentBacking.propertyMap)
-						.attachmentRemove(attachmentID: attachmentID)
+						.attachmentRemove(id: attachmentID)
 			}
 		} else {
 			// Not in batch
@@ -810,7 +810,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current) {
 			// In batch
-			if let batchDocumentInfo = batch.documentGetInfo(for: document.id) {
+			if let batchDocumentInfo = batch.documentInfoGet(for: document.id) {
 				// Have document in batch
 				batchDocumentInfo.remove()
 			} else {
@@ -1029,14 +1029,14 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Check result
 		if result == .commit {
 			// Iterate document types
-			try batch.documentIterateChanges() { documentType, batchDocumentInfosMap in
+			try batch.documentInfosByDocumentType.forEach() { documentType, batchDocumentInfosByDocumentID in
 				// Setup
 				var	documentCreateInfos = [MDSDocument.CreateInfo]()
 				var	documentUpdateInfos = [DocumentUpdateInfo]()
 				var	addAttachmentInfos = [(documentID :String, [MDSBatch<DocumentBacking>.AddAttachmentInfo])]()
 
 				// Iterate document info for this document type
-				try batchDocumentInfosMap.forEach() { documentID, batchDocumentInfo in
+				try batchDocumentInfosByDocumentID.forEach() { documentID, batchDocumentInfo in
 					// Check if have pre-existing document
 					if let documentBacking = batchDocumentInfo.documentBacking {
 						// Have an existing document so update.  Updating the document will get fresh info from the
@@ -1045,28 +1045,28 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 						//	return info already has the latest attachment info - which saves a server call if we were
 						//	to do it in the other order.
 						// Process attachments
-						try batchDocumentInfo.removeAttachmentInfos.forEach() {
+						try batchDocumentInfo.removedAttachmentIDs.forEach() {
 							// Remove attachment
 							try self.documentAttachmentRemove(documentType: documentType, documentID: documentID,
-									documentBacking: documentBacking, attachmentID: $0.attachmentID)
+									documentBacking: documentBacking, attachmentID: $0)
 						}
-						try batchDocumentInfo.addAttachmentInfos.forEach() {
+						try batchDocumentInfo.addAttachmentInfosByID.values.forEach() {
 							// Add attachment
 							_ = try self.documentAttachmentAdd(documentType: documentType, documentID: documentID,
 									documentBacking: documentBacking, info: $0.info, content: $0.content)
 						}
-						try batchDocumentInfo.updateAttachmentInfos.forEach() {
+						try batchDocumentInfo.updateAttachmentInfosByID.values.forEach() {
 							// Update attachment
 							_ = try self.documentAttachmentUpdate(documentType: documentType, documentID: documentID,
-									documentBacking: documentBacking, attachmentID: $0.attachmentID, info: $0.info,
+									documentBacking: documentBacking, attachmentID: $0.id, info: $0.info,
 									content: $0.content)
 						}
 
 						// Queue update document
 						let	documentUpdateInfo =
 									MDSDocument.UpdateInfo(documentID: documentID,
-											updated: batchDocumentInfo.updatedPropertyMap ?? [:],
-											removed: batchDocumentInfo.removedProperties ?? Set<String>(),
+											updated: batchDocumentInfo.updatedPropertyMap,
+											removed: batchDocumentInfo.removedProperties,
 											active: !batchDocumentInfo.removed)
 						documentUpdateInfos.append(DocumentUpdateInfo(documentUpdateInfo, documentBacking))
 					} else {
@@ -1075,14 +1075,14 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 						//	it doesn't have until the document is created.  So go ahead and queue the document create,
 						//	and also queue all the attachment handling to do after the document is created.
 						// Process attachments
-						addAttachmentInfos.append((documentID, batchDocumentInfo.addAttachmentInfos))
+						addAttachmentInfos.append((documentID, Array(batchDocumentInfo.addAttachmentInfosByID.values)))
 
 						// Queue create document
 						documentCreateInfos.append(
 								MDSDocument.CreateInfo(documentID: documentID,
 										creationDate: batchDocumentInfo.creationDate,
 										modificationDate: batchDocumentInfo.modificationDate,
-										propertyMap: batchDocumentInfo.updatedPropertyMap ?? [:]))
+										propertyMap: batchDocumentInfo.updatedPropertyMap))
 					}
 				}
 
@@ -1329,7 +1329,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 		var	documentRevisionInfosToRetrieve = [MDSDocument.RevisionInfo]()
 		documentRevisionInfos.forEach() {
 			// Check if in batch
-			if let documentInfo = batch?.documentGetInfo(for: $0.documentID) {
+			if let documentInfo = batch?.documentInfoGet(for: $0.documentID) {
 				// Have document in batch
 				if !activeOnly || (documentInfo.documentBacking == nil) || documentInfo.documentBacking!.active {
 					// Call proc

@@ -19,10 +19,44 @@ class CMDSDocument : public CHashable {
 	// ChangeKind
 	public:
 		enum ChangeKind {
-			kCreated,
-			kUpdated,
-			kRemoved,
+			kChangeKindCreated,
+			kChangeKindUpdated,
+			kChangeKindRemoved,
 		};
+
+	// AttachmentInfo
+	public:
+		struct AttachmentInfo {
+			// Methods
+			public:
+										// Lifecycle methods
+										AttachmentInfo(const CString& id, UInt32 revision, const CDictionary& info) :
+											mID(id), mRevision(revision), mInfo(info)
+											{}
+										AttachmentInfo(const AttachmentInfo& other) :
+											mID(other.mID), mRevision(other.mRevision), mInfo(other.mInfo)
+											{}
+
+										// Instance methods
+				const	CString&		getID() const
+											{ return mID; }
+						UInt32			getRevision() const
+											{ return mRevision; }
+				const	CDictionary&	getInfo() const
+											{ return mInfo; }
+				const	CString&		getType() const
+											{ return mInfo.getString(CString(OSSTR("type"))); }
+
+			// Properties
+			private:
+				CString		mID;
+				UInt32		mRevision;
+				CDictionary	mInfo;
+		};
+
+	// AttachmentInfoMap
+	public:
+		typedef	TDictionary<AttachmentInfo>	AttachmentInfoMap;
 
 	// BackingInfo
 	public:
@@ -315,4 +349,30 @@ template <typename T> struct TMDSBringUpToDateInfo {
 	const	CMDSDocument&	mDocument;
 			UInt32			mRevision;
 			T				mValue;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - EMDSValueType {
+enum EMDSValueType {
+	kMDSValueTypeInteger,
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - SMDSValueInfo
+struct SMDSValueInfo {
+								// Lifecycle methods
+								SMDSValueInfo(const CString& name, EMDSValueType valueType) :
+									mName(name), mValueType(valueType)
+									{}
+
+								// Instance methods
+		const	CString&		getName() const
+									{ return mName; }
+				EMDSValueType	getValueType() const
+									{ return mValueType; }
+
+	// Properties
+	private:
+		CString			mName;
+		EMDSValueType	mValueType;
 };

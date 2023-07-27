@@ -13,26 +13,27 @@ class MDSCollection : Equatable {
 	// MARK: Properties
 			let	name :String
 			let	documentType :String
-			let	relevantProperties: Set<String>
+
+	private	let	relevantProperties: Set<String>
+	private	let	documentIsIncludedProc :MDSDocument.IsIncludedProc
+	private	let	documentIsIncludedInfo :[String : Any]
 
 	private	var	lastRevision :Int
-
-	private	let	isIncludedProc :MDSDocument.IsIncludedProc
-	private	let	isIncludedInfo :[String : Any]
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
 	init(name :String, documentType :String, relevantProperties :[String],
-			isIncludedProc :@escaping MDSDocument.IsIncludedProc, isIncludedInfo :[String : Any], lastRevision :Int) {
+			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc, documentIsIncludedInfo :[String : Any],
+			lastRevision :Int) {
 		// Store
 		self.name = name
 		self.documentType = documentType
+
 		self.relevantProperties = Set<String>(relevantProperties)
+		self.documentIsIncludedInfo = documentIsIncludedInfo
+		self.documentIsIncludedProc = documentIsIncludedProc
 
 		self.lastRevision = lastRevision
-
-		self.isIncludedInfo = isIncludedInfo
-		self.isIncludedProc = isIncludedProc
 	}
 
 	// MARK: Equatable implementation
@@ -50,7 +51,7 @@ class MDSCollection : Equatable {
 			// Check if there is something to do
 			if ($0.changedProperties == nil) || !self.relevantProperties.intersection($0.changedProperties!).isEmpty {
 				// Query
-				if self.isIncludedProc(self.documentType, $0.document, self.isIncludedInfo) {
+				if self.documentIsIncludedProc(self.documentType, $0.document, self.documentIsIncludedInfo) {
 					// Included
 					includedIDs.append($0.id)
 				} else {

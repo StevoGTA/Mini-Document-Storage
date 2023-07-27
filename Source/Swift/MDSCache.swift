@@ -14,16 +14,14 @@ class MDSCache : Equatable {
 	struct ValueInfo {
 
 		// MARK: Properties
-		let	name :String
-		let	type :MDSValueType
-		let	proc :MDSDocument.ValueProc
+		fileprivate	let	valueInfo :MDSValueInfo
+		fileprivate	let	proc :MDSDocument.ValueProc
 
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
 		init(valueInfo :MDSValueInfo, proc :@escaping MDSDocument.ValueProc) {
 			// Store
-			self.name = valueInfo.name
-			self.type = valueInfo.type
+			self.valueInfo = valueInfo
 			self.proc = proc
 		}
 	}
@@ -33,9 +31,9 @@ class MDSCache : Equatable {
 			let	documentType :String
 			let	relevantProperties: Set<String>
 
-			var	lastRevision :Int
-
 	private	let	valueInfos :[ValueInfo]
+
+	private	var	lastRevision :Int
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -57,7 +55,10 @@ class MDSCache : Equatable {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	func valueInfo(for valueName :String) -> ValueInfo? { self.valueInfos.first(where: { $0.name == valueName }) }
+	func hasValueInfo(for valueName :String) -> Bool {
+		// Return first match
+		self.valueInfos.first(where: { $0.valueInfo.name == valueName }) != nil
+	}
 	
 	//------------------------------------------------------------------------------------------------------------------
 	func update<U>(_ updateInfos :[MDSUpdateInfo<U>]) ->
@@ -72,10 +73,11 @@ class MDSCache : Equatable {
 				// Collect value infos
 				var	valuesByName = [/* Name */ String : Any]()
 				self.valueInfos.forEach() {
-					// Add entry for this value info
-					valuesByName[$0.name] = $0.proc(self.documentType, updateInfo.document, $0.name)
+					// Add entry for this ValueInfo
+					valuesByName[$0.valueInfo.name] = $0.proc(self.documentType, updateInfo.document, $0.valueInfo.name)
 				}
 
+				// Update
 				infosByID[updateInfo.id] = valuesByName
 			}
 

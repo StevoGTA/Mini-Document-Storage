@@ -9,40 +9,59 @@
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: TMDSIndex
 
-template <typename T> class TMDSIndex {
+template <typename T> class TMDSIndex : public CEquatable {
 	// KeysInfo
 	public:
-		template <typename U> struct KeysInfo {
-			// Lifecycle methods
-			KeysInfo(const TArray<CString>& keys, U value) : mKeys(keys), mValue(value) {}
+		struct KeysInfo {
+											// Lifecycle methods
+											KeysInfo(const TArray<CString>& keys, T id) : mKeys(keys), mID(id) {}
+
+											// Instance methods
+				const	TArray<CString>&	getKeys() const
+												{ return mKeys; }
+						T					getID() const
+												{ return mID; }
 
 			// Properties
-			TArray<CString>	mKeys;
-			U				mValue;
+			private:
+				TArray<CString>	mKeys;
+				T				mID;
 		};
 
-	// UpdateInfo
+	// UpdateResults
 	public:
-		template <typename U> struct UpdateInfo {
-			// Lifecycle methods
-			UpdateInfo(const TMArray<KeysInfo<U> >& keysInfos, UInt32 lastRevision) :
-				mKeysInfos(keysInfos), mLastRevision(lastRevision)
-				{}
+		struct UpdateResults {
+											// Lifecycle methods
+											UpdateResults(const OV<TArray<KeysInfo> >& keysInfos,
+													const OV<UInt32>& lastRevision) :
+												mKeysInfos(keysInfos), mLastRevision(lastRevision)
+												{}
+
+											// Instance methods
+			const	OV<TArray<KeysInfo> >&	getKeysInfos() const
+												{ return mKeysInfos; }
+			const	OV<UInt32>&				getLastRevision() const
+												{ return mLastRevision; }
 
 			// Properties
-			TMArray<KeysInfo<U> >	mKeysInfos;
-			UInt32					mLastRevision;
+			private:
+				OV<TArray<KeysInfo> >	mKeysInfos;
+				OV<UInt32>				mLastRevision;
 		};
 
 	// Methods
 	public:
 								// Lifecycle methods
 								TMDSIndex(const CString& name, const CString& documentType,
-										const TArray<CString>& relevantProperties, UInt32 lastRevision,
-										CMDSDocument::KeysProc keysProc, void* keysProcUserData) :
-									mName(name), mDocumentType(documentType), mRelevantProperties(relevantProperties),
-											mLastRevision(lastRevision), mKeysProc(keysProc),
-											mKeysProcUserData(keysProcUserData)
+										const TArray<CString>& relevantProperties,
+										CMDSDocument::KeysProc documentKeysProc, void* documentKeysProcUserData,
+										const CDictionary& documentKeysInfo, UInt32 lastRevision) :
+									mName(name), mDocumentType(documentType),
+											mRelevantProperties(relevantProperties),
+											mDocumentKeysProc(documentKeysProc),
+											mDocumentKeysProcUserData(documentKeysProcUserData),
+											mDocumentKeysInfo(documentKeysInfo),
+											mLastRevision(lastRevision)
 									{}
 
 								// Instance methods
@@ -50,13 +69,12 @@ template <typename T> class TMDSIndex {
 									{ return mName; }
 		const	CString&		getDocumentType() const
 									{ return mDocumentType; }
-				UInt32			getLastRevision() const
-									{ return mLastRevision; }
 
-				UpdateInfo<T>	update(const TArray<TMDSUpdateInfo<T> >& updateInfos)
+				UpdateResults	update(const TArray<TMDSUpdateInfo<T> >& updateInfos)
 									{
 										// Compose results
-										TNArray<KeysInfo<T> >	keysInfos;
+										TNArray<KeysInfo>	keysInfos;
+										OV<UInt32>			lastRevision;
 										for (TIteratorD<TMDSUpdateInfo<T> > iterator = updateInfos.getIterator();
 												iterator.hasValue(); iterator.advance()) {
 											// Check if there is something to do
@@ -64,42 +82,33 @@ template <typename T> class TMDSIndex {
 													(mRelevantProperties.intersects(*iterator->mChangedProperties))) {
 												// Update keys info
 												keysInfos +=
-														KeysInfo<T>(mKeysProc(iterator->mDocument, mKeysProcUserData),
+														KeysInfo(
+																mDocumentKeysProc(iterator->mDocument,
+																		mDocumentKeysInfo,
+																		mDocumentKeysProcUserData),
 																iterator->mID);
 											}
 
 											// Update last revision
 											mLastRevision = std::max<UInt32>(mLastRevision, iterator->mRevision);
+											lastRevision.setValue(mLastRevision);
 										}
 
-										return UpdateInfo<T>(keysInfos, mLastRevision);
-									}
-				UpdateInfo<T>	bringUpToDate(const TArray<TMDSBringUpToDateInfo<T> >& bringUpToDateInfos)
-									{
-										// Compose results
-										TNArray<KeysInfo<T> >	keysInfos;
-										for (TIteratorD<TMDSBringUpToDateInfo<T> > iterator =
-														bringUpToDateInfos.getIterator();
-												iterator.hasValue(); iterator.advance()) {
-											// Update keys info
-											keysInfos +=
-													KeysInfo<T>(mKeysProc(iterator->mDocument, mKeysProcUserData),
-															iterator->mValue);
-
-											// Update last revision
-											mLastRevision = std::max<UInt32>(mLastRevision, iterator->mRevision);
-										}
-
-										return UpdateInfo<T>(keysInfos, mLastRevision);
+										return UpdateInfo(
+												!keysInfos.isEmpty() ? OV<TArray<KeysInfo> >(keysInfos) :
+														OV<TArray<KeysInfo> >(),
+												lastRevision);
 									}
 
 	// Properties
 	private:
-				CString					mName;
-		const	CString&				mDocumentType;
-				TNSet<CString>			mRelevantProperties;
-				UInt32					mLastRevision;
+		CString					mName;
+		CString					mDocumentType;
+		
+		TNSet<CString>			mRelevantProperties;
+		CMDSDocument::KeysProc	mDocumentKeysProc;
+		void*					mDocumentKeysProcUserData;
+		CDictionary				mDocumentKeysInfo;
 
-				CMDSDocument::KeysProc	mKeysProc;
-				void*					mKeysProcUserData;
+		UInt32					mLastRevision;
 };

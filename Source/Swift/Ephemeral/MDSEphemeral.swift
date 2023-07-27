@@ -266,7 +266,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 		try cachedValueNames.forEach() {
 			// Check if have info for this cachedValueName
-			guard cache.valueInfo(for: $0) != nil else {
+			guard cache.hasValueInfo(for: $0) else {
 				throw MDSDocumentStorageError.unknownCacheValueName(valueName: $0)
 			}
 		}
@@ -353,7 +353,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Create or re-create collection
 		let	collection =
 					MDSCollection(name: name, documentType: documentType, relevantProperties: relevantProperties,
-							isIncludedProc: isIncludedProc, isIncludedInfo: isIncludedInfo,
+							documentIsIncludedProc: isIncludedProc, documentIsIncludedInfo: isIncludedInfo,
 							lastRevision: isUpToDate ? (self.documentLastRevisionMap.value(for: documentType) ?? 0) : 0)
 
 		// Add to maps
@@ -494,7 +494,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		var	documentIDsToIterate = [String]()
 		documentIDs.forEach() {
 			// Check what we have currently
-			if batch?.documentGetInfo(for: $0) != nil {
+			if batch?.documentInfoGet(for: $0) != nil {
 				// Have document in batch
 				proc(documentCreateProc($0, self))
 			} else {
@@ -525,7 +525,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	public func documentCreationDate(for document :MDSDocument) -> Date {
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current),
-				let batchDocumentInfo = batch.documentGetInfo(for: document.id) {
+				let batchDocumentInfo = batch.documentInfoGet(for: document.id) {
 			// In batch
 			return batchDocumentInfo.creationDate
 		} else if self.documentsBeingCreatedPropertyMapMap.value(for: document.id) != nil {
@@ -541,7 +541,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	public func documentModificationDate(for document :MDSDocument) -> Date {
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current),
-				let batchDocumentInfo = batch.documentGetInfo(for: document.id) {
+				let batchDocumentInfo = batch.documentInfoGet(for: document.id) {
 			// In batch
 			return batchDocumentInfo.modificationDate
 		} else if self.documentsBeingCreatedPropertyMapMap.value(for: document.id) != nil {
@@ -557,7 +557,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	public func documentValue(for property :String, of document :MDSDocument) -> Any? {
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current),
-				let batchDocumentInfo = batch.documentGetInfo(for: document.id) {
+				let batchDocumentInfo = batch.documentInfoGet(for: document.id) {
 			// In batch
 			return batchDocumentInfo.value(for: property)
 		} else if let propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: document.id) {
@@ -589,7 +589,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current) {
 			// In batch
-			if let batchDocumentInfo = batch.documentGetInfo(for: document.id) {
+			if let batchDocumentInfo = batch.documentInfoGet(for: document.id) {
 				// Have document in batch
 				batchDocumentInfo.set(value, for: property)
 			} else {
@@ -641,7 +641,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current) {
 			// In batch
-			if let batchDocumentInfo = batch.documentGetInfo(for: documentID) {
+			if let batchDocumentInfo = batch.documentInfoGet(for: documentID) {
 				// Have document in batch
 				return batchDocumentInfo.attachmentAdd(info: info, content: content)
 			} else {
@@ -687,9 +687,9 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current),
-				let batchDocumentInfo = batch.documentGetInfo(for: documentID) {
+				let batchDocumentInfo = batch.documentInfoGet(for: documentID) {
 			// Have document in batch
-			return batchDocumentInfo.attachmentInfoMap(
+			return batchDocumentInfo.documentAttachmentInfoMap(
 					applyingChangesTo: self.documentBackingByIDMap[documentID]!.documentAttachmentInfoMap)
 		} else if self.documentsBeingCreatedPropertyMapMap.value(for: documentID) != nil {
 			// Creating
@@ -714,7 +714,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current),
-				let batchDocumentInfo = batch.documentGetInfo(for: documentID) {
+				let batchDocumentInfo = batch.documentInfoGet(for: documentID) {
 			// Have document in batch
 			if let content = batchDocumentInfo.attachmentContent(for: attachmentID) {
 				// Found
@@ -753,10 +753,10 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current) {
 			// In batch
-			if let batchDocumentInfo = batch.documentGetInfo(for: documentID) {
+			if let batchDocumentInfo = batch.documentInfoGet(for: documentID) {
 				// Have document in batch
 				let	documentAttachmentInfoMap =
-							batchDocumentInfo.attachmentInfoMap(
+							batchDocumentInfo.documentAttachmentInfoMap(
 									applyingChangesTo: documentBacking.documentAttachmentInfoMap)
 				guard let attachmentInfo = documentAttachmentInfoMap[attachmentID] else {
 					throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
@@ -806,10 +806,10 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current) {
 			// In batch
-			if let batchDocumentInfo = batch.documentGetInfo(for: documentID) {
+			if let batchDocumentInfo = batch.documentInfoGet(for: documentID) {
 				// Have document in batch
 				let	documentAttachmentInfoMap =
-							batchDocumentInfo.attachmentInfoMap(
+							batchDocumentInfo.documentAttachmentInfoMap(
 									applyingChangesTo: documentBacking.documentAttachmentInfoMap)
 				guard documentAttachmentInfoMap[attachmentID] != nil else {
 					throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
@@ -853,7 +853,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current) {
 			// In batch
-			if let batchDocumentInfo = batch.documentGetInfo(for: document.id) {
+			if let batchDocumentInfo = batch.documentInfoGet(for: document.id) {
 				// Have document in batch
 				batchDocumentInfo.remove()
 			} else {
@@ -959,7 +959,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Check result
 		if result == .commit {
 			// Iterate all document changes
-			batch.documentIterateChanges() { documentType, batchDocumentInfosMap in
+			batch.documentInfosByDocumentType.forEach() { documentType, batchDocumentInfosByDocumentID in
 				// Setup
 				let	documentCreateProc = self.documentCreateProc(for: documentType)
 				let	documentChangedProcs = self.documentChangedProcs(for: documentType)
@@ -973,17 +973,17 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 									_ changedProperties :Set<String>?, _ changeKind :MDSDocument.ChangeKind) -> Void =
 							{ documentID, batchDocumentInfo, documentBacking, changedProperties, changeKind in
 								// Process attachments
-								batchDocumentInfo.removeAttachmentInfos.forEach() {
+								batchDocumentInfo.removedAttachmentIDs.forEach() {
 									// Remove attachment
 									documentBacking.attachmentRemove(revision: documentBacking.revision,
-											attachmentID: $0.id)
+											attachmentID: $0)
 								}
-								batchDocumentInfo.addAttachmentInfos.forEach() {
+								batchDocumentInfo.addAttachmentInfosByID.values.forEach() {
 									// Add attachment
 									_ = documentBacking.attachmentAdd(revision: documentBacking.revision, info: $0.info,
 											content: $0.content)
 								}
-								batchDocumentInfo.updateAttachmentInfos.forEach() {
+								batchDocumentInfo.updateAttachmentInfosByID.values.forEach() {
 									// Update attachment
 									_ = documentBacking.attachmentUpdate(revision: documentBacking.revision,
 											attachmentID: $0.id, updatedInfo: $0.info,
@@ -997,8 +997,8 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 									// Note update info
 									let	changedProperties =
-												Set<String>((batchDocumentInfo.updatedPropertyMap ?? [:]).keys)
-														.union(batchDocumentInfo.removedProperties ?? Set<String>())
+												Set<String>(batchDocumentInfo.updatedPropertyMap.keys)
+														.union(batchDocumentInfo.removedProperties)
 									updateInfos.append(
 											MDSUpdateInfo<String>(document: document,
 													revision: documentBacking.revision, id: documentID,
@@ -1010,7 +1010,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 							}
 
 				// Update documents
-				batchDocumentInfosMap.forEach() { documentID, batchDocumentInfo in
+				batchDocumentInfosByDocumentID.forEach() { documentID, batchDocumentInfo in
 					// Check removed
 					if !batchDocumentInfo.removed {
 						// Add/update document
@@ -1024,8 +1024,8 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 								// Process
 								let	changedProperties =
-											Set<String>((batchDocumentInfo.updatedPropertyMap ?? [:]).keys)
-													.union(batchDocumentInfo.removedProperties ?? Set<String>())
+											Set<String>(batchDocumentInfo.updatedPropertyMap.keys)
+													.union(batchDocumentInfo.removedProperties)
 								process(documentID, batchDocumentInfo, documentBacking, changedProperties, .updated)
 							} else {
 								// Add document
@@ -1034,7 +1034,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 													revision: nextRevision(for: documentType),
 													creationDate: batchDocumentInfo.creationDate,
 													modificationDate: batchDocumentInfo.modificationDate,
-													propertyMap: batchDocumentInfo.updatedPropertyMap ?? [:])
+													propertyMap: batchDocumentInfo.updatedPropertyMap)
 								self.documentBackingByIDMap[documentID] = documentBacking
 								self.documentIDsByTypeMap.insertSetValueElement(key: documentType, value: documentID)
 
@@ -1297,7 +1297,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Check for batch
 		let	value :Any?
 		if let batch = self.batchMap.value(for: .current),
-				let batchDocumentInfo = batch.documentGetInfo(for: document.id) {
+				let batchDocumentInfo = batch.documentInfoGet(for: document.id) {
 			// In batch
 			value = batchDocumentInfo.value(for: property)
 		} else if let propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: document.id) {
@@ -1316,7 +1316,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Check for batch
 		let	value :Any?
 		if let batch = self.batchMap.value(for: .current),
-				let batchDocumentInfo = batch.documentGetInfo(for: document.id) {
+				let batchDocumentInfo = batch.documentInfoGet(for: document.id) {
 			// In batch
 			value = batchDocumentInfo.value(for: property)
 		} else if let propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: document.id) {
