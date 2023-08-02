@@ -164,15 +164,20 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async associationGetDocumentInfos(name, startIndex, count, fullInfo, documentStorageID) {
+	async associationGetDocumentInfos(name, startIndex, count, documentStorageID) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		
+		var	queryParameters = [];
+		if (startIndex) queryParameters.push("startIndex=" + startIndex);
+		if (count) queryParameters.push("count=" + count)
+
 		var	url =
 					this.urlBase + '/v1/association/' + encodeURIComponent(documentStorageIDUse) + '/' +
-							encodeURIComponent(name) + '?fullInfo=' + (fullInfo ? 1 : 0);
-		if (startIndex) url += '&startIndex=' + startIndex;
-		if (count) url += '&count=' + count;
+							encodeURIComponent(name);
+		if (queryParameters)
+			// Add query parameters
+			url += "?" + queryParameters.join("&")
 
 		let	options = {headers: this.headers};
 
