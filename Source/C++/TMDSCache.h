@@ -7,7 +7,39 @@
 #include "CMDSDocument.h"
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: TMDSCache
+// MARK: SMDSCacheValueInfo
+
+struct SMDSCacheValueInfo {
+	// Methods
+	public:
+											// Lifecycle methods
+											SMDSCacheValueInfo(const SMDSValueInfo& valueInfo,
+													const CMDSDocument::ValueInfo& documentValueInfo) :
+												mValueInfo(valueInfo), mDocumentValueInfo(documentValueInfo)
+												{}
+											SMDSCacheValueInfo(const SMDSCacheValueInfo& other) :
+												mValueInfo(other.mValueInfo),
+														mDocumentValueInfo(other.mDocumentValueInfo)
+												{}
+
+											// Instance methods
+		const	SMDSValueInfo&				getValueInfo() const
+												{ return mValueInfo; }
+		const	CMDSDocument::ValueInfo&	getDocumentValueInfo() const
+												{ return mDocumentValueInfo; }
+
+											// Class methods
+		static	bool						compareName(const SMDSCacheValueInfo& valueInfo, CString* name)
+												{ return valueInfo.mValueInfo.getName() == *name; }
+
+	// Properties
+	private:
+		SMDSValueInfo			mValueInfo;
+		CMDSDocument::ValueInfo	mDocumentValueInfo;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - TMDSCache
 
 template <typename T> class TMDSCache : public CEquatable {
 	// UpdateResults
@@ -37,41 +69,11 @@ template <typename T> class TMDSCache : public CEquatable {
 				OV<UInt32>								mLastRevision;
 		};
 
-	// ValueInfo
-	public:
-		struct ValueInfo {
-											// Lifecycle methods
-											ValueInfo(const SMDSValueInfo& valueInfo,
-													CMDSDocument::ValueProc documentValueProc) :
-												mValueInfo(valueInfo), mDocumentValueProc(documentValueProc)
-												{}
-											ValueInfo(const ValueInfo& other) :
-												mValueInfo(other.mValueInfo),
-														mDocumentValueProc(other.mDocumentValueProc)
-												{}
-
-											// Instance methods
-			const	SMDSValueInfo&			getValueInfo() const
-												{ return mValueInfo; }
-					CMDSDocument::ValueProc	getDocumentValueProc() const
-												{ return mDocumentValueProc; }
-
-											// Class methods
-			static	bool					compareName(const ValueInfo& valueInfo, CString* name)
-												{ return valueInfo.mValueInfo.getName() == *name; }
-
-			// Properties
-			private:
-				SMDSValueInfo			mValueInfo;
-				CMDSDocument::ValueProc	mDocumentValueProc;
-
-		};
-
 	// Methods
 	public:
 						// Lifecycle methods
 						TMDSCache(const CString& name, const CString& documentType,
-								const TArray<CString>& relevantProperties, const TArray<ValueInfo>& valueInfos,
+								const TArray<CString>& relevantProperties, const TArray<SMDSCacheValueInfo>& valueInfos,
 								UInt32 lastRevision) :
 							mName(name), mDocumentType(documentType), mRelevantProperties(relevantProperties),
 									mValueInfos(valueInfos),
@@ -84,7 +86,7 @@ template <typename T> class TMDSCache : public CEquatable {
 
 						// Instance methods
 		bool			hasValueInfo(const CString& valueName) const
-							{ return mValueInfos.getFirst(ValueInfo::compareName, &valueName).hasReference(); }
+							{ return mValueInfos.getFirst(SMDSCacheValueInfo::compareName, &valueName).hasReference(); }
 
 		UpdateResults	update(const TArray<TMDSUpdateInfo<T> >& updateInfos)
 							{
@@ -98,12 +100,13 @@ template <typename T> class TMDSCache : public CEquatable {
 											(mRelevantProperties.intersects(*updateInfoIterator->mChangedProperties))) {
 										// Collect value infos
 										TNDictionary<SValue>	valuesByName;
-										for (TIteratorD<ValueInfo> valueInfoIterator = mValueInfos.getIterator();
+										for (TIteratorD<SMDSCacheValueInfo> valueInfoIterator =
+														mValueInfos.getIterator();
 												valueInfoIterator.hasValue(); valueInfoIterator.advance()) {
 											// Add entry for this ValueInfo
 											const	CString&	valueName = valueInfoIterator->getValueInfo().getName();
 											valuesByName.set(valueName,
-													valueInfoIterator->getDocumentValueProc(mDocumentType,
+													valueInfoIterator->getDocumentValueInfo().perform(mDocumentType,
 															updateInfoIterator->getDocument(), valueName));
 										}
 
@@ -125,11 +128,11 @@ template <typename T> class TMDSCache : public CEquatable {
 
 	// Properties
 	private:
-		CString				mName;
-		CString				mDocumentType;
-		TNSet<CString>		mRelevantProperties;
+		CString						mName;
+		CString						mDocumentType;
+		TNSet<CString>				mRelevantProperties;
 
-		TArray<ValueInfo>	mValueInfos;
+		TArray<SMDSCacheValueInfo>	mValueInfos;
 
-		UInt32				mLastRevision;
+		UInt32						mLastRevision;
 };

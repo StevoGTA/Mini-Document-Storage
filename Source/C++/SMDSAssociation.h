@@ -11,7 +11,7 @@
 
 class SMDSAssociation : public CEquatable {
 	// GetIntegerValueAction
-	private:
+	public:
 		enum GetIntegerValueAction {
 			kGetIntegerValueActionSum,
 		};

@@ -44,14 +44,12 @@ template <typename T, typename AT> class TMDSCollection : public CEquatable {
 								// Lifecycle methods
 								TMDSCollection(const CString& name, const CString& documentType,
 										const TArray<CString>& relevantProperties,
-										CMDSDocument::IsIncludedProc documentIsIncludedProc,
-										void* documentIsIncludedProcUserData,
-										const CDictionary& documentIsIncludedInfo, UInt32 lastRevision) :
+										const CMDSDocument::IsIncludedPerformer& documentIsIncludedPerformer,
+										const CDictionary& isIncludedInfo, UInt32 lastRevision) :
 									mName(name), mDocumentType(documentType),
 											mRelevantProperties(relevantProperties),
-											mDocumentIsIncludedProc(documentIsIncludedProc),
-											mDocumentIsIncludedProcUserData(documentIsIncludedProcUserData),
-											mDocumentIsIncludedInfo(documentIsIncludedInfo),
+											mDocumentIsIncludedPerformer(documentIsIncludedPerformer),
+											mIsIncludedInfo(isIncludedInfo),
 											mLastRevision(lastRevision)
 									{}
 
@@ -78,8 +76,8 @@ template <typename T, typename AT> class TMDSCollection : public CEquatable {
 														(mRelevantProperties.intersects(
 																*iterator->mChangedProperties))) {
 													// Query
-													if (mDocumentIsIncludedProc(iterator->mDocument,
-															mDocumentIsIncludedInfo, mDocumentIsIncludedProcUserData))
+													if (mDocumentIsIncludedPerformer.perform(mDocumentType,
+															iterator->mDocument, mIsIncludedInfo))
 														// Included
 														includedIDs += iterator->mID;
 													else
@@ -100,13 +98,12 @@ template <typename T, typename AT> class TMDSCollection : public CEquatable {
 
 	// Properties
 	private:
-		CString							mName;
-		CString							mDocumentType;
+		CString								mName;
+		CString								mDocumentType;
 
-		TNSet<CString>					mRelevantProperties;
-		CMDSDocument::IsIncludedProc	mDocumentIsIncludedProc;
-		void*							mDocumentIsIncludedProcUserData;
-		CDictionary						mDocumentIsIncludedInfo;
+		TNSet<CString>						mRelevantProperties;
+		CMDSDocument::IsIncludedPerformer	mDocumentIsIncludedPerformer;
+		CDictionary							mIsIncludedInfo;
 
-		UInt32							mLastRevision;
+		UInt32								mLastRevision;
 };

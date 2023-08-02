@@ -54,13 +54,11 @@ template <typename T> class TMDSIndex : public CEquatable {
 								// Lifecycle methods
 								TMDSIndex(const CString& name, const CString& documentType,
 										const TArray<CString>& relevantProperties,
-										CMDSDocument::KeysProc documentKeysProc, void* documentKeysProcUserData,
-										const CDictionary& documentKeysInfo, UInt32 lastRevision) :
+										const CMDSDocument::KeysPerformer& documentKeysPerformer,
+										const CDictionary& keysInfo, UInt32 lastRevision) :
 									mName(name), mDocumentType(documentType),
 											mRelevantProperties(relevantProperties),
-											mDocumentKeysProc(documentKeysProc),
-											mDocumentKeysProcUserData(documentKeysProcUserData),
-											mDocumentKeysInfo(documentKeysInfo),
+											mDocumentKeysPerformer(documentKeysPerformer), mKeysInfo(mKeysInfo),
 											mLastRevision(lastRevision)
 									{}
 
@@ -83,9 +81,8 @@ template <typename T> class TMDSIndex : public CEquatable {
 												// Update keys info
 												keysInfos +=
 														KeysInfo(
-																mDocumentKeysProc(iterator->mDocument,
-																		mDocumentKeysInfo,
-																		mDocumentKeysProcUserData),
+																mDocumentKeysPerformer(mDocumentType,
+																		iterator->mDocument, mKeysInfo),
 																iterator->mID);
 											}
 
@@ -102,13 +99,12 @@ template <typename T> class TMDSIndex : public CEquatable {
 
 	// Properties
 	private:
-		CString					mName;
-		CString					mDocumentType;
+		CString						mName;
+		CString						mDocumentType;
 		
-		TNSet<CString>			mRelevantProperties;
-		CMDSDocument::KeysProc	mDocumentKeysProc;
-		void*					mDocumentKeysProcUserData;
-		CDictionary				mDocumentKeysInfo;
+		TNSet<CString>				mRelevantProperties;
+		CMDSDocument::KeysPerformer	mDocumentKeysPerformer;
+		CDictionary					mKeysInfo;
 
-		UInt32					mLastRevision;
+		UInt32						mLastRevision;
 };

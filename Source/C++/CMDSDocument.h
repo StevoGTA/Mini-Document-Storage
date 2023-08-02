@@ -9,12 +9,11 @@
 #include "TimeAndDate.h"
 #include "TWrappers.h"
 
+class CMDSDocumentStorage;
+
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: CMDSDocument
 
-class CMDSDocumentStorage;
-
-class CMDSDocumentInternals;
 class CMDSDocument : public CHashable {
 	// ChangeKind
 	public:
@@ -58,117 +57,349 @@ class CMDSDocument : public CHashable {
 	public:
 		typedef	TDictionary<AttachmentInfo>	AttachmentInfoMap;
 
-	// BackingInfo
-	public:
-		template <typename T> struct BackingInfo {
-			// Lifecycle Methods
-			BackingInfo(const CString& documentID, const T& documentBacking) :
-				mDocumentID(documentID), mDocumentBacking(documentBacking)
-				{}
-
-			// Properties
-			CString	mDocumentID;
-			T		mDocumentBacking;
-		};
-
 	// RevisionInfo
 	public:
 		struct RevisionInfo {
-			// Lifecycle Methods
-			RevisionInfo(const CString& documentID, UInt32 revision) : mDocumentID(documentID), mRevision(revision) {}
-			RevisionInfo(const RevisionInfo& other) : mDocumentID(other.mDocumentID), mRevision(other.mRevision) {}
+									// Lifecycle Methods
+									RevisionInfo(const CString& documentID, UInt32 revision) :
+										mDocumentID(documentID), mRevision(revision)
+										{}
+									RevisionInfo(const RevisionInfo& other) :
+										mDocumentID(other.mDocumentID), mRevision(other.mRevision)
+										{}
+
+									// Instance methods
+				const	CString&	getDocumentID() const
+										{ return mDocumentID; }
+						UInt32		getRevision() const
+										{ return mRevision; }
 
 			// Properties
-			CString	mDocumentID;
-			UInt32	mRevision;
+			private:
+				CString	mDocumentID;
+				UInt32	mRevision;
+		};
+
+	// OverviewInfo
+	public:
+		struct OverviewInfo {
+										// Lifecycle methods
+										OverviewInfo(const CString& documentID, UInt32 revision,
+												UniversalTime creationUniversalTime,
+												UniversalTime modificationUniversalTime) :
+											mDocumentID(documentID), mRevision(revision),
+													mCreationUniversalTime(creationUniversalTime),
+													mModificationUniversalTime(modificationUniversalTime)
+											{}
+										OverviewInfo(const OverviewInfo& other) :
+											mDocumentID(other.mDocumentID), mRevision(other.mRevision),
+													mCreationUniversalTime(other.mCreationUniversalTime),
+													mModificationUniversalTime(other.mModificationUniversalTime)
+											{}
+
+										// Instance methods
+				const	CString&		getDocumentID() const
+											{ return mDocumentID; }
+						UInt32			getRevision() const
+											{ return mRevision; }
+						UniversalTime	getCreationUniversalTime() const
+											{ return mCreationUniversalTime; }
+						UniversalTime	getModificationUniversalTime() const
+											{ return mModificationUniversalTime; }
+
+			// Properties
+			private:
+				CString			mDocumentID;
+				UInt32			mRevision;
+				UniversalTime	mCreationUniversalTime;
+				UniversalTime	mModificationUniversalTime;
 		};
 
 	// FullInfo
 	public:
 		struct FullInfo {
-			// Lifecycle methods
-			FullInfo(const CString& documentID, UInt32 revision, bool active, UniversalTime creationUniversalTime,
-					UniversalTime modificationUniversalTime, const CDictionary& propertyMap) :
-				mDocumentID(documentID), mRevision(revision), mActive(active),
-						mCreationUniversalTime(creationUniversalTime),
-						mModificationUniversalTime(modificationUniversalTime), mPropertyMap(propertyMap)
-				{}
+											// Lifecycle methods
+											FullInfo(const CString& documentID, UInt32 revision, bool active,
+													UniversalTime creationUniversalTime,
+													UniversalTime modificationUniversalTime,
+													const CDictionary& propertyMap,
+													const AttachmentInfoMap& attachmentInfoMap) :
+												mDocumentID(documentID), mRevision(revision), mActive(active),
+														mCreationUniversalTime(creationUniversalTime),
+														mModificationUniversalTime(modificationUniversalTime),
+														mPropertyMap(propertyMap),
+														mAttachmentInfoMap(attachmentInfoMap)
+												{}
+											FullInfo(const FullInfo& other) :
+												mDocumentID(other.mDocumentID), mRevision(other.mRevision),
+														mActive(other.mActive),
+														mCreationUniversalTime(other.mCreationUniversalTime),
+														mModificationUniversalTime(other.mModificationUniversalTime),
+														mPropertyMap(other.mPropertyMap),
+														mAttachmentInfoMap(other.mAttachmentInfoMap)
+											{}
+
+											// Instance methods
+				const	CString&			getDocumentID() const
+												{ return mDocumentID; }
+						UInt32				getRevision() const
+												{ return mRevision; }
+						bool				getActive() const
+												{ return mActive; }
+						UniversalTime		getCreationUniversalTime() const
+												{ return mCreationUniversalTime; }
+						UniversalTime		getModificationUniversalTime() const
+												{ return mModificationUniversalTime; }
+				const	CDictionary&		getPropertyMap() const
+												{ return mPropertyMap; }
+				const	AttachmentInfoMap&	getAttachmentInfoMap() const
+												{ return mAttachmentInfoMap; }
 
 			// Properties
-			CString			mDocumentID;
-			UInt32			mRevision;
-			bool			mActive;
-			UniversalTime	mCreationUniversalTime;
-			UniversalTime	mModificationUniversalTime;
-			CDictionary		mPropertyMap;
+			private:
+				CString				mDocumentID;
+				UInt32				mRevision;
+				bool				mActive;
+				UniversalTime		mCreationUniversalTime;
+				UniversalTime		mModificationUniversalTime;
+				CDictionary			mPropertyMap;
+				AttachmentInfoMap	mAttachmentInfoMap;
 		};
 
 	// CreateInfo
 	public:
 		struct CreateInfo {
-			// Lifecycle methods
-			CreateInfo(const CString& documentID, UniversalTime creationUniversalTime,
-					UniversalTime modificationUniversalTime, const CDictionary& propertyMap) :
-				mDocumentID(documentID), mCreationUniversalTime(creationUniversalTime),
-						mModificationUniversalTime(modificationUniversalTime), mPropertyMap(propertyMap)
-				{}
-			CreateInfo(const CString& documentID, const CDictionary& propertyMap) :
-				mDocumentID(documentID), mPropertyMap(propertyMap)
-				{}
+											// Lifecycle methods
+											CreateInfo(const CString& documentID, UniversalTime creationUniversalTime,
+													UniversalTime modificationUniversalTime,
+													const CDictionary& propertyMap) :
+												mDocumentID(documentID), mCreationUniversalTime(creationUniversalTime),
+														mModificationUniversalTime(modificationUniversalTime),
+														mPropertyMap(propertyMap)
+												{}
+											CreateInfo(const CreateInfo& other) :
+												mDocumentID(other.mDocumentID),
+														mCreationUniversalTime(other.mCreationUniversalTime),
+														mModificationUniversalTime(other.mModificationUniversalTime),
+														mPropertyMap(other.mPropertyMap)
+												{}
+
+											// Instance methods
+				const	OV<CString>&		getDocumentID() const
+												{ return mDocumentID; }
+				const	OV<UniversalTime>&	getCreationUniversalTime() const
+												{ return mCreationUniversalTime; }
+				const	OV<UniversalTime>&	getModificationUniversalTime() const
+												{ return mModificationUniversalTime; }
+				const	CDictionary&		getPropertyMap() const
+												{ return mPropertyMap; }
 
 			// Properties
-			CString				mDocumentID;
-			OV<UniversalTime>	mCreationUniversalTime;
-			OV<UniversalTime>	mModificationUniversalTime;
-			CDictionary			mPropertyMap;
+			private:
+				OV<CString>			mDocumentID;
+				OV<UniversalTime>	mCreationUniversalTime;
+				OV<UniversalTime>	mModificationUniversalTime;
+				CDictionary			mPropertyMap;
+		};
+
+	// CreateResultInfo
+	public:
+		struct CreateResultInfo {
+											// Lifecycle methods
+											CreateResultInfo(const I<CMDSDocument>& document,
+													const OV<OverviewInfo>& overviewInfo) :
+												mDocument(document), mOverviewInfo(overviewInfo)
+												{}
+											CreateResultInfo(const CreateResultInfo& other) :
+												mDocument(other.mDocument), mOverviewInfo(other.mOverviewInfo)
+												{}
+
+											// Instance methods
+				const	I<CMDSDocument>		getDocument() const
+												{ return mDocument; }
+				const	OV<OverviewInfo>	getOverviewInfo() const
+												{ return mOverviewInfo; }
+			// Properties
+			private:
+				I<CMDSDocument>		mDocument;
+				OV<OverviewInfo>	mOverviewInfo;
 		};
 
 	// UpdateInfo
 	public:
 		struct UpdateInfo {
-			// Lifecycle methods
-			UpdateInfo(const CString& documentID, bool active, const CDictionary& updated,
-					const TSet<CString>& removed) :
-				mDocumentID(documentID), mActive(active), mUpdated(updated), mRemoved(removed)
-				{}
+										// Lifecycle methods
+										UpdateInfo(const CString& documentID, const CDictionary& updated,
+												const TSet<CString>& removed, bool active) :
+											mDocumentID(documentID), mUpdated(updated), mRemoved(removed),
+													mActive(active)
+											{}
 
-			// Properties
-			CString			mDocumentID;
-			bool			mActive;
-			CDictionary		mUpdated;
-			TNSet<CString>	mRemoved;
-		};
-
-	// Procs
-	public:
-		typedef	CMDSDocument*	(*CreateProc)(const CString& id, CMDSDocumentStorage& documentStorage);
-		typedef	void			(*Proc)(CMDSDocument& document, void* userData);
-		typedef	void			(*ChangedProc)(const CMDSDocument& document, ChangeKind changeKind, void* userData);
-		typedef	bool			(*IsIncludedProc)(const CMDSDocument& document, void* userData,
-										const CDictionary& info);
-		typedef	TArray<CString>	(*KeysProc)(const CMDSDocument& document, void* userData);
-		typedef	void			(*KeyProc)(const CString& key, const CMDSDocument& document, void* userData);
-
-	// ChangedProcInfo
-	public:
-		struct ChangedProcInfo {
-					// Lifecycle methods
-					ChangedProcInfo(ChangedProc changedProc, void* userData) :
-						mChangedProc(changedProc), mUserData(userData)
-						{}
-					ChangedProcInfo(const ChangedProcInfo& other) :
-						mChangedProc(other.mChangedProc), mUserData(other.mUserData)
-						{}
-
-					// Instance methods
-			void	notify(const CMDSDocument& document, ChangeKind changeKind)
-						{ mChangedProc(document, changeKind, mUserData); }
+										// Instance methods
+				const	CString&		getDocumentID() const
+											{ return mDocumentID; }
+				const	CDictionary&	getUpdated() const
+											{ return mUpdated; }
+				const	TNSet<CString>&	getRemoved() const
+											{ return mRemoved; }
+						bool			getActive() const
+											{ return mActive; }
 
 			// Properties
 			private:
-				ChangedProc	mChangedProc;
-				void*		mUserData;
+				CString			mDocumentID;
+				CDictionary		mUpdated;
+				TNSet<CString>	mRemoved;
+				bool			mActive;
 		};
+
+	// ChangedInfo
+	public:
+		struct ChangedInfo {
+			// Procs
+			public:
+				typedef	void	(*Proc)(const CMDSDocument& document, ChangeKind changeKind, void* userData);
+
+			// Methods
+			public:
+						// Lifecycle methods
+						ChangedInfo(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
+						ChangedInfo(const ChangedInfo& other) : mProc(other.mProc), mUserData(other.mUserData) {}
+
+						// Instance methods
+				void	notify(const CMDSDocument& document, ChangeKind changeKind) const
+							{ mProc(document, changeKind, mUserData); }
+			// Properties
+			private:
+				Proc	mProc;
+				void*	mUserData;
+
+		};
+
+	// IsIncludedPerformer
+	public:
+		struct IsIncludedPerformer {
+			// Procs
+			public:
+				typedef	bool	(*Proc)(const CString& documentType, const CMDSDocument& document,
+										const CDictionary& info, void* userData);
+
+			// Methods
+			public:
+									// Lifecycle methods
+									IsIncludedPerformer(const CString& selector, Proc proc, void* userData) :
+										mSelector(selector), mProc(proc), mUserData(userData)
+										{}
+									IsIncludedPerformer(const IsIncludedPerformer& other) :
+										mSelector(other.mSelector), mProc(other.mProc), mUserData(other.mUserData)
+										{}
+
+									// Instance methods
+				const	CString&	getSelector() const
+										{ return mSelector; }
+						void		perform(const CString& documentType, const CMDSDocument& document,
+											const CDictionary& info) const
+										{ mProc(documentType, document, info, mUserData); }
+
+			// Properties
+			private:
+				CString	mSelector;
+				Proc	mProc;
+				void*	mUserData;
+		};
+
+	// KeysPerformer
+	public:
+		struct KeysPerformer {
+			// Procs
+			public:
+				typedef	TArray<CString>	(*Proc)(const CString& documentType, const CMDSDocument& document,
+												const CDictionary& info, void* userData);
+
+			// Methods
+			public:
+										// Lfiecycle methods
+										KeysPerformer(const CString& selector, Proc proc, void* userData) :
+											mSelector(selector), mProc(proc), mUserData(userData)
+											{}
+										KeysPerformer(const KeysPerformer& other) :
+											mSelector(other.mSelector), mProc(other.mProc), mUserData(other.mUserData)
+											{}
+
+										// Instance methods
+				const	CString&		getSelector() const
+											{ return mSelector; }
+						TArray<CString>	perform(const CString& documentType, CMDSDocument& document,
+												const CDictionary& info) const
+											{ return mProc(documentType, document, info, mUserData); }
+
+
+			// Properties
+			private:
+				CString	mSelector;
+				Proc	mProc;
+				void*	mUserData;
+		};
+
+	// ValueInfo
+	public:
+		struct ValueInfo {
+			// Procs
+			public:
+				typedef	SValue	(*Proc)(const CString& documentType, const CMDSDocument& document,
+										const CString& property, void* userData);
+
+			// Methods
+			public:
+									// Lfiecycle methods
+									ValueInfo(const CString& selector, Proc proc, void* userData) :
+										mSelector(selector), mProc(proc), mUserData(userData)
+										{}
+									ValueInfo(const ValueInfo& other) :
+										mSelector(other.mSelector), mProc(other.mProc), mUserData(other.mUserData)
+										{}
+
+									// Instance methods
+				const	CString&	getSelector() const
+											{ return mSelector; }
+						SValue		perform(const CString& documentType, const CMDSDocument& document,
+											const CString& property) const
+										{ return mProc(documentType, document, property, mUserData); }
+
+			// Properties
+			private:
+				CString	mSelector;
+				Proc	mProc;
+				void*	mUserData;
+		};
+
+	// Backing
+	public:
+		class Backing {
+			// Methods
+			public:
+											// Lifecycle methods
+				virtual						~Backing() {}
+
+											// Instance methods
+						const	CString&	getDocumentID() const
+												{ return mDocumentID; }
+
+			protected:
+											// Lifecycle methods
+											Backing(const CString& documentID) : mDocumentID(documentID) {}
+
+			// Properties
+			private:
+				CString	mDocumentID;
+		};
+
+
+	// Procs
+	public:
+		typedef	I<CMDSDocument>	(*CreateProc)(const CString& id, CMDSDocumentStorage& documentStorage);
+		typedef	void			(*KeyProc)(const CString& key, const CMDSDocument& document, void* userData);
+		typedef	void			(*Proc)(CMDSDocument& document, void* userData);
 
 	// Infos
 	public:
@@ -184,7 +415,7 @@ class CMDSDocument : public CHashable {
 									// Instance methods
 			const	CString&		getDocumentType() const
 										{ return mDocumentType; }
-					CMDSDocument*	create(const CString& id, CMDSDocumentStorage& documentStorage) const
+					I<CMDSDocument>	create(const CString& id, CMDSDocumentStorage& documentStorage) const
 										{ return mCreateProc(id, documentStorage); }
 
 			// Properties
@@ -200,13 +431,17 @@ class CMDSDocument : public CHashable {
 
 												// Instance methods
 				virtual	const	CString&		getDocumentType() const = 0;
-				virtual			CMDSDocument*	create(const CString& id, CMDSDocumentStorage& documentStorage) const
+				virtual			I<CMDSDocument>	create(const CString& id, CMDSDocumentStorage& documentStorage) const
 														= 0;
 
 			protected:
 												// Lifecycle methods
 												InfoForNew() {}
 		};
+
+	// Classes
+	private:
+		class Internals;
 
 	// Methods
 	public:
@@ -223,7 +458,7 @@ class CMDSDocument : public CHashable {
 															{ getID().hashInto(hasher); }
 
 														// Instance methods
-		virtual			CMDSDocument*					copy() const = 0;
+		virtual			I<CMDSDocument>					copy() const = 0;
 		virtual	const	Info&							getInfo() const = 0;
 
 				const	CString&						getDocumentType() const
@@ -297,11 +532,67 @@ class CMDSDocument : public CHashable {
 //						void							set(const CString& property,
 //																const TDictionary<CMDSDocument> documentMap) const;
 
-						void							registerAssociation(const Info& associatedDocumentInfo);
-						void							associate(const CMDSDocument& document);
-						void							unassociate(const CMDSDocument& document);
-
 						void							remove(const CString& property) const;
+
+
+						TArray<AttachmentInfo>			getAttachmentInfos(const CString& type) const;
+						CData							getAttachmentContent(const AttachmentInfo& attachmentInfo)
+																const;
+						CString							getAttachmentContentAsString(
+																const AttachmentInfo& attachmentInfo) const;
+						CDictionary						getAttachmentContentAsDictionary(
+																const AttachmentInfo& attachmentInfo) const;
+						TArray<CDictionary>				getAttachmentContentAsArrayOfDictionaries(
+																const AttachmentInfo& attachmentInfo) const;
+						void							addAttachment(const CString& type, const CDictionary& info,
+																const CData& content);
+						void							addAttachment(const CString& type, const CData& content)
+															{ addAttachment(type, CDictionary::mEmpty, content); }
+						void							addAttachment(const CString& type, const CDictionary& info,
+																const CString& content)
+															{ addAttachment(type, info,
+																	content.getData(CString::kEncodingUTF8)); }
+						void							addAttachment(const CString& type, const CString& content)
+															{ addAttachment(type, CDictionary::mEmpty,
+																	content.getData(CString::kEncodingUTF8)); }
+						void							addAttachment(const CString& type, const CDictionary& info,
+																const CDictionary& content);
+						void							addAttachment(const CString& type, const CDictionary& content)
+															{ addAttachment(type, CDictionary::mEmpty, content); }
+						void							addAttachment(const CString& type, const CDictionary& info,
+																const TArray<CDictionary>& content);
+						void							addAttachment(const CString& type,
+																const TArray<CDictionary>& content)
+															{ addAttachment(type, CDictionary::mEmpty, content); }
+						void							updateAttachment(const AttachmentInfo& attachmentInfo,
+																const CDictionary& updatedInfo,
+																const CData& updatedContent);
+						void							updateAttachment(const AttachmentInfo& attachmentInfo,
+																const CData& updatedContent)
+															{ updateAttachment(attachmentInfo, CDictionary::mEmpty,
+																	updatedContent); }
+						void							updateAttachment(const AttachmentInfo& attachmentInfo,
+																const CDictionary& updatedInfo,
+																const CString& updatedContent);
+						void							updateAttachment(const AttachmentInfo& attachmentInfo,
+																const CString& updatedContent)
+															{ updateAttachment(attachmentInfo, CDictionary::mEmpty,
+																	updatedContent); }
+						void							updateAttachment(const AttachmentInfo& attachmentInfo,
+																const CDictionary& updatedInfo,
+																const CDictionary& updatedContent);
+						void							updateAttachment(const AttachmentInfo& attachmentInfo,
+																const CDictionary& updatedContent)
+															{ updateAttachment(attachmentInfo, CDictionary::mEmpty,
+																	updatedContent); }
+						void							updateAttachment(const AttachmentInfo& attachmentInfo,
+																const CDictionary& updatedInfo,
+																const TArray<CDictionary>& updatedContent);
+						void							updateAttachment(const AttachmentInfo& attachmentInfo,
+																const TArray<CDictionary>& updatedContent)
+															{ updateAttachment(attachmentInfo, CDictionary::mEmpty,
+																	updatedContent); }
+						void							remove(const AttachmentInfo& attachmentInfo);
 
 						void							remove() const;
 
@@ -312,47 +603,44 @@ class CMDSDocument : public CHashable {
 
 	// Properties
 	private:
-		CMDSDocumentInternals*	mInternals;
+		Internals*	mInternals;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - TMDSUpdateInfo
 
 template <typename T> struct TMDSUpdateInfo {
-	// Lifecycle methods
-	TMDSUpdateInfo(const CMDSDocument& document, UInt32 revision, T id,
-			const TSet<CString> changedProperties) :
-		mDocument(document), mRevision(revision), mID(id),
-				mChangedProperties(OV<TSet<CString> >(changedProperties))
-		{}
-	TMDSUpdateInfo(const CMDSDocument& document, UInt32 revision, T id) :
-		mDocument(document), mRevision(revision), mID(id), mChangedProperties(OV<TSet<CString> >())
-		{}
+									// Lifecycle methods
+									TMDSUpdateInfo(const I<CMDSDocument*>& document, UInt32 revision, T id,
+											const TSet<CString> changedProperties) :
+										mDocument(document), mRevision(revision), mID(id),
+												mChangedProperties(OV<TSet<CString> >(changedProperties))
+										{}
+									TMDSUpdateInfo(const I<CMDSDocument*>& document, UInt32 revision, T id) :
+										mDocument(document), mRevision(revision), mID(id),
+												mChangedProperties(OV<TSet<CString> >())
+										{}
+
+									// Instance methods
+		const	I<CMDSDocument*>&	getDocument() const
+										{ return mDocument; }
+				UInt32				getRevision() const
+										{ return mRevision; }
+		const	T&					getID() const
+										{ return mID; }
+		const	OV<TSet<CString> >&	getChangedProperties() const
+										{ return mChangedProperties; }
 
 	// Properties
-	const	CMDSDocument&		mDocument;
-			UInt32				mRevision;
-			T					mID;
-			OV<TSet<CString> >	mChangedProperties;
+	private:
+		I<CMDSDocument*>	mDocument;
+		UInt32				mRevision;
+		T					mID;
+		OV<TSet<CString> >	mChangedProperties;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: - TMDSBringUpToDateInfo
-
-template <typename T> struct TMDSBringUpToDateInfo {
-	// Lifecycle methods
-	TMDSBringUpToDateInfo(const CMDSDocument& document, UInt32 revision, T value) :
-		mDocument(document), mRevision(revision), mValue(value)
-		{}
-
-	// Properties
-	const	CMDSDocument&	mDocument;
-			UInt32			mRevision;
-			T				mValue;
-};
-
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: - EMDSValueType {
+// MARK: - EMDSValueType
 enum EMDSValueType {
 	kMDSValueTypeInteger,
 };

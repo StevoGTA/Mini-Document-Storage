@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "CMDSDocumentStorage.h"
+#include "CMDSDocumentStorageServer.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: CMDSEphemeral

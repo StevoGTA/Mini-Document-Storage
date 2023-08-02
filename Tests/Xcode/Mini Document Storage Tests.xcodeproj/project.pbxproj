@@ -208,6 +208,7 @@
 		0AAF049A2A70DEAF000AF19F /* MDSBatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AAF04952A70DE34000AF19F /* MDSBatch.swift */; };
 		0AAF049B2A70DEAF000AF19F /* MDSBatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AAF04952A70DE34000AF19F /* MDSBatch.swift */; };
 		0AAF049C2A70DEB0000AF19F /* MDSBatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AAF04952A70DE34000AF19F /* MDSBatch.swift */; };
+		0AB3D2462A70EA4A00347E86 /* CMDSDocument.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A9C637C2A19EC6E00800DBA /* CMDSDocument.cpp */; };
 		0AC76DF12A79D3A600C656A9 /* MDSDocumentStorageServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC76DF02A79D3A600C656A9 /* MDSDocumentStorageServer.swift */; };
 		0ACCD91428137C6B001D52CB /* IndexUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACCD91328137C6B001D52CB /* IndexUnitTests.swift */; };
 		0ACCD9162814EBBC001D52CB /* CollectionUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACCD9152814EBBC001D52CB /* CollectionUnitTests.swift */; };
@@ -769,7 +770,7 @@
 		0A9C63882A19EC6E00800DBA /* CMDSEphemeral.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CMDSEphemeral.h; sourceTree = "<group>"; };
 		0A9C63892A19EC6E00800DBA /* CMDSEphemeral.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CMDSEphemeral.cpp; sourceTree = "<group>"; };
 		0A9C638A2A19EC6E00800DBA /* CMDSDocumentStorage.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CMDSDocumentStorage.h; sourceTree = "<group>"; };
-		0A9C638B2A19EC6E00800DBA /* TMDSBatchInfo.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TMDSBatchInfo.h; sourceTree = "<group>"; };
+		0A9C638B2A19EC6E00800DBA /* TMDSBatch.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TMDSBatch.h; sourceTree = "<group>"; };
 		0A9C638C2A19EC6F00800DBA /* CMDSDocumentStorage.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CMDSDocumentStorage.cpp; sourceTree = "<group>"; };
 		0A9C638D2A19EC6F00800DBA /* CMDSDocument.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CMDSDocument.h; sourceTree = "<group>"; };
 		0A9C638E2A19EC6F00800DBA /* SMDSValue.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SMDSValue.h; sourceTree = "<group>"; };
@@ -777,7 +778,9 @@
 		0AAC273328B6F2C4006ADEF9 /* InternalTransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InternalTransactionTests.swift; sourceTree = "<group>"; };
 		0AAF04952A70DE34000AF19F /* MDSBatch.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MDSBatch.swift; sourceTree = "<group>"; };
 		0AB3D2452A70E19900347E86 /* SMDSAssociation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SMDSAssociation.h; sourceTree = "<group>"; };
+		0AB3D2492A723EB100347E86 /* TMDSCache.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TMDSCache.h; sourceTree = "<group>"; };
 		0AC76DF02A79D3A600C656A9 /* MDSDocumentStorageServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MDSDocumentStorageServer.swift; sourceTree = "<group>"; };
+		0AC76DF22A79D46D00C656A9 /* CMDSDocumentStorageServer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CMDSDocumentStorageServer.h; sourceTree = "<group>"; };
 		0ACCD91328137C6B001D52CB /* IndexUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexUnitTests.swift; sourceTree = "<group>"; };
 		0ACCD9152814EBBC001D52CB /* CollectionUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionUnitTests.swift; sourceTree = "<group>"; };
 		0ADC8E8628BED43600632551 /* Server (Swift) */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Server (Swift)"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1781,7 +1784,8 @@
 				0A9C638C2A19EC6F00800DBA /* CMDSDocumentStorage.cpp */,
 				0AB3D2452A70E19900347E86 /* SMDSAssociation.h */,
 				0A9C638E2A19EC6F00800DBA /* SMDSValue.h */,
-				0A9C638B2A19EC6E00800DBA /* TMDSBatchInfo.h */,
+				0A9C638B2A19EC6E00800DBA /* TMDSBatch.h */,
+				0AB3D2492A723EB100347E86 /* TMDSCache.h */,
 				0A9C63862A19EC6E00800DBA /* TMDSCollection.h */,
 				0A9C63842A19EC6E00800DBA /* TMDSDocumentBackingCache.h */,
 				0A9C63852A19EC6E00800DBA /* TMDSIndex.h */,
@@ -1822,6 +1826,7 @@
 		0A9C63902A19EC9400800DBA /* Server */ = {
 			isa = PBXGroup;
 			children = (
+				0AC76DF22A79D46D00C656A9 /* CMDSDocumentStorageServer.h */,
 			);
 			path = Server;
 			sourceTree = "<group>";
@@ -2201,6 +2206,7 @@
 				0A9C63742A19EAC300800DBA /* CSQLiteInnerJoin.cpp in Sources */,
 				0ADC8EB228BED90400632551 /* Dictionary+Extensions.swift in Sources */,
 				0A36CDDA2A1C968B005C7A40 /* MDSHTTPServicesHandler+ObjC.swift in Sources */,
+				0AB3D2462A70EA4A00347E86 /* CMDSDocument.cpp in Sources */,
 				0A9C63702A19EAC300800DBA /* CSQLiteTableColumn.cpp in Sources */,
 				0A9C63732A19EAC300800DBA /* CSQLiteDatabase.cpp in Sources */,
 				0ADC8EAE28BED8D900632551 /* Date+Extensions.swift in Sources */,
