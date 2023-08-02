@@ -162,8 +162,8 @@
 		0A687FE628EE59E200715660 /* MDSCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A687FE428EE59CB00715660 /* MDSCache.swift */; };
 		0A687FE728EE59E200715660 /* MDSCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A687FE428EE59CB00715660 /* MDSCache.swift */; };
 		0A687FE828EE59E300715660 /* MDSCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A687FE428EE59CB00715660 /* MDSCache.swift */; };
-		0A6BAAE329C3EADC006ECB61 /* MDSEphemeral+MDSHTTPServicesHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A6BAAE229C3EADC006ECB61 /* MDSEphemeral+MDSHTTPServicesHandler.swift */; };
-		0A6BAAE529C3EB36006ECB61 /* MDSSQLite+MDSHTTPServicesHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A6BAAE429C3EB36006ECB61 /* MDSSQLite+MDSHTTPServicesHandler.swift */; };
+		0A6BAAE329C3EADC006ECB61 /* MDSEphemeral+MDSDocumentStorageServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A6BAAE229C3EADC006ECB61 /* MDSEphemeral+MDSDocumentStorageServer.swift */; };
+		0A6BAAE529C3EB36006ECB61 /* MDSSQLite+MDSDocumentStorageServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A6BAAE429C3EB36006ECB61 /* MDSSQLite+MDSDocumentStorageServer.swift */; };
 		0A7BB5D629109A53009CD1F9 /* CacheTransactionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A7BB5D529109A53009CD1F9 /* CacheTransactionTests.swift */; };
 		0A82EDA928C83857008F0218 /* HTTPServer+MDS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A82EDA828C83857008F0218 /* HTTPServer+MDS.swift */; };
 		0A87432D294AF48900DAB65D /* SQLiteLimit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A87432C294AF48900DAB65D /* SQLiteLimit.swift */; };
@@ -208,6 +208,7 @@
 		0AAF049A2A70DEAF000AF19F /* MDSBatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AAF04952A70DE34000AF19F /* MDSBatch.swift */; };
 		0AAF049B2A70DEAF000AF19F /* MDSBatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AAF04952A70DE34000AF19F /* MDSBatch.swift */; };
 		0AAF049C2A70DEB0000AF19F /* MDSBatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AAF04952A70DE34000AF19F /* MDSBatch.swift */; };
+		0AC76DF12A79D3A600C656A9 /* MDSDocumentStorageServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC76DF02A79D3A600C656A9 /* MDSDocumentStorageServer.swift */; };
 		0ACCD91428137C6B001D52CB /* IndexUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACCD91328137C6B001D52CB /* IndexUnitTests.swift */; };
 		0ACCD9162814EBBC001D52CB /* CollectionUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACCD9152814EBBC001D52CB /* CollectionUnitTests.swift */; };
 		0ADC8E8928BED43600632551 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ADC8E8828BED43600632551 /* main.swift */; };
@@ -741,8 +742,8 @@
 		0A5E182E27C70D500089E550 /* Performance_Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Performance_Tests.swift; sourceTree = "<group>"; };
 		0A5EAB6B27F52F04003E0034 /* DocumentTransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentTransactionTests.swift; sourceTree = "<group>"; };
 		0A687FE428EE59CB00715660 /* MDSCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MDSCache.swift; sourceTree = "<group>"; };
-		0A6BAAE229C3EADC006ECB61 /* MDSEphemeral+MDSHTTPServicesHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MDSEphemeral+MDSHTTPServicesHandler.swift"; sourceTree = "<group>"; };
-		0A6BAAE429C3EB36006ECB61 /* MDSSQLite+MDSHTTPServicesHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MDSSQLite+MDSHTTPServicesHandler.swift"; sourceTree = "<group>"; };
+		0A6BAAE229C3EADC006ECB61 /* MDSEphemeral+MDSDocumentStorageServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MDSEphemeral+MDSDocumentStorageServer.swift"; sourceTree = "<group>"; };
+		0A6BAAE429C3EB36006ECB61 /* MDSSQLite+MDSDocumentStorageServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MDSSQLite+MDSDocumentStorageServer.swift"; sourceTree = "<group>"; };
 		0A7BB5D529109A53009CD1F9 /* CacheTransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheTransactionTests.swift; sourceTree = "<group>"; };
 		0A82EDA828C83857008F0218 /* HTTPServer+MDS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HTTPServer+MDS.swift"; sourceTree = "<group>"; };
 		0A87432C294AF48900DAB65D /* SQLiteLimit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteLimit.swift; sourceTree = "<group>"; };
@@ -776,6 +777,7 @@
 		0AAC273328B6F2C4006ADEF9 /* InternalTransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InternalTransactionTests.swift; sourceTree = "<group>"; };
 		0AAF04952A70DE34000AF19F /* MDSBatch.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MDSBatch.swift; sourceTree = "<group>"; };
 		0AB3D2452A70E19900347E86 /* SMDSAssociation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SMDSAssociation.h; sourceTree = "<group>"; };
+		0AC76DF02A79D3A600C656A9 /* MDSDocumentStorageServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MDSDocumentStorageServer.swift; sourceTree = "<group>"; };
 		0ACCD91328137C6B001D52CB /* IndexUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexUnitTests.swift; sourceTree = "<group>"; };
 		0ACCD9152814EBBC001D52CB /* CollectionUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionUnitTests.swift; sourceTree = "<group>"; };
 		0ADC8E8628BED43600632551 /* Server (Swift) */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Server (Swift)"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1538,6 +1540,7 @@
 			isa = PBXGroup;
 			children = (
 				0A82EDA828C83857008F0218 /* HTTPServer+MDS.swift */,
+				0AC76DF02A79D3A600C656A9 /* MDSDocumentStorageServer.swift */,
 			);
 			path = Server;
 			sourceTree = "<group>";
@@ -1546,7 +1549,7 @@
 			isa = PBXGroup;
 			children = (
 				0A5551F627C5D8E7003E497B /* MDSSQLite.swift */,
-				0A6BAAE429C3EB36006ECB61 /* MDSSQLite+MDSHTTPServicesHandler.swift */,
+				0A6BAAE429C3EB36006ECB61 /* MDSSQLite+MDSDocumentStorageServer.swift */,
 				0A5551F727C5D8E7003E497B /* MDSSQLiteDocumentBacking.swift */,
 				0A5551F527C5D8E7003E497B /* MDSSQLiteDatabaseManager.swift */,
 			);
@@ -1557,7 +1560,7 @@
 			isa = PBXGroup;
 			children = (
 				0A5551FC27C5D8E7003E497B /* MDSEphemeral.swift */,
-				0A6BAAE229C3EADC006ECB61 /* MDSEphemeral+MDSHTTPServicesHandler.swift */,
+				0A6BAAE229C3EADC006ECB61 /* MDSEphemeral+MDSDocumentStorageServer.swift */,
 			);
 			path = Ephemeral;
 			sourceTree = "<group>";
@@ -2182,7 +2185,7 @@
 				0ADC8EB828BED94D00632551 /* RangeReplaceableCollection+Extensions.swift in Sources */,
 				0ADC8E9F28BED85200632551 /* SQLiteTrigger.swift in Sources */,
 				0ADC8E8928BED43600632551 /* main.swift in Sources */,
-				0A6BAAE529C3EB36006ECB61 /* MDSSQLite+MDSHTTPServicesHandler.swift in Sources */,
+				0A6BAAE529C3EB36006ECB61 /* MDSSQLite+MDSDocumentStorageServer.swift in Sources */,
 				0A9C63692A19E93200800DBA /* CLogServices.cpp in Sources */,
 				0ADC8E9928BED81C00632551 /* MDSSQLiteDocumentBacking.swift in Sources */,
 				0ADC8E9728BED81400632551 /* MDSDocument.swift in Sources */,
@@ -2222,7 +2225,7 @@
 				0ADC8E9D28BED85200632551 /* SQLiteOrderBy.swift in Sources */,
 				0ADC8EA428BED85200632551 /* SQLiteStatementPerformer.swift in Sources */,
 				0AAF04962A70DE34000AF19F /* MDSBatch.swift in Sources */,
-				0A6BAAE329C3EADC006ECB61 /* MDSEphemeral+MDSHTTPServicesHandler.swift in Sources */,
+				0A6BAAE329C3EADC006ECB61 /* MDSEphemeral+MDSDocumentStorageServer.swift in Sources */,
 				0A9C63782A19EB8900800DBA /* CFolder.cpp in Sources */,
 				0A9C637A2A19EBB500800DBA /* CFile-POSIX.cpp in Sources */,
 				0A9C636A2A19E9C500800DBA /* TimeAndDate.cpp in Sources */,
@@ -2255,6 +2258,7 @@
 				0A9C636D2A19EA9200800DBA /* CCoreFoundation.cpp in Sources */,
 				0ADC8EB528BED92400632551 /* URLComponents+Extensions.swift in Sources */,
 				0ADC8E9828BED81C00632551 /* MDSSQLite.swift in Sources */,
+				0AC76DF12A79D3A600C656A9 /* MDSDocumentStorageServer.swift in Sources */,
 				0ADC8EA328BED85200632551 /* SQLiteDatabase.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

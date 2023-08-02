@@ -237,40 +237,6 @@ extension MDSError : CustomStringConvertible, LocalizedError {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSHTTPServicesHandler
-protocol MDSHTTPServicesHandler : MDSDocumentStorageCore, MDSDocumentStorage {
-
-	// MARK: Instance methods
-	func associationGetDocumentRevisionInfos(name :String, from fromDocumentID :String, startIndex :Int, count :Int?)
-			throws -> (totalCount :Int, documentRevisionInfos :[MDSDocument.RevisionInfo])
-	func associationGetDocumentRevisionInfos(name :String, to toDocumentID :String, startIndex :Int, count :Int?)
-			throws -> (totalCount :Int, documentRevisionInfos :[MDSDocument.RevisionInfo])
-	func associationGetDocumentFullInfos(name :String, from fromDocumentID :String, startIndex :Int, count :Int?)
-			throws -> (totalCount :Int, documentFullInfos :[MDSDocument.FullInfo])
-	func associationGetDocumentFullInfos(name :String, to toDocumentID :String, startIndex :Int, count :Int?) throws ->
-			(totalCount :Int, documentFullInfos :[MDSDocument.FullInfo])
-
-	func collectionGetDocumentRevisionInfos(name :String, startIndex :Int, count :Int?) throws ->
-			[MDSDocument.RevisionInfo]
-	func collectionGetDocumentFullInfos(name :String, startIndex :Int, count :Int?) throws -> [MDSDocument.FullInfo]
-
-	func documentRevisionInfos(for documentType :String, documentIDs :[String]) throws -> [MDSDocument.RevisionInfo]
-	func documentRevisionInfos(for documentType :String, sinceRevision :Int, count :Int?) throws ->
-			[MDSDocument.RevisionInfo]
-	func documentFullInfos(for documentType :String, documentIDs :[String]) throws -> [MDSDocument.FullInfo]
-	func documentFullInfos(for documentType :String, sinceRevision :Int, count :Int?) throws ->
-			[MDSDocument.FullInfo]
-
-	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> Int64?
-	func documentStringValue(for documentType :String, document :MDSDocument, property :String) -> String?
-	func documentUpdate(for documentType :String, documentUpdateInfos :[MDSDocument.UpdateInfo]) throws ->
-			[MDSDocument.FullInfo]
-
-	func indexGetDocumentRevisionInfos(name :String, keys :[String]) throws -> [String : MDSDocument.RevisionInfo]
-	func indexGetDocumentFullInfos(name :String, keys :[String]) throws -> [String : MDSDocument.FullInfo]
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 // MARK: - String extension
 extension String {
 
@@ -881,7 +847,7 @@ class MDSHTTPServices {
 	}
 
 	// MARK: - Cache Register
-	typealias CacheRegisterEndpointValueInfo = (name :String, valueType :MDSValueType, selector :String)
+	typealias CacheRegisterEndpointValueInfo = (valueInfo :MDSValueInfo, selector :String)
 	typealias CacheRegisterEndpointInfo =
 				(documentStorageID :String, name :String?, documentType :String?, relevantProperties :[String]?,
 						valueInfos :[[String : Any]]?, authorization :String?)
@@ -906,8 +872,8 @@ class MDSHTTPServices {
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : nil
 		let	valueInfosTransformed =
 					valueInfos.map({ [
-										"name": $0.name,
-										"valueType": $0.valueType.rawValue,
+										"name": $0.valueInfo.name,
+										"valueType": $0.valueInfo.type.rawValue,
 										"selector": $0.selector,
 									  ] })
 
@@ -928,7 +894,7 @@ class MDSHTTPServices {
 				{ return (nil, "Invalid value valueType: \(valueTypeRawValue)") }
 		guard let selector = info["selector"] as? String else { return (nil, "Missing value selector") }
 
-		return (CacheRegisterEndpointValueInfo(name, valueType, selector), nil)
+		return (CacheRegisterEndpointValueInfo(MDSValueInfo(name: name, type: valueType), selector), nil)
 	}
 
 	// MARK: - Collection Register

@@ -124,8 +124,6 @@ open class MDSDocument : Hashable {
 	public	typealias KeysProc = (_ documentType :String, _ document :MDSDocument, _ info :[String : Any]) -> [String]
 	public	typealias ValueProc = (_ documentType :String, _ document :MDSDocument, _ property :String) -> Any
 
-			typealias PropertyMap = [/* Property */ String : /* Value */ Any]
-
 	// MARK: Properties
 	class	open	var documentType: String { fatalError("Trying to get documentType of root MDSDocument") }
 
@@ -407,6 +405,12 @@ open class MDSDocument : Hashable {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func remove(for property :String) {
+		// Update
+		self.documentStorage.documentSet(nil, for: property, of: self)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func attachmentInfos(for type :String) -> [AttachmentInfo] {
 		// Return filtered attachment infos
 		return self.attachmentInfoMap.values.filter({ $0.type == type })
@@ -499,12 +503,6 @@ open class MDSDocument : Hashable {
 		try! self.documentStorage.documentAttachmentRemove(from: self, attachmentInfo: attachmentInfo)
 	}
 
-	//------------------------------------------------------------------------------------------------------------------
-	public func remove(for property :String) {
-		// Update
-		self.documentStorage.documentSet(nil, for: property, of: self)
-	}
-	
 	//------------------------------------------------------------------------------------------------------------------
 	public func remove() throws { try self.documentStorage.documentRemove(self) }
 }

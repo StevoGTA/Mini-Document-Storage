@@ -209,8 +209,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func cacheRegister(name :String, documentType :String, relevantProperties :[String],
-			valueInfos :[(name :String, valueType :MDSValueType, selector :String, proc :MDSDocument.ValueProc)])
-			throws {
+			valueInfos :[MDSCache.ValueInfo]) throws {
 		// Remove current cache if found
 		if let cache = self.cachesByNameMap.value(for: name) {
 			// Remove
@@ -223,14 +222,13 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 							relevantProperties: relevantProperties,
 							valueInfos:
 									valueInfos.map(
-											{ MDSSQLiteDatabaseManager.CacheValueInfo(name: $0.name,
-													valueType: $0.valueType, selector: $0.selector) }))
+											{ MDSSQLiteDatabaseManager.CacheValueInfo(name: $0.valueInfo.name,
+													valueType: $0.valueInfo.type, selector: $0.selector) }))
 
 		// Create or re-create cache
 		let	cache =
 					MDSCache(name: name, documentType: documentType, relevantProperties: relevantProperties,
-							valueInfos: valueInfos.map({ (MDSValueInfo(name: $0, type: $1), $3) }),
-							lastRevision: lastRevision)
+							valueInfos: valueInfos, lastRevision: lastRevision)
 
 		// Add to maps
 		self.cachesByNameMap.set(cache, for: name)
@@ -244,7 +242,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
-			isIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
+			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
 		// Remove current collection if found
 		if let collection = self.collectionsByNameMap.value(for: name) {
 			// Remove
@@ -260,7 +258,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Create or re-create collection
 		let	collection =
 					MDSCollection(name: name, documentType: documentType, relevantProperties: relevantProperties,
-							documentIsIncludedProc: isIncludedProc, documentIsIncludedInfo: isIncludedInfo,
+							documentIsIncludedProc: documentIsIncludedProc, isIncludedInfo: isIncludedInfo,
 							lastRevision: lastRevision)
 
 		// Add to maps
@@ -384,7 +382,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 											creationDate: creationDate, modificationDate: modificationDate)))
 
 					// Call document changed procs
-					documentChangedProcs?.forEach() { $0(document, .created) }
+					documentChangedProcs.forEach() { $0(document, .created) }
 
 					// Add update info
 					batchQueue.add(
@@ -586,7 +584,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			update(for: documentType, updateInfo: (updateInfos, []))
 
 			// Call document changed procs
-			self.documentChangedProcs(for: documentType)?.forEach() { $0(document, .updated) }
+			self.documentChangedProcs(for: documentType).forEach() { $0(document, .updated) }
 		}
 	}
 
@@ -806,7 +804,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			self.documentBackingCache.remove([documentID])
 
 			// Call document changed procs
-			self.documentChangedProcs(for: documentType)?.forEach() { $0(document, .removed) }
+			self.documentChangedProcs(for: documentType).forEach() { $0(document, .removed) }
 		}
 	}
 
@@ -865,7 +863,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func info(for keys :[String]) throws -> [String : String] {
+	public func infoGet(for keys :[String]) throws -> [String : String] {
 		// Return dictionary
 		return [String : String](keys){ self.databaseManager.infoString(for: $0) }
 	}
@@ -877,7 +875,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func remove(keys :[String]) { keys.forEach() { self.databaseManager.infoSet(nil, for: $0) } }
+	public func infoRemove(keys :[String]) throws  { keys.forEach() { self.databaseManager.infoSet(nil, for: $0) } }
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func internalGet(for keys :[String]) -> [String : String] {
@@ -965,7 +963,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 								}
 
 								// Call document changed procs
-								documentChangedProcs?.forEach() { $0(document, .updated) }
+								documentChangedProcs.forEach() { $0(document, .updated) }
 							} else {
 								// Add document
 								let	documentBacking =
@@ -992,7 +990,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 								}
 
 								// Call document changed procs
-								documentChangedProcs?.forEach() { $0(document, .created) }
+								documentChangedProcs.forEach() { $0(document, .created) }
 							}
 						} else if let documentBacking = batchDocumentInfo.documentBacking {
 							// Remove document
@@ -1003,7 +1001,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 							removeBatchQueue.add(documentBacking.id)
 
 							// Check if have documentChangedProcs
-							if let documentChangedProcs {
+							if !documentChangedProcs.isEmpty {
 								// Create document
 								let	document = documentCreateProc(documentID, self)
 
@@ -1025,7 +1023,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		self.batchMap.set(nil, for: .current)
 	}
 
-	// MARK: MDSHTTPServicesHandler methods
+	// MARK: MDSDocumentStorageServer methods
 	//------------------------------------------------------------------------------------------------------------------
 	func associationGetDocumentRevisionInfos(name :String, from fromDocumentID :String, startIndex :Int, count :Int?)
 			throws -> (totalCount :Int, documentRevisionInfos :[MDSDocument.RevisionInfo]) {
@@ -1450,8 +1448,8 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			// Have stored
 			let	valueInfos =
 						info.valueInfos.map(
-								{ (MDSValueInfo(name: $0.name, type: $0.valueType),
-										self.documentValueProc(for: $0.selector)!) })
+								{ MDSCache.ValueInfo(valueInfo: MDSValueInfo(name: $0.name, type: $0.valueType),
+										selector: $0.selector, proc: self.documentValueProc(for: $0.selector)!) })
 			let	cache =
 						MDSCache(name: name, documentType: info.documentType,
 								relevantProperties: info.relevantProperties, valueInfos: valueInfos,
@@ -1491,7 +1489,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 						MDSCollection(name: name, documentType: info.documentType,
 								relevantProperties: info.relevantProperties,
 								documentIsIncludedProc: self.documentIsIncludedProc(for: info.isIncludedSelector)!,
-								documentIsIncludedInfo: info.isIncludedSelectorInfo, lastRevision: info.lastRevision)
+								isIncludedInfo: info.isIncludedSelectorInfo, lastRevision: info.lastRevision)
 			self.collectionsByNameMap.set(collection, for: name)
 
 			return collection

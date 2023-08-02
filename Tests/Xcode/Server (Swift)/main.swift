@@ -37,7 +37,7 @@ struct Server : ParsableCommand {
 		// Setup MDS
 		httpServer.setupMDSEndpoints()
 
-		let	documentStorage :MDSHTTPServicesHandler
+		let	documentStorage :MDSDocumentStorageServer
 		switch self.documentStorage {
 			case .swiftEphemeral:
 				// Swift Ephemeral

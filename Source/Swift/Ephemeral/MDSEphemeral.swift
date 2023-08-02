@@ -319,8 +319,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func cacheRegister(name :String, documentType :String, relevantProperties :[String],
-			valueInfos :[(name :String, valueType :MDSValueType, selector :String, proc :MDSDocument.ValueProc)])
-			throws {
+			valueInfos :[MDSCache.ValueInfo]) throws {
 		// Remove current cache if found
 		if let cache = self.cachesByNameMap.value(for: name) {
 			// Remove
@@ -330,7 +329,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Create or re-create cache
 		let	cache =
 					MDSCache(name: name, documentType: documentType, relevantProperties: relevantProperties,
-							valueInfos: valueInfos.map({ (MDSValueInfo(name: $0, type: $1), $3) }), lastRevision: 0)
+							valueInfos: valueInfos, lastRevision: 0)
 
 		// Add to maps
 		self.cachesByNameMap.set(cache, for: name)
@@ -343,7 +342,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
-			isIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
+			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
 		// Remove current collection if found
 		if let collection = self.collectionsByNameMap.value(for: name) {
 			// Remove
@@ -353,7 +352,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Create or re-create collection
 		let	collection =
 					MDSCollection(name: name, documentType: documentType, relevantProperties: relevantProperties,
-							documentIsIncludedProc: isIncludedProc, documentIsIncludedInfo: isIncludedInfo,
+							documentIsIncludedProc: documentIsIncludedProc, isIncludedInfo: isIncludedInfo,
 							lastRevision: isUpToDate ? (self.documentLastRevisionMap.value(for: documentType) ?? 0) : 0)
 
 		// Add to maps
@@ -456,7 +455,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 										creationDate: creationDate, modificationDate: modificationDate)))
 
 				// Call document changed procs
-				documentChangedProcs?.forEach() { $0(document, .created) }
+				documentChangedProcs.forEach() { $0(document, .created) }
 
 				// Add update info
 				updateInfos.append(
@@ -626,7 +625,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 									id: document.id, changedProperties: [property])])
 
 			// Call document changed procs
-			self.documentChangedProcs(for: documentType)?.forEach() { $0(document, .updated) }
+			self.documentChangedProcs(for: documentType).forEach() { $0(document, .updated) }
 		}
 	}
 
@@ -871,7 +870,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			note(removedDocumentIDs: Set<String>([document.id]))
 
 			// Call document changed procs
-			self.documentChangedProcs(for: documentType)?.forEach() { $0(document, .removed) }
+			self.documentChangedProcs(for: documentType).forEach() { $0(document, .removed) }
 		}
 	}
 
@@ -924,13 +923,13 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func info(for keys :[String]) throws -> [String : String] { self.info.filter({ keys.contains($0.key) }) }
+	public func infoGet(for keys :[String]) throws -> [String : String] { self.info.filter({ keys.contains($0.key) }) }
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func infoSet(_ info :[String : String]) throws { self.info.merge(info, uniquingKeysWith: { $1 }) }
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func remove(keys :[String]) { keys.forEach() { self.info[$0] = nil } }
+	public func infoRemove(keys :[String]) throws { keys.forEach() { self.info[$0] = nil } }
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func internalGet(for keys :[String]) -> [String : String] {
@@ -991,7 +990,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 								}
 
 								// Check if have changed procs
-								if documentChangedProcs != nil {
+								if !documentChangedProcs.isEmpty {
 									// Create document
 									let	document = documentCreateProc(documentID, self)
 
@@ -1005,7 +1004,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 													changedProperties: changedProperties))
 
 									// Call document changed procs
-									documentChangedProcs!.forEach() { $0(document, changeKind) }
+									documentChangedProcs.forEach() { $0(document, changeKind) }
 								}
 							}
 
@@ -1051,7 +1050,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 							self.documentBackingByIDMap[documentID]?.active = false
 
 							// Check if have changed procs
-							if let documentChangedProcs {
+							if !documentChangedProcs.isEmpty {
 								// Create document
 								let	document = documentCreateProc(documentID, self)
 
@@ -1080,7 +1079,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		self.batchMap.set(nil, for: .current)
 	}
 
-	// MARK: MDSHTTPServicesHandler methods
+	// MARK: MDSDocumentStorageServer methods
 	//------------------------------------------------------------------------------------------------------------------
 	func associationGetDocumentRevisionInfos(name :String, from fromDocumentID :String, startIndex :Int, count :Int?)
 			throws -> (totalCount :Int, documentRevisionInfos :[MDSDocument.RevisionInfo]) {
@@ -1364,7 +1363,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 							removedProperties: removed)
 
 					// Check if have changed procs
-					if documentChangedProcs != nil {
+					if !documentChangedProcs.isEmpty {
 						// Create document
 						let	document = documentCreateProc(documentID, self)
 
@@ -1375,7 +1374,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 										changedProperties: Set<String>(updated.keys).union(removed)))
 
 						// Call document changed procs
-						documentChangedProcs!.forEach() { $0(document, .created) }
+						documentChangedProcs.forEach() { $0(document, .created) }
 					}
 
 					// Add full info
@@ -1393,10 +1392,10 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 					documentBacking.active = false
 
 					// Check if have document changed procs and can create document
-					if documentChangedProcs != nil {
+					if !documentChangedProcs.isEmpty {
 						// Call document changed procs
 						let document = documentCreateProc(documentID, self)
-						documentChangedProcs!.forEach() { $0(document, .removed) }
+						documentChangedProcs.forEach() { $0(document, .removed) }
 					}
 
 					// Add full info

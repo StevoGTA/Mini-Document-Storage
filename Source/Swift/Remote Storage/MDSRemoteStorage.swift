@@ -329,16 +329,15 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func cacheRegister(name :String, documentType :String, relevantProperties :[String],
-			valueInfos :[(name :String, valueType :MDSValueType, selector :String, proc :MDSDocument.ValueProc)])
-			throws {
+			valueInfos :[MDSCache.ValueInfo]) throws {
 		// Register cache
 		let	error =
 					self.httpEndpointClient.cacheRegister(documentStorageID: self.documentStorageID, name: name,
 							documentType: documentType, relevantProperties: relevantProperties,
 							valueInfos:
 									valueInfos.map(
-											{ MDSHTTPServices.CacheRegisterEndpointValueInfo($0.name, $0.valueType,
-													$0.selector) }),
+											{ MDSHTTPServices.CacheRegisterEndpointValueInfo($0.valueInfo.name,
+													$0.valueInfo.type, $0.selector) }),
 							authorization: self.authorization)
 		guard error == nil else {
 			// Error
@@ -349,7 +348,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
-			isIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
+			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
 		// Register collection
 		let	error =
 					self.httpEndpointClient.collectionRegister(documentStorageID: self.documentStorageID, name: name,
@@ -953,7 +952,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func info(for keys :[String]) throws -> [String : String] {
+	public func infoGet(for keys :[String]) throws -> [String : String] {
 		// Preflight
 		guard !keys.isEmpty else { return [:] }
 
@@ -985,7 +984,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func remove(keys :[String]) {
+	public func infoRemove(keys :[String]) throws {
 		// Unimplemented
 		fatalError("Unimplemented")
 	}

@@ -8,20 +8,24 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: MDSCache
-class MDSCache : Equatable {
+public class MDSCache : Equatable {
 
 	// MARK: ValueInfo
-	struct ValueInfo {
+	public struct ValueInfo {
 
 		// MARK: Properties
-		fileprivate	let	valueInfo :MDSValueInfo
+					let	valueInfo :MDSValueInfo
+					let	selector :String
+
 		fileprivate	let	proc :MDSDocument.ValueProc
 
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
-		init(valueInfo :MDSValueInfo, proc :@escaping MDSDocument.ValueProc) {
+		init(valueInfo :MDSValueInfo, selector :String, proc :@escaping MDSDocument.ValueProc) {
 			// Store
 			self.valueInfo = valueInfo
+			self.selector = selector
+			
 			self.proc = proc
 		}
 	}
@@ -37,8 +41,7 @@ class MDSCache : Equatable {
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	init(name :String, documentType :String, relevantProperties :[String],
-			valueInfos :[(valueInfo :MDSValueInfo, proc :MDSDocument.ValueProc)], lastRevision :Int) {
+	init(name :String, documentType :String, relevantProperties :[String], valueInfos :[ValueInfo], lastRevision :Int) {
 		// Store
 		self.name = name
 		self.documentType = documentType
@@ -46,12 +49,12 @@ class MDSCache : Equatable {
 
 		self.lastRevision = lastRevision
 
-		self.valueInfos = valueInfos.map({ ValueInfo(valueInfo: $0, proc: $1) })
+		self.valueInfos = valueInfos
 	}
 
 	// MARK: Equatable implementation
 	//------------------------------------------------------------------------------------------------------------------
-	static func == (lhs :MDSCache, rhs :MDSCache) -> Bool { lhs.name == rhs.name }
+	public static func == (lhs :MDSCache, rhs :MDSCache) -> Bool { lhs.name == rhs.name }
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------

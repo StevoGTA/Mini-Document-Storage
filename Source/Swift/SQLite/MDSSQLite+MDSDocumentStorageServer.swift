@@ -1,5 +1,5 @@
 //
-//  MDSEphemeral+MDSHTTPServicesHandler.swift
+//  MDSSQLite+MDSDocumentStorageServer.swift
 //  Mini Document Storage
 //
 //  Created by Stevo on 3/16/23.
@@ -7,5 +7,5 @@
 //
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: MDSEphemeral extension
-extension MDSEphemeral : MDSHTTPServicesHandler {}
+// MARK: MDSSQLite extension
+extension MDSSQLite : MDSDocumentStorageServer {}
