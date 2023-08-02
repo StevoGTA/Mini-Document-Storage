@@ -120,24 +120,21 @@ class MDSClient:
 			await self.process_response(response)
 
 	#-------------------------------------------------------------------------------------------------------------------
-	async def association_get_document_infos(self, name, start_index = 0, count = None, full_info = False,
-			document_storage_id = None):
+	async def association_get_document_infos(self, name, start_index = 0, count = None, document_storage_id = None):
 		# Setup
 		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
 
-		params = {'startIndex': start_index, 'fullInfo': 1 if full_info else 0}
+		params = {'startIndex': start_index}
 		if count:
 			params['count'] = count
 
 		# Queue request
 		async with self.session.get(f'/v1/association/{document_storage_id_use}/{name}', headers = self.headers,
 				params = params) as response:
-			# Handle results
-			if response.status != 409:
-				# Process response
-				await self.process_response(response)
+			# Process response
+			await self.process_response(response)
 
-				return await response.json()
+			return await response.json()
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def association_get_document_infos_from(self, name, document, start_index = 0, count = None,
@@ -147,7 +144,101 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def association_get_documents_from(self, name, document, start_index, count, document_creation_function,
 			document_storage_id = None):
-		pass
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+
+		params = {'fromID': document.document_id, 'startIndex': start_index, 'fullInfo': 1}
+		if count:
+			params['count'] = count
+
+		# Queue request
+		async with self.session.get(f'/v1/association/{document_storage_id_use}/{name}', headers = self.headers,
+				params = params) as response:
+			# Process response
+			await self.process_response(response)
+
+			# Decode
+			infos = await response.json()
+
+			return list(map(document_creation_function, infos))
+
+	#-------------------------------------------------------------------------------------------------------------------
+	async def association_get_document_id_map_from(self, name, documents, document_storage_id = None):
+		# Retrieve all document infos
+		results = await self.association_get_document_infos(name, document_storage_id = document_storage_id)
+
+		# Compose "to" info for those "from" document IDs of interest
+		from_document_ids = set(map(lambda document: document.document_id, documents))
+		to_document_ids_by_from_document_id = {}
+		for result in results:
+			# Check if this "from" document is of interest
+			from_document_id = result.get('fromDocumentID')
+			if from_document_id in from_document_ids:
+				# Get info
+				to_document_id = result.get('toDocumentID')
+
+				# Update stuffs
+				if from_document_id in to_document_ids_by_from_document_id:
+					# Another "to" document
+					to_document_ids_by_from_document_id[from_document_id].append(to_document_id)
+				else:
+					# First "to" document
+					to_document_ids_by_from_document_id[from_document_id] = [to_document_id]
+		
+		return to_document_ids_by_from_document_id
+
+	#-------------------------------------------------------------------------------------------------------------------
+	async def association_get_document_map_from(self, name, documents, document_type, document_creation_function,
+			document_storage_id = None):
+		# Setup
+		to_documents_by_from_document_id = {}
+
+		# Check how many documents in play (5 is just a guess at minimizing actual API calls)
+		if len(documents) <= 5:
+			# Retrieve associations for each document
+			for document in documents:
+				# Retrieve "to" documents for this "from" document
+				to_documents_by_from_document_id[document.document_id] = await self.association_get_documents_from(name,
+						document, 0, None, document_creation_function, document_storage_id)
+		else:
+			# Retrieve all document infos and go from there
+			results = await self.association_get_document_infos(name, document_storage_id = document_storage_id)
+
+			# Compose "to" info for those "from" document IDs of interest
+			from_document_ids = set(map(lambda document: document.document_id, documents))
+			to_document_ids = set()
+			to_document_ids_by_from_document_id = {}
+			for result in results:
+				# Check if this "from" document is of interest
+				from_document_id = result.get('fromDocumentID')
+				if from_document_id in from_document_ids:
+					# Get info
+					to_document_id = result.get('toDocumentID')
+
+					# Update stuffs
+					to_document_ids.add(to_document_id)
+					if from_document_id in to_document_ids_by_from_document_id:
+						# Another "to" document
+						to_document_ids_by_from_document_id[from_document_id].append(to_document_id)
+					else:
+						# First "to" document
+						to_document_ids_by_from_document_id[from_document_id] = [to_document_id]
+			
+			# Retrieve "to" documents of interest and create dict based on document ID
+			to_documents = await self.document_get(document_type, list(to_document_ids), document_creation_function,
+					document_storage_id)
+			to_document_by_document_id = {}
+			for to_document in to_documents:
+				# Update dict
+				to_document_by_document_id[to_document.document_id] = to_document
+
+			# Compose final dict
+			for from_document_id in from_document_ids:
+				# Update final dict
+				to_document_ids = to_document_ids_by_from_document_id[from_document_id]
+				to_documents_by_from_document_id[from_document_id] = list(map(lambda document_id: to_document_by_document_id.get(document_id), to_document_ids))
+
+		return to_documents_by_from_document_id
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def association_get_document_infos_to(self, name, document, start_index = 0, count = None,
@@ -157,7 +248,101 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def association_get_documents_to(self, name, document, start_index, count, document_creation_function,
 			document_storage_id = None):
-		pass
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+
+		params = {'toID': document.document_id, 'startIndex': start_index, 'fullInfo': 1}
+		if count:
+			params['count'] = count
+
+		# Queue request
+		async with self.session.get(f'/v1/association/{document_storage_id_use}/{name}', headers = self.headers,
+				params = params) as response:
+			# Process response
+			await self.process_response(response)
+
+			# Decode
+			infos = await response.json()
+
+			return list(map(document_creation_function, infos))
+
+	#-------------------------------------------------------------------------------------------------------------------
+	async def association_get_document_id_map_to(self, name, documents, document_storage_id = None):
+		# Retrieve all document infos
+		results = await self.association_get_document_infos(name, document_storage_id = document_storage_id)
+
+		# Compose "from" info for those "to" document IDs of interest
+		to_document_ids = set(map(lambda document: document.document_id, documents))
+		from_document_ids_by_to_document_id = {}
+		for result in results:
+			# Check if this "to" document is of interest
+			to_document_id = result.get('toDocumentID')
+			if to_document_id in to_document_ids:
+				# Get info
+				from_document_id = result.get('fromDocumentID')
+
+				# Update stuffs
+				if to_document_id in from_document_ids_by_to_document_id:
+					# Another "from" document
+					from_document_ids_by_to_document_id[to_document_id].append(from_document_id)
+				else:
+					# First "from" document
+					from_document_ids_by_to_document_id[to_document_id] = [from_document_id]
+		
+		return from_document_ids_by_to_document_id
+
+	#-------------------------------------------------------------------------------------------------------------------
+	async def association_get_document_map_to(self, name, documents, document_type, document_creation_function,
+			document_storage_id = None):
+		# Setup
+		from_documents_by_to_document_id = {}
+
+		# Check how many documents in play (5 is just a guess at minimizing actual API calls)
+		if len(documents) <= 5:
+			# Retrieve associations for each document
+			for document in documents:
+				# Retrieve "from" documents for this "to" document
+				from_documents_by_to_document_id[document.document_id] = await self.association_get_documents_to(name,
+						document, 0, None, document_creation_function, document_storage_id)
+		else:
+			# Retrieve all document infos and go from there
+			results = await self.association_get_document_infos(name, document_storage_id = document_storage_id)
+
+			# Compose "from" info for those "to" document IDs of interest
+			to_document_ids = set(map(lambda document: document.document_id, documents))
+			from_document_ids = set()
+			from_document_ids_by_to_document_id = {}
+			for result in results:
+				# Check if this "to" document is of interest
+				to_document_id = result.get('toDocumentID')
+				if to_document_id in to_document_ids:
+					# Get info
+					from_document_id = result.get('fromDocumentID')
+
+					# Update stuffs
+					from_document_ids.add(from_document_id)
+					if to_document_id in from_document_ids_by_to_document_id:
+						# Another "from" document
+						from_document_ids_by_to_document_id[to_document_id].append(from_document_id)
+					else:
+						# First "from" document
+						from_document_ids_by_to_document_id[to_document_id] = [from_document_id]
+			
+			# Retrieve "from" documents of interest and create dict based on document ID
+			from_documents = await self.document_get(document_type, list(from_document_ids), document_creation_function,
+					document_storage_id)
+			from_document_by_document_id = {}
+			for from_document in from_documents:
+				# Update dict
+				from_document_by_document_id[from_document.document_id] = from_document
+
+			# Compose final dict
+			for to_document_id in to_document_ids:
+				# Update final dict
+				from_document_ids = from_document_ids_by_to_document_id[to_document_id]
+				from_documents_by_to_document_id[to_document_id] = list(map(lambda document_id: from_document_by_document_id.get(document_id), from_document_ids))
+
+		return from_documents_by_to_document_id
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def association_get_value(self, name, action, from_documents, cache_name, cached_value_name,
@@ -259,7 +444,7 @@ class MDSClient:
 					# Decode
 					infos = await response.json()
 
-					return list(map(lambda info: document_creation_function(info), infos))
+					return list(map(document_creation_function, infos))
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def document_create(self, document_type, documents, document_storage_id = None):
@@ -311,7 +496,7 @@ class MDSClient:
 			# Decode info and add Documents
 			results = await response.json()
 
-			return list(map(lambda result: document_creation_function(result), results))
+			return list(map(document_creation_function, results))
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def document_get_all_since_revision(self, document_type, since_revision, batchCount,
@@ -333,7 +518,7 @@ class MDSClient:
 
 				# Decode info and add Documents
 				results = await response.json()
-				documents.extend(list(map(lambda result: document_creation_function(result), results)))
+				documents.extend(list(map(document_creation_function, results)))
 
 		# Max each call at 10 documentIDs
 		tasks = []
