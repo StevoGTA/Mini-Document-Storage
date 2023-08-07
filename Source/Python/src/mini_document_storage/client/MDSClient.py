@@ -40,13 +40,13 @@ class MDSClient:
 		self.headers = headers
 
 	#-------------------------------------------------------------------------------------------------------------------
-	# async def delete(self, subpath, params = {}):
-	# 	# Queue request
-	# 	async with self.session.delete(subpath, headers = self.headers, params = params) as response:
-	# 		# Process response
-	# 		await self.process_response(response)
+	async def delete(self, subpath, params = {}):
+		# Queue request
+		async with self.session.delete(subpath, headers = self.headers, params = params) as response:
+			# Process response
+			await self.process_response(response)
 
-	# 		return {'headers': response.headers}
+			return response
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def getJSON(self, subpath, params = {}):
@@ -69,23 +69,23 @@ class MDSClient:
 
 			return response
 
+	#-------------------------------------------------------------------------------------------------------------------
+	async def post(self, subpath, params = {}, json = {}):
+		# Queue request
+		async with self.session.post(subpath, headers = self.headers, params = params, json = json) as response:
+			# Process response
+			await self.process_response(response)
+
+			return response
+
 	# #-------------------------------------------------------------------------------------------------------------------
-	# async def post(self, subpath, params = {}, json = {}):
-	# 	# Queue request
-	# 	async with self.session.post(subpath, headers = self.headers, params = params, json = json) as response:
-	# 		# Process response
-	# 		await self.process_response(response)
+	async def put(self, subpath, params = {}, json = {}):
+		# Queue request
+		async with self.session.put(subpath, headers = self.headers, params = params, json = json) as response:
+			# Process response
+			await self.process_response(response)
 
-	# 		return response
-
-	# #-------------------------------------------------------------------------------------------------------------------
-	# async def put(self, subpath, params = {}, json = {}):
-	# 	# Queue request
-	# 	async with self.session.put(subpath, headers = self.headers, params = params, json = json) as response:
-	# 		# Process response
-	# 		await self.process_response(response)
-
-	# 		return response
+			return response
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def association_register(self, name, from_document_type, to_document_type, document_storage_id = None):
@@ -139,7 +139,20 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def association_get_document_infos_from(self, name, document, start_index = 0, count = None,
 			document_storage_id = None):
-		pass
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+
+		params = {'fromID': document.document_id, 'startIndex': start_index, 'fullInfo': 0}
+		if count:
+			params['count'] = count
+
+		# Queue request
+		async with self.session.get(f'/v1/association/{document_storage_id_use}/{name}', headers = self.headers,
+				params = params) as response:
+			# Process response
+			await self.process_response(response)
+
+			return await response.json()
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def association_get_documents_from(self, name, document, start_index, count, document_creation_function,
@@ -243,7 +256,20 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def association_get_document_infos_to(self, name, document, start_index = 0, count = None,
 			document_storage_id = None):
-		pass
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+
+		params = {'toID': document.document_id, 'startIndex': start_index, 'fullInfo': 0}
+		if count:
+			params['count'] = count
+
+		# Queue request
+		async with self.session.get(f'/v1/association/{document_storage_id_use}/{name}', headers = self.headers,
+				params = params) as response:
+			# Process response
+			await self.process_response(response)
+
+			return await response.json()
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def association_get_documents_to(self, name, document, start_index, count, document_creation_function,
@@ -345,13 +371,68 @@ class MDSClient:
 		return from_documents_by_to_document_id
 
 	#-------------------------------------------------------------------------------------------------------------------
-	async def association_get_value(self, name, action, from_documents, cache_name, cached_value_name,
+	async def association_get_value(self, name, action, from_documents, cache_name, cached_value_names,
 			document_storage_id = None):
-		pass
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+		from_document_ids = list(map(lambda document: document.document_id, from_documents))
+
+		params = {
+			'cacheName': cache_name,
+			'cachedValueName': cached_value_names
+		}
+
+		async def worker(document_ids):
+			# Setup
+			params['fromID'] = document_ids
+
+			# Queue request
+			async with self.session.get(f'/v1/association/{document_storage_id_use}/{name}/{action}',
+					headers = self.headers, params = params) as response:
+				# Handle results
+				if response.status != 409:
+					# Process response
+					await self.process_response(response)
+
+					return await response.json()
+				else:
+					return None
+
+		# Max each call at 10 documentIDs
+		results = {}
+		for i in range(0, len(from_document_ids), 10):
+			# Setup
+			document_ids_slice = from_document_ids[i:i+10]
+
+			# Loop until up-to-date
+			while True:
+				# Process request
+				slice_results = await worker(document_ids_slice)
+				if slice_results:
+					# Merge results
+					for key, value in slice_results.items():
+						# Merge entry
+						results[key] = results.get(key, 0) + value
+					break
+
+		return results
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def cache_register(self, name, document_type, relevant_properties, value_infos, document_storage_id = None):
-		pass
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+		json = {
+			'name': name,
+			'documentType': document_type,
+			'relevantProperties': relevant_properties,
+			'valueInfos': value_infos,
+		}
+
+		# Queue request
+		async with self.session.put(f'/v1/cache/{document_storage_id_use}', headers = self.headers,
+				json = json) as response:
+			# Process response
+			await self.process_response(response)
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def collection_register(self, name, document_type, relevant_properties, is_up_to_date, is_included_selector,
@@ -475,7 +556,26 @@ class MDSClient:
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def document_get_count(self, document_type, document_storage_id = None):
-		pass
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+
+		# Queue request
+		async with self.session.head(f'/v1/document/{document_storage_id_use}/{document_type}',
+				headers = self.headers) as response:
+			# Process response
+			if not response.ok:
+				# Some error, but no additional info
+				raise Exception(f'HTTP response: {response.status}')
+			
+			# Decode header
+			content_range = response.headers.get('content-range', '')
+			content_range_parts = content_range.split('/')
+			if len(content_range_parts) == 2:
+				# Have count
+				return int(content_range_parts[1])
+			else:
+				# Don't have count
+				raise Exception('Unable to get count from response')
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def document_get_since_revision(self, document_type, since_revision, count, document_creation_function,
@@ -499,9 +599,51 @@ class MDSClient:
 			return list(map(document_creation_function, results))
 
 	#-------------------------------------------------------------------------------------------------------------------
-	async def document_get_all_since_revision(self, document_type, since_revision, batchCount,
-			document_creation_function, full_info = True, document_storage_id = None, proc = None):
-		pass
+	async def document_get_all_since_revision(self, document_type, since_revision, batch_count,
+			document_creation_function, document_storage_id = None, proc = None):
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+
+		params = {'fullInfo': 1}
+		if batch_count:
+			params['count'] = batch_count
+
+		since_revision_use = since_revision
+		total_document_count = None
+
+		# Loop until done
+		documents = []
+		while True:
+			# Retrieve next batch of Documents
+			params['sinceRevision'] = since_revision_use
+			async with self.session.get(f'/v1/document/{document_storage_id_use}/{document_type}',
+					headers = self.headers, params = params) as response:
+				# Process response
+				await self.process_response(response)
+
+				# Decode
+				infos = await response.json()
+				documents_batch = list(map(document_creation_function, infos))
+				documents.extend(documents_batch)
+
+				if documents_batch:
+					# More Documents
+					if not total_document_count:
+						# Retrieve total count from header
+						content_range = response.headers.get('content-range', '')
+						content_range_parts = content_range.split('/')
+						total_document_count = int(content_range_parts[1]) if len(content_range_parts) == 2 else None
+
+					# Check if have proc
+					if proc:
+						# Call proc
+						proc(documents_batch, total_document_count)
+					
+					# Update
+					since_revision_use = max(map(lambda document: document.revision, documents_batch))
+				else:
+					# Have all Documents
+					return documents
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def document_get(self, document_type, document_ids, document_creation_function, document_storage_id = None):
@@ -523,7 +665,7 @@ class MDSClient:
 		# Max each call at 10 documentIDs
 		tasks = []
 		for i in range(0, len(document_ids), 10):
-			# Query for existing Folder
+			# Add task
 			tasks.append(asyncio.ensure_future(worker(document_ids[i:i+10])))
 		await asyncio.gather(*tasks, return_exceptions = True)
 
@@ -572,20 +714,55 @@ class MDSClient:
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def document_attachment_add(self, document_type, document_id, info, content, document_storage_id = None):
-		pass
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+
+		# Queue request
+		async with self.session.post(f'/v1/document/{document_storage_id_use}/{document_type}/{document_id}/attachment',
+				headers = self.headers, json = {'info': info, 'content': content}) as response:
+			# Process response
+			await self.process_response(response)
+
+			return await response.json()
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def document_attachment_get(self, document_type, document_id, attachment_id, document_storage_id = None):
-		pass
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+
+		# Queue request
+		async with self.session.get(
+				f'/v1/document/{document_storage_id_use}/{document_type}/{document_id}/attachment/{attachment_id}',
+				headers = self.headers) as response:
+			# Process response
+			await self.process_response(response)
+
+			return await response.read()
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def document_attachment_update(self, document_type, document_id, attachment_id, info, content,
 			document_storage_id = None):
-		pass
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+
+		# Queue request
+		async with self.session.patch(
+				f'/v1/document/{document_storage_id_use}/{document_type}/{document_id}/attachment/{attachment_id}',
+				headers = self.headers, json = {'info': info, 'content': content}) as response:
+			# Process response
+			await self.process_response(response)
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def document_attachment_remove(self, document_type, document_id, attachment_id, document_storage_id = None):
-		pass
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+
+		# Queue request
+		async with self.session.delete(
+				f'/v1/document/{document_storage_id_use}/{document_type}/{document_id}/attachment/{attachment_id}',
+				headers = self.headers) as response:
+			# Process response
+			await self.process_response(response)
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def index_register(self, name, document_type, relevant_properties, keys_selector, keys_selector_info = {},
@@ -644,15 +821,38 @@ class MDSClient:
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def info_get(self, keys, document_storage_id = None):
-		pass
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+
+		# Queue request
+		async with self.session.get(f'/v1/info/{document_storage_id_use}', headers = self.headers,
+				params = {'key': keys}) as response:
+			# Process response
+			await self.process_response(response)
+
+			return await response.json()
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def info_set(self, info, document_storage_id = None):
-		pass
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+
+		# Queue request
+		async with self.session.post(f'/v1/info/{document_storage_id_use}', headers = self.headers,
+				json = info) as response:
+			# Process response
+			await self.process_response(response)
 
 	#-------------------------------------------------------------------------------------------------------------------
-	async def internals_set(self, info, document_storage_id = None):
-		pass
+	async def internal_set(self, info, document_storage_id = None):
+		# Setup
+		document_storage_id_use = document_storage_id if document_storage_id else self.document_storage_id
+
+		# Queue request
+		async with self.session.post(f'/v1/internal/{document_storage_id_use}', headers = self.headers,
+				json = info) as response:
+			# Process response
+			await self.process_response(response)
 
 	# Private methods
 	#-------------------------------------------------------------------------------------------------------------------
