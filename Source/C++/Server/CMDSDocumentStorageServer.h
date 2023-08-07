@@ -67,62 +67,63 @@ class CMDSDocumentStorageServer : public CMDSDocumentStorage {
 				TArray<CMDSDocument::FullInfo>	mDocumentFullInfos;
 		};
 
+	// Types
+	typedef	TVResult<TDictionary<CMDSDocument::FullInfo> >		DocumentFullInfoDictionaryResult;
+	typedef	TVResult<TArray<CMDSDocument::FullInfo> >			DocumentFullInfosResult;
+	typedef	TVResult<DocumentFullInfosWithTotalCount>			DocumentFullInfosWithTotalCountResult;
+	typedef	TVResult<TDictionary<CMDSDocument::RevisionInfo> >	DocumentRevisionInfoDictionaryResult;
+	typedef	TVResult<TArray<CMDSDocument::RevisionInfo> >		DocumentRevisionInfosResult;
+	typedef	TVResult<DocumentRevisionInfosWithTotalCount>		DocumentRevisionInfosWithTotalCountResult;
+
 	// Methods
 	public:
-		// Instance methods
-		virtual	TVResult<DocumentRevisionInfosWithTotalCount>		associationGetDocumentRevisionInfosFrom(
-																			const CString& name,
-																			const CString& fromDocumentID,
-																			UInt32 startIndex, const OV<UInt32>& count)
-																			const = 0;
-		virtual	TVResult<DocumentRevisionInfosWithTotalCount>		associationGetDocumentRevisionInfosTo(
-																			const CString& name,
-																			const CString& toDocumentID,
-																			UInt32 startIndex, const OV<UInt32>& count)
-																			const = 0;
-		virtual	TVResult<DocumentFullInfosWithTotalCount>			associationGetDocumentFullInfosFrom(
-																			const CString& name,
-																			const CString& fromDocumentID,
-																			UInt32 startIndex, const OV<UInt32>& count)
-																			const = 0;
-		virtual	TVResult<DocumentFullInfosWithTotalCount>			associationGetDocumentFullInfosTo(
-																			const CString& name,
-																			const CString& toDocumentID,
-																			UInt32 startIndex, const OV<UInt32>& count)
-																			const = 0;
+															// Lifecycle methods
+															CMDSDocumentStorageServer() : CMDSDocumentStorage() {}
 
-		virtual	TVResult<TArray<CMDSDocument::RevisionInfo> >		collectionGetDocumentRevisionInfos(
-																			const CString& name, UInt32 startIndex,
-																			const OV<UInt32>& count) const = 0;
-		virtual	TVResult<TArray<CMDSDocument::FullInfo> >			collectionGetDocumentFullInfos(const CString& name,
-																			UInt32 startIndex, const OV<UInt32>& count)
-																			const = 0;
+															// Instance methods
+		virtual	DocumentRevisionInfosWithTotalCountResult	associationGetDocumentRevisionInfosFrom(const CString& name,
+																	const CString& fromDocumentID, UInt32 startIndex,
+																	const OV<UInt32>& count) const = 0;
+		virtual	DocumentRevisionInfosWithTotalCountResult	associationGetDocumentRevisionInfosTo(const CString& name,
+																	const CString& toDocumentID, UInt32 startIndex,
+																	const OV<UInt32>& count) const = 0;
+		virtual	DocumentFullInfosWithTotalCountResult		associationGetDocumentFullInfosFrom(const CString& name,
+																	const CString& fromDocumentID, UInt32 startIndex,
+																	const OV<UInt32>& count) const = 0;
+		virtual	DocumentFullInfosWithTotalCountResult		associationGetDocumentFullInfosTo(const CString& name,
+																	const CString& toDocumentID, UInt32 startIndex,
+																	const OV<UInt32>& count) const = 0;
 
-		virtual	TVResult<TArray<CMDSDocument::RevisionInfo> >		documentRevisionInfos(const CString& documentType,
-																			const TArray<CString>& documentIDs) const
-																			= 0;
-		virtual	TVResult<TArray<CMDSDocument::RevisionInfo> >		documentRevisionInfos(const CString& documentType,
-																			UInt32 sinceRevision,
-																			const OV<UInt32>& count) const = 0;
-		virtual	TVResult<TArray<CMDSDocument::FullInfo> >			documentFullInfos(const CString& documentType,
-																			const TArray<CString>& documentIDs) const
-																			= 0;
-		virtual	TVResult<TArray<CMDSDocument::FullInfo> >			documentFullInfos(const CString& documentType,
-																			UInt32 sinceRevision,
-																			const OV<UInt32>& count) const = 0;
+		virtual	DocumentRevisionInfosResult					collectionGetDocumentRevisionInfos(const CString& name,
+																	UInt32 startIndex, const OV<UInt32>& count) const
+																	= 0;
+		virtual	DocumentFullInfosResult						collectionGetDocumentFullInfos(const CString& name,
+																	UInt32 startIndex, const OV<UInt32>& count) const
+																	= 0;
 
-		virtual	OV<SInt64>											documentIntegerValue(const CString& documentType,
-																			const CMDSDocument& document,
-																			const CString& property) const = 0;
-		virtual	OV<CString>											documentStringValue(const CString& documentType,
-																			const CMDSDocument& document,
-																			const CString& property) const = 0;
-		virtual	TVResult<TArray<CMDSDocument::FullInfo> >			documentUpdate(const CString& documentType,
-																			const TArray<CMDSDocument::UpdateInfo>&
-																					documentUpdateInfos) = 0;
+		virtual	DocumentRevisionInfosResult					documentRevisionInfos(const CString& documentType,
+																	const TArray<CString>& documentIDs) const = 0;
+		virtual	DocumentRevisionInfosResult					documentRevisionInfos(const CString& documentType,
+																	UInt32 sinceRevision, const OV<UInt32>& count) const
+																	= 0;
+		virtual	DocumentFullInfosResult						documentFullInfos(const CString& documentType,
+																	const TArray<CString>& documentIDs) const = 0;
+		virtual	DocumentFullInfosResult						documentFullInfos(const CString& documentType,
+																	UInt32 sinceRevision, const OV<UInt32>& count) const
+																	= 0;
 
-		virtual	TVResult<TDictionary<CMDSDocument::RevisionInfo> >	indexGetDocumentRevisionInfos(const CString& name,
-																			const TArray<CString>& keys);
-		virtual	TVResult<TDictionary<CMDSDocument::FullInfo> >		indexGetDocumentFullInfos(const CString& name,
-																			const TArray<CString>& keys);
+		virtual	OV<SInt64>									documentIntegerValue(const CString& documentType,
+																	const CMDSDocument& document,
+																	const CString& property) const = 0;
+		virtual	OV<CString>									documentStringValue(const CString& documentType,
+																	const CMDSDocument& document,
+																	const CString& property) const = 0;
+		virtual	DocumentFullInfosResult						documentUpdate(const CString& documentType,
+																	const TArray<CMDSDocument::UpdateInfo>&
+																			documentUpdateInfos) = 0;
+
+		virtual	DocumentRevisionInfoDictionaryResult		indexGetDocumentRevisionInfos(const CString& name,
+																	const TArray<CString>& keys) const = 0;
+		virtual	DocumentFullInfoDictionaryResult			indexGetDocumentFullInfos(const CString& name,
+																	const TArray<CString>& keys) const = 0;
 };

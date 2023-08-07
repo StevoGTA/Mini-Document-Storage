@@ -777,7 +777,7 @@
 		0AAC273128B6EEEF006ADEF9 /* InternalUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InternalUnitTests.swift; sourceTree = "<group>"; };
 		0AAC273328B6F2C4006ADEF9 /* InternalTransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InternalTransactionTests.swift; sourceTree = "<group>"; };
 		0AAF04952A70DE34000AF19F /* MDSBatch.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MDSBatch.swift; sourceTree = "<group>"; };
-		0AB3D2452A70E19900347E86 /* SMDSAssociation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SMDSAssociation.h; sourceTree = "<group>"; };
+		0AB3D2452A70E19900347E86 /* CMDSAssociation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CMDSAssociation.h; sourceTree = "<group>"; };
 		0AB3D2492A723EB100347E86 /* TMDSCache.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TMDSCache.h; sourceTree = "<group>"; };
 		0AC76DF02A79D3A600C656A9 /* MDSDocumentStorageServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MDSDocumentStorageServer.swift; sourceTree = "<group>"; };
 		0AC76DF22A79D46D00C656A9 /* CMDSDocumentStorageServer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CMDSDocumentStorageServer.h; sourceTree = "<group>"; };
@@ -1778,11 +1778,11 @@
 				0A9C638F2A19EC8100800DBA /* Remote Storage */,
 				0A9C63902A19EC9400800DBA /* Server */,
 				0A9C637D2A19EC6E00800DBA /* SQLite */,
+				0AB3D2452A70E19900347E86 /* CMDSAssociation.h */,
 				0A9C638D2A19EC6F00800DBA /* CMDSDocument.h */,
 				0A9C637C2A19EC6E00800DBA /* CMDSDocument.cpp */,
 				0A9C638A2A19EC6E00800DBA /* CMDSDocumentStorage.h */,
 				0A9C638C2A19EC6F00800DBA /* CMDSDocumentStorage.cpp */,
-				0AB3D2452A70E19900347E86 /* SMDSAssociation.h */,
 				0A9C638E2A19EC6F00800DBA /* SMDSValue.h */,
 				0A9C638B2A19EC6E00800DBA /* TMDSBatch.h */,
 				0AB3D2492A723EB100347E86 /* TMDSCache.h */,

@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------------------------------------
-//	SMDSAssociation.h			©2023 Stevo Brock	All rights reserved.
+//	CMDSAssociation.h			©2023 Stevo Brock	All rights reserved.
 //----------------------------------------------------------------------------------------------------------------------
 
 #pragma once
@@ -7,9 +7,9 @@
 #include "CMDSDocument.h"
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: SMDSAssociation
+// MARK: CMDSAssociation
 
-class SMDSAssociation : public CEquatable {
+class CMDSAssociation : public CEquatable {
 	// GetIntegerValueAction
 	public:
 		enum GetIntegerValueAction {
@@ -18,7 +18,7 @@ class SMDSAssociation : public CEquatable {
 
 	// Item
 	public:
-		struct Item {
+		struct Item{
 			// Methods
 			public:
 									// Lifecycle methods
@@ -34,6 +34,10 @@ class SMDSAssociation : public CEquatable {
 										{ return mFromDocumentID; }
 				const	CString&	getToDocumentID() const
 										{ return mToDocumentID; }
+
+						bool		operator==(const Item& other) const
+										{ return (mFromDocumentID == other.mFromDocumentID) &&
+												(mToDocumentID == other.mToDocumentID); }
 
 			// Properties
 			private:
@@ -83,14 +87,14 @@ class SMDSAssociation : public CEquatable {
 	// Methods
 	public:
 							// Lifecycle methods
-							SMDSAssociation(const CString& name, const CString& fromDocumentType,
+							CMDSAssociation(const CString& name, const CString& fromDocumentType,
 									const CString& toDocumentType) :
 								mName(name), mFromDocumentType(fromDocumentType), mToDocumentType(toDocumentType)
 								{}
 
 							// CEquatable methods
 				bool		operator==(const CEquatable& other) const
-								{ return mName == ((const SMDSAssociation&) other).mName; }
+								{ return mName == ((const CMDSAssociation&) other).mName; }
 
 							// Instance methods
 		const	CString&	getName() const
