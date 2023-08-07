@@ -595,7 +595,7 @@ class MDSClient {
 		// Loop until done
 		let	documents = [];
 		for (;;) {
-			// Retrieve next batch of documents
+			// Retrieve next batch of Documents
 			let	response = await this.queue.add(() => fetch(urlBase + sinceRevisionUse, options));
 			await processResponse(response);
 		
@@ -772,7 +772,7 @@ class MDSClient {
 
 		let	options =
 					{
-						method: 'POST',
+						method: 'PATCH',
 						headers: headers,
 						body:
 								JSON.stringify(
