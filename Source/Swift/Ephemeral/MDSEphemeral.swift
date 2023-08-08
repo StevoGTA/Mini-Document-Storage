@@ -1508,7 +1508,6 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 						return documentBackings
 								.map({ self.documentBackingByIDMap[$0]! })
 								.filter({ ($0.revision > sinceRevision) && (!activeOnly || $0.active) })
-								.map({ $0 })
 					}
 
 		// Check if have count
