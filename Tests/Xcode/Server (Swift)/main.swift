@@ -53,7 +53,7 @@ struct Server : ParsableCommand {
 
 			case .cppEphemeral:
 				// C++ Ephemeral
-				documentStorage = MDSHTTPServicesHandlerObjC(documentStorageObjC: MDSEphemeralCpp())
+				documentStorage = MDSDocumentStorageServerObjC(documentStorageObjC: MDSEphemeralCpp())
 
 		}
 		MDSHTTPServices.register(documentStorage: documentStorage, for: "Sandbox")

@@ -80,8 +80,6 @@ extension MDSHTTPServices {
 // MARK: - HTTPServer extension
 extension HTTPServer {
 
-	// MARK: Types
-
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
 	func setupMDSEndpoints() {
@@ -128,7 +126,7 @@ extension HTTPServer {
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(associationRegisterEndpoint)
@@ -165,7 +163,7 @@ extension HTTPServer {
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(associationUpdateEndpoint)
@@ -243,7 +241,7 @@ extension HTTPServer {
 				}
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(associationGetEndpoint)
@@ -296,7 +294,7 @@ extension HTTPServer {
 				}
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(associationGetValuesEndpoint)
@@ -370,7 +368,7 @@ extension HTTPServer {
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(cacheRegisterEndpoint)
@@ -422,7 +420,7 @@ extension HTTPServer {
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(collectionRegisterEndpoint)
@@ -446,7 +444,7 @@ extension HTTPServer {
 						nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(collectionGetDocumentCountEndpoint)
@@ -500,7 +498,7 @@ extension HTTPServer {
 				}
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(collectionGetDocumentInfoEndpoint)
@@ -550,7 +548,7 @@ extension HTTPServer {
 						nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentGetCountEndpoint)
@@ -626,7 +624,7 @@ extension HTTPServer {
 				}
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentGetEndpoint)
@@ -650,7 +648,7 @@ extension HTTPServer {
 				return (.ok, nil, .json(infos))
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentUpdateEndpoint)
@@ -682,7 +680,7 @@ extension HTTPServer {
 				return (.ok, nil, .json(documentAttachmentInfo.httpServicesInfo))
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentAttachmentAddEndpoint)
@@ -705,7 +703,7 @@ extension HTTPServer {
 				return (.ok, nil, .data(content))
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentAttachmentGetEndpoint)
@@ -738,7 +736,7 @@ extension HTTPServer {
 				return (.ok, nil, .json(["revision": revision]))
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentAttachmentUpdateEndpoint)
@@ -760,7 +758,7 @@ extension HTTPServer {
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentAttachmentRemoveEndpoint)
@@ -811,7 +809,7 @@ extension HTTPServer {
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(indexRegisterEndpoint)
@@ -849,7 +847,7 @@ extension HTTPServer {
 				}
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(indexGetDocumentInfoEndpoint)

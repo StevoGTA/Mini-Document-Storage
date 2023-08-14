@@ -1,5 +1,5 @@
 //
-//  MDSHTTPServicesHandler+ObjC.swift
+//  MDSDocumentStorageServerObjC.swift
 //  Mini Document Storage Tests
 //
 //  Created by Stevo on 5/22/23.
@@ -8,8 +8,8 @@
 import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: MDSHTTPServicesHandlerObjC
-class MDSHTTPServicesHandlerObjC : MDSDocumentStorageCore, MDSHTTPServicesHandler {
+// MARK: MDSDocumentStorageServerObjC
+class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageServer {
 
 	// MARK: Properties
 	private	let	documentStorageObjC :MDSDocumentStorageObjC
@@ -34,7 +34,12 @@ class MDSHTTPServicesHandlerObjC : MDSDocumentStorageCore, MDSHTTPServicesHandle
 
 	//------------------------------------------------------------------------------------------------------------------
 	func associationGet(for name :String) throws -> [MDSAssociation.Item] {
-// TODO
+		// Get association items
+//		var	associationItems :NSArray?
+//		try self.documentStorageObjC.associationGet(name, associationItems: &associationItems)
+//
+//		return (associationItems as! [MDSAssociationItem]).map(
+//				{ MDSAssociation.Item(fromDocumentID: $0.fromDocumentID, toDocumentID: $0.toDocumentID) })
 return []
 	}
 
@@ -64,15 +69,14 @@ return [:]
 
 	//------------------------------------------------------------------------------------------------------------------
 	func cacheRegister(name :String, documentType :String, relevantProperties :[String],
-			valueInfos :[(name :String, valueType :MDSValueType, selector :String, proc :MDSDocument.ValueProc)])
-			throws {
+			valueInfos :[MDSCache.ValueInfo]) throws {
 // TODO
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
-			isIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
+			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
 // TODO
 	}
 
@@ -89,10 +93,27 @@ return 0
 
 	//------------------------------------------------------------------------------------------------------------------
 	func documentCreate(documentType :String, documentCreateInfos :[MDSDocument.CreateInfo],
-			proc :MDSDocument.CreateProc) ->
+			proc :MDSDocument.CreateProc) throws ->
 			[(document :MDSDocument, documentOverviewInfo :MDSDocument.OverviewInfo?)] {
-// TODO
-return []
+		// Create documents
+		var	documentOverviewInfos :NSArray?
+		try self.documentStorageObjC.documentCreateDocumentType(documentType,
+				documentCreateInfos:
+						documentCreateInfos.map(
+								{ MDSDocumentCreateInfo(documentID: $0.documentID, creationDate: $0.creationDate,
+										modificationDate: $0.modificationDate, propertyMap: $0.propertyMap) }),
+				documentOverviewInfos: &documentOverviewInfos)
+
+		return documentOverviewInfos!.map({
+			// Setup
+			let	documentOverViewInfo = $0 as! MDSDocumentOverviewInfo
+
+			return (MDSDocument(id: documentOverViewInfo.documentID, documentStorage: self),
+						MDSDocument.OverviewInfo(documentID: documentOverViewInfo.documentID,
+								revision: documentOverViewInfo.revision,
+								creationDate: documentOverViewInfo.creationDate,
+								modificationDate: documentOverViewInfo.modificationDate))
+		})
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -192,7 +213,7 @@ return 0
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func info(for keys :[String]) -> [String : String] {
+	func infoGet(for keys :[String]) -> [String : String] {
 // TODO
 return [:]
 	}
@@ -203,7 +224,7 @@ return [:]
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func remove(keys :[String]) {
+	func infoRemove(keys :[String]) {
 		fatalError("Unimplemented")
 	}
 
@@ -222,7 +243,7 @@ return [:]
 		fatalError("Unimplemented")
 	}
 
-	// MARK: MDSHTTPServicesHandler methods
+	// MARK: MDSDocumentStorageServer methods
 	//------------------------------------------------------------------------------------------------------------------
 	func associationGetDocumentRevisionInfos(name :String, from fromDocumentID :String, startIndex :Int, count :Int?)
 			throws -> (totalCount :Int, documentRevisionInfos :[MDSDocument.RevisionInfo]) {

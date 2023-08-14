@@ -8,11 +8,11 @@
 #include "TReferenceTracking.h"
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: CMDSDocumentInternals
+// MARK: CMDSDocument::Internals
 
-class CMDSDocumentInternals : public TReferenceCountable<CMDSDocumentInternals> {
+class CMDSDocument::Internals : public TReferenceCountable<Internals> {
 	public:
-		CMDSDocumentInternals(const CString& id, CMDSDocumentStorage& documentStorage) :
+		Internals(const CString& id, CMDSDocumentStorage& documentStorage) :
 			mID(id), mDocumentStorage(documentStorage)
 			{}
 
@@ -30,7 +30,7 @@ class CMDSDocumentInternals : public TReferenceCountable<CMDSDocumentInternals> 
 CMDSDocument::CMDSDocument(const CString& id, CMDSDocumentStorage& documentStorage)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	mInternals = new CMDSDocumentInternals(id, documentStorage);
+	mInternals = new Internals(id, documentStorage);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -67,14 +67,14 @@ CMDSDocumentStorage& CMDSDocument::getDocumentStorage() const
 UniversalTime CMDSDocument::getCreationUniversalTime() const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return mInternals->mDocumentStorage.getCreationUniversalTime(*this);
+	return mInternals->mDocumentStorage.documentCreationUniversalTime(*this);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 UniversalTime CMDSDocument::getModificationUniversalTime() const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return mInternals->mDocumentStorage.getModificationUniversalTime(*this);
+	return mInternals->mDocumentStorage.documentModificationUniversalTime(*this);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -82,7 +82,7 @@ OV<TArray<CString> > CMDSDocument::getArrayOfStrings(const CString& property) co
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OV<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
 	AssertFailIf(value.hasValue() && (value->getType() != SValue::kArrayOfStrings));
 
 	return value.hasValue() ? OV<TArray<CString> >(value->getArrayOfStrings()) : OV<TArray<CString> >();
@@ -93,7 +93,7 @@ void CMDSDocument::set(const CString& property, const TArray<CString>& value) co
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Set value
-	mInternals->mDocumentStorage.set(property, OV<SValue>(value), *this);
+	mInternals->mDocumentStorage.documentSet(property, OV<SValue>(value), *this);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -101,7 +101,7 @@ OV<TArray<CDictionary> > CMDSDocument::getArrayOfDictionaries(const CString& pro
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OV<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
 	AssertFailIf(value.hasValue() && (value->getType() != SValue::kArrayOfDictionaries));
 
 	return value.hasValue() ? OV<TArray<CDictionary> >(value->getArrayOfDictionaries()) : OV<TArray<CDictionary> >();
@@ -112,7 +112,7 @@ void CMDSDocument::set(const CString& property, const TArray<CDictionary>& value
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Set value
-	mInternals->mDocumentStorage.set(property, OV<SValue>(value), *this);
+	mInternals->mDocumentStorage.documentSet(property, OV<SValue>(value), *this);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -120,7 +120,7 @@ OV<bool> CMDSDocument::getBool(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OV<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
 	AssertFailIf(value.hasValue() && (value->getType() != SValue::kBool));
 
 	return value.hasValue() ? OV<bool>(value->getBool()) : OV<bool>();
@@ -134,7 +134,7 @@ OV<bool> CMDSDocument::set(const CString& property, bool value) const
 	OV<bool>	previousValue = getBool(property);
 	if (!previousValue.hasValue() || (value != *previousValue))
 		// Set value
-		mInternals->mDocumentStorage.set(property, OV<SValue>(value), *this);
+		mInternals->mDocumentStorage.documentSet(property, OV<SValue>(value), *this);
 
 	return previousValue;
 }
@@ -143,7 +143,7 @@ OV<bool> CMDSDocument::set(const CString& property, bool value) const
 OV<CData> CMDSDocument::getData(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return mInternals->mDocumentStorage.getData(property, *this);
+	return mInternals->mDocumentStorage.documentData(property, *this);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -154,7 +154,7 @@ OV<CData> CMDSDocument::set(const CString& property, const CData& value) const
 	OV<CData>	previousValue = getData(property);
 	if (!previousValue.hasValue() || (value != *previousValue))
 		// Set value
-		mInternals->mDocumentStorage.set(property, OV<SValue>(value), *this);
+		mInternals->mDocumentStorage.documentSet(property, OV<SValue>(value), *this);
 
 	return previousValue;
 }
@@ -164,7 +164,7 @@ OV<CDictionary> CMDSDocument::getDictionary(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OV<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
 	AssertFailIf(value.hasValue() && (value->getType() != SValue::kDictionary));
 
 	return value.hasValue() ? OV<CDictionary>(value->getDictionary()) : OV<CDictionary>();
@@ -178,7 +178,7 @@ OV<CDictionary> CMDSDocument::set(const CString& property, const CDictionary& va
 	OV<CDictionary>	previousValue = getDictionary(property);
 	if (!previousValue.hasValue() || (value != *previousValue))
 		// Set value
-		mInternals->mDocumentStorage.set(property, OV<SValue>(value), *this);
+		mInternals->mDocumentStorage.documentSet(property, OV<SValue>(value), *this);
 
 	return previousValue;
 }
@@ -188,7 +188,7 @@ OV<Float32> CMDSDocument::getFloat32(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OV<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
 	AssertFailIf(value.hasValue() && (value->getType() != SValue::kFloat32));
 
 	return value.hasValue() ? OV<Float32>(value->getFloat32()) : OV<Float32>();
@@ -202,7 +202,7 @@ OV<Float32> CMDSDocument::set(const CString& property, Float32 value) const
 	OV<Float32>	previousValue = getFloat32(property);
 	if (!previousValue.hasValue() || (value != *previousValue))
 		// Set value
-		mInternals->mDocumentStorage.set(property, OV<SValue>(value), *this);
+		mInternals->mDocumentStorage.documentSet(property, OV<SValue>(value), *this);
 
 	return previousValue;
 }
@@ -212,7 +212,7 @@ OV<Float64> CMDSDocument::getFloat64(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OV<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
 	AssertFailIf(value.hasValue() && (value->getType() != SValue::kFloat64));
 
 	return value.hasValue() ? OV<Float64>(value->getFloat64()) : OV<Float64>();
@@ -226,7 +226,7 @@ OV<Float64> CMDSDocument::set(const CString& property, Float64 value) const
 	OV<Float64>	previousValue = getFloat64(property);
 	if (!previousValue.hasValue() || (value != *previousValue))
 		// Set value
-		mInternals->mDocumentStorage.set(property, OV<SValue>(value), *this);
+		mInternals->mDocumentStorage.documentSet(property, OV<SValue>(value), *this);
 
 	return previousValue;
 }
@@ -236,7 +236,7 @@ OV<SInt32> CMDSDocument::getSInt32(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OV<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
 	AssertFailIf(value.hasValue() && (value->getType() != SValue::kSInt32));
 
 	return value.hasValue() ? OV<SInt32>(value->getSInt32()) : OV<SInt32>();
@@ -250,7 +250,7 @@ OV<SInt32> CMDSDocument::set(const CString& property, SInt32 value) const
 	OV<SInt32>	previousValue = getSInt32(property);
 	if (!previousValue.hasValue() || (value != *previousValue))
 		// Set value
-		mInternals->mDocumentStorage.set(property, OV<SValue>(value), *this);
+		mInternals->mDocumentStorage.documentSet(property, OV<SValue>(value), *this);
 
 	return previousValue;
 }
@@ -260,7 +260,7 @@ OV<SInt64> CMDSDocument::getSInt64(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OV<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
 	AssertFailIf(value.hasValue() && (value->getType() != SValue::kSInt64));
 
 	return value.hasValue() ? OV<SInt64>(value->getSInt64()) : OV<SInt64>();
@@ -274,7 +274,7 @@ OV<SInt64> CMDSDocument::set(const CString& property, SInt64 value) const
 	OV<SInt64>	previousValue = getSInt64(property);
 	if (!previousValue.hasValue() || (value != *previousValue))
 		// Set value
-		mInternals->mDocumentStorage.set(property, OV<SValue>(value), *this);
+		mInternals->mDocumentStorage.documentSet(property, OV<SValue>(value), *this);
 
 	return previousValue;
 }
@@ -284,7 +284,7 @@ OV<CString> CMDSDocument::getString(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OV<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
 	AssertFailIf(value.hasValue() && (value->getType() != SValue::kString));
 
 	return value.hasValue() ? OV<CString>(value->getString()) : OV<CString>();
@@ -298,7 +298,7 @@ OV<CString> CMDSDocument::set(const CString& property, const CString& value) con
 	OV<CString>	previousValue = getString(property);
 	if (!previousValue.hasValue() || (value != *previousValue))
 		// Set value
-		mInternals->mDocumentStorage.set(property, OV<SValue>(value), *this);
+		mInternals->mDocumentStorage.documentSet(property, OV<SValue>(value), *this);
 
 	return previousValue;
 }
@@ -308,7 +308,7 @@ OV<UInt8> CMDSDocument::getUInt8(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OV<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
 	AssertFailIf(value.hasValue() && (value->getType() != SValue::kUInt8));
 
 	return value.hasValue() ? OV<UInt8>(value->getUInt8()) : OV<UInt8>();
@@ -322,7 +322,7 @@ OV<UInt8> CMDSDocument::set(const CString& property, UInt8 value) const
 	OV<UInt8>	previousValue = getUInt8(property);
 	if (!previousValue.hasValue() || (value != *previousValue))
 		// Set value
-		mInternals->mDocumentStorage.set(property, OV<SValue>(value), *this);
+		mInternals->mDocumentStorage.documentSet(property, OV<SValue>(value), *this);
 
 	return previousValue;
 }
@@ -335,7 +335,7 @@ OV<UInt8> CMDSDocument::set(const CString& property, const OV<UInt8>& value) con
 	OV<UInt8>	previousValue = getUInt8(property);
 	if (value != previousValue)
 		// Set value
-		mInternals->mDocumentStorage.set(property, value.hasValue() ? OV<SValue>(*value) : OV<SValue>(), *this);
+		mInternals->mDocumentStorage.documentSet(property, value.hasValue() ? OV<SValue>(*value) : OV<SValue>(), *this);
 
 	return previousValue;
 }
@@ -345,7 +345,7 @@ OV<UInt16> CMDSDocument::getUInt16(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OV<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
 	AssertFailIf(value.hasValue() && (value->getType() != SValue::kUInt16));
 
 	return value.hasValue() ? OV<UInt16>(value->getUInt16()) : OV<UInt16>();
@@ -359,7 +359,7 @@ OV<UInt16> CMDSDocument::set(const CString& property, UInt16 value) const
 	OV<UInt16>	previousValue = getUInt16(property);
 	if (!previousValue.hasValue() || (value != *previousValue))
 		// Set value
-		mInternals->mDocumentStorage.set(property, OV<SValue>(value), *this);
+		mInternals->mDocumentStorage.documentSet(property, OV<SValue>(value), *this);
 
 	return previousValue;
 }
@@ -369,7 +369,7 @@ OV<UInt32> CMDSDocument::getUInt32(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OV<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
 	AssertFailIf(value.hasValue() && (value->getType() != SValue::kUInt32));
 
 	return value.hasValue() ? OV<UInt32>(value->getUInt32()) : OV<UInt32>();
@@ -383,7 +383,7 @@ OV<UInt32> CMDSDocument::set(const CString& property, UInt32 value) const
 	OV<UInt32>	previousValue = getUInt32(property);
 	if (!previousValue.hasValue() || (value != *previousValue))
 		// Set value
-		mInternals->mDocumentStorage.set(property, OV<SValue>(value), *this);
+		mInternals->mDocumentStorage.documentSet(property, OV<SValue>(value), *this);
 
 	return previousValue;
 }
@@ -393,7 +393,7 @@ OV<UInt64> CMDSDocument::getUInt64(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OV<SValue>	value = mInternals->mDocumentStorage.getValue(property, *this);
+	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
 	AssertFailIf(value.hasValue() && (value->getType() != SValue::kUInt64));
 
 	return value.hasValue() ? OV<UInt64>(value->getUInt64()) : OV<UInt64>();
@@ -407,7 +407,7 @@ OV<UInt64> CMDSDocument::set(const CString& property, UInt64 value) const
 	OV<UInt64>	previousValue = getUInt64(property);
 	if (!previousValue.hasValue() || (value != *previousValue))
 		// Set value
-		mInternals->mDocumentStorage.set(property, OV<SValue>(value), *this);
+		mInternals->mDocumentStorage.documentSet(property, OV<SValue>(value), *this);
 
 	return previousValue;
 }
@@ -416,7 +416,7 @@ OV<UInt64> CMDSDocument::set(const CString& property, UInt64 value) const
 OV<UniversalTime> CMDSDocument::getUniversalTime(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return mInternals->mDocumentStorage.getUniversalTime(property, *this);
+	return mInternals->mDocumentStorage.documentUniversalTime(property, *this);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -427,7 +427,8 @@ OV<UniversalTime> CMDSDocument::setUniversalTime(const CString& property, Univer
 	OV<UniversalTime>	previousValue = getUniversalTime(property);
 	if (!previousValue.hasValue() || (value != *previousValue))
 		// Set value
-		mInternals->mDocumentStorage.set(property, OV<SValue>(value), *this);
+		mInternals->mDocumentStorage.documentSet(property, OV<SValue>(value), *this,
+				CMDSDocumentStorage::kSetValueKindUniversalTime);
 
 	return previousValue;
 }
@@ -553,12 +554,12 @@ void CMDSDocument::remove(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Set value
-	mInternals->mDocumentStorage.set(property, OV<SValue>(), *this);
+	mInternals->mDocumentStorage.documentSet(property, OV<SValue>(), *this);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void CMDSDocument::remove() const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	mInternals->mDocumentStorage.remove(*this);
+	mInternals->mDocumentStorage.documentRemove(*this);
 }

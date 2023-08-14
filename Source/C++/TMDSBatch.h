@@ -4,8 +4,8 @@
 
 #pragma once
 
+#include "CMDSAssociation.h"
 #include "CUUID.h"
-#include "SMDSAssociation.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: EMDSBatchResult
@@ -275,31 +275,31 @@ template <typename DB> class TMDSBatch {
 
 												// Instance methods
 		void									associationNoteUpdated(const CString& name,
-														const TArray<SMDSAssociation::Update>& updates)
+														const TArray<CMDSAssociation::Update>& updates)
 													{ mAssociationUpdatesByAssociationName.add(name, updates); }
 		TSet<CString>							associationGetUpdatedNames() const
 													{ return mAssociationUpdatesByAssociationName.getKeys(); }
-		TArray<SMDSAssociation::Update>			associationGetUpdates(const CString& name) const
+		TArray<CMDSAssociation::Update>			associationGetUpdates(const CString& name) const
 													{ return mAssociationUpdatesByAssociationName[name]; }
-		TArray<SMDSAssociation::Item>			getAssocationItems(const CString& name,
-														const TArray<SMDSAssociation::Item>& initialAssociationItems)
+		TArray<CMDSAssociation::Item>			getAssocationItems(const CString& name,
+														const TArray<CMDSAssociation::Item>& initialAssociationItems)
 														const
 													{
 														// Start with initial
-														TNArray<SMDSAssociation::Item>	associationItemsUpdated(
+														TNArray<CMDSAssociation::Item>	associationItemsUpdated(
 																								initialAssociationItems);
 
 														// Check if have updates
 														if (mAssociationUpdatesByAssociationName.contains(name)) {
 															// Get updates
-															TArray<SMDSAssociation::Update>	associationUpdates =
-																									mAssociationUpdatesByAssociationName[name];
-															for (TIteratorD<SMDSAssociation::Update> iterator =
+															TArray<CMDSAssociation::Update>	associationUpdates =
+																									*mAssociationUpdatesByAssociationName[name];
+															for (TIteratorD<CMDSAssociation::Update> iterator =
 																			associationUpdates.getIterator();
 																	iterator.hasValue(); iterator.advance()) {
 																// Check update
 																if (iterator->getAction() ==
-																		SMDSAssociation::Update::kActionAdd)
+																		CMDSAssociation::Update::kActionAdd)
 																	// Add
 																	associationItemsUpdated.add(iterator->getItem());
 																else
@@ -310,16 +310,16 @@ template <typename DB> class TMDSBatch {
 
 														return associationItemsUpdated;
 													}
-		TArray<SMDSAssociation::Update>			getAssociationUpdates(const CString& name) const
+		TArray<CMDSAssociation::Update>			getAssociationUpdates(const CString& name) const
 													{ return mAssociationUpdatesByAssociationName.contains(name) ?
 															mAssociationUpdatesByAssociationName[name] :
-															TNArray<SMDSAssociation::Update>(); }
+															TNArray<CMDSAssociation::Update>(); }
 
 		DocumentInfo&							documentAdd(const CString& documentType, const CString& documentID,
-														const OV<DB>& documentBacking,
+														const OR<DB>& documentBacking,
 														UniversalTime creationUniversalTime,
 														UniversalTime modificationUniversalTime,
-														const CDictionary& initialPropertyMap)
+														const OV<CDictionary>& initialPropertyMap)
 													{
 														// Setup
 														DocumentInfo	documentInfo(documentType, documentBacking,
@@ -328,13 +328,13 @@ template <typename DB> class TMDSBatch {
 																				initialPropertyMap);
 
 														// Store
-														mDocumentInfosByDocumentID.set(documentID, documentInfo);
+														mDocumentInfoByDocumentID.set(documentID, documentInfo);
 
-														return mDocumentInfosByDocumentID[documentID];
+														return *mDocumentInfoByDocumentID[documentID];
 													}
 		OR<DocumentInfo>						documentInfoGet(const CString& documentID) const
-													{ return mDocumentInfosByDocumentID.contains(documentID) ?
-															mDocumentInfosByDocumentID[documentID] :
+													{ return mDocumentInfoByDocumentID.contains(documentID) ?
+															mDocumentInfoByDocumentID[documentID] :
 															OR<DocumentInfo>(); }
 		TDictionary<TDictionary<DocumentInfo> >	documentGetInfosByDocumentType()
 													{
@@ -343,12 +343,12 @@ template <typename DB> class TMDSBatch {
 
 														// Iterate changes
 														TSet<CString>	documentIDs =
-																				mDocumentInfosByDocumentID.getKeys();
+																				mDocumentInfoByDocumentID.getKeys();
 														for (TIteratorS<CString> iterator = documentIDs.getIterator();
 																iterator.hasValue(); iterator.advance()) {
 															// Update
 															DocumentInfo&	documentInfo =
-																					*mDocumentInfosByDocumentID[
+																					*mDocumentInfoByDocumentID[
 																							*iterator];
 															if (!info.contains(documentInfo.getDocumentType()))
 																// Create dictionary
@@ -363,6 +363,6 @@ template <typename DB> class TMDSBatch {
 
 	// Properties
 	private:
-		TNDictionary<DocumentInfo>					mDocumentInfosByDocumentID;
-		TNArrayDictionary<SMDSAssociation::Update>	mAssociationUpdatesByAssociationName;
+		TNDictionary<DocumentInfo>					mDocumentInfoByDocumentID;
+		TNArrayDictionary<CMDSAssociation::Update>	mAssociationUpdatesByAssociationName;
 };

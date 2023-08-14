@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0A0F72C22A8315900099C6D9 /* SError.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F3892A0E133C00E4F149 /* SError.cpp */; };
 		0A1F7FDD27E40244007F8920 /* DocumentUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1F7FDC27E40244007F8920 /* DocumentUnitTests.swift */; };
 		0A1F7FE727E40519007F8920 /* MDSRemoteStorageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551F127C5D8E7003E497B /* MDSRemoteStorageCache.swift */; };
 		0A1F7FE827E40519007F8920 /* MDSRemoteStorageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551F127C5D8E7003E497B /* MDSRemoteStorageCache.swift */; };
@@ -65,7 +66,7 @@
 		0A2F30852A1743D600855E9B /* CppToolboxAssert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F3882A0E133C00E4F149 /* CppToolboxAssert.cpp */; };
 		0A2F30862A17442700855E9B /* CppToolboxAssert-Apple.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F34C2A0E133B00E4F149 /* CppToolboxAssert-Apple.cpp */; };
 		0A2F30872A17447600855E9B /* CCoreServices-Apple.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F33E2A0E133B00E4F149 /* CCoreServices-Apple.cpp */; };
-		0A36CDDA2A1C968B005C7A40 /* MDSHTTPServicesHandler+ObjC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A36CDD92A1C968B005C7A40 /* MDSHTTPServicesHandler+ObjC.swift */; };
+		0A36CDDA2A1C968B005C7A40 /* MDSDocumentStorageServerObjC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A36CDD92A1C968B005C7A40 /* MDSDocumentStorageServerObjC.swift */; };
 		0A36CDDD2A1C9D1F005C7A40 /* MDSEphemeralCpp.mm in Sources */ = {isa = PBXBuildFile; fileRef = 0A36CDDC2A1C9D1F005C7A40 /* MDSEphemeralCpp.mm */; };
 		0A36CDF72A1F2FC5005C7A40 /* MDSDocumentStorageObjC.mm in Sources */ = {isa = PBXBuildFile; fileRef = 0A36CDF62A1F2FC5005C7A40 /* MDSDocumentStorageObjC.mm */; };
 		0A36CDF82A1F3201005C7A40 /* CMDSEphemeral.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A9C63892A19EC6E00800DBA /* CMDSEphemeral.cpp */; };
@@ -635,7 +636,7 @@
 		0A1F801D27E40558007F8920 /* ConcurrentQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConcurrentQueue.swift; sourceTree = "<group>"; };
 		0A1F801E27E40558007F8920 /* BatchQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchQueue.swift; sourceTree = "<group>"; };
 		0A1F801F27E40558007F8920 /* SerialQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SerialQueue.swift; sourceTree = "<group>"; };
-		0A36CDD92A1C968B005C7A40 /* MDSHTTPServicesHandler+ObjC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MDSHTTPServicesHandler+ObjC.swift"; sourceTree = "<group>"; };
+		0A36CDD92A1C968B005C7A40 /* MDSDocumentStorageServerObjC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MDSDocumentStorageServerObjC.swift; sourceTree = "<group>"; };
 		0A36CDDB2A1C9D0C005C7A40 /* MDSEphemeralCpp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MDSEphemeralCpp.h; sourceTree = "<group>"; };
 		0A36CDDC2A1C9D1F005C7A40 /* MDSEphemeralCpp.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MDSEphemeralCpp.mm; sourceTree = "<group>"; };
 		0A36CDDE2A1C9EA7005C7A40 /* MDSDocumentStorageObjC.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MDSDocumentStorageObjC.h; sourceTree = "<group>"; };
@@ -1835,9 +1836,9 @@
 			isa = PBXGroup;
 			children = (
 				0ADC8E8828BED43600632551 /* main.swift */,
-				0A36CDD92A1C968B005C7A40 /* MDSHTTPServicesHandler+ObjC.swift */,
 				0A36CDDE2A1C9EA7005C7A40 /* MDSDocumentStorageObjC.h */,
 				0A36CDF62A1F2FC5005C7A40 /* MDSDocumentStorageObjC.mm */,
+				0A36CDD92A1C968B005C7A40 /* MDSDocumentStorageServerObjC.swift */,
 				0A36CDDB2A1C9D0C005C7A40 /* MDSEphemeralCpp.h */,
 				0A36CDDC2A1C9D1F005C7A40 /* MDSEphemeralCpp.mm */,
 				0A36CDE22A1CA171005C7A40 /* Server-Bridging-Header.h */,
@@ -2179,6 +2180,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0A0F72C22A8315900099C6D9 /* SError.cpp in Sources */,
 				0A2F30802A17434D00855E9B /* CSet.cpp in Sources */,
 				0ADC8EA728BED86500632551 /* File.swift in Sources */,
 				0ADC8EAF28BED8DC00632551 /* String+Extensions.swift in Sources */,
@@ -2205,7 +2207,7 @@
 				0ADC8EB028BED8E900632551 /* BatchQueue.swift in Sources */,
 				0A9C63742A19EAC300800DBA /* CSQLiteInnerJoin.cpp in Sources */,
 				0ADC8EB228BED90400632551 /* Dictionary+Extensions.swift in Sources */,
-				0A36CDDA2A1C968B005C7A40 /* MDSHTTPServicesHandler+ObjC.swift in Sources */,
+				0A36CDDA2A1C968B005C7A40 /* MDSDocumentStorageServerObjC.swift in Sources */,
 				0AB3D2462A70EA4A00347E86 /* CMDSDocument.cpp in Sources */,
 				0A9C63702A19EAC300800DBA /* CSQLiteTableColumn.cpp in Sources */,
 				0A9C63732A19EAC300800DBA /* CSQLiteDatabase.cpp in Sources */,

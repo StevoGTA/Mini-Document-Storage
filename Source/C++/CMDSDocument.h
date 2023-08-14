@@ -170,8 +170,9 @@ class CMDSDocument : public CHashable {
 	public:
 		struct CreateInfo {
 											// Lifecycle methods
-											CreateInfo(const CString& documentID, UniversalTime creationUniversalTime,
-													UniversalTime modificationUniversalTime,
+											CreateInfo(const OV<CString>& documentID,
+													const OV<UniversalTime>& creationUniversalTime,
+													const OV<UniversalTime>& modificationUniversalTime,
 													const CDictionary& propertyMap) :
 												mDocumentID(documentID), mCreationUniversalTime(creationUniversalTime),
 														mModificationUniversalTime(modificationUniversalTime),
@@ -207,9 +208,10 @@ class CMDSDocument : public CHashable {
 		struct CreateResultInfo {
 											// Lifecycle methods
 											CreateResultInfo(const I<CMDSDocument>& document,
-													const OV<OverviewInfo>& overviewInfo) :
+													const OverviewInfo& overviewInfo) :
 												mDocument(document), mOverviewInfo(overviewInfo)
 												{}
+											CreateResultInfo(const I<CMDSDocument>& document) : mDocument(document) {}
 											CreateResultInfo(const CreateResultInfo& other) :
 												mDocument(other.mDocument), mOverviewInfo(other.mOverviewInfo)
 												{}
@@ -258,7 +260,7 @@ class CMDSDocument : public CHashable {
 		struct ChangedInfo {
 			// Procs
 			public:
-				typedef	void	(*Proc)(const CMDSDocument& document, ChangeKind changeKind, void* userData);
+				typedef	void	(*Proc)(const I<CMDSDocument>& document, ChangeKind changeKind, void* userData);
 
 			// Methods
 			public:
@@ -267,7 +269,7 @@ class CMDSDocument : public CHashable {
 						ChangedInfo(const ChangedInfo& other) : mProc(other.mProc), mUserData(other.mUserData) {}
 
 						// Instance methods
-				void	notify(const CMDSDocument& document, ChangeKind changeKind) const
+				void	notify(const I<CMDSDocument>& document, ChangeKind changeKind) const
 							{ mProc(document, changeKind, mUserData); }
 			// Properties
 			private:
@@ -346,7 +348,7 @@ class CMDSDocument : public CHashable {
 		struct ValueInfo {
 			// Procs
 			public:
-				typedef	SValue	(*Proc)(const CString& documentType, const CMDSDocument& document,
+				typedef	SValue	(*Proc)(const CString& documentType, const I<CMDSDocument>& document,
 										const CString& property, void* userData);
 
 			// Methods
@@ -362,7 +364,7 @@ class CMDSDocument : public CHashable {
 									// Instance methods
 				const	CString&	getSelector() const
 											{ return mSelector; }
-						SValue		perform(const CString& documentType, const CMDSDocument& document,
+						SValue		perform(const CString& documentType, const I<CMDSDocument>& document,
 											const CString& property) const
 										{ return mProc(documentType, document, property, mUserData); }
 
@@ -399,7 +401,7 @@ class CMDSDocument : public CHashable {
 	public:
 		typedef	I<CMDSDocument>	(*CreateProc)(const CString& id, CMDSDocumentStorage& documentStorage);
 		typedef	void			(*KeyProc)(const CString& key, const CMDSDocument& document, void* userData);
-		typedef	void			(*Proc)(CMDSDocument& document, void* userData);
+		typedef	void			(*Proc)(const I<CMDSDocument>& document, void* userData);
 
 	// Infos
 	public:
@@ -458,7 +460,6 @@ class CMDSDocument : public CHashable {
 															{ getID().hashInto(hasher); }
 
 														// Instance methods
-		virtual			I<CMDSDocument>					copy() const = 0;
 		virtual	const	Info&							getInfo() const = 0;
 
 				const	CString&						getDocumentType() const
@@ -611,18 +612,18 @@ class CMDSDocument : public CHashable {
 
 template <typename T> struct TMDSUpdateInfo {
 									// Lifecycle methods
-									TMDSUpdateInfo(const I<CMDSDocument*>& document, UInt32 revision, T id,
+									TMDSUpdateInfo(const I<CMDSDocument>& document, UInt32 revision, T id,
 											const TSet<CString> changedProperties) :
 										mDocument(document), mRevision(revision), mID(id),
 												mChangedProperties(OV<TSet<CString> >(changedProperties))
 										{}
-									TMDSUpdateInfo(const I<CMDSDocument*>& document, UInt32 revision, T id) :
+									TMDSUpdateInfo(const I<CMDSDocument>& document, UInt32 revision, T id) :
 										mDocument(document), mRevision(revision), mID(id),
 												mChangedProperties(OV<TSet<CString> >())
 										{}
 
 									// Instance methods
-		const	I<CMDSDocument*>&	getDocument() const
+		const	I<CMDSDocument>&	getDocument() const
 										{ return mDocument; }
 				UInt32				getRevision() const
 										{ return mRevision; }
@@ -633,7 +634,7 @@ template <typename T> struct TMDSUpdateInfo {
 
 	// Properties
 	private:
-		I<CMDSDocument*>	mDocument;
+		I<CMDSDocument>		mDocument;
 		UInt32				mRevision;
 		T					mID;
 		OV<TSet<CString> >	mChangedProperties;

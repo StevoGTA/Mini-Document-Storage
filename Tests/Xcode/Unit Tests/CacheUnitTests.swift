@@ -21,7 +21,7 @@ class CacheUnitTests : XCTestCase {
 		let	error =
 					config.httpEndpointClient.cacheRegister(documentStorageID: "ABC", name: "ABC",
 							documentType: Child.documentType,
-							valueInfos: [("ABC", .integer, "integerValueForProperty()")])
+							valueInfos: [(MDSValueInfo(name: "ABC", type: .integer), "integerValueForProperty()")])
 
 		// Evaluate results
 		XCTAssertNotNil(error, "did not receive error")
@@ -431,7 +431,7 @@ class CacheUnitTests : XCTestCase {
 		let	error =
 					config.httpEndpointClient.cacheRegister(documentStorageID: config.documentStorageID, name: "ABC",
 							documentType: Child.documentType,
-							valueInfos: [("ABC", .integer, "integerValueForProperty()")])
+							valueInfos: [(MDSValueInfo(name: "ABC", type: .integer), "integerValueForProperty()")])
 
 		// Evaluate results
 		XCTAssertNil(error, "received error")

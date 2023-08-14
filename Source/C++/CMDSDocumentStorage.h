@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "SMDSAssociation.h"
+#include "CMDSAssociation.h"
 #include "TMDSBatch.h"
 #include "TMDSCache.h"
 #include "TResult.h"
@@ -26,11 +26,11 @@ class CMDSDocumentStorage {
 		typedef	TVResult<EMDSBatchResult>	(*BatchProc)(void* userData);
 
 	// Types
-	typedef	TVResult<TArray<SMDSAssociation::Item> >			AssociationItemsResult;
+	typedef	TVResult<TArray<CMDSAssociation::Item> >			AssociationItemsResult;
 	typedef	TVResult<CMDSDocument::AttachmentInfo>				DocumentAttachmentInfoResult;
 	typedef	TVResult<CMDSDocument::AttachmentInfoMap>			DocumentAttachmentInfoMapResult;
-	typedef	TVResult<TArray<CMDSDocument::CreateResultInfo> >	DocumentCreateResultInfosResult;
 	typedef	TArray<CMDSDocument::ChangedInfo>					DocumentChangedInfos;
+	typedef	TVResult<TArray<CMDSDocument::CreateResultInfo> >	DocumentCreateResultInfosResult;
 	typedef	OR<CMDSDocument::IsIncludedPerformer>				DocumentIsIncludedPerformer;
 	typedef	OR<CMDSDocument::KeysPerformer>						DocumentKeysPerformer;
 	typedef	OR<CMDSDocument::ValueInfo>							DocumentValueInfo;
@@ -42,7 +42,7 @@ class CMDSDocumentStorage {
 	// Methods
 	public:
 														// Lifecycle methods
-		virtual											~CMDSDocumentStorage() {}
+		virtual											~CMDSDocumentStorage();
 
 														// Instance methods
 				const	CString&						getID() const;
@@ -60,12 +60,12 @@ class CMDSDocumentStorage {
 															const CString& fromDocumentType,
 															CMDSDocument::Proc proc, void* procUserData) const = 0;
 		virtual			TVResult<CDictionary>			associationGetIntegerValues(const CString& name,
-																SMDSAssociation::GetIntegerValueAction action,
+																CMDSAssociation::GetIntegerValueAction action,
 																const TArray<CString>& fromDocumentIDs,
 																const CString& cacheName,
 																const TArray<CString>& cachedValueNames) const = 0;
 		virtual			OV<SError>						associationUpdate(const CString& name,
-																const TArray<SMDSAssociation::Update>& updates) = 0;
+																const TArray<CMDSAssociation::Update>& updates) = 0;
 
 		virtual			OV<SError>						cacheRegister(const CString& name,
 																const CString& documentType,
@@ -86,7 +86,7 @@ class CMDSDocumentStorage {
 		virtual			DocumentCreateResultInfosResult	documentCreate(const CString& documentType,
 																const TArray<CMDSDocument::CreateInfo>&
 																		documentCreateInfos,
-																CMDSDocument::CreateProc proc) = 0;
+																const CMDSDocument::InfoForNew& documentInfoForNew) = 0;
 		virtual			TVResult<UInt32>				documentGetCount(const CString& documentType) const = 0;
 		virtual			OV<SError>						documentIterate(const CMDSDocument::Info& documentInfo,
 																const TArray<CString>& documentIDs,
@@ -134,7 +134,7 @@ class CMDSDocumentStorage {
 																const TArray<CString>& relevantProperties,
 																const CDictionary& keysInfo,
 																const CMDSDocument::KeysPerformer&
-																		documentKeysPerformer);
+																		documentKeysPerformer) = 0;
 		virtual			void							indexIterate(const CString& name,
 																const CString& documentType,
 																const TArray<CString>& keys,
@@ -154,6 +154,58 @@ class CMDSDocumentStorage {
 //															const CMDSDocument& toDocument,
 //															const CMDSDocument& toDocument,
 
+														// Instance methods
+						void							registerDocumentCreateInfo(
+																const CMDSDocument::Info& documentInfo);
+						void							registerDocumentChangedInfos(
+																const CMDSDocument::Info& documentInfo,
+																const CMDSDocument::ChangedInfo& documentChangedInfo);
+						void							registerDocumentIsIncludedPerformers(
+																const TArray<CMDSDocument::IsIncludedPerformer>&
+																		documentIsIncludedPerformers);
+						void							registerDocumentKeysPerformers(
+																const TArray<CMDSDocument::KeysPerformer>&
+																		documentKeysPerformers);
+						void							registerValueInfos(
+																const TArray<CMDSDocument::ValueInfo>&
+																		documentValueInfos);
+
+
+	protected:
+														// Lifecycle methods
+														CMDSDocumentStorage();
+
+														// Subclass methods
+				const	CMDSDocument::Info&				documentCreateInfo(const CString& documentType) const;
+						DocumentChangedInfos			documentChangedInfos(const CString& documentType) const;
+						DocumentIsIncludedPerformer		documentIsIncludedPerformer(const CString& selector) const;
+						DocumentKeysPerformer			documentKeysPerformer(const CString& selector) const;
+						DocumentValueInfo				documentValueInfo(const CString& selector) const;
+
+														// Class methods
+		static			SError							getInvalidCountError(UInt32 count);
+		static			SError							getInvalidDocumentTypeError(const CString& documentType);
+		static			SError							getInvalidStartIndexError(UInt32 startIndex);
+
+		static			SError							getMissingFromIndexError(const CString& key);
+
+		static			SError							getUnknownAssociationError(const CString& name);
+
+		static			SError							getUnknownAttachmentIDError(const CString& attachmentID);
+
+		static			SError							getUnknownCacheError(const CString& name);
+		static			SError							getUnknownCacheValueName(const CString& valueName);
+		static			SError							getUnknownCacheValueSelector(const CString& selector);
+
+		static			SError							getUnknownCollectionError(const CString& name);
+
+		static			SError							getUnknownDocumentIDError(const CString& documentID);
+		static			SError							getUnknownDocumentTypeError(const CString& documentType);
+
+		static			SError							getUnknownIndexError(const CString& name);
+
+		static			SError							getIllegalInBatchError();
+
 	private:
 														// Instance methods
 						CString							associationName(const CString& fromDocumentType,
@@ -163,10 +215,6 @@ class CMDSDocumentStorage {
 //															const TArray<CString>& relevantProperties,
 //															const CMDSDocument::Info& documentInfo,
 //															const TArray<CString>& relevantProperties,
-
-		protected:
-														// Lifecycle methods
-														CMDSDocumentStorage();
 
 	// Properties
 	private:
