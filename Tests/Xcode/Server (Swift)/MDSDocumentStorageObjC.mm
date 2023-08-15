@@ -11,7 +11,57 @@
 #import "CMDSDocumentStorage.h"
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: MDSDocumentOverviewInfo
+// MARK: MDSAssociationItem
+
+@implementation MDSAssociationItem
+
+// MARK: Instance methods
+
+//----------------------------------------------------------------------------------------------------------------------
+- (instancetype) initWithFromDocumentID:(NSString*) fromDocumentID toDocumentID:(NSString*) toDocumentID
+{
+	// Do super
+	self = [super init];
+	if (self) {
+		// Store
+		self.fromDocumentID = fromDocumentID;
+		self.toDocumentID = toDocumentID;
+	}
+
+	return self;
+}
+
+@end
+
+//----------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSAssociationUpdate
+
+@implementation MDSAssociationUpdate
+
+// MARK: Instance methods
+
+//----------------------------------------------------------------------------------------------------------------------
+- (instancetype) initWithAction:(MDSAssociationUpdateAction) action
+		fromDocumentID:(NSString*) fromDocumentID toDocumentID:(NSString*) toDocumentID
+{
+	// Do super
+	self = [super init];
+	if (self) {
+		// Store
+		self.action = action;
+		self.fromDocumentID = fromDocumentID;
+		self.toDocumentID = toDocumentID;
+	}
+
+	return self;
+}
+
+@end
+
+//----------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSDocumentOverviewInfo
 
 @implementation MDSDocumentOverviewInfo
 
@@ -143,6 +193,70 @@ CMDSDocument::Info	CGenericDocument::mInfo(mDocumentType, CGenericDocument::crea
 						self.documentStorage->associationRegister(CString((__bridge CFStringRef) name),
 								CString((__bridge CFStringRef) fromDocumentType),
 								CString((__bridge CFStringRef) toDocumentType));
+
+	return [self composeResultsFrom:sError error:error];
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+- (BOOL) associationGetNamed:(NSString*) name
+		associationItems:(MDSAssociationItemArray* _Nullable * _Nullable) associationItems error:(NSError**) error
+{
+	// Get all associations
+	TVResult<TArray<CMDSAssociation::Item> >	associationItemsResult =
+														self.documentStorage->associationGet(
+																CString((__bridge CFStringRef) name));
+	if (associationItemsResult.hasError()) {
+		// Error
+		*error = [self errorFrom:associationItemsResult.getError()];
+
+		return NO;
+	}
+
+	// Prepare results
+	*associationItems = [[NSMutableArray alloc] init];
+	for (TIteratorD<CMDSAssociation::Item> iterator = associationItemsResult.getValue().getIterator();
+			iterator.hasValue(); iterator.advance())
+		// Add item
+		[(NSMutableArray*) *associationItems
+				addObject:
+						[[MDSAssociationItem alloc]
+								initWithFromDocumentID:(__bridge NSString*) iterator->getFromDocumentID().getOSString()
+										toDocumentID:(__bridge NSString*) iterator->getToDocumentID().getOSString()]];
+
+	return YES;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+- (BOOL) associationUpdateNamed:(NSString*) name associationUpdates:(MDSAssociationUpdateArray*) associationUpdates
+		error:(NSError**) error
+{
+	// Setup
+	TNArray<CMDSAssociation::Update>	cppAssociationUpdates;
+	for (MDSAssociationUpdate* associationUpdate in associationUpdates) {
+		// Get info
+		switch (associationUpdate.action) {
+			case kMDSAssociationUpdateActionAdd:
+				// Add
+				cppAssociationUpdates +=
+						CMDSAssociation::Update::add(
+								CString((__bridge CFStringRef) associationUpdate.fromDocumentID),
+								CString((__bridge CFStringRef) associationUpdate.toDocumentID));
+				break;
+
+			case kMDSAssociationUpdateActionRemove:
+				// Remove
+				cppAssociationUpdates +=
+						CMDSAssociation::Update::remove(
+								CString((__bridge CFStringRef) associationUpdate.fromDocumentID),
+								CString((__bridge CFStringRef) associationUpdate.toDocumentID));
+				break;
+		}
+	}
+
+	// Update association
+	OV<SError>	sError =
+						self.documentStorage->associationUpdate(CString((__bridge CFStringRef) name),
+								cppAssociationUpdates);
 
 	return [self composeResultsFrom:sError error:error];
 }

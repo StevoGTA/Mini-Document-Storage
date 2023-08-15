@@ -8,7 +8,20 @@
 import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: MDSDocumentStorageServerObjC
+// MARK: MDSAssociation.Update.Action extension
+extension MDSAssociation.Update.Action {
+
+	// MARK: Properties
+	var	associationUpdateAction :MDSAssociationUpdateAction {
+				switch (self) {
+					case .add:		return MDSAssociationUpdateAction.add
+					case .remove:	return MDSAssociationUpdateAction.remove
+				}
+			}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSDocumentStorageServerObjC
 class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageServer {
 
 	// MARK: Properties
@@ -35,12 +48,11 @@ class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageS
 	//------------------------------------------------------------------------------------------------------------------
 	func associationGet(for name :String) throws -> [MDSAssociation.Item] {
 		// Get association items
-//		var	associationItems :NSArray?
-//		try self.documentStorageObjC.associationGet(name, associationItems: &associationItems)
-//
-//		return (associationItems as! [MDSAssociationItem]).map(
-//				{ MDSAssociation.Item(fromDocumentID: $0.fromDocumentID, toDocumentID: $0.toDocumentID) })
-return []
+		var	associationItems :NSArray?
+		try self.documentStorageObjC.associationGetNamed(name, associationItems: &associationItems)
+
+		return (associationItems as! [MDSAssociationItem]).map(
+				{ MDSAssociation.Item(fromDocumentID: $0.fromDocumentID, toDocumentID: $0.toDocumentID) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -64,7 +76,12 @@ return [:]
 
 	//------------------------------------------------------------------------------------------------------------------
 	func associationUpdate(for name :String, updates :[MDSAssociation.Update]) throws {
-// TODO
+		// Update association
+		try self.documentStorageObjC.associationUpdateNamed(name,
+				associationUpdates:
+						updates.map({
+							MDSAssociationUpdate(action: $0.action.associationUpdateAction,
+									fromDocumentID: $0.item.fromDocumentID, toDocumentID: $0.item.toDocumentID) }))
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
