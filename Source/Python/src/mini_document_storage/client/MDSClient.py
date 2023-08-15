@@ -711,7 +711,7 @@ class MDSClient:
 		tasks = []
 		for i in range(0, len(documents_to_update), 50):
 			# Query for existing Folder
-			tasks.append(asyncio.ensure_future(worker(documents_to_update[i:i+10])))
+			tasks.append(asyncio.ensure_future(worker(documents_to_update[i:i+50])))
 		await asyncio.gather(*tasks, return_exceptions = True)
 
 	#-------------------------------------------------------------------------------------------------------------------
