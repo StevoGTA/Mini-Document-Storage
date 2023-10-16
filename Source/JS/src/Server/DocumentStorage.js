@@ -388,7 +388,7 @@ module.exports = class DocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentUpdate(documentStorageID, documentType, infos) {
+	async documentUpdate(documentStorageID, documentTypeOrDocuments, infosOrNull) {
 		// Setup
 		let	statementPerformer = this.statementPerformerProc();
 		statementPerformer.use(documentStorageID);
@@ -398,11 +398,27 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	results;
+			if (typeof documentTypeOrDocuments == 'string') {
+				// Document type + infos
+				({results} =
 						await statementPerformer.batch(true,
-								() => { return internals.documents.update(statementPerformer, documentType, infos); });
+								() => { return internals.documents.update(statementPerformer,
+										documentTypeOrDocuments, infosOrNull); }));
 			
-			return results;
+				return results;
+			} else if (documentTypeOrDocuments.length > 0) {
+				// Documents
+				({results} =
+						await statementPerformer.batch(true,
+								() => internals.documents.update(statementPerformer,
+										documentTypeOrDocuments[0].prototype.documentType,
+										documentTypeOrDocuments.map(document => document.updateInfo))));
+				
+				for (let i = 0; i < documentTypeOrDocuments.length; i++)
+					// Update document
+					documentTypeOrDocuments[i].updateFromUpdate(results[i]);
+			}
 		} catch (error) {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
@@ -736,15 +752,6 @@ function documentPropertyIsValue(info, selectorInfo) {
 	let	value = selectorInfo.value;
 	
 	return property && (value != null) && (info[property] == value);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-function documentPropertyIsOneOfValues(info, selectorInfo) {
-	// Setup
-	let	property = selectorInfo.property;
-	let	values = selectorInfo.values;
-
-	return property && values && Array.isArray(values) && (info[property] != null) && values.includes(info[property]);
 }
 
 // Built-in Index functions

@@ -159,7 +159,7 @@ exports.getValueV1 = async (event) => {
 	try {
 		// Get Association value
 		let	[upToDate, results, error] =
-					await galaxyDocumentStorage.associationGetValue(documentStorageID, name, action, fromDocumentIDs,
+					await documentStorage.associationGetValue(documentStorageID, name, action, fromDocumentIDs,
 							cacheName, cachedValueNames);
 		if (upToDate)
 			// Success
