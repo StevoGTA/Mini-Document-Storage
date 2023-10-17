@@ -387,7 +387,7 @@ module.exports = class DocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentUpdate(documentStorageID, documentTypeOrDocuments, infosOrNull) {
+	async documentUpdate(documentStorageID, documentType, documentsOrInfos) {
 		// Setup
 		let	statementPerformer = this.statementPerformerProc();
 		statementPerformer.use(documentStorageID);
@@ -398,21 +398,20 @@ module.exports = class DocumentStorage {
 		try {
 			// Do it
 			let	results;
-			if (typeof documentTypeOrDocuments == 'string') {
-				// Document type + infos
+			if ((documentsOrInfos.length == 0) || (documentsOrInfos[0].constructor.name == 'Object')) {
+				// Infos
 				({results} =
 						await statementPerformer.batch(true,
-								() => { return internals.documents.update(statementPerformer,
-										documentTypeOrDocuments, infosOrNull); }));
+								() => { return internals.documents.update(statementPerformer, documentType,
+										infosOrNull); }));
 			
 				return results;
-			} else if (documentTypeOrDocuments.length > 0) {
+			} else {
 				// Documents
 				({results} =
 						await statementPerformer.batch(true,
-								() => internals.documents.update(statementPerformer,
-										eval(documentTypeOrDocuments[0].constructor.name + '.documentType'),
-										documentTypeOrDocuments.map(document => document.updateInfo))));
+								() => internals.documents.update(statementPerformer, documentType,
+										documentsOrInfos.map(document => document.updateInfo))));
 				
 				for (let i = 0; i < documentTypeOrDocuments.length; i++)
 					// Update document
