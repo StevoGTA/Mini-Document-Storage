@@ -413,9 +413,9 @@ module.exports = class DocumentStorage {
 								() => internals.documents.update(statementPerformer, documentType,
 										documentsOrInfos.map(document => document.updateInfo))));
 				
-				for (let i = 0; i < documentTypeOrDocuments.length; i++)
+				for (let i = 0; i < documentsOrInfos.length; i++)
 					// Update document
-					documentTypeOrDocuments[i].updateFromUpdate(results[i]);
+					documentsOrInfos[i].updateFromUpdate(results[i]);
 			}
 		} catch (error) {
 			// Error
