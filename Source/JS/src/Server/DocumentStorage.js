@@ -412,10 +412,10 @@ module.exports = class DocumentStorage {
 						await statementPerformer.batch(true,
 								() => internals.documents.update(statementPerformer, documentType,
 										documentsOrInfos.map(document => document.updateInfo))));
-				
+				let	infos = results[0];
 				for (let i = 0; i < documentsOrInfos.length; i++)
 					// Update document
-					documentsOrInfos[i].updateFromUpdate(results[i]);
+					documentsOrInfos[i].updateFromUpdate(infos[i]);
 			}
 		} catch (error) {
 			// Error
