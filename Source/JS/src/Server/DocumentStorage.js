@@ -38,7 +38,6 @@ module.exports = class DocumentStorage {
 				Object.assign(
 						{
 							'documentPropertyIsValue()': documentPropertyIsValue,
-							'documentPropertyIsOneOfValues()': documentPropertyIsOneOfValues,
 						},
 						collectionIsIncludedSelectorInfo || {});
 		this.indexKeysSelectorInfo =
