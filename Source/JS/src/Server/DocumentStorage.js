@@ -411,7 +411,7 @@ module.exports = class DocumentStorage {
 				({results} =
 						await statementPerformer.batch(true,
 								() => internals.documents.update(statementPerformer,
-										documentTypeOrDocuments[0].prototype.documentType,
+										eval(documentTypeOrDocuments[0].constructor.name + '.documentType'),
 										documentTypeOrDocuments.map(document => document.updateInfo))));
 				
 				for (let i = 0; i < documentTypeOrDocuments.length; i++)
