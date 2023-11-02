@@ -37,7 +37,10 @@ module.exports = class DocumentStorage {
 		this.collectionIsIncludedSelectorInfo =
 				Object.assign(
 						{
+							'documentHasProperty()': documentHasProperty,
+							'documentDoesNotHaveProperty()': documentDoesNotHaveProperty,
 							'documentPropertyIsValue()': documentPropertyIsValue,
+							'documentPropertyIsOneOfValues()': documentPropertyIsOneOfValues,
 						},
 						collectionIsIncludedSelectorInfo || {});
 		this.indexKeysSelectorInfo =
@@ -744,12 +747,37 @@ function integerValueForProperty(info, property) { return info[property] || 0; }
 
 // Built-in Collection functions
 //----------------------------------------------------------------------------------------------------------------------
+function documentHasProperty(info, selectorInfo) {
+	// Setup
+	let	property = selectorInfo.property;
+	
+	return property in info;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+function documentDoesNotHaveProperty(info, selectorInfo) {
+	// Setup
+	let	property = selectorInfo.property;
+
+	return !(property in info);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 function documentPropertyIsValue(info, selectorInfo) {
 	// Setup
 	let	property = selectorInfo.property;
 	let	value = selectorInfo.value;
 	
 	return property && (value != null) && (info[property] == value);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+function documentPropertyIsOneOfValues(info, selectorInfo) {
+	// Setup
+	let	property = selectorInfo.property;
+	let	values = selectorInfo.values;
+
+	return property && values && Array.isArray(values) && (info[property] != null) && values.includes(info[property]);
 }
 
 // Built-in Index functions
