@@ -37,10 +37,26 @@ module.exports = class DocumentStorage {
 		this.collectionIsIncludedSelectorInfo =
 				Object.assign(
 						{
-							'documentHasProperty()': documentHasProperty,
-							'documentDoesNotHaveProperty()': documentDoesNotHaveProperty,
-							'documentPropertyIsValue()': documentPropertyIsValue,
-							'documentPropertyIsOneOfValues()': documentPropertyIsOneOfValues,
+							'documentHasProperty()':
+								{
+									selector: documentHasProperty,
+									checkRelevantProperties: true,
+								},
+							'documentDoesNotHaveProperty()':
+								{
+									selector: documentDoesNotHaveProperty,
+									checkRelevantProperties: false,
+								},
+							'documentPropertyIsValue()':
+								{
+									selector: documentPropertyIsValue,
+									checkRelevantProperties: true,
+								},
+							'documentPropertyIsOneOfValues()':
+								{
+									selector: documentPropertyIsOneOfValues,
+									checkRelevantProperties: true,
+								},
 						},
 						collectionIsIncludedSelectorInfo || {});
 		this.indexKeysSelectorInfo =
@@ -743,52 +759,53 @@ module.exports = class DocumentStorage {
 
 // Built-in Cache functions
 //----------------------------------------------------------------------------------------------------------------------
-function integerValueForProperty(info, property) { return info[property] || 0; }
+function integerValueForProperty(propertyMap, property) { return propertyMap[property] || 0; }
 
 // Built-in Collection functions
 //----------------------------------------------------------------------------------------------------------------------
-function documentHasProperty(info, selectorInfo) {
+function documentHasProperty(propertyMap, configuration) {
 	// Setup
-	let	property = selectorInfo.property;
+	let	property = configuration.property;
 	
-	return property in info;
+	return property in propertyMap;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-function documentDoesNotHaveProperty(info, selectorInfo) {
+function documentDoesNotHaveProperty(propertyMap, configuration) {
 	// Setup
-	let	property = selectorInfo.property;
+	let	property = configuration.property;
 
-	return !(property in info);
+	return !(property in propertyMap);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-function documentPropertyIsValue(info, selectorInfo) {
+function documentPropertyIsValue(propertyMap, configuration) {
 	// Setup
-	let	property = selectorInfo.property;
-	let	value = selectorInfo.value;
+	let	property = configuration.property;
+	let	value = configuration.value;
 	
-	return property && (value != null) && (info[property] == value);
+	return property && (value != null) && (propertyMap[property] == value);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-function documentPropertyIsOneOfValues(info, selectorInfo) {
+function documentPropertyIsOneOfValues(propertyMap, configuration) {
 	// Setup
-	let	property = selectorInfo.property;
-	let	values = selectorInfo.values;
+	let	property = configuration.property;
+	let	values = configuration.values;
 
-	return property && values && Array.isArray(values) && (info[property] != null) && values.includes(info[property]);
+	return property && values && Array.isArray(values) && (propertyMap[property] != null) &&
+			values.includes(propertyMap[property]);
 }
 
 // Built-in Index functions
 //----------------------------------------------------------------------------------------------------------------------
-function keysForDocumentProperty(info, selectorInfo) {
+function keysForDocumentProperty(propertyMap, configuration) {
 	// Retrieve and check property
-	let	property = selectorInfo.property;
+	let	property = configuration.property;
 	if (!property)	return [];
 
 	// Retrieve value
-	let	value = info[property];
+	let	value = propertyMap[property];
 
 	return (value != null) ? [value] : [];
 }

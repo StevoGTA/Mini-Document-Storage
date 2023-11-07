@@ -11,14 +11,14 @@ module.exports = class Collection {
 
 	// Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	constructor(statementPerformer, name, type, relevantProperties, isIncludedSelector, isIncludedSelectorInfo,
+	constructor(statementPerformer, name, type, relevantProperties, selectorInfo, selectorConfiguration,
 			lastDocumentRevision) {
 		// Store
 		this.name = name;
 		this.type = type;
 		this.relevantProperties = relevantProperties;
-		this.isIncludedSelector = isIncludedSelector;
-		this.isIncludedSelectorInfo = isIncludedSelectorInfo;
+		this.selectorInfo = selectorInfo;
+		this.selectorConfiguration = selectorConfiguration;
 		this.lastDocumentRevision = lastDocumentRevision;
 
 		// Setup
@@ -46,16 +46,21 @@ module.exports = class Collection {
 		// Check last revision
 		if (initialLastRevision == this.lastDocumentRevision) {
 			// Setup
+			let	selector = this.selectorInfo.selector;
+			let	checkRelevantProperties = this.selectorInfo.checkRelevantProperties;
+
 			var	notIncludedIDs = [];
 
 			// Iterate update document infos
 			for (let updateDocumentInfo of updateDocumentInfos) {
 				// Check if json overlaps with the relevant properties
-				if (Object.keys(updateDocumentInfo.json).find(property => this.relevantProperties.includes(property))) {
+				if (!checkRelevantProperties ||
+						Object.keys(updateDocumentInfo.json)
+								.find(property => this.relevantProperties.includes(property))) {
 					// Check active
 					if (updateDocumentInfo.active) {
 						// Call includedFunction for info
-						let	isIncluded = this.isIncludedSelector(updateDocumentInfo.json, this.isIncludedSelectorInfo);
+						let	isIncluded = selector(updateDocumentInfo.json, this.selectorConfiguration);
 
 						// Check results
 						if (isIncluded) {
