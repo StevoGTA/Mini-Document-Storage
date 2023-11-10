@@ -57,7 +57,12 @@ module.exports = class DocumentStorage {
 									selector: documentPropertyIsOneOfValues,
 									checkRelevantProperties: true,
 								},
-						},
+							'documentPropertyIsNotValue()':
+							{
+								selector: documentPropertyIsNotValue,
+								checkRelevantProperties: true,
+							},
+					},
 						collectionIsIncludedSelectorInfo || {});
 		this.indexKeysSelectorInfo =
 				Object.assign(
@@ -795,6 +800,15 @@ function documentPropertyIsOneOfValues(propertyMap, configuration) {
 
 	return property && values && Array.isArray(values) && (propertyMap[property] != null) &&
 			values.includes(propertyMap[property]);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+function documentPropertyIsNotValue(propertyMap, configuration) {
+	// Setup
+	let	property = configuration.property;
+	let	value = configuration.value;
+	
+	return property && (value != null) && (propertyMap[property] != value);
 }
 
 // Built-in Index functions
