@@ -41,12 +41,14 @@ class MDSDocument:
 	@property
 	def creation_date(self):															# datetime (None if not yet created)
 		value = self.info.get('creationDate')
-		return datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ') if value else None
+
+		return datetime.fromisoformat(value.replace('Z', '+00:00')) if value else None
 	
 	@property
 	def modification_date(self):														# datetime (None if not yet created)
 		value = self.info.get('modificationDate')
-		return datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%fZ') if value else None
+
+		return datetime.fromisoformat(value.replace('Z', '+00:00')) if value else None
 	
 	@property
 	def	has_create_info(self):															# bool
