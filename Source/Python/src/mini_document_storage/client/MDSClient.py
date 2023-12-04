@@ -204,12 +204,12 @@ class MDSClient:
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def association_get_document_map_from(self, name, documents, document_type, document_creation_function,
-			document_storage_id = None):
+			document_storage_id = None, individual_retrieval_threshold = 5):
 		# Setup
 		to_documents_by_from_document_id = {}
 
-		# Check how many documents in play (5 is just a guess at minimizing actual API calls)
-		if len(documents) <= 5:
+		# Check how many documents in play
+		if len(documents) <= individual_retrieval_threshold:
 			# Retrieve associations for each document
 			for document in documents:
 				# Retrieve "to" documents for this "from" document
@@ -321,12 +321,12 @@ class MDSClient:
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def association_get_document_map_to(self, name, documents, document_type, document_creation_function,
-			document_storage_id = None):
+			document_storage_id = None, individual_retrieval_threshold = 5):
 		# Setup
 		from_documents_by_to_document_id = {}
 
-		# Check how many documents in play (5 is just a guess at minimizing actual API calls)
-		if len(documents) <= 5:
+		# Check how many documents in play
+		if len(documents) <= individual_retrieval_threshold:
 			# Retrieve associations for each document
 			for document in documents:
 				# Retrieve "from" documents for this "to" document
