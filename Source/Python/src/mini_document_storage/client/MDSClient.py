@@ -250,7 +250,7 @@ class MDSClient:
 			# Compose final dict
 			for from_document_id in from_document_ids:
 				# Update final dict
-				to_document_ids = to_document_ids_by_from_document_id[from_document_id]
+				to_document_ids = to_document_ids_by_from_document_id.get(from_document_id, [])
 				to_documents_by_from_document_id[from_document_id] = list(map(lambda document_id: to_document_by_document_id.get(document_id), to_document_ids))
 
 		return to_documents_by_from_document_id
@@ -367,7 +367,7 @@ class MDSClient:
 			# Compose final dict
 			for to_document_id in to_document_ids:
 				# Update final dict
-				from_document_ids = from_document_ids_by_to_document_id[to_document_id]
+				from_document_ids = from_document_ids_by_to_document_id.get(to_document_id, [])
 				from_documents_by_to_document_id[to_document_id] = list(map(lambda document_id: from_document_by_document_id.get(document_id), from_document_ids))
 
 		return from_documents_by_to_document_id
