@@ -652,7 +652,7 @@ class MDSClient:
 		# Setup
 		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
 
-		documents = []
+		# Define worker function
 		async def worker(document_ids):
 			# Queue request
 			async with self.session.get(f'/v1/document/{document_storage_id}/{document_type}',
@@ -660,16 +660,20 @@ class MDSClient:
 				# Process response
 				await self.process_response(response)
 
-				# Decode info and add Documents
-				results = await response.json()
-				documents.extend(list(map(document_creation_function, results)))
+				return await response.json()
 
 		# Max each call at 10 documentIDs
 		tasks = []
 		for i in range(0, len(document_ids), 10):
 			# Add task
 			tasks.append(asyncio.ensure_future(worker(document_ids[i:i+10])))
-		await asyncio.gather(*tasks, return_exceptions = True)
+		resultss = await asyncio.gather(*tasks, return_exceptions = True)
+
+		# Compose documents list
+		documents = []
+		for results in resultss:
+			# Decode info and add Documents
+			documents.extend(list(map(document_creation_function, results)))
 
 		return documents
 
@@ -710,7 +714,7 @@ class MDSClient:
 		# Max each call at 50 updates
 		tasks = []
 		for i in range(0, len(documents_to_update), 50):
-			# Query for existing Folder
+			# Add task
 			tasks.append(asyncio.ensure_future(worker(documents_to_update[i:i+50])))
 		await asyncio.gather(*tasks, return_exceptions = True)
 
