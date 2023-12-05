@@ -13,6 +13,30 @@
 // MARK: CMDSDocumentStorage
 
 class CMDSDocumentStorage {
+	// CacheValueInfo
+	public:
+		struct CacheValueInfo {
+			// Methods
+			public:
+										// Lifecycle methods
+										CacheValueInfo(const SMDSValueInfo& valueInfo, const CString& selector) :
+											mValueInfo(valueInfo), mSelector(selector)
+											{}
+										CacheValueInfo(const CacheValueInfo& other) :
+											mValueInfo(other.mValueInfo), mSelector(other.mSelector)
+											{}
+
+										// Instance methods
+				const	SMDSValueInfo&	getValueInfo() const
+											{ return mValueInfo; }
+				const	CString&		getSelector() const
+											{ return mSelector; }
+			// Properties
+			private:
+				SMDSValueInfo	mValueInfo;
+				CString			mSelector;
+		};
+
 	// SetValueKind
 	public:
 		enum SetValueKind {
@@ -70,7 +94,7 @@ class CMDSDocumentStorage {
 		virtual			OV<SError>						cacheRegister(const CString& name,
 																const CString& documentType,
 																const TArray<CString>& relevantProperties,
-																const TArray<SMDSCacheValueInfo>& valueInfos) = 0;
+																const TArray<CacheValueInfo>& cacheValueInfos) = 0;
 
 		virtual			OV<SError>						collectionRegister(const CString& name,
 																const CString& documentType,
@@ -121,6 +145,7 @@ class CMDSDocumentStorage {
 																= 0;
 		virtual			TVResult<UInt32>				documentAttachmentUpdate(const CString& documentType,
 																const CString& documentID,
+																const CString& attachmentID,
 																const CDictionary& updatedInfo,
 																const CData& updatedContent) = 0;
 		virtual			OV<SError>						documentAttachmentRemove(const CString& documentType,
@@ -135,7 +160,7 @@ class CMDSDocumentStorage {
 																const CDictionary& keysInfo,
 																const CMDSDocument::KeysPerformer&
 																		documentKeysPerformer) = 0;
-		virtual			void							indexIterate(const CString& name,
+		virtual			OV<SError>						indexIterate(const CString& name,
 																const CString& documentType,
 																const TArray<CString>& keys,
 																CMDSDocument::KeyProc keyProc, void* keyProcUserData)
@@ -143,7 +168,7 @@ class CMDSDocumentStorage {
 
 		virtual			TVResult<TDictionary<CString> >	infoGet(const TArray<CString>& keys) const = 0;
 		virtual			OV<SError>						infoSet(const TDictionary<CString>& info) = 0;
-		virtual			OV<SError>						remove(const TArray<CString>& keys) = 0;
+		virtual			OV<SError>						infoRemove(const TArray<CString>& keys) = 0;
 
 		virtual			TVResult<TDictionary<CString> >	internalGet(const TArray<CString>& keys) const = 0;
 		virtual			OV<SError>						internalSet(const TDictionary<CString>& info) = 0;
@@ -153,6 +178,27 @@ class CMDSDocumentStorage {
 //															const CMDSDocument::Info& toDocumentInfo,
 //															const CMDSDocument& toDocument,
 //															const CMDSDocument& toDocument,
+						OV<SError>						collectionRegister(const CString& name,
+																const CString& documentType,
+																const TArray<CString>& relevantProperties,
+																bool isUpToDate, const CDictionary& isIncludedInfo,
+																const CString& isIncludedSelector)
+															{ return collectionRegister(name, documentType,
+																	relevantProperties, isUpToDate, isIncludedInfo,
+																	*documentIsIncludedPerformer(isIncludedSelector)); }
+
+						DocumentCreateResultInfosResult	documentCreate(const CString& documentType,
+																const TArray<CMDSDocument::CreateInfo>&
+																		documentCreateInfos);
+
+						OV<SError>						indexRegister(const CString& name,
+																const CString& documentType,
+																const TArray<CString>& relevantProperties,
+																const CDictionary& keysInfo,
+																const CString& keysSelector)
+															{ return indexRegister(name, documentType,
+																	relevantProperties, keysInfo,
+																	*documentKeysPerformer(keysSelector)); }
 
 														// Instance methods
 						void							registerDocumentCreateInfo(
@@ -178,6 +224,8 @@ class CMDSDocumentStorage {
 														// Subclass methods
 				const	CMDSDocument::Info&				documentCreateInfo(const CString& documentType) const;
 						DocumentChangedInfos			documentChangedInfos(const CString& documentType) const;
+						void							notifyDocumentChanged(const CMDSDocument& document,
+																CMDSDocument::ChangeKind documentChangeKind) const;
 						DocumentIsIncludedPerformer		documentIsIncludedPerformer(const CString& selector) const;
 						DocumentKeysPerformer			documentKeysPerformer(const CString& selector) const;
 						DocumentValueInfo				documentValueInfo(const CString& selector) const;
@@ -212,9 +260,6 @@ class CMDSDocumentStorage {
 																const CString& toDocumentType)
 															{ return fromDocumentType + CString(OSSTR("To")) +
 																	toDocumentType.capitalizingFirstLetter(); }
-//															const TArray<CString>& relevantProperties,
-//															const CMDSDocument::Info& documentInfo,
-//															const TArray<CString>& relevantProperties,
 
 	// Properties
 	private:

@@ -72,21 +72,22 @@ template <typename T, typename AT> class TMDSCollection : public CEquatable {
 											for (TIteratorD<TMDSUpdateInfo<T> > iterator = updateInfos.getIterator();
 													iterator.hasValue(); iterator.advance()) {
 												// Check if there is something to do
-												if (!iterator->mChangedProperties.hasValue() ||
+												if (!iterator->getChangedProperties().hasValue() ||
 														(mRelevantProperties.intersects(
-																*iterator->mChangedProperties))) {
+																*iterator->getChangedProperties()))) {
 													// Query
 													if (mDocumentIsIncludedPerformer.perform(mDocumentType,
-															iterator->mDocument, mIsIncludedInfo))
+															iterator->getDocument(), mIsIncludedInfo))
 														// Included
-														includedIDs += iterator->mID;
+														includedIDs += iterator->getID();
 													else
 														// Not included
-														notIncludedIDs += iterator->mID;
+														notIncludedIDs += iterator->getID();
 												}
 
 												// Update last revision
-												mLastRevision = std::max<UInt32>(mLastRevision, iterator->mRevision);
+												mLastRevision =
+														std::max<UInt32>(mLastRevision, iterator->getRevision());
 												lastRevision.setValue(mLastRevision);
 											}
 

@@ -99,156 +99,185 @@ template <typename DB> class TMDSBatch {
 			typedef	CMDSDocument::AttachmentInfo	AttachmentInfo;
 			typedef	CMDSDocument::AttachmentInfoMap	AttachmentInfoMap;
 
-										// Lifecycle methods
-										DocumentInfo(const CString& documentType, const OR<DB>& documentBacking,
-												UniversalTime creationUniversalTime,
-												UniversalTime modificationUniversalTime,
-												const OV<CDictionary>& initialPropertyMap) :
-											mDocumentType(documentType), mDocumentBacking(documentBacking),
-													mCreationUniversalTime(creationUniversalTime),
-													mModificationUniversalTime(modificationUniversalTime),
-													mRemoved(false),
-													mInitialPropertyMap(initialPropertyMap)
-											{}
+														// Lifecycle methods
+														DocumentInfo(const CString& documentType,
+																const R<DB>& documentBacking) :
+															mDocumentType(documentType),
+																	mDocumentBacking(*documentBacking),
+																	mCreationUniversalTime(
+																			documentBacking->
+																					getCreationUniversalTime()),
+																	mModificationUniversalTime(
+																			SUniversalTime::getCurrent()),
+																	mRemoved(false),
+																	mInitialPropertyMap(
+																			documentBacking->getPropertyMap())
+															{}
+														DocumentInfo(const CString& documentType,
+																UniversalTime creationUniversalTime,
+																UniversalTime modificationUniversalTime,
+																const OV<CDictionary>& initialPropertyMap) :
+															mDocumentType(documentType),
+																	mCreationUniversalTime(creationUniversalTime),
+																	mModificationUniversalTime(
+																			modificationUniversalTime),
+																	mRemoved(false),
+																	mInitialPropertyMap(initialPropertyMap)
+															{}
 
-										// Instance methods
-//			const	CString&			getDocumentType() const
-//											{ return mDocumentType; }
-//			const	CString&			getDocumentID() const
-//											{ return mDocumentID; }
-//			const	OI<DB>				getReference() const
-//											{ return mReference; }
-//
-//					UniversalTime		getCreationUniversalTime() const
-//											{ return mCreationUniversalTime; }
-//					UniversalTime		getModificationUniversalTime() const
-//											{ return mModificationUniversalTime; }
-//			const	CDictionary&		getUpdatedPropertyMap() const
-//											{ return mUpdatedPropertyMap; }
-//			const	TSet<CString>&		getRemovedProperties() const
-//											{ return mRemovedProperties; }
-//
-//					bool				isRemoved() const
-//											{ return mRemoved; }
+														// Instance methods
+			const	CString&							getDocumentType() const
+															{ return mDocumentType; }
 
+					UniversalTime						getCreationUniversalTime() const
+															{ return mCreationUniversalTime; }
+					UniversalTime						getModificationUniversalTime() const
+															{ return mModificationUniversalTime; }
+			const	CDictionary&						getUpdatedPropertyMap() const
+															{ return mUpdatedPropertyMap; }
+			const	TSet<CString>&						getRemovedProperties() const
+															{ return mRemovedProperties; }
 
-					OV<SValue>			getValue(const CString& property)
-											{
-												// Check for document removed
-												if (mRemoved || mRemovedProperties.contains(property))
-													// Removed
-													return OV<SValue>();
-												else if (mUpdatedPropertyMap.contains(property))
-													// Have updated property
-													return OV<SValue>(mUpdatedPropertyMap.getValue(property));
-												else if (mInitialPropertyMap.hasValue())
-													// Try initial property map
-													return OV<SValue>(mInitialPropertyMap->getValue(property));
-												else
-													// Sorry
-													return OV<SValue>();
-											}
-					void				set(const CString& property, const OV<SValue>& value)
-											{
-												// Write
-												if (value.hasValue()) {
-													// Have value
-													mUpdatedPropertyMap.set(property, *value);
-													mRemovedProperties -= property;
-												} else {
-													// Remove value
-													mUpdatedPropertyMap.remove(property);
-													mRemovedProperties += property;
-												}
+					bool								isRemoved() const
+															{ return mRemoved; }
 
-												// Modified
-												mModificationUniversalTime = SUniversalTime::getCurrent();
-											}
+					OV<SValue>							getValue(const CString& property)
+															{
+																// Check for document removed
+																if (mRemoved || mRemovedProperties.contains(property))
+																	// Removed
+																	return OV<SValue>();
+																else if (mUpdatedPropertyMap.contains(property))
+																	// Have updated property
+																	return OV<SValue>(
+																			mUpdatedPropertyMap.getValue(property));
+																else if (mInitialPropertyMap.hasValue())
+																	// Try initial property map
+																	return OV<SValue>(
+																			mInitialPropertyMap->getValue(property));
+																else
+																	// Sorry
+																	return OV<SValue>();
+															}
+					void								set(const CString& property, const OV<SValue>& value)
+															{
+																// Write
+																if (value.hasValue()) {
+																	// Have value
+																	mUpdatedPropertyMap.set(property, *value);
+																	mRemovedProperties -= property;
+																} else {
+																	// Remove value
+																	mUpdatedPropertyMap.remove(property);
+																	mRemovedProperties += property;
+																}
 
-					AttachmentInfoMap	getUpdatedDocumentAttachmentInfoMap(
-												const CMDSDocument::AttachmentInfoMap& initialDocumentAttachmentInfoMap)
-												const
-											{
-												// Start with initial
-												TNDictionary<CMDSDocument::AttachmentInfo>
-														updatedDocumentAttachmentInfoMap(
-																initialDocumentAttachmentInfoMap);
+																// Modified
+																mModificationUniversalTime =
+																		SUniversalTime::getCurrent();
+															}
 
-												// Process adds
-												TSet<CString>	keys = mAddAttachmentInfosByID.getKeys();
-												for (TIteratorS<CString> iterator = keys.getIterator();
-														iterator.hasValue(); iterator.advance())
-													// Process add
-													updatedDocumentAttachmentInfoMap.set(*iterator,
-															mAddAttachmentInfosByID[*iterator]);
+					AttachmentInfoMap					getUpdatedDocumentAttachmentInfoMap(
+																const CMDSDocument::AttachmentInfoMap&
+																		initialDocumentAttachmentInfoMap)
+																const
+															{
+																// Start with initial
+																TNDictionary<CMDSDocument::AttachmentInfo>
+																		updatedDocumentAttachmentInfoMap(
+																				initialDocumentAttachmentInfoMap);
 
-												// Process updates
-												keys = mUpdateAttachmentInfosByID.getKeys();
-												for (TIteratorS<CString> iterator = keys.getIterator();
-														iterator.hasValue(); iterator.advance())
-													// Process update
-													updatedDocumentAttachmentInfoMap.set(*iterator,
-															mUpdateAttachmentInfosByID[*iterator]);
+																// Process adds
+																TSet<CString>	keys = mAddAttachmentInfosByID.getKeys();
+																for (TIteratorS<CString> iterator = keys.getIterator();
+																		iterator.hasValue(); iterator.advance())
+																	// Process add
+																	updatedDocumentAttachmentInfoMap.set(*iterator,
+																			mAddAttachmentInfosByID[*iterator]->
+																					getDocumentAttachmentInfo());
 
-												// Process removes
-												updatedDocumentAttachmentInfoMap.remove(mRemovedAttachmentIDs);
+																// Process updates
+																keys = mUpdateAttachmentInfosByID.getKeys();
+																for (TIteratorS<CString> iterator = keys.getIterator();
+																		iterator.hasValue(); iterator.advance())
+																	// Process update
+																	updatedDocumentAttachmentInfoMap.set(*iterator,
+																			mUpdateAttachmentInfosByID[*iterator]->
+																					getDocumentAttachmentInfo());
 
-												return updatedDocumentAttachmentInfoMap;
-											}
-					OV<CData>			getAttachmentContent(const CString& id) const
-											{
-												// Check adds
-												if (mAddAttachmentInfosByID.contains(id))
-													// Have add
-													return OV<CData>(mAddAttachmentInfosByID[id]->getContent());
-												else if (mUpdateAttachmentInfosByID.contains(id))
-													// Have update
-													return OV<CData>(mUpdateAttachmentInfosByID[id]->getContent());
-												else
-													// Nope
-													return OV<CData>();
-											}
-					AttachmentInfo		attachmentAdd(const CDictionary& info, const CData& content)
-											{
-												// Setup
-												AddAttachmentInfo	addAttachmentInfo(info, content);
+																// Process removes
+																updatedDocumentAttachmentInfoMap.remove(
+																		mRemovedAttachmentIDs);
 
-												// Add info
-												mAddAttachmentInfosByID.set(addAttachmentInfo.getID(),
-														addAttachmentInfo);
+																return updatedDocumentAttachmentInfoMap;
+															}
+					OV<CData>							getAttachmentContent(const CString& id) const
+															{
+																// Check adds
+																if (mAddAttachmentInfosByID.contains(id))
+																	// Have add
+																	return OV<CData>(
+																			mAddAttachmentInfosByID[id]->getContent());
+																else if (mUpdateAttachmentInfosByID.contains(id))
+																	// Have update
+																	return OV<CData>(
+																			mUpdateAttachmentInfosByID[id]->getContent());
+																else
+																	// Nope
+																	return OV<CData>();
+															}
+					AttachmentInfo						attachmentAdd(const CDictionary& info, const CData& content)
+															{
+																// Setup
+																AddAttachmentInfo	addAttachmentInfo(info, content);
 
-												// Modified
-												mModificationUniversalTime = SUniversalTime::getCurrent();
+																// Add info
+																mAddAttachmentInfosByID.set(addAttachmentInfo.getID(),
+																		addAttachmentInfo);
 
-												return addAttachmentInfo;
-											}
-					void				attachmentUpdate(const CString& id, UInt32 currentRevision,
-												const CDictionary& info, const CData& content)
-											{
-												// Add info
-												mUpdateAttachmentInfosByID.set(id,
-														UpdateAttachmentInfo(id, currentRevision, info, content));
+																// Modified
+																mModificationUniversalTime =
+																		SUniversalTime::getCurrent();
 
-												// Modified
-												mModificationUniversalTime = SUniversalTime::getCurrent();
-											}
-					void				attachmentRemove(const CString& id)
-											{
-												// Add it
-												mRemovedAttachmentIDs.insert(id);
+																return addAttachmentInfo.getDocumentAttachmentInfo();
+															}
+			const	TDictionary<AddAttachmentInfo>&		getAddAttachmentInfosByID() const
+															{ return mAddAttachmentInfosByID; }
+					void								attachmentUpdate(const CString& id, UInt32 currentRevision,
+																const CDictionary& info, const CData& content)
+															{
+																// Add info
+																mUpdateAttachmentInfosByID.set(id,
+																		UpdateAttachmentInfo(id, currentRevision, info,
+																				content));
 
-												// Modified
-												mModificationUniversalTime = SUniversalTime::getCurrent();
-											}
+																// Modified
+																mModificationUniversalTime =
+																		SUniversalTime::getCurrent();
+															}
+			const	TDictionary<UpdateAttachmentInfo>&	getUpdateAttachmentInfosByID() const
+															{ return mUpdateAttachmentInfosByID; }
+					void								attachmentRemove(const CString& id)
+															{
+																// Add it
+																mRemovedAttachmentIDs.insert(id);
 
-					void				remove()
-											{
-												// Removed
-												mRemoved = true;
+																// Modified
+																mModificationUniversalTime =
+																		SUniversalTime::getCurrent();
+															}
+			const	TNSet<CString>&						getRemovedAttachmentIDs() const
+															{ return mRemovedAttachmentIDs; }
 
-												// Modified
-												mModificationUniversalTime = SUniversalTime::getCurrent();
-											}
+					void								remove()
+															{
+																// Removed
+																mRemoved = true;
+
+																// Modified
+																mModificationUniversalTime =
+																		SUniversalTime::getCurrent();
+															}
 
 			// Properties
 			private:
@@ -270,96 +299,124 @@ template <typename DB> class TMDSBatch {
 
 	// Methods
 	public:
-												// Lifecycle methods
-												TMDSBatch() {}
+													// Lifecycle methods
+													TMDSBatch() {}
 
-												// Instance methods
-		void									associationNoteUpdated(const CString& name,
-														const TArray<CMDSAssociation::Update>& updates)
-													{ mAssociationUpdatesByAssociationName.add(name, updates); }
-		TSet<CString>							associationGetUpdatedNames() const
-													{ return mAssociationUpdatesByAssociationName.getKeys(); }
-		TArray<CMDSAssociation::Update>			associationGetUpdates(const CString& name) const
-													{ return mAssociationUpdatesByAssociationName[name]; }
-		TArray<CMDSAssociation::Item>			getAssocationItems(const CString& name,
-														const TArray<CMDSAssociation::Item>& initialAssociationItems)
-														const
-													{
-														// Start with initial
-														TNArray<CMDSAssociation::Item>	associationItemsUpdated(
-																								initialAssociationItems);
+													// Instance methods
+		void										associationNoteUpdated(const CString& name,
+															const TArray<CMDSAssociation::Update>& updates)
+														{ mAssociationUpdatesByAssociationName.add(name, updates); }
+		TSet<CString>								associationGetUpdatedNames() const
+														{ return mAssociationUpdatesByAssociationName.getKeys(); }
+		TArray<CMDSAssociation::Update>				associationGetUpdates(const CString& name) const
+														{ return *mAssociationUpdatesByAssociationName[name]; }
+		TArray<CMDSAssociation::Item>				associationItemsApplyingChanges(const CString& name,
+															const TArray<CMDSAssociation::Item>&
+																	initialAssociationItems)
+															const
+														{
+															// Start with initial
+															TNArray<CMDSAssociation::Item>	associationItemsUpdated(
+																									initialAssociationItems);
 
-														// Check if have updates
-														if (mAssociationUpdatesByAssociationName.contains(name)) {
-															// Get updates
-															TArray<CMDSAssociation::Update>	associationUpdates =
-																									*mAssociationUpdatesByAssociationName[name];
-															for (TIteratorD<CMDSAssociation::Update> iterator =
-																			associationUpdates.getIterator();
-																	iterator.hasValue(); iterator.advance()) {
-																// Check update
-																if (iterator->getAction() ==
-																		CMDSAssociation::Update::kActionAdd)
-																	// Add
-																	associationItemsUpdated.add(iterator->getItem());
-																else
-																	// Remove
-																	associationItemsUpdated.remove(iterator->getItem());
+															// Check if have updates
+															if (mAssociationUpdatesByAssociationName.contains(name)) {
+																// Get updates
+																TArray<CMDSAssociation::Update>	associationUpdates =
+																										*mAssociationUpdatesByAssociationName[name];
+																for (TIteratorD<CMDSAssociation::Update> iterator =
+																				associationUpdates.getIterator();
+																		iterator.hasValue(); iterator.advance()) {
+																	// Check update
+																	if (iterator->getAction() ==
+																			CMDSAssociation::Update::kActionAdd)
+																		// Add
+																		associationItemsUpdated.add(iterator->getItem());
+																	else
+																		// Remove
+																		associationItemsUpdated.remove(
+																				iterator->getItem());
+																}
 															}
+
+															return associationItemsUpdated;
 														}
 
-														return associationItemsUpdated;
-													}
-		TArray<CMDSAssociation::Update>			getAssociationUpdates(const CString& name) const
-													{ return mAssociationUpdatesByAssociationName.contains(name) ?
-															mAssociationUpdatesByAssociationName[name] :
-															TNArray<CMDSAssociation::Update>(); }
+		DocumentInfo&								documentAdd(const CString& documentType, const CString& documentID,
+															const OR<DB>& documentBacking,
+															UniversalTime creationUniversalTime,
+															UniversalTime modificationUniversalTime,
+															const OV<CDictionary>& initialPropertyMap)
+														{
+															// Setup
+															DocumentInfo	documentInfo(documentType, documentBacking,
+																					creationUniversalTime,
+																					modificationUniversalTime,
+																					initialPropertyMap);
 
-		DocumentInfo&							documentAdd(const CString& documentType, const CString& documentID,
-														const OR<DB>& documentBacking,
-														UniversalTime creationUniversalTime,
-														UniversalTime modificationUniversalTime,
-														const OV<CDictionary>& initialPropertyMap)
-													{
-														// Setup
-														DocumentInfo	documentInfo(documentType, documentBacking,
-																				creationUniversalTime,
-																				modificationUniversalTime,
-																				initialPropertyMap);
+															// Store
+															mDocumentInfoByDocumentID.set(documentID, documentInfo);
 
-														// Store
-														mDocumentInfoByDocumentID.set(documentID, documentInfo);
-
-														return *mDocumentInfoByDocumentID[documentID];
-													}
-		OR<DocumentInfo>						documentInfoGet(const CString& documentID) const
-													{ return mDocumentInfoByDocumentID.contains(documentID) ?
-															mDocumentInfoByDocumentID[documentID] :
-															OR<DocumentInfo>(); }
-		TDictionary<TDictionary<DocumentInfo> >	documentGetInfosByDocumentType()
-													{
-														// Setup
-														TDictionary<TDictionary<DocumentInfo> >	info;
-
-														// Iterate changes
-														TSet<CString>	documentIDs =
-																				mDocumentInfoByDocumentID.getKeys();
-														for (TIteratorS<CString> iterator = documentIDs.getIterator();
-																iterator.hasValue(); iterator.advance()) {
-															// Update
-															DocumentInfo&	documentInfo =
-																					*mDocumentInfoByDocumentID[
-																							*iterator];
-															if (!info.contains(documentInfo.getDocumentType()))
-																// Create dictionary
-																info.set(documentInfo.getDocumentType(),
-																		TNDictionary<DocumentInfo>());
-															info[documentInfo.getDocumentType()]->set(*iterator,
-																	documentInfo);
+															return *mDocumentInfoByDocumentID[documentID];
 														}
+		DocumentInfo&								documentAdd(const CString& documentType,
+															const R<DB>& documentBacking)
+														{
+															// Setup
+															DocumentInfo	documentInfo(documentType, documentBacking);
 
-														return info;
-													}
+															// Store
+															mDocumentInfoByDocumentID.set(
+																	documentBacking->getDocumentID(), documentInfo);
+
+															return *mDocumentInfoByDocumentID[
+																	documentBacking->getDocumentID()];
+														}
+		DocumentInfo&								documentAdd(const CString& documentType, const CString& documentID,
+															UniversalTime creationUniversalTime,
+															UniversalTime modificationUniversalTime,
+															const OV<CDictionary>& initialPropertyMap)
+														{
+															// Setup
+															DocumentInfo	documentInfo(documentType,
+																					creationUniversalTime,
+																					modificationUniversalTime,
+																					initialPropertyMap);
+
+															// Store
+															mDocumentInfoByDocumentID.set(documentID, documentInfo);
+
+															return *mDocumentInfoByDocumentID[documentID];
+														}
+		OR<DocumentInfo>							documentInfoGet(const CString& documentID) const
+														{ return mDocumentInfoByDocumentID.contains(documentID) ?
+																mDocumentInfoByDocumentID[documentID] :
+																OR<DocumentInfo>(); }
+		TDictionary<TNDictionary<DocumentInfo> >	documentGetInfosByDocumentType()
+														{
+															// Setup
+															TNDictionary<TNDictionary<DocumentInfo> >	info;
+
+															// Iterate changes
+															TSet<CString>	documentIDs =
+																					mDocumentInfoByDocumentID.getKeys();
+															for (TIteratorS<CString> iterator =
+																			documentIDs.getIterator();
+																	iterator.hasValue(); iterator.advance()) {
+																// Update
+																DocumentInfo&	documentInfo =
+																						*mDocumentInfoByDocumentID[
+																								*iterator];
+																if (!info.contains(documentInfo.getDocumentType()))
+																	// Create dictionary
+																	info.set(documentInfo.getDocumentType(),
+																			TNDictionary<DocumentInfo>());
+																info[documentInfo.getDocumentType()]->set(*iterator,
+																		documentInfo);
+															}
+
+															return info;
+														}
 
 	// Properties
 	private:

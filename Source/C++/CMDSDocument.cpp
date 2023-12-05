@@ -5,7 +5,7 @@
 #include "CMDSDocument.h"
 
 #include "CMDSDocumentStorage.h"
-#include "TReferenceTracking.h"
+#include "CReferenceCountable.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: CMDSDocument::Internals
@@ -455,17 +455,6 @@ OV<UniversalTime> CMDSDocument::setUniversalTime(const CString& property, Univer
 //	set(property, document.getID());
 //}
 
-//----------------------------------------------------------------------------------------------------------------------
-OV<TArray<CMDSDocument> > CMDSDocument::getDocuments(const CString& property, const CMDSDocument::Info& info) const
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Get value
-	OV<TArray<CString> >	documentIDs = getArrayOfStrings(property);
-
-	return documentIDs.hasValue() ?
-			OV<TArray<CMDSDocument> >(mInternals->mDocumentStorage.getDocuments(info, *documentIDs)) :
-			OV<TArray<CMDSDocument> >();
-}
 
 //----------------------------------------------------------------------------------------------------------------------
 void CMDSDocument::set(const CString& property, const TArray<CMDSDocument>& documents) const
@@ -519,35 +508,8 @@ void CMDSDocument::set(const CString& property, const TArray<CMDSDocument>& docu
 //	set(property, documentIDMap);
 //}
 
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSDocument::registerAssociation(const Info& associatedDocumentInfo)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Register association
-	mInternals->mDocumentStorage.registerAssociation(getInfo(), associatedDocumentInfo);
-}
 
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSDocument::associate(const CMDSDocument& document)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Update association
-	mInternals->mDocumentStorage.updateAssociation(getInfo(), document.getInfo(),
-			TSArray<CMDSDocumentStorage::AssociationUpdate>(
-					CMDSDocumentStorage::AssociationUpdate(CMDSDocumentStorage::AssociationUpdate::Action::kAdd, *this,
-							document)));
-}
 
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSDocument::unassociate(const CMDSDocument& document)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Update association
-	mInternals->mDocumentStorage.updateAssociation(getInfo(), document.getInfo(),
-			TSArray<CMDSDocumentStorage::AssociationUpdate>(
-					CMDSDocumentStorage::AssociationUpdate(CMDSDocumentStorage::AssociationUpdate::Action::kRemove,
-							*this, document)));
-}
 
 //----------------------------------------------------------------------------------------------------------------------
 void CMDSDocument::remove(const CString& property) const

@@ -41,7 +41,7 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 
 		OV<SError>									cacheRegister(const CString& name, const CString& documentType,
 															const TArray<CString>& relevantProperties,
-															const TArray<SMDSCacheValueInfo>& valueInfos);
+															const TArray<CacheValueInfo>& cacheValueInfos);
 
 		OV<SError>									collectionRegister(const CString& name, const CString& documentType,
 															const TArray<CString>& relevantProperties, bool isUpToDate,
@@ -85,7 +85,8 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 		TVResult<CData>								documentAttachmentContent(const CString& documentType,
 															const CString& documentID, const CString& attachmentID);
 		TVResult<UInt32>							documentAttachmentUpdate(const CString& documentType,
-															const CString& documentID, const CDictionary& updatedInfo,
+															const CString& documentID, const CString& attachmentID,
+															const CDictionary& updatedInfo,
 															const CData& updatedContent);
 		OV<SError>									documentAttachmentRemove(const CString& documentType,
 															const CString& documentID, const CString& attachmentID);
@@ -96,13 +97,13 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 															const TArray<CString>& relevantProperties,
 															const CDictionary& keysInfo,
 															const CMDSDocument::KeysPerformer& documentKeysPerformer);
-		void										indexIterate(const CString& name, const CString& documentType,
+		OV<SError>									indexIterate(const CString& name, const CString& documentType,
 															const TArray<CString>& keys, CMDSDocument::KeyProc keyProc,
 															void* keyProcUserData) const;
 
 		TVResult<TDictionary<CString> >				infoGet(const TArray<CString>& keys) const;
 		OV<SError>									infoSet(const TDictionary<CString>& info);
-		OV<SError>									remove(const TArray<CString>& keys);
+		OV<SError>									infoRemove(const TArray<CString>& keys);
 
 		TVResult<TDictionary<CString> >				internalGet(const TArray<CString>& keys) const;
 		OV<SError>									internalSet(const TDictionary<CString>& info);
@@ -151,76 +152,6 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 															const TArray<CString>& keys) const;
 		DocumentFullInfoDictionaryResult			indexGetDocumentFullInfos(const CString& name,
 															const TArray<CString>& keys) const;
-				TDictionary<CString>	getInfo(const TArray<CString>& keys) const;
-				void					set(const TDictionary<CString>& info);
-				void					remove(const TArray<CString>& keys);
-
-				I<CMDSDocument>			newDocument(const CMDSDocument::InfoForNew& infoForNew);
-
-				OV<UInt32>				getDocumentCount(const CMDSDocument::Info& documentInfo) const;
-				OI<CMDSDocument>		getDocument(const CString& documentID, const CMDSDocument::Info& documentInfo)
-												const;
-
-				UniversalTime			getCreationUniversalTime(const CMDSDocument& document) const;
-				UniversalTime			getModificationUniversalTime(const CMDSDocument& document) const;
-
-				OV<SValue>				getValue(const CString& property, const CMDSDocument& document) const;
-				OV<CData>				getData(const CString& property, const CMDSDocument& document) const;
-				OV<UniversalTime>		getUniversalTime(const CString& property, const CMDSDocument& document) const;
-				void					set(const CString& property, const OV<SValue>& value,
-												const CMDSDocument& document,
-												SetValueInfo setValueInfo = kNothingSpecial);
-
-				void					remove(const CMDSDocument& document);
-
-				void					iterate(const CMDSDocument::Info& documentInfo, CMDSDocument::Proc proc,
-												void* userData);
-				void					iterate(const CMDSDocument::Info& documentInfo,
-												const TArray<CString>& documentIDs, CMDSDocument::Proc proc,
-												void* userData);
-
-				void					batch(BatchProc batchProc, void* userData);
-
-				void					registerAssociation(const CString& name,
-												const CMDSDocument::Info& fromDocumentInfo,
-												const CMDSDocument::Info& toDocumentInfo);
-				void					updateAssociation(const CString& name,
-												const TArray<AssociationUpdate>& updates);
-				void					iterateAssociationFrom(const CString& name, const CMDSDocument& fromDocument,
-												const CMDSDocument::Info& toDocumentInfo, CMDSDocument::Proc proc,
-												void* userData);
-				void					iterateAssociationTo(const CString& name,
-												const CMDSDocument::Info& fromDocumentInfo,
-												const CMDSDocument& toDocument, CMDSDocument::Proc proc,
-												void* userData);
-
-//				SValue					retrieveAssociationValue(const CString& name, const CString& fromDocumentType,
-//												const CMDSDocument& toDocument, const CString& summedCachedValueName);
-
-//				void					registerCache(const CString& name, const CMDSDocument::Info& documentInfo,
-//												UInt32 version, const TArray<CString>& relevantProperties,
-//												const TArray<CacheValueInfo>& cacheValueInfos);
-
-				void					registerCollection(const CString& name, const CMDSDocument::Info& documentInfo,
-												UInt32 version, const TArray<CString>& relevantProperties,
-												bool isUpToDate, const CString& isIncludedSelector,
-												const CDictionary& isIncludedSelectorInfo,
-												CMDSDocument::IsIncludedProc isIncludedProc, void* userData);
-				UInt32					getCollectionDocumentCount(const CString& name) const;
-				void					iterateCollection(const CString& name, const CMDSDocument::Info& documentInfo,
-												CMDSDocument::Proc proc, void* userData) const;
-
-				void					registerIndex(const CString& name, const CMDSDocument::Info& documentInfo,
-												UInt32 version, const TArray<CString>& relevantProperties,
-												bool isUpToDate, const CString& keysSelector,
-												const CDictionary& keysSelectorInfo, CMDSDocument::KeysProc keysProc,
-												void* userData);
-				void					iterateIndex(const CString& name, const TArray<CString>& keys,
-												const CMDSDocument::Info& documentInfo, CMDSDocument::KeyProc keyProc,
-												void* userData) const;
-
-				void					registerDocumentChangedProc(const CString& documentType,
-												CMDSDocument::ChangedProc changedProc, void* userData);
 
 	// Proeprties
 	private:
