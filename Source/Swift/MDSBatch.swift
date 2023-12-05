@@ -9,14 +9,15 @@
 import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: MDSBatch
-public class MDSBatch<DB> {
+// MARK: MDSBatchResult
+public enum MDSBatchResult {
+	case commit
+	case cancel
+}
 
-	// MARK: Result
-	public enum Result {
-		case commit
-		case cancel
-	}
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: MDSBatch
+public class MDSBatch<DB : MDSDocumentBacking> {
 
 	// MARK: AddAttachmentInfo
 	struct AddAttachmentInfo {
@@ -76,11 +77,23 @@ public class MDSBatch<DB> {
 
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
-		fileprivate init(documentType :String, documentBacking :DB?, creationDate :Date, modificationDate :Date,
-				initialPropertyMap :[String : Any]?) {
+		fileprivate init(documentType :String, documentBacking :DB) {
 			// Store
 			self.documentType = documentType
 			self.documentBacking = documentBacking
+			self.creationDate = documentBacking.creationDate
+
+			self.modificationDate = Date()
+
+			self.initialPropertyMap = documentBacking.propertyMap
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		fileprivate init(documentType :String, creationDate :Date, modificationDate :Date,
+				initialPropertyMap :[String : Any]?) {
+			// Store
+			self.documentType = documentType
+			self.documentBacking = nil
 			self.creationDate = creationDate
 
 			self.modificationDate = modificationDate
@@ -240,13 +253,23 @@ public class MDSBatch<DB> {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentAdd(documentType :String, documentID :String, documentBacking :DB? = nil, creationDate :Date,
-			modificationDate :Date, initialPropertyMap :[String : Any]? = nil) -> DocumentInfo {
+	func documentAdd(documentType :String, documentBacking :DB) -> DocumentInfo {
+		// Setup
+		let	documentInfo = DocumentInfo(documentType: documentType, documentBacking: documentBacking)
+
+		// Store
+		self.documentInfosByDocumentID[documentBacking.documentID] = documentInfo
+
+		return documentInfo
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentAdd(documentType :String, documentID :String, creationDate :Date, modificationDate :Date,
+			propertyMap :[String : Any]? = nil) -> DocumentInfo {
 		// Setup
 		let	documentInfo =
-					DocumentInfo(documentType: documentType, documentBacking: documentBacking,
-							creationDate: creationDate, modificationDate: modificationDate,
-							initialPropertyMap: initialPropertyMap)
+					DocumentInfo(documentType: documentType, creationDate: creationDate,
+							modificationDate: modificationDate, initialPropertyMap: propertyMap)
 
 		// Store
 		self.documentInfosByDocumentID[documentID] = documentInfo

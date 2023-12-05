@@ -86,7 +86,7 @@ public protocol MDSDocumentStorage {
 	func associationUpdate(for name :String, updates :[MDSAssociation.Update]) throws
 
 	func cacheRegister(name :String, documentType :String, relevantProperties :[String],
-			valueInfos :[MDSCache.ValueInfo]) throws
+			cacheValueInfos :[(valueInfo :MDSValueInfo, selector :String)]) throws
 
 	func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
@@ -133,7 +133,7 @@ public protocol MDSDocumentStorage {
 	func internalGet(for keys :[String]) -> [String : String]
 	func internalSet(_ info :[String : String]) throws
 
-	func batch(_ proc :() throws -> MDSBatch<Any>.Result) rethrows
+	func batch(_ proc :() throws -> MDSBatchResult) rethrows
 
 	func register<T : MDSDocument>(
 			documentCreateProc :@escaping (_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
@@ -218,20 +218,12 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func cacheRegister<T : MDSDocument>(name :String? = nil, relevantProperties :[String]? = nil,
-			valueInfos
-					:[(valueInfo :MDSValueInfo, selector :String,
-							proc :(_ document :T, _ name :String) -> Any)]) throws {
-		// Register creation proc
-		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
-
+	public func cacheRegister(documentType :String, relevantProperties :[String]? = nil,
+			cacheValueInfos :[(valueInfo :MDSValueInfo, selector :String)]) throws {
 		// Register cache
-		try cacheRegister(name: name ?? T.documentType, documentType: T.documentType,
-				relevantProperties: relevantProperties ?? valueInfos.map({ $0.valueInfo.name }),
-				valueInfos:
-						valueInfos.map(
-								{ info in MDSCache.ValueInfo(valueInfo: info.valueInfo, selector: info.selector,
-										proc: { info.proc($1 as! T, $2) }) }))
+		try cacheRegister(name: documentType, documentType: documentType,
+				relevantProperties: relevantProperties ?? cacheValueInfos.map({ $0.valueInfo.name }),
+				cacheValueInfos: cacheValueInfos)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -504,6 +496,12 @@ open class MDSDocumentStorageCore {
 	func documentChangedProcs(for documentType :String) -> [MDSDocument.ChangedProc] {
 		// Return procs
 		return self.documentChangedProcsByDocumentType.values(for: documentType) ?? []
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func noteDocumentChanged(document :MDSDocument, changeKind :MDSDocument.ChangeKind) {
+		// Call procs
+		self.documentChangedProcs(for: type(of: document).documentType).forEach() { $0(document, changeKind) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

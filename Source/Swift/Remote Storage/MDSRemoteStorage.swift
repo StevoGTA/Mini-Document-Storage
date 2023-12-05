@@ -329,16 +329,12 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func cacheRegister(name :String, documentType :String, relevantProperties :[String],
-			valueInfos :[MDSCache.ValueInfo]) throws {
+			cacheValueInfos :[(valueInfo :MDSValueInfo, selector :String)]) throws {
 		// Register cache
 		let	error =
 					self.httpEndpointClient.cacheRegister(documentStorageID: self.documentStorageID, name: name,
 							documentType: documentType, relevantProperties: relevantProperties,
-							valueInfos:
-									valueInfos.map(
-											{ MDSHTTPServices.CacheRegisterEndpointValueInfo($0.valueInfo.name,
-													$0.valueInfo.type, $0.selector) }),
-							authorization: self.authorization)
+							valueInfos: cacheValueInfos, authorization: self.authorization)
 		guard error == nil else {
 			// Error
 			throw error!

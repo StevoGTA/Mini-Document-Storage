@@ -509,10 +509,12 @@ open class MDSDocument : Hashable {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSDocumentBacking
-protocol MDSDocumentBacking {
+public protocol MDSDocumentBacking {
 
 	// MARK: Properties
 	var	documentID :String { get }
+	var	creationDate :Date { get }
+	var	propertyMap :[String : Any] { get }
 }
 
 //----------------------------------------------------------------------------------------------------------------------

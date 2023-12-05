@@ -14,7 +14,7 @@
 
 @interface MDSDocumentStorageObjC (Internal)
 
-@property (nonatomic, assign)	CMDSDocumentStorage*	documentStorage;
+@property (nonatomic, assign)	CMDSDocumentStorageServer*	documentStorageServer;
 
 @end
 
@@ -37,7 +37,10 @@
 	self = [super init];
 	if (self) {
 		// Setup
-		self.documentStorage = new CMDSEphemeral();
+		self.documentStorageServer = new CMDSEphemeral();
+
+		// Complete setup
+		[self completeSetup];
 	}
 
 	return self;

@@ -332,7 +332,7 @@ extension HTTPServer {
 			}
 
 			// Compose valueInfos
-			var	valueInfos = [MDSCache.ValueInfo]()
+			var	cacheValueInfos = [(valueInfo :MDSValueInfo, selector :String)]()
 			for valueInfoInfo in valueInfoInfos {
 				// Get update
 				let	(valueInfo, error) = MDSHTTPServices.cacheRegisterGetValueInfo(for: valueInfoInfo)
@@ -348,10 +348,7 @@ extension HTTPServer {
 											.json(["error": "Invalid value selector: \(valueInfo!.selector)"])) }
 
 							// Append info
-							valueInfos.append(
-									MDSCache.ValueInfo(valueInfo: valueInfo!.valueInfo, selector: valueInfo!.selector,
-											proc: { documentStorage!.documentIntegerValue(for: documentType,
-													document: $1, property: $2) ?? 0 }))
+							cacheValueInfos.append(valueInfo!)
 					}
 				} else {
 					// Error
@@ -363,7 +360,7 @@ extension HTTPServer {
 			do {
 				// Register cache
 				try documentStorage!.cacheRegister(name: name, documentType: documentType,
-						relevantProperties: relevantProperties, valueInfos: valueInfos)
+						relevantProperties: relevantProperties, cacheValueInfos: cacheValueInfos)
 
 				return (.ok, nil, nil)
 			} catch {

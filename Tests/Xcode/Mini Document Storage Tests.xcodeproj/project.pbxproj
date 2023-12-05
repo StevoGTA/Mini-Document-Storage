@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0A0485932A9568F200CFF609 /* MDSRemoteStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551EF27C5D8E7003E497B /* MDSRemoteStorage.swift */; };
 		0A0F72C22A8315900099C6D9 /* SError.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F3892A0E133C00E4F149 /* SError.cpp */; };
 		0A1F7FDD27E40244007F8920 /* DocumentUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1F7FDC27E40244007F8920 /* DocumentUnitTests.swift */; };
 		0A1F7FE727E40519007F8920 /* MDSRemoteStorageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551F127C5D8E7003E497B /* MDSRemoteStorageCache.swift */; };
@@ -54,7 +55,6 @@
 		0A1F802327E40577007F8920 /* UUID+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55521727C5DA60003E497B /* UUID+Extensions.swift */; };
 		0A1F802427E40577007F8920 /* UUID+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55521727C5DA60003E497B /* UUID+Extensions.swift */; };
 		0A1F802527E40578007F8920 /* UUID+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55521727C5DA60003E497B /* UUID+Extensions.swift */; };
-		0A2F30642A145D9400855E9B /* MDSRemoteStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551EF27C5D8E7003E497B /* MDSRemoteStorage.swift */; };
 		0A2F307C2A17429600855E9B /* CString.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F3702A0E133C00E4F149 /* CString.cpp */; };
 		0A2F307D2A1742CA00855E9B /* CArray.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F3962A0E133C00E4F149 /* CArray.cpp */; };
 		0A2F307E2A17430E00855E9B /* CString-Apple.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F33B2A0E133B00E4F149 /* CString-Apple.cpp */; };
@@ -516,7 +516,6 @@
 		0A16F37A2A0E133C00E4F149 /* CBits.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CBits.cpp; sourceTree = "<group>"; };
 		0A16F37B2A0E133C00E4F149 /* CBits.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CBits.h; sourceTree = "<group>"; };
 		0A16F37C2A0E133C00E4F149 /* CApplication.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CApplication.h; sourceTree = "<group>"; };
-		0A16F37D2A0E133C00E4F149 /* TReferenceTracking.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TReferenceTracking.h; sourceTree = "<group>"; };
 		0A16F37E2A0E133C00E4F149 /* SValue.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SValue.cpp; sourceTree = "<group>"; };
 		0A16F37F2A0E133C00E4F149 /* TimeAndDate.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = TimeAndDate.cpp; sourceTree = "<group>"; };
 		0A16F3802A0E133C00E4F149 /* SNumber.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SNumber.cpp; sourceTree = "<group>"; };
@@ -782,6 +781,7 @@
 		0AB3D2492A723EB100347E86 /* TMDSCache.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TMDSCache.h; sourceTree = "<group>"; };
 		0AC76DF02A79D3A600C656A9 /* MDSDocumentStorageServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MDSDocumentStorageServer.swift; sourceTree = "<group>"; };
 		0AC76DF22A79D46D00C656A9 /* CMDSDocumentStorageServer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CMDSDocumentStorageServer.h; sourceTree = "<group>"; };
+		0AC7D3402B16CB4000AB9F5B /* CReferenceCountable.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CReferenceCountable.h; sourceTree = "<group>"; };
 		0ACCD91328137C6B001D52CB /* IndexUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexUnitTests.swift; sourceTree = "<group>"; };
 		0ACCD9152814EBBC001D52CB /* CollectionUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionUnitTests.swift; sourceTree = "<group>"; };
 		0ADC8E8628BED43600632551 /* Server (Swift) */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Server (Swift)"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1311,6 +1311,7 @@
 				0A16F3742A0E133C00E4F149 /* CPreferences.cpp */,
 				0A16F3832A0E133C00E4F149 /* CProgress.h */,
 				0A16F3772A0E133C00E4F149 /* CProgress.cpp */,
+				0AC7D3402B16CB4000AB9F5B /* CReferenceCountable.h */,
 				0A16F39A2A0E133C00E4F149 /* CSet.h */,
 				0A16F3922A0E133C00E4F149 /* CSet.cpp */,
 				0A16F3852A0E133C00E4F149 /* CString.h */,
@@ -1335,7 +1336,6 @@
 				0A16F38A2A0E133C00E4F149 /* TimeAndDate.h */,
 				0A16F37F2A0E133C00E4F149 /* TimeAndDate.cpp */,
 				0A16F3992A0E133C00E4F149 /* TIndexes.h */,
-				0A16F37D2A0E133C00E4F149 /* TReferenceTracking.h */,
 				0A16F3872A0E133C00E4F149 /* TResult.h */,
 				0A16F3932A0E133C00E4F149 /* TWrappers.h */,
 			);
@@ -2127,11 +2127,11 @@
 				0A5E186C27C71F500089E550 /* File.swift in Sources */,
 				0A1F802227E40561007F8920 /* BatchQueue.swift in Sources */,
 				0A5E187127C71F5B0089E550 /* HTTPEndpoint.swift in Sources */,
+				0A0485932A9568F200CFF609 /* MDSRemoteStorage.swift in Sources */,
 				0A1F801727E40544007F8920 /* SQLiteOrderBy.swift in Sources */,
 				0AAF04992A70DE8E000AF19F /* MDSEphemeral.swift in Sources */,
 				0A5E188C27C71FBA0089E550 /* LockingArray.swift in Sources */,
 				0A5E187527C71F610089E550 /* HTTPEndpointHandler.swift in Sources */,
-				0A2F30642A145D9400855E9B /* MDSRemoteStorage.swift in Sources */,
 				0A5E188527C71F950089E550 /* String+Extensions.swift in Sources */,
 				0A5E182F27C70D500089E550 /* Performance_Tests.swift in Sources */,
 				0A91AB7728127F6600FE1549 /* Parent.swift in Sources */,

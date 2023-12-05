@@ -209,7 +209,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func cacheRegister(name :String, documentType :String, relevantProperties :[String],
-			valueInfos :[MDSCache.ValueInfo]) throws {
+			cacheValueInfos :[(valueInfo :MDSValueInfo, selector :String)]) throws {
 		// Remove current cache if found
 		if let cache = self.cachesByNameMap.value(for: name) {
 			// Remove
@@ -220,15 +220,19 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		let	lastRevision =
 					self.databaseManager.cacheRegister(name: name, documentType: documentType,
 							relevantProperties: relevantProperties,
-							valueInfos:
-									valueInfos.map(
+							cacheValueInfos:
+									cacheValueInfos.map(
 											{ MDSSQLiteDatabaseManager.CacheValueInfo(name: $0.valueInfo.name,
 													valueType: $0.valueInfo.type, selector: $0.selector) }))
 
 		// Create or re-create cache
 		let	cache =
 					MDSCache(name: name, documentType: documentType, relevantProperties: relevantProperties,
-							valueInfos: valueInfos, lastRevision: lastRevision)
+							valueInfos:
+									cacheValueInfos.map(
+											{ MDSCache.ValueInfo(valueInfo: $0.valueInfo, selector: $0.selector,
+													proc: self.documentValueProc(for: $0.selector)!) }),
+							lastRevision: lastRevision)
 
 		// Add to maps
 		self.cachesByNameMap.set(cache, for: name)
@@ -338,7 +342,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 				// Add document
 				_ = batch.documentAdd(documentType: documentType, documentID: documentID,
 						creationDate: $0.creationDate ?? date, modificationDate: $0.modificationDate ?? date,
-						initialPropertyMap: !$0.propertyMap.isEmpty ? $0.propertyMap : nil)
+						propertyMap: !$0.propertyMap.isEmpty ? $0.propertyMap : nil)
 				infos.append((proc(documentID, self), nil))
 			}
 		} else {
@@ -562,10 +566,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			} else {
 				// Don't have document in batch
 				let	documentBacking = try! self.documentBacking(documentType: documentType, documentID: documentID)
-				batch.documentAdd(documentType: documentType, documentID: documentID, documentBacking: documentBacking,
-								creationDate: documentBacking.creationDate,
-								modificationDate: documentBacking.modificationDate,
-								initialPropertyMap: documentBacking.propertyMap)
+				batch.documentAdd(documentType: documentType, documentBacking: documentBacking)
 						.set(valueUse, for: property)
 			}
 		} else if var propertyMap = self.documentsBeingCreatedPropertyMapMap.value(for: documentID) {
@@ -606,10 +607,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 				// Don't have document in batch
 				let	documentBacking = try! self.documentBacking(documentType: documentType, documentID: documentID)
 
-				return batch.documentAdd(documentType: documentType, documentID: documentID,
-								documentBacking: documentBacking, creationDate: documentBacking.creationDate,
-								modificationDate: documentBacking.modificationDate,
-								initialPropertyMap: documentBacking.propertyMap)
+				return batch.documentAdd(documentType: documentType, documentBacking: documentBacking)
 						.attachmentAdd(info: info, content: content)
 			}
 		} else {
@@ -703,12 +701,9 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 					throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
 				}
 
-				batch.documentAdd(documentType: documentType, documentID: documentID, documentBacking: documentBacking,
-								creationDate: documentBacking.creationDate,
-								modificationDate: documentBacking.modificationDate,
-								initialPropertyMap: documentBacking.propertyMap)
-						.attachmentUpdate(id: attachmentID, currentRevision: attachmentInfo.revision,
-								info: updatedInfo, content: updatedContent)
+				batch.documentAdd(documentType: documentType, documentBacking: documentBacking)
+						.attachmentUpdate(id: attachmentID, currentRevision: attachmentInfo.revision, info: updatedInfo,
+								content: updatedContent)
 			}
 
 			return -1
@@ -752,10 +747,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 					throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
 				}
 
-				batch.documentAdd(documentType: documentType, documentID: documentID, documentBacking: documentBacking,
-								creationDate: documentBacking.creationDate,
-								modificationDate: documentBacking.modificationDate,
-								initialPropertyMap: documentBacking.propertyMap)
+				batch.documentAdd(documentType: documentType, documentBacking: documentBacking)
 						.attachmentRemove(id: attachmentID)
 			}
 		} else {
@@ -786,9 +778,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			} else {
 				// Don't have document in batch
 				let	documentBacking = try! self.documentBacking(documentType: documentType, documentID: documentID)
-				batch.documentAdd(documentType: documentType, documentID: documentID, documentBacking: documentBacking,
-								creationDate: Date(), modificationDate: Date())
-						.remove()
+				batch.documentAdd(documentType: documentType, documentBacking: documentBacking).remove()
 			}
 		} else {
 			// Not in batch
@@ -890,7 +880,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func batch(_ proc :() throws -> MDSBatch<Any>.Result) rethrows {
+	public func batch(_ proc :() throws -> MDSBatchResult) rethrows {
 		// Setup
 		let	batch = Batch()
 
@@ -898,7 +888,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		self.batchMap.set(batch, for: .current)
 
 		// Run lean
-		var	result = MDSBatch<Any>.Result.commit
+		var	result = MDSBatchResult.commit
 		try autoreleasepool() {
 			// Call proc
 			result = try proc()
