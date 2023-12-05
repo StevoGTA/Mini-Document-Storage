@@ -497,23 +497,12 @@ class CMDSDocument : public CHashable {
 						OV<UniversalTime>				setUniversalTime(const CString& property, UniversalTime value)
 																const;
 
-//						OI<CMDSDocument>				getDocument(const CString& property,
-//																const CMDSDocument::Info& info) const;
-//						void							set(const CString& property, const CMDSDocument& document)
-//																const;
-
 						OV<TArray<CMDSDocument> >		getDocuments(const CString& property,
 																const CMDSDocument::Info& info) const;
 						void							set(const CString& property,
 																const TArray<CMDSDocument>& documents) const;
 
-//						OV<TDictionary<CMDSDocument> >	getDocumentMap(const CString& property,
-//																const CMDSDocument::Info& info) const;
-//						void							set(const CString& property,
-//																const TDictionary<CMDSDocument> documentMap) const;
-
 						void							remove(const CString& property) const;
-
 
 						TArray<AttachmentInfo>			getAttachmentInfos(const CString& type) const;
 						CData							getAttachmentContent(const AttachmentInfo& attachmentInfo)

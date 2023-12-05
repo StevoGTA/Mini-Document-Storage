@@ -433,29 +433,6 @@ OV<UniversalTime> CMDSDocument::setUniversalTime(const CString& property, Univer
 	return previousValue;
 }
 
-////----------------------------------------------------------------------------------------------------------------------
-//OI<CMDSDocument> CMDSDocument::getDocument(const CString& property, const CMDSDocument::Info& info) const
-////----------------------------------------------------------------------------------------------------------------------
-//{
-//	// Get value
-//	OV<CString>	documentID = getString(property);
-//	if (documentID.hasValue())
-//		// Have value
-//		return mInternals->mDocumentStorage.getDocument(*documentID, info);
-//	else
-//		// Don't have value
-//		return OI<CMDSDocument>();
-//}
-
-////----------------------------------------------------------------------------------------------------------------------
-//void CMDSDocument::set(const CString& property, const CMDSDocument& document) const
-////----------------------------------------------------------------------------------------------------------------------
-//{
-//	// Set value
-//	set(property, document.getID());
-//}
-
-
 //----------------------------------------------------------------------------------------------------------------------
 void CMDSDocument::set(const CString& property, const TArray<CMDSDocument>& documents) const
 //----------------------------------------------------------------------------------------------------------------------
@@ -467,49 +444,6 @@ void CMDSDocument::set(const CString& property, const TArray<CMDSDocument>& docu
 		documentIDs += iterator->getID();
 	set(property, documentIDs);
 }
-
-////----------------------------------------------------------------------------------------------------------------------
-//OV<TDictionary<CMDSDocument> > CMDSDocument::getDocumentMap(const CString& property, const CMDSDocument::Info& info)
-//		const
-////----------------------------------------------------------------------------------------------------------------------
-//{
-//	// Get value
-//	OV<CDictionary>	documentIDMap = getDictionary(property);
-//
-//	// Check if have value
-//	if (documentIDMap.hasValue()) {
-//		// Have value
-//		TCDictionary<CMDSDocument>	documentMap;
-//		for (TIteratorS<CDictionary::Item> iterator = documentIDMap->getIterator(); iterator.hasValue();
-//				iterator.advance()) {
-//			// Get document
-//			OI<CMDSDocument>	document = mInternals->mDocumentStorage.getDocument(iterator->mValue.getString(), info);
-//			AssertFailIf(!document.hasInstance());
-//
-//			// Add document to map
-//			documentMap.set(iterator->mKey, *document);
-//		}
-//
-//		return OV<TDictionary<CMDSDocument> >(documentMap);
-//	} else
-//		// Don't have value
-//		return OV<TDictionary<CMDSDocument> >();
-//}
-
-////----------------------------------------------------------------------------------------------------------------------
-//void CMDSDocument::set(const CString& property, const TDictionary<CMDSDocument> documentMap) const
-////----------------------------------------------------------------------------------------------------------------------
-//{
-//	// Collect document IDs
-//	TNDictionary<CString>	documentIDMap;
-//	for (TIteratorS<CDictionary::Item> iterator = documentMap.getIterator(); iterator.hasValue(); iterator.advance())
-//		// Add document ID to map
-//		documentIDMap.set(iterator->mKey, ((CMDSDocument*) iterator->mValue.getOpaque())->getID());
-//	set(property, documentIDMap);
-//}
-
-
-
 
 //----------------------------------------------------------------------------------------------------------------------
 void CMDSDocument::remove(const CString& property) const

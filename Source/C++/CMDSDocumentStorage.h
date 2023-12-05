@@ -44,7 +44,6 @@ class CMDSDocumentStorage {
 			kSetValueKindUniversalTime,
 		};
 
-
 	// Procs
 	public:
 		typedef	TVResult<EMDSBatchResult>	(*BatchProc)(void* userData);
@@ -175,9 +174,6 @@ class CMDSDocumentStorage {
 
 		virtual			OV<SError>						batch(BatchProc batchProc, void* userData) = 0;
 
-//															const CMDSDocument::Info& toDocumentInfo,
-//															const CMDSDocument& toDocument,
-//															const CMDSDocument& toDocument,
 						OV<SError>						collectionRegister(const CString& name,
 																const CString& documentType,
 																const TArray<CString>& relevantProperties,
@@ -215,7 +211,6 @@ class CMDSDocumentStorage {
 						void							registerValueInfos(
 																const TArray<CMDSDocument::ValueInfo>&
 																		documentValueInfos);
-
 
 	protected:
 														// Lifecycle methods
