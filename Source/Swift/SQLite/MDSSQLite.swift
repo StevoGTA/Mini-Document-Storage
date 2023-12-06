@@ -630,13 +630,13 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 				let batchDocumentInfo = batch.documentInfoGet(for: documentID) {
 			// Have document in batch
 			return batchDocumentInfo.documentAttachmentInfoMap(
-					applyingChangesTo: batchDocumentInfo.documentBacking?.attachmentInfoMap ?? [:])
+					applyingChangesTo: batchDocumentInfo.documentBacking?.documentAttachmentInfoMap ?? [:])
 		} else if self.documentsBeingCreatedPropertyMapMap.value(for: documentID) != nil {
 			// Creating
 			return [:]
 		} else {
 			// Retrieve document backing
-			return try self.documentBacking(documentType: documentType, documentID: documentID).attachmentInfoMap
+			return try self.documentBacking(documentType: documentType, documentID: documentID).documentAttachmentInfoMap
 		}
 	}
 
@@ -663,7 +663,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Get non-batch attachmentMap
 		let	documentBacking = try self.documentBacking(documentType: documentType, documentID: documentID)
-		guard documentBacking.attachmentInfoMap[attachmentID] != nil else {
+		guard documentBacking.documentAttachmentInfoMap[attachmentID] != nil else {
 			// Don't have attachment
 			throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
 		}
@@ -687,7 +687,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 				// Have document in batch
 				let	documentAttachmentInfoMap =
 							batchDocumentInfo.documentAttachmentInfoMap(
-									applyingChangesTo: batchDocumentInfo.documentBacking?.attachmentInfoMap ?? [:])
+									applyingChangesTo: batchDocumentInfo.documentBacking?.documentAttachmentInfoMap ?? [:])
 				guard let attachmentInfo = documentAttachmentInfoMap[attachmentID] else {
 					throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
 				}
@@ -697,7 +697,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			} else {
 				// Don't have document in batch
 				let	documentBacking = try self.documentBacking(documentType: documentType, documentID: documentID)
-				guard let attachmentInfo = documentBacking.attachmentInfoMap[attachmentID] else {
+				guard let attachmentInfo = documentBacking.documentAttachmentInfoMap[attachmentID] else {
 					throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
 				}
 
@@ -710,7 +710,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		} else {
 			// Not in batch
 			let	documentBacking = try self.documentBacking(documentType: documentType, documentID: documentID)
-			guard documentBacking.attachmentInfoMap[attachmentID] != nil else {
+			guard documentBacking.documentAttachmentInfoMap[attachmentID] != nil else {
 				throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
 			}
 
@@ -734,7 +734,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 				// Have document in batch
 				let	documentAttachmentInfoMap =
 							batchDocumentInfo.documentAttachmentInfoMap(
-									applyingChangesTo: batchDocumentInfo.documentBacking?.attachmentInfoMap ?? [:])
+									applyingChangesTo: batchDocumentInfo.documentBacking?.documentAttachmentInfoMap ?? [:])
 				guard documentAttachmentInfoMap[attachmentID] != nil else {
 					throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
 				}
@@ -743,7 +743,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			} else {
 				// Don't have document in batch
 				let	documentBacking = try self.documentBacking(documentType: documentType, documentID: documentID)
-				guard documentBacking.attachmentInfoMap[attachmentID] != nil else {
+				guard documentBacking.documentAttachmentInfoMap[attachmentID] != nil else {
 					throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
 				}
 
@@ -753,7 +753,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		} else {
 			// Not in batch
 			let	documentBacking = try self.documentBacking(documentType: documentType, documentID: documentID)
-			guard documentBacking.attachmentInfoMap[attachmentID] != nil else {
+			guard documentBacking.documentAttachmentInfoMap[attachmentID] != nil else {
 				throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
 			}
 
@@ -1599,7 +1599,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			let	documentContentInfo = documentContentInfosByID[$0.documentInfo.id]!
 
 			// Load attachment
-			let	attachmentInfoMap =
+			let	documentAttachmentInfoMap =
 						self.databaseManager.documentAttachmentInfoMap(documentType: documentType,
 								id: $0.documentInfo.id)
 
@@ -1609,7 +1609,8 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 								revision: $0.documentInfo.revision, active: $0.documentInfo.active,
 								creationDate: documentContentInfo.creationDate,
 								modificationDate: documentContentInfo.modificationDate,
-								propertyMap: documentContentInfo.propertyMap, attachmentInfoMap: attachmentInfoMap)
+								propertyMap: documentContentInfo.propertyMap,
+								documentAttachmentInfoMap: documentAttachmentInfoMap)
 			self.documentBackingCache.add([documentBacking])
 
 			// Call proc

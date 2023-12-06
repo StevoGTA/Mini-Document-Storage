@@ -4,136 +4,172 @@
 
 #pragma once
 
-#include "TMDSBatchInfo.h"
-#include "TMDSCollection.h"
-#include "TMDSIndex.h"
 #include "CMDSSQLiteDocumentBacking.h"
-#include "CSQLiteDatabase.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Types
 
-typedef	TMDSCollection<SInt64, TNumberArray<SInt64> >	CMDSSQLiteCollection;
 
-typedef	TMDSIndex<SInt64>								CMDSSQLiteIndex;
-typedef	CMDSSQLiteIndex::KeysInfo<SInt64>				CMDSSQLiteIndexKeysInfo;
-typedef	TMArray<CMDSSQLiteIndexKeysInfo>				CMDSSQLiteIndexKeysInfos;
-typedef	CMDSSQLiteIndex::UpdateInfo<SInt64>				CMDSSQLiteIndexUpdateInfo;
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - CMDSSQLiteDatabaseManager
 
-class CMDSSQLiteDatabaseManagerInternals;
 class CMDSSQLiteDatabaseManager {
-	// NewDocumentInfo
+	// DocumentCreateInfo
 	public:
-		struct NewDocumentInfo {
-			// Lifecycle methods
-			NewDocumentInfo(SInt64 id, UInt32 revision, UniversalTime creationUniversalTime,
-					UniversalTime modificationUniversalTime) :
-				mID(id), mRevision(revision), mCreationUniversalTime(creationUniversalTime),
-						mModificationUniversalTime(modificationUniversalTime)
-				{}
+		struct DocumentCreateInfo {
+			// Methods
+			public:
+								// Lifecycle methods
+								DocumentCreateInfo(SInt64 id, UInt32 revision, UniversalTime creationUniversalTime,
+										UniversalTime modificationUniversalTime) :
+									mID(id), mRevision(revision), mCreationUniversalTime(creationUniversalTime),
+											mModificationUniversalTime(modificationUniversalTime)
+									{}
+								DocumentCreateInfo(const DocumentCreateInfo& other) :
+									mID(other.mID), mRevision(other.mRevision), mCreationUniversalTime(other.mCreationUniversalTime),
+											mModificationUniversalTime(other.mModificationUniversalTime)
+									{}
+
+								// Instance methods
+				SInt64			getID() const
+									{ return mID; }
+				UInt32			getRevision() const
+									{ return mRevision; }
+				UniversalTime	getCreationUniversalTime() const
+									{ return mCreationUniversalTime; }
+				UniversalTime	getModificationUniversalTime() const
+									{ return mModificationUniversalTime; }
 
 			// Properties
-			SInt64			mID;
-			UInt32			mRevision;
-			UniversalTime	mCreationUniversalTime;
-			UniversalTime	mModificationUniversalTime;
+			private:
+				SInt64			mID;
+				UInt32			mRevision;
+				UniversalTime	mCreationUniversalTime;
+				UniversalTime	mModificationUniversalTime;
 		};
 
-	// ExistingDocumentInfo
+	// DocumentUpdateInfo
 	public:
-		struct ExistingDocumentInfo {
-			// Lifecycle methods
-			ExistingDocumentInfo(SInt64 id, const CMDSDocument::RevisionInfo& documentRevisionInfo, bool active) :
-				mID(id), mDocumentRevisionInfo(documentRevisionInfo), mActive(active)
-				{}
+		struct DocumentUpdateInfo {
+			// Methods
+			public:
+								// Lifecycle methods
+								DocumentUpdateInfo(UInt32 revision, UniversalTime modificationUniversalTime) :
+									mRevision(revision), mModificationUniversalTime(modificationUniversalTime)
+									{}
+								DocumentUpdateInfo(const DocumentUpdateInfo& other) :
+									mRevision(other.mRevision),
+											mModificationUniversalTime(other.mModificationUniversalTime)
+									{}
+
+								// Instance methods
+				UInt32			getRevision() const
+									{ return mRevision; }
+				UniversalTime	getModificationUniversalTime() const
+									{ return mModificationUniversalTime; }
 
 			// Properties
-			SInt64						mID;
-			CMDSDocument::RevisionInfo	mDocumentRevisionInfo;
-			bool						mActive;
+			private:
+				UInt32			mRevision;
+				UniversalTime	mModificationUniversalTime;
 		};
 
-	// UpdateInfo
+	// DocumentAttachmentInfo
 	public:
-		struct UpdateInfo {
-			// Lifecycle methods
-			UpdateInfo(UInt32 revision, UniversalTime modificationUniversalTime) :
-				mRevision(revision), mModificationUniversalTime(modificationUniversalTime)
-				{}
+		struct DocumentAttachmentInfo {
+			// Methods
+			public:
+														// Lifecycle methods
+														DocumentAttachmentInfo(UInt32 revision,
+																UniversalTime modificationUniversalTime,
+																const CMDSDocument::AttachmentInfo&
+																		documentAttachmentInfo) :
+															mRevision(revision),
+																	mModificationUniversalTime(
+																			modificationUniversalTime),
+																	mDocumentAttachmentInfo(documentAttachmentInfo)
+															{}
+														DocumentAttachmentInfo(const DocumentAttachmentInfo& other) :
+															mRevision(other.mRevision),
+																	mModificationUniversalTime(
+																			other.mModificationUniversalTime),
+																	mDocumentAttachmentInfo(
+																			other.mDocumentAttachmentInfo)
+															{}
+
+														// Instance methods
+						UInt32							getRevision() const
+															{ return mRevision; }
+						UniversalTime					getModificationUniversalTime() const
+															{ return mModificationUniversalTime; }
+				const	CMDSDocument::AttachmentInfo&	getDocumentAttachmentInfo() const
+															{ return mDocumentAttachmentInfo; }
 
 			// Properties
-			UInt32			mRevision;
-			UniversalTime	mModificationUniversalTime;
+			private:
+				UInt32							mRevision;
+				UniversalTime					mModificationUniversalTime;
+				CMDSDocument::AttachmentInfo	mDocumentAttachmentInfo;
 		};
 
-	// Types
+	// DocumentAttachmentRemoveInfo
 	public:
-		typedef	CMDSDocument::BackingInfo<CMDSSQLiteDocumentBacking>	DocumentBackingInfo;
+		struct DocumentAttachmentRemoveInfo {
+			// Methods
+			public:
+								// Lifecycle methods
+								DocumentAttachmentRemoveInfo(UInt32 revision, UniversalTime modificationUniversalTime) :
+									mRevision(revision), mModificationUniversalTime(modificationUniversalTime)
+									{}
+								DocumentAttachmentRemoveInfo(const DocumentAttachmentRemoveInfo& other) :
+									mRevision(other.mRevision),
+											mModificationUniversalTime(other.mModificationUniversalTime)
+									{}
 
-	// Procs
-	public:
-		typedef	void	(*BatchProc)(void* userData);
-		typedef	void	(*ExistingDocumentInfoProc)(const ExistingDocumentInfo& existingDocumentInfo,
-								const CSQLiteResultsRow& resultsRow, void* userData);
+								// Instance methods
+				UInt32			getRevision() const
+									{ return mRevision; }
+				UniversalTime	getModificationUniversalTime() const
+									{ return mModificationUniversalTime; }
+
+			// Properties
+			private:
+				UInt32			mRevision;
+				UniversalTime	mModificationUniversalTime;
+		};
+
+
+	// Classes
+	private:
+		class	Internals;
 
 	// Methods
 	public:
 										// Lifecycle methods
-										CMDSSQLiteDatabaseManager(CSQLiteDatabase& database);
-										~CMDSSQLiteDatabaseManager();
 
 										// Instance methods
-				OV<UInt32>				getUInt32(const CString& key) const;
-				OV<CString>				getString(const CString& key) const;
-				void					set(const CString& key, const OV<SValue>& value);
+				DocumentCreateInfo				documentCreate(const CString& documentType, const CString& documentID,
+														const OV<UniversalTime>& creationUniversalTime,
+														const OV<UniversalTime>& modificationUniversalTime,
+														const CDictionary& propertyMap);
+				DocumentUpdateInfo				documentUpdate(const CString& documentType, SInt64 id,
+														const CDictionary& propertyMap);
 
-				void					note(const CString& documentType);
-				void					batch(BatchProc batchProc, void* userData);
+				DocumentAttachmentInfo			documentAttachmentAdd(const CString& documentType, SInt64 id,
+														const CDictionary& info, const CData& content);
+				CData							documentAttachmentContent(const CString& documentType, SInt64 id,
+														const CString& attachmentID);
+				DocumentAttachmentInfo			documentAttachmentUpdate(const CString& documentType, SInt64 id,
+														const CString& attachmentID, const CDictionary& updatedInfo,
+														const CData& updatedContent);
+				DocumentAttachmentRemoveInfo	documentAttachmentRemove(const CString& documentType, SInt64 id,
+														const CString& attachmentID);
 
-				NewDocumentInfo			newDocument(const CString& documentType, const CString& documentID,
-												OV<UniversalTime> creationUniversalTime,
-												OV<UniversalTime> modificationUniversalTime,
-												const CDictionary& propertyMap);
-				void					iterate(const CString& documentType, const CSQLiteInnerJoin& innerJoin,
-												const CSQLiteWhere& where,
-												ExistingDocumentInfoProc existingDocumentInfoProc, void* userData);
-				void					iterate(const CString& documentType, const CSQLiteInnerJoin& innerJoin,
-												ExistingDocumentInfoProc existingDocumentInfoProc, void* userData);
-				UpdateInfo				updateDocument(const CString& documentType, SInt64 id,
-												const CDictionary& propertyMap);
-				void					removeDocument(const CString& documentType, SInt64 id);
-
-				UInt32					registerCollection(const CString& documentType, const CString& name,
-												UInt32 version, bool isUpToDate);
-				UInt32					getCollectionDocumentCount(const CString& name);
-				void					updateCollection(const CString& name, const TNumberArray<SInt64>& includedIDs,
-												const TNumberArray<SInt64>& notIncludedIDs, UInt32 lastRevision);
-
-				UInt32					registerIndex(const CString& documentType, const CString& name, UInt32 version,
-												bool isUpToDate);
-				void					updateIndex(const CString& name, const CMDSSQLiteIndexKeysInfos& keysInfos,
-												const TNumberArray<SInt64>& removedIDs, UInt32 lastRevision);
-
-				CSQLiteInnerJoin		getInnerJoin(const CString& documentType);
-				CSQLiteInnerJoin		getInnerJoinForCollection(const CString& documentType,
-												const CString& collectionName);
-				CSQLiteInnerJoin		getInnerJoinForIndex(const CString& documentType, const CString& indexName);
-
-				CSQLiteWhere			getWhere(bool active);
-				CSQLiteWhere			getWhereForDocumentIDs(const TArray<CString>& documentIDs);
-				CSQLiteWhere			getWhere(UInt32 revision, const CString& comparison = CString(OSSTR(">")),
-												bool includeInactive = false);
-				CSQLiteWhere			getWhereForIndexKeys(const TArray<CString>& keys);
 
 										// Class methods
-		static	DocumentBackingInfo		getDocumentBackingInfo(const ExistingDocumentInfo& existingDocumentInfo,
-												const CSQLiteResultsRow& resultsRow);
-		static	CString					getIndexContentsKey(const CSQLiteResultsRow& resultsRow);
 
 	// Properties
 	private:
-		CMDSSQLiteDatabaseManagerInternals*	mInternals;
+		Internals*	mInternals;
 };

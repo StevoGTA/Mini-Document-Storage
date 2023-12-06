@@ -256,6 +256,9 @@
 		0ADC8EB828BED94D00632551 /* RangeReplaceableCollection+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55520C27C5DA60003E497B /* RangeReplaceableCollection+Extensions.swift */; };
 		0ADC8EB928BED96100632551 /* HTTPURLResponse+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55521B27C5DA60003E497B /* HTTPURLResponse+Extensions.swift */; };
 		0ADC8EBE28BEDC5300632551 /* Vapor in Frameworks */ = {isa = PBXBuildFile; productRef = 0ADC8EBD28BEDC5300632551 /* Vapor */; };
+		0AE25CCF2B20018F00EB2BDE /* CMDSSQLite.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A9C63802A19EC6E00800DBA /* CMDSSQLite.cpp */; };
+		0AE25CD02B20019400EB2BDE /* CMDSSQLiteDocumentBacking.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A9C63832A19EC6E00800DBA /* CMDSSQLiteDocumentBacking.cpp */; };
+		0AE25CD12B20019700EB2BDE /* CMDSSQLiteDatabaseManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A9C63822A19EC6E00800DBA /* CMDSSQLiteDatabaseManager.cpp */; };
 		0AED2DBE29E61C2B00E07C13 /* VaporHTTPServer-4.x.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AE1646929DB9F47008B0814 /* VaporHTTPServer-4.x.swift */; };
 /* End PBXBuildFile section */
 
@@ -2184,6 +2187,7 @@
 				0A2F30802A17434D00855E9B /* CSet.cpp in Sources */,
 				0ADC8EA728BED86500632551 /* File.swift in Sources */,
 				0ADC8EAF28BED8DC00632551 /* String+Extensions.swift in Sources */,
+				0AE25CCF2B20018F00EB2BDE /* CMDSSQLite.cpp in Sources */,
 				0A9C636E2A19EAC300800DBA /* CSQLiteResultsRow.cpp in Sources */,
 				0ADC8EA128BED85200632551 /* SQLiteResultsRow.swift in Sources */,
 				0ADC8EA228BED85200632551 /* SQLiteWhere.swift in Sources */,
@@ -2253,6 +2257,7 @@
 				0ADC8EAC28BED8BC00632551 /* HTTPEndpoint.swift in Sources */,
 				0ADC8E9A28BED81C00632551 /* MDSSQLiteDatabaseManager.swift in Sources */,
 				0ADC8EA828BED87100632551 /* Lock.swift in Sources */,
+				0AE25CD12B20019700EB2BDE /* CMDSSQLiteDatabaseManager.cpp in Sources */,
 				0A36CDFC2A1F34B9005C7A40 /* CUUID-Apple.cpp in Sources */,
 				0A36CDF72A1F2FC5005C7A40 /* MDSDocumentStorageObjC.mm in Sources */,
 				0A2F30852A1743D600855E9B /* CppToolboxAssert.cpp in Sources */,
@@ -2264,6 +2269,7 @@
 				0AED2DBE29E61C2B00E07C13 /* VaporHTTPServer-4.x.swift in Sources */,
 				0ADC8E9628BED81400632551 /* MDSCollection.swift in Sources */,
 				0A9C636D2A19EA9200800DBA /* CCoreFoundation.cpp in Sources */,
+				0AE25CD02B20019400EB2BDE /* CMDSSQLiteDocumentBacking.cpp in Sources */,
 				0ADC8EB528BED92400632551 /* URLComponents+Extensions.swift in Sources */,
 				0ADC8E9828BED81C00632551 /* MDSSQLite.swift in Sources */,
 				0AC76DF12A79D3A600C656A9 /* MDSDocumentStorageServer.swift in Sources */,
