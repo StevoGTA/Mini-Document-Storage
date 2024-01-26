@@ -25,7 +25,7 @@ template <typename T> class TMDSIndex : public CEquatable {
 								T					getID() const
 														{ return mID; }
 
-				static			CString				getID(CArray::ItemRef item)
+				static			CString				getID(CArray::ItemRef item, void* userData)
 														{ return ((KeysInfo*) item)->mID; }
 
 			// Properties
