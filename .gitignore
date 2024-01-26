@@ -7,3 +7,4 @@ Tests/Xcode/3rd Party/
 
 Source/Python/dist
 Source/Python/src/mini_document_storage.egg-info
+.gradle

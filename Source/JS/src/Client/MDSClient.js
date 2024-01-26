@@ -234,6 +234,69 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	async associationGetDocumentMapFrom(name, documents, documentType, documentCreationProc, documentStorageID,
+			individualRetrievalThreshold = 5) {
+		// Setup
+		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
+
+		var	toDocumentsByFromDocumentID = {};
+
+		// Check ho wmany documents in play
+		if (documents.length <= individualRetrievalThreshold)
+			// Retrieve associations for each document
+			for (let document of documents)
+				// Retrieve "to" documents for this "from" document
+				toDocumentsByFromDocumentID[document.documentID] =
+						await this.associationGetDocumentsFrom(name, document, 0, null, documentCreationProc,
+								documentStorageIDUse);
+		else {
+			// Retrieve all document infos and go from there
+			let	results = await this.associationGetDocumentInfos(name, 0, null, documentStorageIDUse);
+
+			// Compose "to" info for those "from" document IDs of interest
+			let	fromDocumentIDs = new Set(documents.map(document => document.documentID));
+			let	toDocumentIDs = new Set();
+			let	toDocumentIDsByFromDocumentID = {};
+			for (let result of results) {
+				// Check if this "from" document is of interest
+				let	fromDocumentID = result.fromDocumentID;
+				if (fromDocumentIDs.has(fromDocumentID)) {
+					// Get info
+					let	toDocumentID = result.toDocumentID;
+
+					// Update stuffs
+					toDocumentIDs.add(toDocumentID);
+					if (toDocumentIDsByFromDocumentID[fromDocumentID])
+						// Anther "to" document
+						toDocumentIDsByFromDocumentID[fromDocumentID].push(toDocumentID);
+					else
+						// First "to" document
+						toDocumentIDsByFromDocumentID[fromDocumentID] = [toDocumentID];
+				}
+			}
+
+			// Retrieve "to" documents of interest and create object based on document ID
+			let	toDocuments =
+						await this.documentGet(documentType, Array(toDocumentIDs), documentCreationProc,
+								documentStorageIDUse);
+			let	toDocumentByDocumentID = {};
+			for (let toDocument of toDocuments)
+				// Update object
+				toDocumentByDocumentID[toDocument.documentID] = toDocument;
+			
+			// Compose final object
+			for (let fromDocumentID in fromDocumentIDs) {
+				// Update final object
+				let	toDocumentIDs = toDocumentIDsByFromDocumentID[fromDocumentID] || [];
+				toDocumentsByFromDocumentID[fromDocumentID] =
+						toDocumentIDs.map(toDocumentID => toDocumentByDocumentID[toDocumentID]);
+			}
+		}
+
+		return toDocumentsByFromDocumentID;
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	async associationGetDocumentInfosTo(name, document, startIndex, count, documentStorageID) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
