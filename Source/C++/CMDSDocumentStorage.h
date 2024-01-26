@@ -212,18 +212,6 @@ class CMDSDocumentStorage {
 																const TArray<CMDSDocument::ValueInfo>&
 																		documentValueInfos);
 
-	protected:
-														// Lifecycle methods
-														CMDSDocumentStorage();
-
-														// Subclass methods
-				const	CMDSDocument::Info&				documentCreateInfo(const CString& documentType) const;
-						DocumentChangedInfos			documentChangedInfos(const CString& documentType) const;
-						void							notifyDocumentChanged(const CMDSDocument& document,
-																CMDSDocument::ChangeKind documentChangeKind) const;
-						DocumentIsIncludedPerformer		documentIsIncludedPerformer(const CString& selector) const;
-						DocumentKeysPerformer			documentKeysPerformer(const CString& selector) const;
-						DocumentValueInfo				documentValueInfo(const CString& selector) const;
 
 														// Class methods
 		static			SError							getInvalidCountError(UInt32 count);
@@ -248,6 +236,19 @@ class CMDSDocumentStorage {
 		static			SError							getUnknownIndexError(const CString& name);
 
 		static			SError							getIllegalInBatchError();
+
+	protected:
+														// Lifecycle methods
+														CMDSDocumentStorage();
+
+														// Subclass methods
+				const	CMDSDocument::Info&				documentCreateInfo(const CString& documentType) const;
+						DocumentChangedInfos			documentChangedInfos(const CString& documentType) const;
+						void							notifyDocumentChanged(const CMDSDocument& document,
+																CMDSDocument::ChangeKind documentChangeKind) const;
+						DocumentIsIncludedPerformer		documentIsIncludedPerformer(const CString& selector) const;
+						DocumentKeysPerformer			documentKeysPerformer(const CString& selector) const;
+						DocumentValueInfo				documentValueInfo(const CString& selector) const;
 
 	private:
 														// Instance methods

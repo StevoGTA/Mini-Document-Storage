@@ -65,9 +65,9 @@ public class MDSCache : Equatable {
 	
 	//------------------------------------------------------------------------------------------------------------------
 	func update<U>(_ updateInfos :[MDSUpdateInfo<U>]) ->
-			(infosByID :[/* ID */ U : [/* Name */ String : Any]]?, lastRevision :Int?) {
+			(valueInfoByID :[/* ID */ U : [/* Name */ String : Any]]?, lastRevision :Int?) {
 		// Compose results
-		var	infosByID = [/* ID */ U : [/* Name */ String : Any]]()
+		var	valueInfoByID = [/* ID */ U : [/* Name */ String : Any]]()
 		var	lastRevision :Int?
 		updateInfos.forEach() { updateInfo in
 			// Check if there is something to do
@@ -81,7 +81,7 @@ public class MDSCache : Equatable {
 				}
 
 				// Update
-				infosByID[updateInfo.id] = valuesByName
+				valueInfoByID[updateInfo.id] = valuesByName
 			}
 
 			// Update last revision
@@ -89,6 +89,6 @@ public class MDSCache : Equatable {
 			lastRevision = self.lastRevision
 		}
 
-		return (!infosByID.isEmpty ? infosByID : nil, lastRevision)
+		return (!valueInfoByID.isEmpty ? valueInfoByID : nil, lastRevision)
 	}
 }

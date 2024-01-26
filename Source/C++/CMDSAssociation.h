@@ -18,26 +18,27 @@ class CMDSAssociation : public CEquatable {
 
 	// Item
 	public:
-		struct Item{
+		struct Item {
 			// Methods
 			public:
-									// Lifecycle methods
-									Item(const CString& fromDocumentID, const CString& toDocumentID) :
-										mFromDocumentID(fromDocumentID), mToDocumentID(toDocumentID)
-										{}
-									Item(const Item& other) :
-										mFromDocumentID(other.mFromDocumentID), mToDocumentID(other.mToDocumentID)
-										{}
+												// Lifecycle methods
+												Item(const CString& fromDocumentID, const CString& toDocumentID) :
+													mFromDocumentID(fromDocumentID), mToDocumentID(toDocumentID)
+													{}
+												Item(const Item& other) :
+													mFromDocumentID(other.mFromDocumentID),
+															mToDocumentID(other.mToDocumentID)
+													{}
 
-									// Instance methods
-				const	CString&	getFromDocumentID() const
-										{ return mFromDocumentID; }
-				const	CString&	getToDocumentID() const
-										{ return mToDocumentID; }
+												// Instance methods
+						const	CString&		getFromDocumentID() const
+													{ return mFromDocumentID; }
+						const	CString&		getToDocumentID() const
+													{ return mToDocumentID; }
 
-						bool		operator==(const Item& other) const
-										{ return (mFromDocumentID == other.mFromDocumentID) &&
-												(mToDocumentID == other.mToDocumentID); }
+								bool			operator==(const Item& other) const
+													{ return (mFromDocumentID == other.mFromDocumentID) &&
+															(mToDocumentID == other.mToDocumentID); }
 
 			// Properties
 			private:
@@ -56,27 +57,45 @@ class CMDSAssociation : public CEquatable {
 
 			// Methods
 			public:
-										// Lifecycle methods
-										Update(const Update& other) : mAction(other.mAction), mItem(other.mItem) {}
+												// Lifecycle methods
+												Update(const Update& other) :
+													mAction(other.mAction), mItem(other.mItem)
+													{}
 
-										// Instance methods
-								Action	getAction() const
-											{ return mAction; }
-						const	Item&	getItem() const
-											{ return mItem; }
+												// Instance methods
+								Action			getAction() const
+													{ return mAction; }
+						const	Item&			getItem() const
+													{ return mItem; }
 
-										// Class methods
-				static	Update			add(const CString& fromDocumentID, const CString& toDocumentID)
-											{ return Update(kActionAdd, fromDocumentID, toDocumentID); }
-				static	Update			remove(const CString& fromDocumentID, const CString& toDocumentID)
-											{ return Update(kActionRemove, fromDocumentID, toDocumentID); }
+												// Class methods
+				static			Update			add(const CString& fromDocumentID, const CString& toDocumentID)
+													{ return Update(kActionAdd, fromDocumentID, toDocumentID); }
+				static			Update			remove(const CString& fromDocumentID, const CString& toDocumentID)
+													{ return Update(kActionRemove, fromDocumentID, toDocumentID); }
+
+												// Class methods
+				static			TArray<CString>	getFromDocumentIDs(const TArray<Update>& updates)
+													{ return TNSet<CString>(updates,
+																	(TNSet<CString>::ArrayMapProc)
+																			getFromDocumentIDFromItem)
+															.getArray(); }
+				static			TArray<CString>	getToDocumentIDs(const TArray<Update>& updates)
+													{ return TNSet<CString>(updates,
+																	(TNSet<CString>::ArrayMapProc)
+																			getToDocumentIDFromItem)
+															.getArray(); }
+				static			CString			getFromDocumentIDFromItem(const Update* update)
+													{ return update->mItem.getFromDocumentID(); }
+				static			CString			getToDocumentIDFromItem(const Update* update)
+													{ return update->mItem.getToDocumentID(); }
 
 			private:
-										// Lifecycle methods
-										Update(Action action, const CString& fromDocumentID,
-												const CString& toDocumentID) :
-											mAction(action), mItem(Item(fromDocumentID, toDocumentID))
-											{}
+												// Lifecycle methods
+												Update(Action action, const CString& fromDocumentID,
+														const CString& toDocumentID) :
+													mAction(action), mItem(Item(fromDocumentID, toDocumentID))
+													{}
 
 			// Properties
 			private:

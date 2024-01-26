@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0A0485932A9568F200CFF609 /* MDSRemoteStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551EF27C5D8E7003E497B /* MDSRemoteStorage.swift */; };
+		0A0EAB362B32794F0058835E /* CSQLiteTrigger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F2C62A0E133900E4F149 /* CSQLiteTrigger.cpp */; };
 		0A0F72C22A8315900099C6D9 /* SError.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F3892A0E133C00E4F149 /* SError.cpp */; };
 		0A1F7FDD27E40244007F8920 /* DocumentUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1F7FDC27E40244007F8920 /* DocumentUnitTests.swift */; };
 		0A1F7FE727E40519007F8920 /* MDSRemoteStorageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551F127C5D8E7003E497B /* MDSRemoteStorageCache.swift */; };
@@ -77,6 +78,7 @@
 		0A4313B128E3C1BC00CD1A6B /* MDSAssociation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4313AF28E3C1BC00CD1A6B /* MDSAssociation.swift */; };
 		0A4313B228E3C1BC00CD1A6B /* MDSAssociation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4313AF28E3C1BC00CD1A6B /* MDSAssociation.swift */; };
 		0A4313B328E3C1BC00CD1A6B /* MDSAssociation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4313AF28E3C1BC00CD1A6B /* MDSAssociation.swift */; };
+		0A4FE8C52B2A88F00076C753 /* CSQLiteLimit.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A4FE8C42B2A88F00076C753 /* CSQLiteLimit.cpp */; };
 		0A5551FE27C5D936003E497B /* MDSHTTPServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551EC27C5D8E7003E497B /* MDSHTTPServices.swift */; };
 		0A5551FF27C5D949003E497B /* MDSDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551ED27C5D8E7003E497B /* MDSDocument.swift */; };
 		0A55520027C5D955003E497B /* MDSDocumentStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551EA27C5D8E7003E497B /* MDSDocumentStorage.swift */; };
@@ -213,6 +215,7 @@
 		0AC76DF12A79D3A600C656A9 /* MDSDocumentStorageServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC76DF02A79D3A600C656A9 /* MDSDocumentStorageServer.swift */; };
 		0ACCD91428137C6B001D52CB /* IndexUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACCD91328137C6B001D52CB /* IndexUnitTests.swift */; };
 		0ACCD9162814EBBC001D52CB /* CollectionUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACCD9152814EBBC001D52CB /* CollectionUnitTests.swift */; };
+		0AD596002B33D1B7005E3ADC /* CJSON.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F2CB2A0E133900E4F149 /* CJSON.cpp */; };
 		0ADC8E8928BED43600632551 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ADC8E8828BED43600632551 /* main.swift */; };
 		0ADC8E8F28BED7A800632551 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 0ADC8E8E28BED7A800632551 /* ArgumentParser */; };
 		0ADC8E9028BED80200632551 /* MDSDocumentStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551EA27C5D8E7003E497B /* MDSDocumentStorage.swift */; };
@@ -645,6 +648,8 @@
 		0A36CDE22A1CA171005C7A40 /* Server-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Server-Bridging-Header.h"; sourceTree = "<group>"; };
 		0A36CDF62A1F2FC5005C7A40 /* MDSDocumentStorageObjC.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MDSDocumentStorageObjC.mm; sourceTree = "<group>"; };
 		0A4313AF28E3C1BC00CD1A6B /* MDSAssociation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MDSAssociation.swift; sourceTree = "<group>"; };
+		0A4FE8C32B2A88800076C753 /* CSQLiteLimit.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CSQLiteLimit.h; sourceTree = "<group>"; };
+		0A4FE8C42B2A88F00076C753 /* CSQLiteLimit.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CSQLiteLimit.cpp; sourceTree = "<group>"; };
 		0A5551DF27C5CD13003E497B /* Unit Tests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Unit Tests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A5551EA27C5D8E7003E497B /* MDSDocumentStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MDSDocumentStorage.swift; sourceTree = "<group>"; };
 		0A5551EB27C5D8E7003E497B /* MDSIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MDSIndex.swift; sourceTree = "<group>"; };
@@ -991,6 +996,8 @@
 				0A16F2B62A0E133900E4F149 /* CSQLiteDatabase.cpp */,
 				0A16F2B32A0E133900E4F149 /* CSQLiteInnerJoin.h */,
 				0A16F2BF2A0E133900E4F149 /* CSQLiteInnerJoin.cpp */,
+				0A4FE8C32B2A88800076C753 /* CSQLiteLimit.h */,
+				0A4FE8C42B2A88F00076C753 /* CSQLiteLimit.cpp */,
 				0A16F2BD2A0E133900E4F149 /* CSQLiteOrderBy.h */,
 				0A16F2BE2A0E133900E4F149 /* CSQLiteOrderBy.cpp */,
 				0A16F2BC2A0E133900E4F149 /* CSQLiteResultsRow.h */,
@@ -2200,6 +2207,7 @@
 				0A9C63692A19E93200800DBA /* CLogServices.cpp in Sources */,
 				0ADC8E9928BED81C00632551 /* MDSSQLiteDocumentBacking.swift in Sources */,
 				0ADC8E9728BED81400632551 /* MDSDocument.swift in Sources */,
+				0A4FE8C52B2A88F00076C753 /* CSQLiteLimit.cpp in Sources */,
 				0ADC8EB328BED91300632551 /* LockingPrimitives.swift in Sources */,
 				0ADC8EA028BED85200632551 /* SQLiteInnerJoin.swift in Sources */,
 				0ADC8EA928BED8B000632551 /* HTTPServer.swift in Sources */,
@@ -2207,6 +2215,7 @@
 				0A9C63762A19EAEF00800DBA /* ConcurrencyPrimitives-POSIX.cpp in Sources */,
 				0A9C63772A19EB2300800DBA /* CThread-POSIX.cpp in Sources */,
 				0A874330294AF48900DAB65D /* SQLiteLimit.swift in Sources */,
+				0A0EAB362B32794F0058835E /* CSQLiteTrigger.cpp in Sources */,
 				0A9C63712A19EAC300800DBA /* CSQLiteWhere.cpp in Sources */,
 				0ADC8EB028BED8E900632551 /* BatchQueue.swift in Sources */,
 				0A9C63742A19EAC300800DBA /* CSQLiteInnerJoin.cpp in Sources */,
@@ -2272,6 +2281,7 @@
 				0AE25CD02B20019400EB2BDE /* CMDSSQLiteDocumentBacking.cpp in Sources */,
 				0ADC8EB528BED92400632551 /* URLComponents+Extensions.swift in Sources */,
 				0ADC8E9828BED81C00632551 /* MDSSQLite.swift in Sources */,
+				0AD596002B33D1B7005E3ADC /* CJSON.cpp in Sources */,
 				0AC76DF12A79D3A600C656A9 /* MDSDocumentStorageServer.swift in Sources */,
 				0ADC8EA328BED85200632551 /* SQLiteDatabase.swift in Sources */,
 			);
