@@ -12,7 +12,8 @@ import Foundation
 // MARK: Local data
 			typealias AuthorizationValidationProc = (_ authorization :String) -> Bool
 fileprivate	typealias DocumentStorageInfo =
-					(documentStorage :MDSHTTPServicesHandler, authorizationValidationProc :AuthorizationValidationProc)
+					(documentStorage :MDSDocumentStorageServer,
+					authorizationValidationProc :AuthorizationValidationProc)
 fileprivate	var	documentStorageInfosByDocumentStorageID = [String : DocumentStorageInfo]()
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -21,7 +22,7 @@ extension MDSHTTPServices {
 
 	// Class methods
 	//------------------------------------------------------------------------------------------------------------------
-	static func register(documentStorage :MDSHTTPServicesHandler, for documentStorageID :String = "default",
+	static func register(documentStorage :MDSDocumentStorageServer, for documentStorageID :String = "default",
 			isIncludedProcs :[(selector :String, isIncludedProc :MDSDocument.IsIncludedProc)] = [],
 			keysProcs :[(selector :String, keysProc :MDSDocument.KeysProc)] = [],
 			valueProcs :[(selector :String, valueProc :MDSDocument.ValueProc)] = [],
@@ -90,8 +91,6 @@ extension MDSHTTPServices {
 // MARK: - HTTPServer extension
 extension HTTPServer {
 
-	// MARK: Types
-
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
 	func setupMDSEndpoints() {
@@ -138,7 +137,7 @@ extension HTTPServer {
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(associationRegisterEndpoint)
@@ -175,7 +174,7 @@ extension HTTPServer {
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(associationUpdateEndpoint)
@@ -253,7 +252,7 @@ extension HTTPServer {
 				}
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(associationGetEndpoint)
@@ -306,7 +305,7 @@ extension HTTPServer {
 				}
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(associationGetValuesEndpoint)
@@ -344,7 +343,7 @@ extension HTTPServer {
 			}
 
 			// Compose valueInfos
-			var	valueInfos = [(name :String, valueType :MDSValueType, selector :String, proc :MDSDocument.ValueProc)]()
+			var	cacheValueInfos = [(valueInfo :MDSValueInfo, selector :String)]()
 			for valueInfoInfo in valueInfoInfos {
 				// Get update
 				let	(valueInfo, error) = MDSHTTPServices.cacheRegisterGetValueInfo(for: valueInfoInfo)
@@ -352,7 +351,7 @@ extension HTTPServer {
 				// Check results
 				if valueInfo != nil {
 					// Success
-					switch valueInfo!.valueType {
+					switch valueInfo!.valueInfo.type {
 						case .integer:
 							// Integer
 							guard valueInfo!.selector == "integerValueForProperty()" else
@@ -360,10 +359,7 @@ extension HTTPServer {
 											.json(["error": "Invalid value selector: \(valueInfo!.selector)"])) }
 
 							// Append info
-							valueInfos.append(
-									(valueInfo!.name, valueInfo!.valueType, valueInfo!.selector,
-											{ documentStorage!.documentIntegerValue(for: documentType, document: $1,
-													property: $2) ?? 0 }))
+							cacheValueInfos.append(valueInfo!)
 					}
 				} else {
 					// Error
@@ -375,12 +371,12 @@ extension HTTPServer {
 			do {
 				// Register cache
 				try documentStorage!.cacheRegister(name: name, documentType: documentType,
-						relevantProperties: relevantProperties, valueInfos: valueInfos)
+						relevantProperties: relevantProperties, cacheValueInfos: cacheValueInfos)
 
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(cacheRegisterEndpoint)
@@ -427,12 +423,12 @@ extension HTTPServer {
 				try documentStorage!.collectionRegister(name: name, documentType: documentType,
 						relevantProperties: relevantProperties, isUpToDate: info.isUpToDate,
 						isIncludedInfo: isIncludedSelectorInfo, isIncludedSelector: isIncludedSelector,
-						isIncludedProc: isIncludedProc)
+						documentIsIncludedProc: isIncludedProc)
 
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(collectionRegisterEndpoint)
@@ -456,7 +452,7 @@ extension HTTPServer {
 						nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(collectionGetDocumentCountEndpoint)
@@ -510,7 +506,7 @@ extension HTTPServer {
 				}
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(collectionGetDocumentInfoEndpoint)
@@ -560,7 +556,7 @@ extension HTTPServer {
 						nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentGetCountEndpoint)
@@ -636,7 +632,7 @@ extension HTTPServer {
 				}
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentGetEndpoint)
@@ -660,7 +656,7 @@ extension HTTPServer {
 				return (.ok, nil, .json(infos))
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentUpdateEndpoint)
@@ -692,7 +688,7 @@ extension HTTPServer {
 				return (.ok, nil, .json(documentAttachmentInfo.httpServicesInfo))
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentAttachmentAddEndpoint)
@@ -715,7 +711,7 @@ extension HTTPServer {
 				return (.ok, nil, .data(content))
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentAttachmentGetEndpoint)
@@ -748,7 +744,7 @@ extension HTTPServer {
 				return (.ok, nil, .json(["revision": revision]))
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentAttachmentUpdateEndpoint)
@@ -770,7 +766,7 @@ extension HTTPServer {
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentAttachmentRemoveEndpoint)
@@ -821,7 +817,7 @@ extension HTTPServer {
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(indexRegisterEndpoint)
@@ -859,7 +855,7 @@ extension HTTPServer {
 				}
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": "\(error)"]))
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
 			}
 		}
 		register(indexGetDocumentInfoEndpoint)
@@ -880,7 +876,7 @@ extension HTTPServer {
 				return (.badRequest, nil, .json(["error": "Missing key(s)"]))
 			}
 
-			return (.ok, nil, .json(try! documentStorage!.info(for: keys)))
+			return (.ok, nil, .json(try! documentStorage!.infoGet(for: keys)))
 		}
 		register(infoGetEndpoint)
 
@@ -930,7 +926,7 @@ extension HTTPServer {
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func preflight(documentStorageID :String, authorization :String?) ->
-			(MDSHTTPServicesHandler?, HTTPEndpoint.PerformResult?) {
+			(MDSDocumentStorageServer?, HTTPEndpoint.PerformResult?) {
 		// Setup
 		guard let (documentStorage, authorizationValidationProc) =
 				documentStorageInfosByDocumentStorageID[documentStorageID] else {

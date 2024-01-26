@@ -8,22 +8,24 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: MDSCache
-class MDSCache : Equatable {
+public class MDSCache : Equatable {
 
 	// MARK: ValueInfo
-	struct ValueInfo {
+	public struct ValueInfo {
 
 		// MARK: Properties
-		let	name :String
-		let	type :MDSValueType
-		let	proc :MDSDocument.ValueProc
+					let	valueInfo :MDSValueInfo
+					let	selector :String
+
+		fileprivate	let	proc :MDSDocument.ValueProc
 
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
-		init(valueInfo :MDSValueInfo, proc :@escaping MDSDocument.ValueProc) {
+		init(valueInfo :MDSValueInfo, selector :String, proc :@escaping MDSDocument.ValueProc) {
 			// Store
-			self.name = valueInfo.name
-			self.type = valueInfo.type
+			self.valueInfo = valueInfo
+			self.selector = selector
+			
 			self.proc = proc
 		}
 	}
@@ -33,14 +35,13 @@ class MDSCache : Equatable {
 			let	documentType :String
 			let	relevantProperties: Set<String>
 
-			var	lastRevision :Int
-
 	private	let	valueInfos :[ValueInfo]
+
+	private	var	lastRevision :Int
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	init(name :String, documentType :String, relevantProperties :[String],
-			valueInfos :[(valueInfo :MDSValueInfo, proc :MDSDocument.ValueProc)], lastRevision :Int) {
+	init(name :String, documentType :String, relevantProperties :[String], valueInfos :[ValueInfo], lastRevision :Int) {
 		// Store
 		self.name = name
 		self.documentType = documentType
@@ -48,22 +49,25 @@ class MDSCache : Equatable {
 
 		self.lastRevision = lastRevision
 
-		self.valueInfos = valueInfos.map({ ValueInfo(valueInfo: $0, proc: $1) })
+		self.valueInfos = valueInfos
 	}
 
 	// MARK: Equatable implementation
 	//------------------------------------------------------------------------------------------------------------------
-	static func == (lhs :MDSCache, rhs :MDSCache) -> Bool { lhs.name == rhs.name }
+	public static func == (lhs :MDSCache, rhs :MDSCache) -> Bool { lhs.name == rhs.name }
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	func valueInfo(for valueName :String) -> ValueInfo? { self.valueInfos.first(where: { $0.name == valueName }) }
+	func hasValueInfo(for valueName :String) -> Bool {
+		// Return first match
+		self.valueInfos.first(where: { $0.valueInfo.name == valueName }) != nil
+	}
 	
 	//------------------------------------------------------------------------------------------------------------------
 	func update<U>(_ updateInfos :[MDSUpdateInfo<U>]) ->
-			(infosByID :[/* ID */ U : [/* Name */ String : Any]]?, lastRevision :Int?) {
+			(valueInfoByID :[/* ID */ U : [/* Name */ String : Any]]?, lastRevision :Int?) {
 		// Compose results
-		var	infosByID = [/* ID */ U : [/* Name */ String : Any]]()
+		var	valueInfoByID = [/* ID */ U : [/* Name */ String : Any]]()
 		var	lastRevision :Int?
 		updateInfos.forEach() { updateInfo in
 			// Check if there is something to do
@@ -72,11 +76,12 @@ class MDSCache : Equatable {
 				// Collect value infos
 				var	valuesByName = [/* Name */ String : Any]()
 				self.valueInfos.forEach() {
-					// Add entry for this value info
-					valuesByName[$0.name] = $0.proc(self.documentType, updateInfo.document, $0.name)
+					// Add entry for this ValueInfo
+					valuesByName[$0.valueInfo.name] = $0.proc(self.documentType, updateInfo.document, $0.valueInfo.name)
 				}
 
-				infosByID[updateInfo.id] = valuesByName
+				// Update
+				valueInfoByID[updateInfo.id] = valuesByName
 			}
 
 			// Update last revision
@@ -84,6 +89,6 @@ class MDSCache : Equatable {
 			lastRevision = self.lastRevision
 		}
 
-		return (!infosByID.isEmpty ? infosByID : nil, lastRevision)
+		return (!valueInfoByID.isEmpty ? valueInfoByID : nil, lastRevision)
 	}
 }

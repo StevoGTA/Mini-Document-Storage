@@ -5,160 +5,298 @@
 #include "CMDSDocumentStorage.h"
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: Local procs declaration
+// MARK: CGenericDocument
 
-static	void	sAddDocumentToArray(CMDSDocument& document, TCArray<CMDSDocument>* documents);
-static	void	sAddDocumentToDictionary(const CString& key, const CMDSDocument& document,
-						TCDictionary<CMDSDocument>* dictionary);
-static	CString	sComposeAssociationName(const CString& fromDocumentType, const CString& toDocumentType);
+class CGenericDocument : public CMDSDocument {
+	// InfoForNew
+	public:
+		class InfoForNew : public CMDSDocument::InfoForNew {
+			public:
+										// Lifecycle methods
+										InfoForNew() : CMDSDocument::InfoForNew() {}
+
+										// Instance mehtods
+				const	CString&		getDocumentType() const
+											{ return mDocumentType; }
+						I<CMDSDocument>	create(const CString& id, CMDSDocumentStorage& documentStorage) const
+											{ return I<CMDSDocument>(new CGenericDocument(id, documentStorage)); }
+		};
+
+	// Methods
+	public:
+										// CMDSDocument methods
+				const	Info&			getInfo() const
+											{ return mInfo; }
+
+										// Class methods
+		static			I<CMDSDocument>	create(const CString& id, CMDSDocumentStorage& documentStorage)
+											{ return I<CMDSDocument>(new CGenericDocument(id, documentStorage)); }
+
+	private:
+										// Lifecycle methods
+										CGenericDocument(const CString& id, CMDSDocumentStorage& documentStorage) :
+											CMDSDocument(id, documentStorage)
+											{}
+
+	// Properties
+	public:
+		static	CString	mDocumentType;
+		static	Info	mInfo;
+};
+
+CString				CGenericDocument::mDocumentType(OSSTR("generic"));
+CMDSDocument::Info	CGenericDocument::mInfo(mDocumentType, CGenericDocument::create);
+
+//----------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - CMDSDocumentStorage::Internals
+
+class CMDSDocumentStorage::Internals {
+	public:
+		Internals()
+			{}
+
+		TNDictionary<CMDSDocument::Info>				mDocumentCreateInfoByDocumentType;
+		TNArrayDictionary<CMDSDocument::ChangedInfo>	mDocumentChangedInfoByDocumentType;
+		TNDictionary<CMDSDocument::IsIncludedPerformer>	mDocumentIsIncludedPerformerBySelector;
+		TNDictionary<CMDSDocument::KeysPerformer>		mDocumentKeysPerformerBySelector;
+		TNDictionary<CMDSDocument::ValueInfo>			mDocumentValueInfoBySelector;
+};
 
 //----------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - CMDSDocumentStorage
 
+// MARK: Lifecycle methods
+
+//----------------------------------------------------------------------------------------------------------------------
+CMDSDocumentStorage::CMDSDocumentStorage()
+//----------------------------------------------------------------------------------------------------------------------
+{
+	mInternals = new Internals();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+CMDSDocumentStorage::~CMDSDocumentStorage()
+//----------------------------------------------------------------------------------------------------------------------
+{
+	Delete(mInternals);
+}
+
 // MARK: Instance methods
 
 //----------------------------------------------------------------------------------------------------------------------
-TArray<CMDSDocument> CMDSDocumentStorage::getDocuments(const CMDSDocument::Info& info) const
+TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSDocumentStorage::documentCreate(const CString& documentType,
+		const TArray<CMDSDocument::CreateInfo>& documentCreateInfos)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	// Collect documents
-	TCArray<CMDSDocument>	documents;
-	((CMDSDocumentStorage*) this)->iterate(info, (CMDSDocument::Proc) sAddDocumentToArray, &documents);
-
-	return documents;
+	return documentCreate(documentType, documentCreateInfos, CGenericDocument::InfoForNew());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TArray<CMDSDocument> CMDSDocumentStorage::getDocuments(const CMDSDocument::Info& info,
-		const TArray<CString>& documentIDs)
+void CMDSDocumentStorage::registerDocumentCreateInfo(const CMDSDocument::Info& documentInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	// Collect documents
-	TCArray<CMDSDocument>	documents;
-	iterate(info, documentIDs, (CMDSDocument::Proc) sAddDocumentToArray, &documents);
-
-	return documents;
+	mInternals->mDocumentCreateInfoByDocumentType.set(documentInfo.getDocumentType(), documentInfo);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSDocumentStorage::registerAssociation(const CMDSDocument::Info& fromDocumentInfo,
-		const CMDSDocument::Info& toDocumentInfo)
+void CMDSDocumentStorage::registerDocumentChangedInfos(const CMDSDocument::Info& documentInfo,
+		const CMDSDocument::ChangedInfo& documentChangedInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	registerAssociation(sComposeAssociationName(fromDocumentInfo.getDocumentType(), toDocumentInfo.getDocumentType()),
-			fromDocumentInfo, toDocumentInfo);
+	mInternals->mDocumentChangedInfoByDocumentType.add(documentInfo.getDocumentType(), documentChangedInfo);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSDocumentStorage::updateAssociation(const CMDSDocument::Info& fromDocumentInfo,
-		const CMDSDocument::Info& toDocumentInfo, const TArray<AssociationUpdate>& updates)
+void CMDSDocumentStorage::registerDocumentIsIncludedPerformers(
+		const TArray<CMDSDocument::IsIncludedPerformer>& documentIsIncludedPerformers)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	updateAssociation(sComposeAssociationName(fromDocumentInfo.getDocumentType(), toDocumentInfo.getDocumentType()),
-			updates);
-}
-
-////----------------------------------------------------------------------------------------------------------------------
-//void CMDSDocumentStorage::iterateAssociationFrom(const CMDSDocument& fromDocument,
-//		const CMDSDocument::Info& toDocumentInfo, CMDSDocument::Proc proc, void* userData) const
-////----------------------------------------------------------------------------------------------------------------------
-//{
-//	iterateAssociationFrom(sComposeAssociationName(fromDocument.getDocumentType(), toDocumentInfo.getDocumentType()),
-//			fromDocument, proc, userData);
-//}
-//
-//----------------------------------------------------------------------------------------------------------------------
-TArray<CMDSDocument> CMDSDocumentStorage::getDocumentsAssociatedFrom(const CMDSDocument& fromDocument,
-		const CMDSDocument::Info& toDocumentInfo)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Iterate association
-	TCArray<CMDSDocument>	documents;
-	iterateAssociationFrom(sComposeAssociationName(fromDocument.getDocumentType(), toDocumentInfo.getDocumentType()),
-			fromDocument, toDocumentInfo, (CMDSDocument::Proc) sAddDocumentToArray, &documents);
-
-	return documents;
+	// Iterate
+	for (TIteratorD<CMDSDocument::IsIncludedPerformer> iterator = documentIsIncludedPerformers.getIterator();
+			iterator.hasValue(); iterator.advance())
+		// Add
+		mInternals->mDocumentIsIncludedPerformerBySelector.set(iterator->getSelector(), *iterator);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSDocumentStorage::iterateAssociationTo(const CMDSDocument::Info& fromDocumentInfo,
-		const CMDSDocument& toDocument, CMDSDocument::Proc proc, void* userData)
+void CMDSDocumentStorage::registerDocumentKeysPerformers(
+		const TArray<CMDSDocument::KeysPerformer>& documentKeysPerformers)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	iterateAssociationTo(sComposeAssociationName(fromDocumentInfo.getDocumentType(), toDocument.getDocumentType()),
-			fromDocumentInfo, toDocument, proc, userData);
+	// Iterate
+	for (TIteratorD<CMDSDocument::KeysPerformer> iterator = documentKeysPerformers.getIterator(); iterator.hasValue();
+			iterator.advance())
+		// Add
+		mInternals->mDocumentKeysPerformerBySelector.set(iterator->getSelector(), *iterator);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TArray<CMDSDocument> CMDSDocumentStorage::getDocumentsAssociatedTo(const CMDSDocument::Info& fromDocumentInfo,
-		const CMDSDocument& toDocument)
+void CMDSDocumentStorage::registerValueInfos(const TArray<CMDSDocument::ValueInfo>& documentValueInfos)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	// Iterate association
-	TCArray<CMDSDocument>	documents;
-	iterateAssociationTo(sComposeAssociationName(fromDocumentInfo.getDocumentType(), toDocument.getDocumentType()),
-			fromDocumentInfo, toDocument, (CMDSDocument::Proc) sAddDocumentToArray, &documents);
-
-	return documents;
+	// Iterate
+	for (TIteratorD<CMDSDocument::ValueInfo> iterator = documentValueInfos.getIterator(); iterator.hasValue();
+			iterator.advance())
+		// Add
+		mInternals->mDocumentValueInfoBySelector.set(iterator->getSelector(), *iterator);
 }
 
-////----------------------------------------------------------------------------------------------------------------------
-//SValue CMDSDocumentStorage::retrieveAssociationValue(const CMDSDocument::Info& fromDocumentInfo,
-//		const CMDSDocument& toDocument, const CString& summedCachedValueName)
-////----------------------------------------------------------------------------------------------------------------------
-//{
-//	return retrieveAssociationValue(
-//			sComposeAssociationName(fromDocumentInfo.getDocumentType(), toDocument.getDocumentType()),
-//			fromDocumentInfo.getDocumentType(), toDocument, summedCachedValueName);
-//}
+// MARK: Subclass methods
 
 //----------------------------------------------------------------------------------------------------------------------
-TArray<CMDSDocument> CMDSDocumentStorage::getCollectionDocuments(const CString& name,
-		const CMDSDocument::Info& documentInfo) const
+const CMDSDocument::Info& CMDSDocumentStorage::documentCreateInfo(const CString& documentType) const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	// Collect documents
-	TCArray<CMDSDocument>	documents;
-	iterateCollection(name, documentInfo, (CMDSDocument::Proc) sAddDocumentToArray, &documents);
-
-	return documents;
+	return *mInternals->mDocumentCreateInfoByDocumentType[documentType];
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TDictionary<CMDSDocument> CMDSDocumentStorage::getIndexDocumentMap(const CString& name, const TArray<CString> keys,
-		const CMDSDocument::Info& documentInfo) const
+CMDSDocumentStorage::DocumentChangedInfos CMDSDocumentStorage::documentChangedInfos(const CString& documentType) const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	// Collect documents
-	TCDictionary<CMDSDocument>	documentMap;
-	iterateIndex(name, keys, documentInfo, (CMDSDocument::KeyProc) sAddDocumentToDictionary, &documentMap);
+	// Setup
+	const	OR<TNArray<CMDSDocument::ChangedInfo> >	documentChangedInfos =
+															mInternals->mDocumentChangedInfoByDocumentType.get(
+																	documentType);
 
-	return documentMap;
+	return documentChangedInfos.hasReference() ? *documentChangedInfos : TNArray<CMDSDocument::ChangedInfo>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: - Local procs definitions
-
-//----------------------------------------------------------------------------------------------------------------------
-void sAddDocumentToArray(CMDSDocument& document, TCArray<CMDSDocument>* documents)
+void CMDSDocumentStorage::notifyDocumentChanged(const CMDSDocument& document,
+		CMDSDocument::ChangeKind documentChangeKind) const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	documents->add(document);
+	// Setup
+	DocumentChangedInfos	documentChangedInfos = this->documentChangedInfos(document.getDocumentType());
+
+	// Call document changed procs
+	for (TIteratorD<CMDSDocument::ChangedInfo> iterator = documentChangedInfos.getIterator();
+			iterator.hasValue(); iterator.advance())
+		// Call proc
+		iterator->notify(document, documentChangeKind);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void sAddDocumentToDictionary(const CString& key, const CMDSDocument& document, TCDictionary<CMDSDocument>* dictionary)
+OR<CMDSDocument::IsIncludedPerformer> CMDSDocumentStorage::documentIsIncludedPerformer(const CString& selector) const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	dictionary->set(key, document);
+	return mInternals->mDocumentIsIncludedPerformerBySelector[selector];
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-CString sComposeAssociationName(const CString& fromDocumentType, const CString& toDocumentType)
+OR<CMDSDocument::KeysPerformer> CMDSDocumentStorage::documentKeysPerformer(const CString& selector) const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return fromDocumentType + CString(OSSTR("To")) +
-			toDocumentType.getSubString(0, 1).uppercased() + toDocumentType.getSubString(1);
+	return mInternals->mDocumentKeysPerformerBySelector[selector];
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+OR<CMDSDocument::ValueInfo> CMDSDocumentStorage::documentValueInfo(const CString& selector) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return mInternals->mDocumentValueInfoBySelector[selector];
+}
+
+// MARK: Class methods
+
+//----------------------------------------------------------------------------------------------------------------------
+SError CMDSDocumentStorage::getInvalidCountError(UInt32 count)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return SError(CString(OSSTR("MDSDocumentStorage")), 1, CString(OSSTR("Invalid count: ")) + CString(count));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+SError CMDSDocumentStorage::getInvalidDocumentTypeError(const CString& documentType)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return SError(CString(OSSTR("MDSDocumentStorage")), 2, CString(OSSTR("Invalid documentType: ")) + documentType);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+SError CMDSDocumentStorage::getInvalidStartIndexError(UInt32 startIndex)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return SError(CString(OSSTR("MDSDocumentStorage")), 3,
+			CString(OSSTR("Invalid startIndex: ")) + CString(startIndex));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+SError CMDSDocumentStorage::getMissingFromIndexError(const CString& key)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return SError(CString(OSSTR("MDSDocumentStorage")), 4, CString(OSSTR("Missing from index: ")) + key);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+SError CMDSDocumentStorage::getUnknownAssociationError(const CString& name)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return SError(CString(OSSTR("MDSDocumentStorage")), 5, CString(OSSTR("Unknown association: ")) + name);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+SError CMDSDocumentStorage::getUnknownAttachmentIDError(const CString& attachmentID)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return SError(CString(OSSTR("MDSDocumentStorage")), 6, CString(OSSTR("Unknown attachmentID: ")) + attachmentID);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+SError CMDSDocumentStorage::getUnknownCacheError(const CString& name)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return SError(CString(OSSTR("MDSDocumentStorage")), 7, CString(OSSTR("Unknown cache: ")) + name);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+SError CMDSDocumentStorage::getUnknownCacheValueName(const CString& valueName)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return SError(CString(OSSTR("MDSDocumentStorage")), 8, CString(OSSTR("Unknown cache valueName: ")) + valueName);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+SError CMDSDocumentStorage::getUnknownCacheValueSelector(const CString& selector)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return SError(CString(OSSTR("MDSDocumentStorage")), 9, CString(OSSTR("Invalid value selector: ")) + selector);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+SError CMDSDocumentStorage::getUnknownCollectionError(const CString& name)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return SError(CString(OSSTR("MDSDocumentStorage")), 10, CString(OSSTR("Unknown collection: ")) + name);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+SError CMDSDocumentStorage::getUnknownDocumentIDError(const CString& documentID)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return SError(CString(OSSTR("MDSDocumentStorage")), 11, CString(OSSTR("Unknown documentID: ")) + documentID);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+SError CMDSDocumentStorage::getUnknownDocumentTypeError(const CString& documentType)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return SError(CString(OSSTR("MDSDocumentStorage")), 12, CString(OSSTR("Unknown documentType: ")) + documentType);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+SError CMDSDocumentStorage::getUnknownIndexError(const CString& name)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return SError(CString(OSSTR("MDSDocumentStorage")), 13, CString(OSSTR("Unknown index: ")) + name);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+SError CMDSDocumentStorage::getIllegalInBatchError()
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return SError(CString(OSSTR("MDSDocumentStorage")), 14, CString(OSSTR("Illegal in batch")));
 }

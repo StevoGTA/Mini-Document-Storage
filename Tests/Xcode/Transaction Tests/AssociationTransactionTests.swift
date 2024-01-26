@@ -290,7 +290,7 @@ class AssociationTransactionTests : XCTestCase {
 		let	cacheRegisterError =
 					config.httpEndpointClient.cacheRegister(documentStorageID: config.documentStorageID,
 							name: cacheName, documentType: Child.documentType, relevantProperties: ["size"],
-							valueInfos: [("size", .integer, "integerValueForProperty()")])
+							valueInfos: [(MDSValueInfo(name: "size", type: .integer), "integerValueForProperty()")])
 		XCTAssertNil(cacheRegisterError, "cache register received error: \(cacheRegisterError!)")
 		guard cacheRegisterError == nil else { return }
 

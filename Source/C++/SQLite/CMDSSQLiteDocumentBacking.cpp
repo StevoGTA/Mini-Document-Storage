@@ -4,27 +4,42 @@
 
 #include "CMDSSQLiteDocumentBacking.h"
 
-#include "ConcurrencyPrimitives.h"
 #include "CMDSSQLiteDatabaseManager.h"
+#include "ConcurrencyPrimitives.h"
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: CMDSSQLiteDocumentBackingInternals
+// MARK: Types
 
-class CMDSSQLiteDocumentBackingInternals {
+typedef	CMDSSQLiteDatabaseManager::DocumentCreateInfo			DocumentCreateInfo;
+typedef	CMDSSQLiteDatabaseManager::DocumentUpdateInfo			DocumentUpdateInfo;
+typedef	CMDSSQLiteDatabaseManager::DocumentAttachmentInfo		DocumentAttachmentInfo;
+typedef	CMDSSQLiteDatabaseManager::DocumentAttachmentRemoveInfo	DocumentAttachmentRemoveInfo;
+
+//----------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - CMDSSQLiteDocumentBacking::Internals
+
+class CMDSSQLiteDocumentBacking::Internals {
 	public:
-		CMDSSQLiteDocumentBackingInternals(SInt64 id, UInt32 revision, UniversalTime creationUniversalTime,
-				UniversalTime modificationUniversalTime, const CDictionary& propertyMap, bool active) :
-			mID(id), mRevision(revision), mCreationUniversalTime(creationUniversalTime),
-					mModificationUniversalTime(modificationUniversalTime), mPropertyMap(propertyMap), mActive(active)
+		Internals(SInt64 id, const CString& documentID, UInt32 revision, bool active,
+				UniversalTime creationUniversalTime, UniversalTime modificationUniversalTime,
+				const CDictionary& propertyMap, const CMDSDocument::AttachmentInfoMap& documentAttachmentInfoMap) :
+			mID(id), mDocumentID(documentID), mCreationUniversalTime(creationUniversalTime),
+					mRevision(revision), mActive(active), mModificationUniversalTime(modificationUniversalTime),
+					mPropertyMap(propertyMap), mDocumentAttachmentInfoMap(documentAttachmentInfoMap)
 			{}
 
-		SInt64				mID;
-		UInt32				mRevision;
-		UniversalTime		mCreationUniversalTime;
-		UniversalTime		mModificationUniversalTime;
-		CDictionary			mPropertyMap;
-		bool				mActive;
-		CReadPreferringLock	mPropertiesLock;
+		SInt64										mID;
+		CString										mDocumentID;
+		UniversalTime								mCreationUniversalTime;
+
+		UInt32										mRevision;
+		bool										mActive;
+		UniversalTime								mModificationUniversalTime;
+		CDictionary									mPropertyMap;
+		TNDictionary<CMDSDocument::AttachmentInfo>	mDocumentAttachmentInfoMap;
+
+		CReadPreferringLock							mPropertiesLock;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -34,32 +49,32 @@ class CMDSSQLiteDocumentBackingInternals {
 // MARK: Lifecycle methods
 
 //----------------------------------------------------------------------------------------------------------------------
-CMDSSQLiteDocumentBacking::CMDSSQLiteDocumentBacking(SInt64 id, UInt32 revision, UniversalTime creationUniversalTime,
-		UniversalTime modificationUniversalTime, const CDictionary& propertyMap, bool active)
+CMDSSQLiteDocumentBacking::CMDSSQLiteDocumentBacking(SInt64 id, const CString& documentID, UInt32 revision,
+		bool active, UniversalTime creationUniversalTime, UniversalTime modificationUniversalTime,
+		const CDictionary& propertyMap, const CMDSDocument::AttachmentInfoMap& documentAttachmentInfoMap)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	mInternals =
-			new CMDSSQLiteDocumentBackingInternals(id, revision, creationUniversalTime, modificationUniversalTime,
-					propertyMap, active);
+			new Internals(id, documentID, revision, active, creationUniversalTime, modificationUniversalTime,
+					propertyMap, documentAttachmentInfoMap);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-CMDSSQLiteDocumentBacking::CMDSSQLiteDocumentBacking(const CString& documentType, const CString& documentID,
-		UniversalTime creationUniversalTime, UniversalTime modificationUniversalTime, const CDictionary& propertyMap,
+CMDSSQLiteDocumentBacking::CMDSSQLiteDocumentBacking(const CString& documentType,
+		const CString& documentID, const OV<UniversalTime>& creationUniversalTime,
+		const OV<UniversalTime>& modificationUniversalTime, const CDictionary& propertyMap,
 		CMDSSQLiteDatabaseManager& databaseManager)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	// Store
-	CMDSSQLiteDatabaseManager::NewDocumentInfo	newDocumentInfo =
-														databaseManager.newDocument(documentType, documentID,
-																creationUniversalTime, modificationUniversalTime,
-																propertyMap);
-
 	// Setup
+	DocumentCreateInfo	documentCreateInfo =
+								databaseManager.documentCreate(documentType, documentID, creationUniversalTime,
+										modificationUniversalTime, propertyMap);
+
 	mInternals =
-			new CMDSSQLiteDocumentBackingInternals(newDocumentInfo.mID, newDocumentInfo.mRevision,
-					newDocumentInfo.mCreationUniversalTime, newDocumentInfo.mModificationUniversalTime, propertyMap,
-					true);
+			new Internals(documentCreateInfo.getID(), documentID, documentCreateInfo.getRevision(), true,
+					documentCreateInfo.getCreationUniversalTime(), documentCreateInfo.getModificationUniversalTime(),
+					propertyMap, TNDictionary<CMDSDocument::AttachmentInfo>());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -79,10 +94,10 @@ SInt64 CMDSSQLiteDocumentBacking::getID() const
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-UInt32 CMDSSQLiteDocumentBacking::getRevision() const
+const CString& CMDSSQLiteDocumentBacking::getDocumentID() const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return mInternals->mRevision;
+	return mInternals->mDocumentID;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -93,10 +108,48 @@ UniversalTime CMDSSQLiteDocumentBacking::getCreationUniversalTime() const
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+UInt32 CMDSSQLiteDocumentBacking::getRevision() const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return mInternals->mRevision;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool CMDSSQLiteDocumentBacking::getActive() const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return mInternals->mActive;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 UniversalTime CMDSSQLiteDocumentBacking::getModificationUniversalTime() const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	return mInternals->mModificationUniversalTime;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+CDictionary CMDSSQLiteDocumentBacking::getPropertyMap() const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Copy
+	mInternals->mPropertiesLock.lockForReading();
+	CDictionary	propertyMap = mInternals->mPropertyMap;
+	mInternals->mPropertiesLock.unlockForReading();
+
+	return propertyMap;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+CMDSDocument::AttachmentInfoMap CMDSSQLiteDocumentBacking::getDocumentAttachmentInfoMap() const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Copy
+	mInternals->mPropertiesLock.lockForReading();
+	CMDSDocument::AttachmentInfoMap	documentAttachmentInfoMap = mInternals->mDocumentAttachmentInfoMap;
+	mInternals->mPropertiesLock.unlockForReading();
+
+	return documentAttachmentInfoMap;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -115,7 +168,7 @@ OV<SValue> CMDSSQLiteDocumentBacking::getValue(const CString& property) const
 
 //----------------------------------------------------------------------------------------------------------------------
 void CMDSSQLiteDocumentBacking::set(const CString& property, const OV<SValue>& value, const CString& documentType,
-		CMDSSQLiteDatabaseManager& databaseManager, bool commitChange)
+		CMDSSQLiteDatabaseManager& databaseManager)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Update
@@ -124,35 +177,110 @@ void CMDSSQLiteDocumentBacking::set(const CString& property, const OV<SValue>& v
 		CDictionary	updatedPropertyMap;
 		updatedPropertyMap.set(property, *value);
 
-		update(documentType, updatedPropertyMap, TNSet<CString>(), databaseManager, commitChange);
+		update(documentType, OV<CDictionary>(updatedPropertyMap), OV<const TSet<CString> >(), databaseManager);
 	} else
 		// Remove
-		update(documentType, CDictionary(), TNSet<CString>(property), databaseManager, commitChange);
+		update(documentType, OV<CDictionary>(), OV<const TSet<CString> >(TNSet<CString>(property)), databaseManager);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteDocumentBacking::update(const CString& documentType, const CDictionary& updatedPropertyMap,
-		const TSet<CString>& removedProperties, CMDSSQLiteDatabaseManager& databaseManager, bool commitChange)
+void CMDSSQLiteDocumentBacking::update(const CString& documentType, const OV<CDictionary>& updatedPropertyMap,
+		const OV<const TSet<CString> >& removedProperties, CMDSSQLiteDatabaseManager& databaseManager)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Setup
 	mInternals->mPropertiesLock.lockForWriting();
 
 	// Update
-	mInternals->mPropertyMap += updatedPropertyMap;
-	mInternals->mPropertyMap.remove(removedProperties);
+	if (updatedPropertyMap.hasValue()) mInternals->mPropertyMap += *updatedPropertyMap;
+	if (removedProperties.hasValue()) mInternals->mPropertyMap.remove(*removedProperties);
 
-	// Check if committing change
-	if (commitChange) {
-		// Get info
-		CMDSSQLiteDatabaseManager::UpdateInfo	updateInfo =
-														databaseManager.updateDocument(documentType, mInternals->mID,
-																mInternals->mPropertyMap);
+	// Update persistent storage
+	DocumentUpdateInfo	documentUpdateInfo =
+								databaseManager.documentUpdate(documentType, mInternals->mID, mInternals->mPropertyMap);
 
-		// Store
-		mInternals->mRevision = updateInfo.mRevision;
-		mInternals->mModificationUniversalTime = updateInfo.mModificationUniversalTime;
-	}
+	// Update properties
+	mInternals->mRevision = documentUpdateInfo.getRevision();
+	mInternals->mModificationUniversalTime = documentUpdateInfo.getModificationUniversalTime();
+
+	// Done
+	mInternals->mPropertiesLock.unlockForWriting();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+CMDSDocument::AttachmentInfo CMDSSQLiteDocumentBacking::attachmentAdd(const CString& documentType,
+		const CDictionary& info, const CData& content, CMDSSQLiteDatabaseManager& databaseManager)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	mInternals->mPropertiesLock.lockForWriting();
+
+	// Update persistent storage
+	DocumentAttachmentInfo	documentAttachmentInfo =
+									databaseManager.documentAttachmentAdd(documentType, mInternals->mID, info, content);
+
+	// Update
+	mInternals->mRevision = documentAttachmentInfo.getRevision();
+	mInternals->mModificationUniversalTime = documentAttachmentInfo.getModificationUniversalTime();
+	mInternals->mDocumentAttachmentInfoMap.set(documentAttachmentInfo.getDocumentAttachmentInfo().getID(),
+			documentAttachmentInfo.getDocumentAttachmentInfo());
+
+	// Done
+	mInternals->mPropertiesLock.unlockForWriting();
+
+	return documentAttachmentInfo.getDocumentAttachmentInfo();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+CData CMDSSQLiteDocumentBacking::attachmentContent(const CString& documentType, const CString& attachmentID,
+		CMDSSQLiteDatabaseManager& databaseManager)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Return content
+	return databaseManager.documentAttachmentContent(documentType, mInternals->mID, attachmentID);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+UInt32 CMDSSQLiteDocumentBacking::attachmentUpdate(const CString& documentType, const CString& attachmentID,
+		const CDictionary& updatedInfo, const CData& updatedContent, CMDSSQLiteDatabaseManager& databaseManager)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	mInternals->mPropertiesLock.lockForWriting();
+
+	// Update persistent storage
+	DocumentAttachmentInfo	documentAttachmentInfo =
+									databaseManager.documentAttachmentUpdate(documentType, mInternals->mID,
+											attachmentID, updatedInfo, updatedContent);
+
+	// Update
+	mInternals->mRevision = documentAttachmentInfo.getRevision();
+	mInternals->mModificationUniversalTime = documentAttachmentInfo.getModificationUniversalTime();
+	mInternals->mDocumentAttachmentInfoMap.set(attachmentID, documentAttachmentInfo.getDocumentAttachmentInfo());
+
+	// Done
+	mInternals->mPropertiesLock.unlockForWriting();
+
+	return documentAttachmentInfo.getRevision();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSSQLiteDocumentBacking::attachmentRemove(const CString& documentType, const CString& attachmentID,
+		CMDSSQLiteDatabaseManager& databaseManager)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	mInternals->mPropertiesLock.lockForWriting();
+
+	// Update persistent storage
+	DocumentAttachmentRemoveInfo	documentAttachmentRemoveInfo =
+											databaseManager.documentAttachmentRemove(documentType, mInternals->mID,
+												attachmentID);
+
+	// Update
+	mInternals->mRevision = documentAttachmentRemoveInfo.getRevision();
+	mInternals->mModificationUniversalTime = documentAttachmentRemoveInfo.getModificationUniversalTime();
+	mInternals->mDocumentAttachmentInfoMap.remove(attachmentID);
 
 	// Done
 	mInternals->mPropertiesLock.unlockForWriting();

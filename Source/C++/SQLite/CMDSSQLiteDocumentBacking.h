@@ -4,40 +4,69 @@
 
 #pragma once
 
-#include "CDictionary.h"
-#include "TimeAndDate.h"
+#include "CMDSDocument.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: CMDSSQLiteDocumentBacking
 
 class CMDSSQLiteDatabaseManager;
 
-class CMDSSQLiteDocumentBackingInternals;
 class CMDSSQLiteDocumentBacking {
+	// Classes
+	private:
+		class	Internals;
+
 	// Methods
 	public:
-						// Lifecycle methods
-						CMDSSQLiteDocumentBacking(SInt64 id, UInt32 revision, UniversalTime creationUniversalTime,
-								UniversalTime modificationUniversalTime, const CDictionary& propertyMap, bool active);
-						CMDSSQLiteDocumentBacking(const CString& documentType, const CString& documentID,
-								UniversalTime creationUniversalTime, UniversalTime modificationUniversalTime,
-								const CDictionary& propertyMap, CMDSSQLiteDatabaseManager& databaseManager);
-						~CMDSSQLiteDocumentBacking();
+												// Lifecycle methods
+												CMDSSQLiteDocumentBacking(SInt64 id, const CString& documentID,
+														UInt32 revision, bool active, UniversalTime creationUniversalTime,
+														UniversalTime modificationUniversalTime,
+														const CDictionary& propertyMap,
+														const CMDSDocument::AttachmentInfoMap&
+																documentAttachmentInfoMap);
+												CMDSSQLiteDocumentBacking(const CString& documentType,
+														const CString& documentID,
+														const OV<UniversalTime>& creationUniversalTime,
+														const OV<UniversalTime>& modificationUniversalTime,
+														const CDictionary& propertyMap,
+														CMDSSQLiteDatabaseManager& databaseManager);
+												~CMDSSQLiteDocumentBacking();
 
-						// Instance methods
-		SInt64			getID() const;
-		UInt32			getRevision() const;
-		UniversalTime	getCreationUniversalTime() const;
-		UniversalTime	getModificationUniversalTime() const;
+												// Instance methods
+				SInt64							getID() const;
+		const	CString&						getDocumentID() const;
+				UniversalTime					getCreationUniversalTime() const;
 
-		OV<SValue>		getValue(const CString& property) const;
-		void			set(const CString& property, const OV<SValue>& value, const CString& documentType,
-								CMDSSQLiteDatabaseManager& databaseManager, bool commitChange = true);
-		void			update(const CString& documentType, const CDictionary& updatedPropertyMap,
-								const TSet<CString>& removedProperties, CMDSSQLiteDatabaseManager& databaseManager,
-								bool commitChange = true);
+				UInt32							getRevision() const;
+				bool							getActive() const;
+				UniversalTime					getModificationUniversalTime() const;
+				CDictionary						getPropertyMap() const;
+				CMDSDocument::AttachmentInfoMap	getDocumentAttachmentInfoMap() const;
+
+				OV<SValue>						getValue(const CString& property) const;
+				void							set(const CString& property, const OV<SValue>& value,
+														const CString& documentType,
+														CMDSSQLiteDatabaseManager& databaseManager);
+				void							update(const CString& documentType,
+														const OV<CDictionary>& updatedPropertyMap,
+														const OV<const TSet<CString> >& removedProperties,
+														CMDSSQLiteDatabaseManager& databaseManager);
+				CMDSDocument::AttachmentInfo	attachmentAdd(const CString& documentType, const CDictionary& info,
+														const CData& content,
+														CMDSSQLiteDatabaseManager& databaseManager);
+				CData							attachmentContent(const CString& documentType,
+														const CString& attachmentID,
+														CMDSSQLiteDatabaseManager& databaseManager);
+				UInt32							attachmentUpdate(const CString& documentType,
+														const CString& attachmentID,
+														const CDictionary& updatedInfo, const CData& updatedContent,
+														CMDSSQLiteDatabaseManager& databaseManager);
+				void							attachmentRemove(const CString& documentType,
+														const CString& attachmentID,
+														CMDSSQLiteDatabaseManager& databaseManager);
 
 	// Properties
 	private:
-		CMDSSQLiteDocumentBackingInternals*	mInternals;
+		Internals*	mInternals;
 };

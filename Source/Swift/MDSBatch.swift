@@ -9,32 +9,33 @@
 import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: MDSBatch
-public class MDSBatch<T> {
+// MARK: MDSBatchResult
+public enum MDSBatchResult {
+	case commit
+	case cancel
+}
 
-	// MARK: MDSBatchResult
-	public enum Result {
-		case commit
-		case cancel
-	}
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: MDSBatch
+public class MDSBatch<DB : MDSDocumentBacking> {
 
 	// MARK: AddAttachmentInfo
 	struct AddAttachmentInfo {
 
 		// MARK: Properties
-		let	attachmentID :String
+		let	id :String
 		let	revision :Int
 		let	info :[String : Any]
 		let	content :Data
 
-		var	attachmentInfo :MDSDocument.AttachmentInfo
-				{ MDSDocument.AttachmentInfo(id: self.attachmentID, revision: self.revision, info: self.info) }
+		var	documentAttachmentInfo :MDSDocument.AttachmentInfo
+				{ MDSDocument.AttachmentInfo(id: self.id, revision: self.revision, info: self.info) }
 
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
 		init(info :[String : Any], content :Data) {
 			// Setup
-			self.attachmentID = UUID().base64EncodedString
+			self.id = UUID().base64EncodedString
 			self.revision = 1
 
 			// Store
@@ -47,50 +48,52 @@ public class MDSBatch<T> {
 	struct UpdateAttachmentInfo {
 
 		// MARK: Properties
-		let	attachmentID :String
+		let	id :String
 		let	currentRevision :Int
 		let	info :[String : Any]
 		let	content :Data
 
-		var	attachmentInfo :MDSDocument.AttachmentInfo
-				{ MDSDocument.AttachmentInfo(id: self.attachmentID, revision: self.currentRevision, info: self.info) }
-	}
-
-	// MARK: RemoveAttachmentInfo
-	struct RemoveAttachmentInfo {
-
-		// MARK: Properties
-		let	attachmentID :String
+		var	documentAttachmentInfo :MDSDocument.AttachmentInfo
+				{ MDSDocument.AttachmentInfo(id: self.id, revision: self.currentRevision, info: self.info) }
 	}
 
 	// MARK: DocumentInfo
-	class DocumentInfo<T> {
-
-		// MARK: Procs
-		typealias ValueProc = (_ property :String) -> Any?
+	class DocumentInfo {
 
 		// MARK: Properties
 						let	documentType :String
-						let	documentBacking :T?
+						let	documentBacking :DB?
 						let	creationDate :Date
 
-		private(set)	var	updatedPropertyMap :[String : Any]?
-		private(set)	var	removedProperties :Set<String>?
+		private(set)	var	updatedPropertyMap = [String : Any]()
+		private(set)	var	removedProperties = Set<String>()
 		private(set)	var	modificationDate :Date
-		private(set)	var	addAttachmentInfos = [AddAttachmentInfo]()
-		private(set)	var	updateAttachmentInfos = [UpdateAttachmentInfo]()
-		private(set)	var	removeAttachmentInfos = [RemoveAttachmentInfo]()
+		private(set)	var	addAttachmentInfosByID = [String : AddAttachmentInfo]()
+		private(set)	var	updateAttachmentInfosByID = [String : UpdateAttachmentInfo]()
+		private(set)	var	removedAttachmentIDs = Set<String>()
 		private(set)	var	removed = false
 
 		private			let	initialPropertyMap :[String : Any]?
 
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
-		fileprivate init(documentType :String, documentBacking :T?, creationDate :Date, modificationDate :Date,
-				initialPropertyMap :[String : Any]?) {
+		fileprivate init(documentType :String, documentBacking :DB) {
 			// Store
 			self.documentType = documentType
 			self.documentBacking = documentBacking
+			self.creationDate = documentBacking.creationDate
+
+			self.modificationDate = Date()
+
+			self.initialPropertyMap = documentBacking.propertyMap
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		fileprivate init(documentType :String, creationDate :Date, modificationDate :Date,
+				initialPropertyMap :[String : Any]?) {
+			// Store
+			self.documentType = documentType
+			self.documentBacking = nil
 			self.creationDate = creationDate
 
 			self.modificationDate = modificationDate
@@ -102,15 +105,12 @@ public class MDSBatch<T> {
 		//--------------------------------------------------------------------------------------------------------------
 		func value(for property :String) -> Any? {
 			// Check for document removed
-			if self.removed {
-				// Document removed
-				return nil
-			} else if self.removedProperties?.contains(property) ?? false {
+			if self.removed || self.removedProperties.contains(property) {
 				// Removed
 				return nil
 			} else {
 				// Not removed
-				return self.updatedPropertyMap?[property] ?? self.initialPropertyMap?[property]
+				return self.updatedPropertyMap[property] ?? self.initialPropertyMap?[property]
 			}
 		}
 
@@ -119,26 +119,12 @@ public class MDSBatch<T> {
 			// Check if have value
 			if value != nil {
 				// Have value
-				if self.updatedPropertyMap != nil {
-					// Have updated info
-					self.updatedPropertyMap![property] = value
-				} else {
-					// First updated info
-					self.updatedPropertyMap = [property : value!]
-				}
-
-				self.removedProperties?.remove(property)
+				self.updatedPropertyMap[property] = value
+				self.removedProperties.remove(property)
 			} else {
 				// Removing value
-				self.updatedPropertyMap?[property] = nil
-
-				if self.removedProperties != nil {
-					// Have removed properties
-					self.removedProperties!.insert(property)
-				} else {
-					// First removed property
-					self.removedProperties = Set<String>([property])
-				}
+				self.updatedPropertyMap[property] = nil
+				self.removedProperties.insert(property)
 			}
 
 			// Modified
@@ -149,40 +135,21 @@ public class MDSBatch<T> {
 		func remove() { self.removed = true; self.modificationDate = Date() }
 
 		//--------------------------------------------------------------------------------------------------------------
-		func attachmentInfoMap(applyingChangesTo attachmentInfoMap :MDSDocument.AttachmentInfoMap) ->
+		func documentAttachmentInfoMap(applyingChangesTo documentAttachmentInfoMap :MDSDocument.AttachmentInfoMap) ->
 				MDSDocument.AttachmentInfoMap {
-			// Start with initial
-			var	updatedAttachmentInfoMap = attachmentInfoMap
-
-			// Process adds
-			self.addAttachmentInfos.forEach()
-					{ updatedAttachmentInfoMap[$0.attachmentID] = $0.attachmentInfo }
-
-			// Process updates
-			self.updateAttachmentInfos.forEach()
-					{ updatedAttachmentInfoMap[$0.attachmentID] = $0.attachmentInfo }
-
-			// Process removes
-			updatedAttachmentInfoMap.removeValues(
-					forKeys: self.removeAttachmentInfos.map({ $0.attachmentID }))
-
-			return updatedAttachmentInfoMap
+			// Return updated map
+			return documentAttachmentInfoMap
+					.merging(self.addAttachmentInfosByID.mapValues({ $0.documentAttachmentInfo }),
+							uniquingKeysWith: { $1 })
+					.merging(self.updateAttachmentInfosByID.mapValues({ $0.documentAttachmentInfo }),
+							uniquingKeysWith: { $1 })
+					.removingValues(forKeys: self.removedAttachmentIDs)
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		func attachmentContent(for attachmentID :String) -> Data? {
-			// Check if have info on attachment
-			if let addAttachmentInfo = self.addAttachmentInfos.first(where: { $0.attachmentID == attachmentID}) {
-				// Have add
-				return addAttachmentInfo.content
-			} else if let updateAttachmentInfo =
-					self.updateAttachmentInfos.first(where: { $0.attachmentID == attachmentID} ) {
-				// Have update
-				return updateAttachmentInfo.content
-			} else {
-				// No valid attachment
-				return nil
-			}
+		func attachmentContent(for id :String) -> Data? {
+			// Return content
+			return self.addAttachmentInfosByID[id]?.content ?? self.updateAttachmentInfosByID[id]?.content
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
@@ -191,51 +158,58 @@ public class MDSBatch<T> {
 			let	addAttachmentInfo = AddAttachmentInfo(info: info, content: content)
 
 			// Add info
-			self.addAttachmentInfos.append(addAttachmentInfo)
+			self.addAttachmentInfosByID[addAttachmentInfo.id] = addAttachmentInfo
 
 			// Modified
 			self.modificationDate = Date()
 
-			return addAttachmentInfo.attachmentInfo
+			return addAttachmentInfo.documentAttachmentInfo
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		func attachmentUpdate(attachmentID :String, currentRevision :Int, info :[String : Any], content :Data) {
+		func attachmentUpdate(id :String, currentRevision :Int, info :[String : Any], content :Data) {
 			// Add info
-			self.updateAttachmentInfos.append(
-					UpdateAttachmentInfo(attachmentID: attachmentID, currentRevision: currentRevision, info: info,
-							content: content))
+			self.updateAttachmentInfosByID[id] =
+					UpdateAttachmentInfo(id: id, currentRevision: currentRevision, info: info, content: content)
 
 			// Modified
 			self.modificationDate = Date()
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		func attachmentRemove(attachmentID :String) {
-			// Add info
-			self.removeAttachmentInfos.append(RemoveAttachmentInfo(attachmentID: attachmentID))
+		func attachmentRemove(id :String) {
+			// Add id
+			self.removedAttachmentIDs.insert(id)
 
 			// Modified
 			self.modificationDate = Date()
 		}
 	}
 
-	// MARK: Procs
-	typealias AddAttachmentProc =
-				(_ documentType :String, _ documentID :String, _ documentBacking :T?,
-						_ addAttachmentInfo :AddAttachmentInfo) -> Void
-	typealias UpdateAttachmentProc =
-				(_ documentType :String, _ documentID :String, _ documentBacking :T?,
-						_ updateAttachmentInfo :UpdateAttachmentInfo) -> Void
-	typealias RemoveAttachmentProc =
-				(_ documentType :String, _ documentID :String, _ documentBacking :T?,
-						_ removeAttachmentInfo :RemoveAttachmentInfo) -> Void
-
 	// MARK: Properties
-	private	var	documentInfoMap = [/* Document ID */ String : DocumentInfo<T>]()
-	private	let	documentInfoMapLock = ReadPreferringReadWriteLock()
+			var	documentInfosByDocumentType :[String : [String : DocumentInfo]] {
+						// Setup
+						var	info = [String : [String : DocumentInfo]]()
+
+						// Iterate DocumentInfos
+						self.documentInfosByDocumentID.forEach() {
+							// Add
+							if var documentInfoInfo = info[$1.documentType] {
+								//
+								info[$1.documentType] = nil
+								documentInfoInfo[$0] = $1
+								info[$1.documentType] = documentInfoInfo
+							} else {
+								//
+								info[$1.documentType] = [$0 : $1]
+							}
+						}
+
+						return info
+					}
 
 	private	var	associationUpdatesByAssociationName = [/* Name */ String : [MDSAssociation.Update]]()
+	private	var	documentInfosByDocumentID = [/* Document ID */ String : DocumentInfo]()
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -279,50 +253,30 @@ public class MDSBatch<T> {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentAdd(documentType :String, documentID :String, documentBacking :T? = nil, creationDate :Date,
-			modificationDate :Date, initialPropertyMap :[String : Any]? = nil) -> DocumentInfo<T> {
+	func documentAdd(documentType :String, documentBacking :DB) -> DocumentInfo {
 		// Setup
-		let	documentInfo =
-					DocumentInfo(documentType: documentType, documentBacking: documentBacking,
-							creationDate: creationDate, modificationDate: modificationDate,
-							initialPropertyMap: initialPropertyMap)
+		let	documentInfo = DocumentInfo(documentType: documentType, documentBacking: documentBacking)
 
 		// Store
-		self.documentInfoMapLock.write() { self.documentInfoMap[documentID] = documentInfo }
+		self.documentInfosByDocumentID[documentBacking.documentID] = documentInfo
 
 		return documentInfo
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentGetInfo(for documentID :String) -> DocumentInfo<T>? {
-		// Return document info
-		return self.documentInfoMapLock.read() { self.documentInfoMap[documentID] }
+	func documentAdd(documentType :String, documentID :String, creationDate :Date, modificationDate :Date,
+			propertyMap :[String : Any]? = nil) -> DocumentInfo {
+		// Setup
+		let	documentInfo =
+					DocumentInfo(documentType: documentType, creationDate: creationDate,
+							modificationDate: modificationDate, initialPropertyMap: propertyMap)
+
+		// Store
+		self.documentInfosByDocumentID[documentID] = documentInfo
+
+		return documentInfo
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentIterateChanges(
-			_ proc
-					:(_ documentType :String, _ documentInfoMap :[/* Document ID */ String : DocumentInfo<T>]) throws ->
-							Void) rethrows {
-		// Setup
-		var	map = [/* Document Type */ String : [/* Document ID */ String : DocumentInfo<T>]]()
-		self.documentInfoMapLock.read() {
-			// Collect info
-			self.documentInfoMap.forEach() {
-				// Retrieve already collated batch document infos
-				if var documentInfoMap = map[$0.value.documentType] {
-					// Next document of this type
-					map[$0.value.documentType] = nil
-					documentInfoMap[$0.key] = $0.value
-					map[$0.value.documentType] = documentInfoMap
-				} else {
-					// First document of this type
-					map[$0.value.documentType] = [$0.key : $0.value]
-				}
-			}
-		}
-
-		// Process all document info
-		try map.forEach() { try proc($0.key, $0.value) }
-	}
+	func documentInfoGet(for documentID :String) -> DocumentInfo? { self.documentInfosByDocumentID[documentID] }
 }

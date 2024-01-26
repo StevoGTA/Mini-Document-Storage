@@ -1513,14 +1513,14 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func cacheRegister(name :String, documentType :String, relevantProperties :[String], valueInfos :[CacheValueInfo])
-			-> Int {
+	func cacheRegister(name :String, documentType :String, relevantProperties :[String],
+			cacheValueInfos :[CacheValueInfo]) -> Int {
 		// Get current info
 		let	currentInfo = CachesTable.info(for: name, in: self.cachesTable)
 
 		// Setup table
 		let	cacheContentsTable =
-					CacheContentsTable.table(in: self.database, name: name, valueInfos: valueInfos,
+					CacheContentsTable.table(in: self.database, name: name, valueInfos: cacheValueInfos,
 							internalsTable: self.internalsTable)
 		self.cacheTablesByName.set(cacheContentsTable, for: name)
 
@@ -1531,7 +1531,8 @@ class MDSSQLiteDatabaseManager {
 			// New
 			lastRevision = 0
 			updateMasterTable = true
-		} else if (relevantProperties != currentInfo!.relevantProperties) || (valueInfos != currentInfo!.valueInfos) {
+		} else if (relevantProperties != currentInfo!.relevantProperties) ||
+				(cacheValueInfos != currentInfo!.valueInfos) {
 			// Info has changed
 			lastRevision = 0
 			updateMasterTable = true
@@ -1545,7 +1546,7 @@ class MDSSQLiteDatabaseManager {
 		if updateMasterTable {
 			// New or updated
 			CachesTable.addOrUpdate(name: name, documentType: documentType, relevantProperties: relevantProperties,
-					valueInfos: valueInfos, in: self.cachesTable)
+					valueInfos: cacheValueInfos, in: self.cachesTable)
 
 			// Update table
 			if currentInfo != nil { cacheContentsTable.drop() }

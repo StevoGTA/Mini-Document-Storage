@@ -86,11 +86,11 @@ public protocol MDSDocumentStorage {
 	func associationUpdate(for name :String, updates :[MDSAssociation.Update]) throws
 
 	func cacheRegister(name :String, documentType :String, relevantProperties :[String],
-			valueInfos :[(name :String, valueType :MDSValueType, selector :String, proc :MDSDocument.ValueProc)]) throws
+			cacheValueInfos :[(valueInfo :MDSValueInfo, selector :String)]) throws
 
 	func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
-			isIncludedProc :@escaping MDSDocument.IsIncludedProc) throws
+			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc) throws
 	func collectionGetDocumentCount(for name :String) throws -> Int
 	func collectionIterate(name :String, documentType :String, proc :(_ document :MDSDocument) -> Void) throws
 
@@ -126,14 +126,14 @@ public protocol MDSDocumentStorage {
 	func indexIterate(name :String, documentType :String, keys :[String],
 			proc :(_ key :String, _ document :MDSDocument) -> Void) throws
 
-	func info(for keys :[String]) throws -> [String : String]
+	func infoGet(for keys :[String]) throws -> [String : String]
 	func infoSet(_ info :[String : String]) throws
-	func remove(keys :[String])
+	func infoRemove(keys :[String]) throws
 
 	func internalGet(for keys :[String]) -> [String : String]
 	func internalSet(_ info :[String : String]) throws
 
-	func batch(_ proc :() throws -> MDSBatch<Any>.Result) rethrows
+	func batch(_ proc :() throws -> MDSBatchResult) rethrows
 
 	func register<T : MDSDocument>(
 			documentCreateProc :@escaping (_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
@@ -218,29 +218,22 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func cacheRegister<T : MDSDocument>(name :String? = nil, relevantProperties :[String]? = nil,
-			valueInfos
-					:[(name :String, valueType :MDSValueType, selector :String,
-							proc :(_ document :T, _ name :String) -> Any)]) throws {
-		// Register creation proc
-		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
-
+	public func cacheRegister(documentType :String, relevantProperties :[String]? = nil,
+			cacheValueInfos :[(valueInfo :MDSValueInfo, selector :String)]) throws {
 		// Register cache
-		try cacheRegister(name: name ?? T.documentType, documentType: T.documentType,
-				relevantProperties: relevantProperties ?? valueInfos.map({ $0.name }),
-				valueInfos:
-						valueInfos.map(
-								{ info in (info.name, info.valueType, info.selector, { info.proc($1 as! T, $2) }) }))
+		try cacheRegister(name: documentType, documentType: documentType,
+				relevantProperties: relevantProperties ?? cacheValueInfos.map({ $0.valueInfo.name }),
+				cacheValueInfos: cacheValueInfos)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func collectionRegister(name :String, documentType :String, relevantProperties :[String],
-			isUpToDate :Bool = false, isIncludedSelector :String, isIncludedProc :@escaping MDSDocument.IsIncludedProc)
-			throws {
+			isUpToDate :Bool = false, isIncludedSelector :String,
+			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
 		// Register collection
 		try collectionRegister(name: name, documentType: documentType, relevantProperties: relevantProperties,
 				isUpToDate: isUpToDate, isIncludedInfo: [:], isIncludedSelector: isIncludedSelector,
-				isIncludedProc: isIncludedProc)
+				documentIsIncludedProc: documentIsIncludedProc)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -253,7 +246,7 @@ extension MDSDocumentStorage {
 		// Register collection
 		try collectionRegister(name: name, documentType: T.documentType, relevantProperties: relevantProperties,
 				isUpToDate: isUpToDate, isIncludedInfo: isIncludedInfo, isIncludedSelector: isIncludedSelector,
-				isIncludedProc: { isIncludedProc($1 as! T, $2) })
+				documentIsIncludedProc: { isIncludedProc($1 as! T, $2) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -413,7 +406,7 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func infoString(for key :String) throws -> String? { try info(for: [key])[key] }
+	public func infoString(for key :String) throws -> String? { try infoGet(for: [key])[key] }
 
 	// MARK: Private methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -500,9 +493,15 @@ open class MDSDocumentStorageCore {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentChangedProcs(for documentType :String) -> [MDSDocument.ChangedProc]? {
+	func documentChangedProcs(for documentType :String) -> [MDSDocument.ChangedProc] {
 		// Return procs
-		return self.documentChangedProcsByDocumentType.values(for: documentType)
+		return self.documentChangedProcsByDocumentType.values(for: documentType) ?? []
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func noteDocumentChanged(document :MDSDocument, changeKind :MDSDocument.ChangeKind) {
+		// Call procs
+		self.documentChangedProcs(for: type(of: document).documentType).forEach() { $0(document, changeKind) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

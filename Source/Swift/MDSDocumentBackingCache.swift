@@ -13,7 +13,7 @@ import Foundation
 class MDSDocumentBackingCache<T : MDSDocumentBacking> {
 
 	// MARK: Reference
-	private class Reference<T> {
+	private class Reference {
 
 		// MARK: Properties
 		let	documentBacking :T
@@ -39,7 +39,7 @@ class MDSDocumentBackingCache<T : MDSDocumentBacking> {
 	private	let	limit :Int
 	private	let	lock = ReadPreferringReadWriteLock()
 
-	private	var	referenceMap = [/* Document ID */ String : Reference<T>]()
+	private	var	referenceMap = [/* Document ID */ String : Reference]()
 	private	var	timer :Timer?
 
 	// MARK: Lifecycle methods
