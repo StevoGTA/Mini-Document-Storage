@@ -106,10 +106,10 @@ class CMDSDocumentStorage {
 																const CString& documentType,
 																CMDSDocument::Proc proc, void* procUserData) const = 0;
 
-		virtual			DocumentCreateResultInfosResult	documentCreate(const CString& documentType,
+		virtual			DocumentCreateResultInfosResult	documentCreate(
+																const CMDSDocument::InfoForNew& documentInfoForNew,
 																const TArray<CMDSDocument::CreateInfo>&
-																		documentCreateInfos,
-																const CMDSDocument::InfoForNew& documentInfoForNew) = 0;
+																		documentCreateInfos) = 0;
 		virtual			TVResult<UInt32>				documentGetCount(const CString& documentType) const = 0;
 		virtual			OV<SError>						documentIterate(const CMDSDocument::Info& documentInfo,
 																const TArray<CString>& documentIDs,
@@ -219,6 +219,8 @@ class CMDSDocumentStorage {
 						DocumentCreateResultInfosResult	documentCreate(const CString& documentType,
 																const TArray<CMDSDocument::CreateInfo>&
 																		documentCreateInfos);
+						TVResult<I<CMDSDocument> >		documentCreate(
+																const CMDSDocument::InfoForNew& documentInfoForNew);
 
 						OV<SError>						indexRegister(const CString& name,
 																const CString& documentType,

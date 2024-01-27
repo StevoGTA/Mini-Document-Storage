@@ -1082,8 +1082,8 @@ OV<SError> CMDSEphemeral::collectionIterate(const CString& name, const CString& 
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSEphemeral::documentCreate(const CString& documentType,
-		const TArray<CMDSDocument::CreateInfo>& documentCreateInfos, const CMDSDocument::InfoForNew& documentInfoForNew)
+TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSEphemeral::documentCreate(
+		const CMDSDocument::InfoForNew& documentInfoForNew, const TArray<CMDSDocument::CreateInfo>& documentCreateInfos)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Setup
@@ -1102,7 +1102,7 @@ TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSEphemeral::documentCreate(
 									*iterator->getDocumentID() : CUUID().getBase64String();
 
 			// Add document
-			(*batch)->documentAdd(documentType, documentID,
+			(*batch)->documentAdd(documentInfoForNew.getDocumentType(), documentID,
 					iterator->getCreationUniversalTime().getValue(universalTime),
 					iterator->getModificationUniversalTime().getValue(universalTime),
 					OV<CDictionary>(iterator->getPropertyMap()));
@@ -1131,7 +1131,7 @@ TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSEphemeral::documentCreate(
 			mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.remove(documentID);
 
 			// Add document
-			UInt32							revision = mInternals->nextRevision(documentType);
+			UInt32							revision = mInternals->nextRevision(documentInfoForNew.getDocumentType());
 			UniversalTime					creationUniversalTime =
 													iterator->getCreationUniversalTime().getValue(universalTime);
 			UniversalTime					modificationUniversalTime =
@@ -1142,7 +1142,7 @@ TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSEphemeral::documentCreate(
 															propertyMap));
 			mInternals->mDocumentMapsLock.lockForWriting();
 			mInternals->mDocumentBackingByDocumentID.set(documentID, documentBacking);
-			mInternals->mDocumentIDsByDocumentType.insert(documentType, documentID);
+			mInternals->mDocumentIDsByDocumentType.insert(documentInfoForNew.getDocumentType(), documentID);
 			mInternals->mDocumentMapsLock.unlockForWriting();
 			documentCreateResultInfos +=
 					CMDSDocument::CreateResultInfo(document,
@@ -1157,7 +1157,7 @@ TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSEphemeral::documentCreate(
 		}
 
 		// Update stuffs
-		mInternals->update(documentType, updateInfos);
+		mInternals->update(documentInfoForNew.getDocumentType(), updateInfos);
 	}
 
 	return TVResult<TArray<CMDSDocument::CreateResultInfo> >(documentCreateResultInfos);

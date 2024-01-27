@@ -5,53 +5,41 @@
 #include "CMDSDocumentStorage.h"
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: CGenericDocument
+// MARK: CMDSDocumentStorage::Internals
 
-class CGenericDocument : public CMDSDocument {
-	// InfoForNew
+class CMDSDocumentStorage::Internals {
 	public:
-		class InfoForNew : public CMDSDocument::InfoForNew {
+		class PlaceholderDocument : public CMDSDocument {
+			public:
+								PlaceholderDocument(const CString& id, CMDSDocumentStorage& documentStorage) :
+									CMDSDocument(id, documentStorage)
+									{}
+
+				const	Info&	getInfo() const
+									{ return mInfo; }
+
+			public:
+				static	Info	mInfo;
+		};
+
+	public:
+		class InfoForNewAdapter : public CMDSDocument::InfoForNew {
 			public:
 										// Lifecycle methods
-										InfoForNew() : CMDSDocument::InfoForNew() {}
+										InfoForNewAdapter(const CString& documentType) :
+											CMDSDocument::InfoForNew(),
+													mDocumentType(documentType)
+											{}
 
 										// Instance mehtods
 				const	CString&		getDocumentType() const
 											{ return mDocumentType; }
 						I<CMDSDocument>	create(const CString& id, CMDSDocumentStorage& documentStorage) const
-											{ return I<CMDSDocument>(new CGenericDocument(id, documentStorage)); }
+											{ return I<CMDSDocument>(new PlaceholderDocument(id, documentStorage)); }
+
+				CString	mDocumentType;
 		};
 
-	// Methods
-	public:
-										// CMDSDocument methods
-				const	Info&			getInfo() const
-											{ return mInfo; }
-
-										// Class methods
-		static			I<CMDSDocument>	create(const CString& id, CMDSDocumentStorage& documentStorage)
-											{ return I<CMDSDocument>(new CGenericDocument(id, documentStorage)); }
-
-	private:
-										// Lifecycle methods
-										CGenericDocument(const CString& id, CMDSDocumentStorage& documentStorage) :
-											CMDSDocument(id, documentStorage)
-											{}
-
-	// Properties
-	public:
-		static	CString	mDocumentType;
-		static	Info	mInfo;
-};
-
-CString				CGenericDocument::mDocumentType(OSSTR("generic"));
-CMDSDocument::Info	CGenericDocument::mInfo(mDocumentType, CGenericDocument::create);
-
-//----------------------------------------------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: - CMDSDocumentStorage::Internals
-
-class CMDSDocumentStorage::Internals {
 	public:
 		Internals()
 			{}
@@ -62,6 +50,8 @@ class CMDSDocumentStorage::Internals {
 		TNDictionary<CMDSDocument::KeysPerformer>		mDocumentKeysPerformerBySelector;
 		TNDictionary<CMDSDocument::ValueInfo>			mDocumentValueInfoBySelector;
 };
+
+CMDSDocument::Info	CMDSDocumentStorage::Internals::PlaceholderDocument::mInfo(CString(OSSTR("placeholder")), nil);
 
 //----------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------
@@ -94,13 +84,11 @@ TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocuments
 	CMDSDocument::Collector	documentCollector(toDocumentInfo);
 
 	// Iterate documents
-	OV<SError>				error =
-									associationIterateFrom(
-											associationName(fromDocument.getDocumentType(),
-													toDocumentInfo.getDocumentType()),
-											fromDocument.getID(), toDocumentInfo.getDocumentType(),
-											(CMDSDocument::Proc) CMDSDocument::Collector::addDocument,
-											&documentCollector);
+	OV<SError>	error =
+						associationIterateFrom(
+								associationName(fromDocument.getDocumentType(), toDocumentInfo.getDocumentType()),
+								fromDocument.getID(), toDocumentInfo.getDocumentType(),
+								(CMDSDocument::Proc) CMDSDocument::Collector::addDocument, &documentCollector);
 
 	return error.hasValue() ?
 			TVResult<TArray<I<CMDSDocument> > >(*error) :
@@ -112,7 +100,25 @@ TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSDocumentStorage::documentC
 		const TArray<CMDSDocument::CreateInfo>& documentCreateInfos)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return documentCreate(documentType, documentCreateInfos, CGenericDocument::InfoForNew());
+	return documentCreate(Internals::InfoForNewAdapter(documentType), documentCreateInfos);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<I<CMDSDocument> > CMDSDocumentStorage::documentCreate(const CMDSDocument::InfoForNew& documentInfoForNew)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Create document
+	TVResult<TArray<CMDSDocument::CreateResultInfo> >	documentsCreateResultInfo =
+																documentCreate(documentInfoForNew,
+																		TNArray<CMDSDocument::CreateInfo>(
+																				CMDSDocument::CreateInfo(OV<CString>(),
+																						OV<UniversalTime>(),
+																						OV<UniversalTime>(),
+																						CDictionary())));
+	ReturnValueIfResultError(documentsCreateResultInfo,
+			TVResult<I<CMDSDocument> >(documentsCreateResultInfo.getError()));
+
+	return TVResult<I<CMDSDocument> >((*documentsCreateResultInfo)[0].getDocument());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
