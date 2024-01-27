@@ -480,3 +480,10 @@ OV<SError> CMDSDocument::associationUpdateRemoveTo(const CMDSDocument& document)
 {
 	return mInternals->mDocumentStorage.associationUpdateRemove(*this, document);
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<TArray<I<CMDSDocument> > > CMDSDocument::associationGetDocumentsFrom(const CMDSDocument::Info& toInfo) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return mInternals->mDocumentStorage.associationGetDocumentsFrom(*this, toInfo);
+}
