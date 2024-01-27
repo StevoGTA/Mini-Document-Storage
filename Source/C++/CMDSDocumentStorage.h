@@ -174,6 +174,34 @@ class CMDSDocumentStorage {
 
 		virtual			OV<SError>						batch(BatchProc batchProc, void* userData) = 0;
 
+						OV<SError>						associationRegister(const CString& fromDocumentType,
+																const CString& toDocumentType)
+															{ return associationRegister(
+																	associationName(fromDocumentType, toDocumentType),
+																	fromDocumentType, toDocumentType); }
+						OV<SError>						associationRegister(const CMDSDocument::Info& fromDocumentInfo,
+																const CMDSDocument::Info& toDocumentInfo)
+															{ return associationRegister(
+																	fromDocumentInfo.getDocumentType(),
+																	toDocumentInfo.getDocumentType()); }
+						OV<SError>						associationUpdateAdd(const CMDSDocument& fromDocument,
+																const CMDSDocument& toDocument)
+															{ return associationUpdate(
+																	associationName(fromDocument.getDocumentType(),
+																			toDocument.getDocumentType()),
+																	TNArray<CMDSAssociation::Update>(
+																			CMDSAssociation::Update::add(
+																					fromDocument.getID(),
+																					toDocument.getID()))); }
+						OV<SError>						associationUpdateRemove(const CMDSDocument& fromDocument,
+																const CMDSDocument& toDocument)
+															{ return associationUpdate(
+																	associationName(fromDocument.getDocumentType(),
+																			toDocument.getDocumentType()),
+																	TNArray<CMDSAssociation::Update>(
+																			CMDSAssociation::Update::remove(
+																					fromDocument.getID(),
+																					toDocument.getID()))); }
 						OV<SError>						collectionRegister(const CString& name,
 																const CString& documentType,
 																const TArray<CString>& relevantProperties,

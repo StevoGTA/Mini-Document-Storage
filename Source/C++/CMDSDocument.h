@@ -565,6 +565,10 @@ class CMDSDocument : public CHashable {
 
 						void							remove() const;
 
+						OV<SError>						associationRegisterTo(const Info& info) const;
+						OV<SError>						associationUpdateAddTo(const CMDSDocument& document) const;
+						OV<SError>						associationUpdateRemoveTo(const CMDSDocument& document) const;
+
 	protected:
 														// Lifecycle methods
 														CMDSDocument(const CString& id,
