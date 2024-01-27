@@ -86,6 +86,28 @@ CMDSDocumentStorage::~CMDSDocumentStorage()
 // MARK: Instance methods
 
 //----------------------------------------------------------------------------------------------------------------------
+TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocumentsFrom(const CMDSDocument& fromDocument,
+		const CMDSDocument::Info& toDocumentInfo)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	CMDSDocument::Collector	documentCollector(toDocumentInfo);
+
+	// Iterate documents
+	OV<SError>				error =
+									associationIterateFrom(
+											associationName(fromDocument.getDocumentType(),
+													toDocumentInfo.getDocumentType()),
+											fromDocument.getID(), toDocumentInfo.getDocumentType(),
+											(CMDSDocument::Proc) CMDSDocument::Collector::addDocument,
+											&documentCollector);
+
+	return error.hasValue() ?
+			TVResult<TArray<I<CMDSDocument> > >(*error) :
+			TVResult<TArray<I<CMDSDocument> > >(documentCollector.getDocuments());
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSDocumentStorage::documentCreate(const CString& documentType,
 		const TArray<CMDSDocument::CreateInfo>& documentCreateInfos)
 //----------------------------------------------------------------------------------------------------------------------

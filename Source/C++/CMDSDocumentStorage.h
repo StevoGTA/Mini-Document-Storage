@@ -202,6 +202,11 @@ class CMDSDocumentStorage {
 																			CMDSAssociation::Update::remove(
 																					fromDocument.getID(),
 																					toDocument.getID()))); }
+
+						TVResult<TArray<I<CMDSDocument> > >	associationGetDocumentsFrom(
+																	const CMDSDocument& fromDocument,
+																	const CMDSDocument::Info& toDocumentInfo);
+
 						OV<SError>						collectionRegister(const CString& name,
 																const CString& documentType,
 																const TArray<CString>& relevantProperties,

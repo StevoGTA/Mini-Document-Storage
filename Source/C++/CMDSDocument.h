@@ -7,6 +7,7 @@
 #include "CDictionary.h"
 #include "CHashing.h"
 #include "TimeAndDate.h"
+#include "TResult.h"
 #include "TWrappers.h"
 
 class CMDSDocumentStorage;
@@ -380,7 +381,7 @@ class CMDSDocument : public CHashable {
 	public:
 		typedef	I<CMDSDocument>	(*CreateProc)(const CString& id, CMDSDocumentStorage& documentStorage);
 		typedef	void			(*KeyProc)(const CString& key, CMDSDocument& document, void* userData);
-		typedef	void			(*Proc)(CMDSDocument& document, void* userData);
+		typedef	void			(*Proc)(const I<CMDSDocument>& document, void* userData);
 
 	// Infos
 	public:
@@ -420,154 +421,182 @@ class CMDSDocument : public CHashable {
 												InfoForNew() {}
 		};
 
+	// Collector
+	public:
+		struct Collector {
+			// Methods
+			public:
+															// Lifecycle methods
+															Collector(const Info& info) : mInfo(info) {}
+
+															// Instance methods
+						const	TArray<I<CMDSDocument> >	getDocuments() const
+																{ return mDocuments; }
+
+															// Class methods
+				static			void						addDocument(const I<CMDSDocument>& document,
+																	Collector* collector)
+																{ collector->mDocuments += document; }
+
+			// Properties
+			private:
+				const	Info&						mInfo;
+						TNArray<I<CMDSDocument> >	mDocuments;
+		};
+
 	// Classes
 	private:
 		class Internals;
 
 	// Methods
 	public:
-														// Lifecycle methods
-														CMDSDocument(const CMDSDocument& other);
-		virtual											~CMDSDocument();
+															// Lifecycle methods
+															CMDSDocument(const CMDSDocument& other);
+		virtual												~CMDSDocument();
 
-														// CEquatable methods
-						bool							operator==(const CEquatable& other) const
-															{ return getID() == ((CMDSDocument&) other).getID(); }
+															// CEquatable methods
+						bool								operator==(const CEquatable& other) const
+																{ return getID() == ((CMDSDocument&) other).getID(); }
 
-														// CHashable methods
-						void							hashInto(CHasher& hasher) const
-															{ getID().hashInto(hasher); }
+															// CHashable methods
+						void								hashInto(CHasher& hasher) const
+																{ getID().hashInto(hasher); }
 
-														// Instance methods
-		virtual	const	Info&							getInfo() const = 0;
+															// Instance methods
+		virtual	const	Info&								getInfo() const = 0;
 
-				const	CString&						getDocumentType() const
-															{ return getInfo().getDocumentType(); }
-				const	CString&						getID() const;
-						CMDSDocumentStorage&			getDocumentStorage() const;
+				const	CString&							getDocumentType() const
+																{ return getInfo().getDocumentType(); }
+				const	CString&							getID() const;
+						CMDSDocumentStorage&				getDocumentStorage() const;
 
-						UniversalTime					getCreationUniversalTime() const;
-						UniversalTime					getModificationUniversalTime() const;
+						UniversalTime						getCreationUniversalTime() const;
+						UniversalTime						getModificationUniversalTime() const;
 
-						OV<TArray<CString> >			getArrayOfStrings(const CString& property) const;
-						void							set(const CString& property, const TArray<CString>& value)
-																const;
-						OV<TArray<CDictionary> >		getArrayOfDictionaries(const CString& property) const;
-						void							set(const CString& property, const TArray<CDictionary>& value)
-																const;
+						OV<TArray<CString> >				getArrayOfStrings(const CString& property) const;
+						void								set(const CString& property, const TArray<CString>& value)
+																	const;
+						OV<TArray<CDictionary> >			getArrayOfDictionaries(const CString& property) const;
+						void								set(const CString& property,
+																	const TArray<CDictionary>& value) const;
 
-						OV<bool>						getBool(const CString& property) const;
-						OV<bool>						set(const CString& property, bool value) const;
+						OV<bool>							getBool(const CString& property) const;
+						OV<bool>							set(const CString& property, bool value) const;
 
-						OV<CData>						getData(const CString& property) const;
-						OV<CData>						set(const CString& property, const CData& value) const;
+						OV<CData>							getData(const CString& property) const;
+						OV<CData>							set(const CString& property, const CData& value) const;
 
-						OV<CDictionary>					getDictionary(const CString& property) const;
-						OV<CDictionary>					set(const CString& property, const CDictionary& value) const;
+						OV<CDictionary>						getDictionary(const CString& property) const;
+						OV<CDictionary>						set(const CString& property, const CDictionary& value)
+																	const;
 
-						OV<Float32>						getFloat32(const CString& property) const;
-						OV<Float32>						set(const CString& property, Float32 value) const;
+						OV<Float32>							getFloat32(const CString& property) const;
+						OV<Float32>							set(const CString& property, Float32 value) const;
 
-						OV<Float64>						getFloat64(const CString& property) const;
-						OV<Float64>						set(const CString& property, Float64 value) const;
+						OV<Float64>							getFloat64(const CString& property) const;
+						OV<Float64>							set(const CString& property, Float64 value) const;
 
-						OV<SInt32>						getSInt32(const CString& property) const;
-						OV<SInt32>						set(const CString& property, SInt32 value) const;
+						OV<SInt32>							getSInt32(const CString& property) const;
+						OV<SInt32>							set(const CString& property, SInt32 value) const;
 
-						OV<SInt64>						getSInt64(const CString& property) const;
-						OV<SInt64>						set(const CString& property, SInt64 value) const;
+						OV<SInt64>							getSInt64(const CString& property) const;
+						OV<SInt64>							set(const CString& property, SInt64 value) const;
 
-						OV<CString>						getString(const CString& property) const;
-						OV<CString>						set(const CString& property, const CString& value) const;
+						OV<CString>							getString(const CString& property) const;
+						OV<CString>							set(const CString& property, const CString& value) const;
 
-						OV<UInt8>						getUInt8(const CString& property) const;
-						OV<UInt8>						set(const CString& property, UInt8 value) const;
-						OV<UInt8>						set(const CString& property, const OV<UInt8>& value) const;
+						OV<UInt8>							getUInt8(const CString& property) const;
+						OV<UInt8>							set(const CString& property, UInt8 value) const;
+						OV<UInt8>							set(const CString& property, const OV<UInt8>& value) const;
 
-						OV<UInt16>						getUInt16(const CString& property) const;
-						OV<UInt16>						set(const CString& property, UInt16 value) const;
+						OV<UInt16>							getUInt16(const CString& property) const;
+						OV<UInt16>							set(const CString& property, UInt16 value) const;
 
-						OV<UInt32>						getUInt32(const CString& property) const;
-						OV<UInt32>						set(const CString& property, UInt32 value) const;
+						OV<UInt32>							getUInt32(const CString& property) const;
+						OV<UInt32>							set(const CString& property, UInt32 value) const;
 
-						OV<UInt64>						getUInt64(const CString& property) const;
-						OV<UInt64>						set(const CString& property, UInt64 value) const;
+						OV<UInt64>							getUInt64(const CString& property) const;
+						OV<UInt64>							set(const CString& property, UInt64 value) const;
 
-						OV<UniversalTime>				getUniversalTime(const CString& property) const;
-						OV<UniversalTime>				setUniversalTime(const CString& property, UniversalTime value)
-																const;
+						OV<UniversalTime>					getUniversalTime(const CString& property) const;
+						OV<UniversalTime>					setUniversalTime(const CString& property,
+																	UniversalTime value) const;
 
-						OV<TArray<CMDSDocument> >		getDocuments(const CString& property,
-																const CMDSDocument::Info& info) const;
-						void							set(const CString& property,
-																const TArray<CMDSDocument>& documents) const;
+						OV<TArray<CMDSDocument> >			getDocuments(const CString& property,
+																	const CMDSDocument::Info& info) const;
+						void								set(const CString& property,
+																	const TArray<CMDSDocument>& documents) const;
 
-						void							remove(const CString& property) const;
+						void								remove(const CString& property) const;
 
-						TArray<AttachmentInfo>			getAttachmentInfos(const CString& type) const;
-						CData							getAttachmentContent(const AttachmentInfo& attachmentInfo)
-																const;
-						CString							getAttachmentContentAsString(
-																const AttachmentInfo& attachmentInfo) const;
-						CDictionary						getAttachmentContentAsDictionary(
-																const AttachmentInfo& attachmentInfo) const;
-						TArray<CDictionary>				getAttachmentContentAsArrayOfDictionaries(
-																const AttachmentInfo& attachmentInfo) const;
-						void							addAttachment(const CString& type, const CDictionary& info,
-																const CData& content);
-						void							addAttachment(const CString& type, const CData& content)
-															{ addAttachment(type, CDictionary::mEmpty, content); }
-						void							addAttachment(const CString& type, const CDictionary& info,
-																const CString& content)
-															{ addAttachment(type, info,
-																	content.getData(CString::kEncodingUTF8)); }
-						void							addAttachment(const CString& type, const CString& content)
-															{ addAttachment(type, CDictionary::mEmpty,
-																	content.getData(CString::kEncodingUTF8)); }
-						void							addAttachment(const CString& type, const CDictionary& info,
-																const CDictionary& content);
-						void							addAttachment(const CString& type, const CDictionary& content)
-															{ addAttachment(type, CDictionary::mEmpty, content); }
-						void							addAttachment(const CString& type, const CDictionary& info,
-																const TArray<CDictionary>& content);
-						void							addAttachment(const CString& type,
-																const TArray<CDictionary>& content)
-															{ addAttachment(type, CDictionary::mEmpty, content); }
-						void							updateAttachment(const AttachmentInfo& attachmentInfo,
-																const CDictionary& updatedInfo,
-																const CData& updatedContent);
-						void							updateAttachment(const AttachmentInfo& attachmentInfo,
-																const CData& updatedContent)
-															{ updateAttachment(attachmentInfo, CDictionary::mEmpty,
-																	updatedContent); }
-						void							updateAttachment(const AttachmentInfo& attachmentInfo,
-																const CDictionary& updatedInfo,
-																const CString& updatedContent);
-						void							updateAttachment(const AttachmentInfo& attachmentInfo,
-																const CString& updatedContent)
-															{ updateAttachment(attachmentInfo, CDictionary::mEmpty,
-																	updatedContent); }
-						void							updateAttachment(const AttachmentInfo& attachmentInfo,
-																const CDictionary& updatedInfo,
-																const CDictionary& updatedContent);
-						void							updateAttachment(const AttachmentInfo& attachmentInfo,
-																const CDictionary& updatedContent)
-															{ updateAttachment(attachmentInfo, CDictionary::mEmpty,
-																	updatedContent); }
-						void							updateAttachment(const AttachmentInfo& attachmentInfo,
-																const CDictionary& updatedInfo,
-																const TArray<CDictionary>& updatedContent);
-						void							updateAttachment(const AttachmentInfo& attachmentInfo,
-																const TArray<CDictionary>& updatedContent)
-															{ updateAttachment(attachmentInfo, CDictionary::mEmpty,
-																	updatedContent); }
-						void							remove(const AttachmentInfo& attachmentInfo);
+						TArray<AttachmentInfo>				getAttachmentInfos(const CString& type) const;
+						CData								getAttachmentContent(const AttachmentInfo& attachmentInfo)
+																	const;
+						CString								getAttachmentContentAsString(
+																	const AttachmentInfo& attachmentInfo) const;
+						CDictionary							getAttachmentContentAsDictionary(
+																	const AttachmentInfo& attachmentInfo) const;
+						TArray<CDictionary>					getAttachmentContentAsArrayOfDictionaries(
+																	const AttachmentInfo& attachmentInfo) const;
+						void								addAttachment(const CString& type, const CDictionary& info,
+																	const CData& content);
+						void								addAttachment(const CString& type, const CData& content)
+																{ addAttachment(type, CDictionary::mEmpty, content); }
+						void								addAttachment(const CString& type, const CDictionary& info,
+																	const CString& content)
+																{ addAttachment(type, info,
+																		content.getData(CString::kEncodingUTF8)); }
+						void								addAttachment(const CString& type, const CString& content)
+																{ addAttachment(type, CDictionary::mEmpty,
+																		content.getData(CString::kEncodingUTF8)); }
+						void								addAttachment(const CString& type, const CDictionary& info,
+																	const CDictionary& content);
+						void								addAttachment(const CString& type,
+																	const CDictionary& content)
+																{ addAttachment(type, CDictionary::mEmpty, content); }
+						void								addAttachment(const CString& type, const CDictionary& info,
+																	const TArray<CDictionary>& content);
+						void								addAttachment(const CString& type,
+																	const TArray<CDictionary>& content)
+																{ addAttachment(type, CDictionary::mEmpty, content); }
+						void								updateAttachment(const AttachmentInfo& attachmentInfo,
+																	const CDictionary& updatedInfo,
+																	const CData& updatedContent);
+						void								updateAttachment(const AttachmentInfo& attachmentInfo,
+																	const CData& updatedContent)
+																{ updateAttachment(attachmentInfo, CDictionary::mEmpty,
+																		updatedContent); }
+						void								updateAttachment(const AttachmentInfo& attachmentInfo,
+																	const CDictionary& updatedInfo,
+																	const CString& updatedContent);
+						void								updateAttachment(const AttachmentInfo& attachmentInfo,
+																	const CString& updatedContent)
+																{ updateAttachment(attachmentInfo, CDictionary::mEmpty,
+																		updatedContent); }
+						void								updateAttachment(const AttachmentInfo& attachmentInfo,
+																	const CDictionary& updatedInfo,
+																	const CDictionary& updatedContent);
+						void								updateAttachment(const AttachmentInfo& attachmentInfo,
+																	const CDictionary& updatedContent)
+																{ updateAttachment(attachmentInfo, CDictionary::mEmpty,
+																		updatedContent); }
+						void								updateAttachment(const AttachmentInfo& attachmentInfo,
+																	const CDictionary& updatedInfo,
+																	const TArray<CDictionary>& updatedContent);
+						void								updateAttachment(const AttachmentInfo& attachmentInfo,
+																	const TArray<CDictionary>& updatedContent)
+																{ updateAttachment(attachmentInfo, CDictionary::mEmpty,
+																		updatedContent); }
+						void								remove(const AttachmentInfo& attachmentInfo);
 
-						void							remove() const;
+						void								remove() const;
 
-						OV<SError>						associationRegisterTo(const Info& info) const;
-						OV<SError>						associationUpdateAddTo(const CMDSDocument& document) const;
-						OV<SError>						associationUpdateRemoveTo(const CMDSDocument& document) const;
+						OV<SError>							associationRegisterTo(const Info& info) const;
+						OV<SError>							associationUpdateAddTo(const CMDSDocument& document) const;
+						OV<SError>							associationUpdateRemoveTo(const CMDSDocument& document)
+																	const;
+						TVResult<TArray<I<CMDSDocument> > >	associationGetDocumentsFrom(
+																	const CMDSDocument::Info& toInfo) const;
 
 	protected:
 														// Lifecycle methods

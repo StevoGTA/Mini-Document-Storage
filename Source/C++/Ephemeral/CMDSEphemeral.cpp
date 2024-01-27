@@ -843,7 +843,7 @@ OV<SError> CMDSEphemeral::associationIterateFrom(const CString& name, const CStr
 		// Check for docmentID match
 		if (iterator->getFromDocumentID() == fromDocumentID)
 			// Match
-			proc(*documentInfo.create(iterator->getToDocumentID(), (CMDSDocumentStorage&) *this), procUserData);
+			proc(documentInfo.create(iterator->getToDocumentID(), (CMDSDocumentStorage&) *this), procUserData);
 	}
 
 	return OV<SError>();
@@ -876,7 +876,7 @@ OV<SError> CMDSEphemeral::associationIterateTo(const CString& name, const CStrin
 		// Check for docmentID match
 		if (iterator->getToDocumentID() == toDocumentID)
 			// Match
-			proc(*documentInfo.create(iterator->getFromDocumentID(), (CMDSDocumentStorage&) *this), procUserData);
+			proc(documentInfo.create(iterator->getFromDocumentID(), (CMDSDocumentStorage&) *this), procUserData);
 	}
 
 	return OV<SError>();
@@ -1076,7 +1076,7 @@ OV<SError> CMDSEphemeral::collectionIterate(const CString& name, const CString& 
 	// Iterate
 	for (TIteratorD<CString> iterator = documentIDs->getIterator(); iterator.hasValue(); iterator.advance())
 		// Call proc
-		proc(*documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
+		proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
 
 	return OV<SError>();
 }
@@ -1193,7 +1193,7 @@ OV<SError> CMDSEphemeral::documentIterate(const CMDSDocument::Info& documentInfo
 		// Check what we have currently
 		if (batch.hasReference() && (*batch)->documentInfoGet(*iterator).hasReference())
 			// Have document in batch
-			proc(*documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
+			proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
 		else
 			// Not in batch
 			documentIDsForDocumentBackings += *iterator;
@@ -1208,7 +1208,7 @@ OV<SError> CMDSEphemeral::documentIterate(const CMDSDocument::Info& documentInfo
 	for (TIteratorD<I<Internals::DocumentBacking> > iterator = documentBackingsResult->getIterator();
 			iterator.hasValue(); iterator.advance())
 		// Call proc
-		proc(*documentInfo.create((*iterator)->getDocumentID(), (CMDSDocumentStorage&) *this), procUserData);
+		proc(documentInfo.create((*iterator)->getDocumentID(), (CMDSDocumentStorage&) *this), procUserData);
 
 	return OV<SError>();
 }
@@ -1232,7 +1232,7 @@ OV<SError> CMDSEphemeral::documentIterate(const CMDSDocument::Info& documentInfo
 	for (TIteratorD<I<Internals::DocumentBacking> > iterator = documentBackingsResult->getIterator();
 			iterator.hasValue(); iterator.advance())
 		// Call proc
-		proc(*documentInfo.create((*iterator)->getDocumentID(), (CMDSDocumentStorage&) *this), procUserData);
+		proc(documentInfo.create((*iterator)->getDocumentID(), (CMDSDocumentStorage&) *this), procUserData);
 
 	return OV<SError>();
 }
