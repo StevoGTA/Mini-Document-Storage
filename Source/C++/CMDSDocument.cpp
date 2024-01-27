@@ -459,3 +459,24 @@ void CMDSDocument::remove() const
 {
 	mInternals->mDocumentStorage.documentRemove(*this);
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSDocument::associationRegisterTo(const Info& info) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return mInternals->mDocumentStorage.associationRegister(getInfo(), info);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSDocument::associationUpdateAddTo(const CMDSDocument& document) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return mInternals->mDocumentStorage.associationUpdateAdd(*this, document);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSDocument::associationUpdateRemoveTo(const CMDSDocument& document) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return mInternals->mDocumentStorage.associationUpdateRemove(*this, document);
+}
