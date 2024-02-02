@@ -850,8 +850,8 @@ OV<SError> CMDSEphemeral::associationIterateFrom(const CString& name, const CStr
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OV<SError> CMDSEphemeral::associationIterateTo(const CString& name, const CString& toDocumentID,
-		const CString& fromDocumentType, CMDSDocument::Proc proc, void* procUserData) const
+OV<SError> CMDSEphemeral::associationIterateTo(const CString& name, const CString& fromDocumentType,
+		const CString& toDocumentID, CMDSDocument::Proc proc, void* procUserData) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Validate
