@@ -79,7 +79,7 @@ public protocol MDSDocumentStorage {
 	func associationGet(for name :String) throws -> [MDSAssociation.Item]
 	func associationIterate(for name :String, from fromDocumentID :String, toDocumentType :String,
 			proc :(_ document :MDSDocument) -> Void) throws
-	func associationIterate(for name :String, to toDocumentID :String, fromDocumentType :String,
+	func associationIterate(for name :String, fromDocumentType :String, to toDocumentID :String,
 			proc :(_ document :MDSDocument) -> Void) throws
 	func associationGetIntegerValues(for name :String, action :MDSAssociation.GetIntegerValueAction,
 			fromDocumentIDs :[String], cacheName :String, cachedValueNames :[String]) throws -> [String : Int64]
@@ -184,7 +184,7 @@ extension MDSDocumentStorage {
 
 		// Iterate association
 		try associationIterate(for: associationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
-				to: document.id, fromDocumentType: T.documentType, proc: { proc($0 as! T) })
+				fromDocumentType: T.documentType, to: document.id, proc: { proc($0 as! T) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -212,7 +212,7 @@ extension MDSDocumentStorage {
 		var	documents = [T]()
 		try associationIterate(
 				for: name ?? associationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
-				to: document.id, fromDocumentType: T.documentType, proc: { documents.append($0 as! T) })
+				fromDocumentType: T.documentType, to: document.id, proc: { documents.append($0 as! T) })
 
 		return documents
 	}

@@ -96,6 +96,26 @@ TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocuments
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocumentsTo(
+		const CMDSDocument::Info& fromDocumentInfo, const CMDSDocument& toDocument)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	CMDSDocument::Collector	documentCollector(fromDocumentInfo);
+
+	// Iterate documents
+	OV<SError>	error =
+						associationIterateTo(
+								associationName(fromDocumentInfo.getDocumentType(), toDocument.getDocumentType()),
+								fromDocumentInfo.getDocumentType(), toDocument.getID(),
+								(CMDSDocument::Proc) CMDSDocument::Collector::addDocument, &documentCollector);
+
+	return error.hasValue() ?
+			TVResult<TArray<I<CMDSDocument> > >(*error) :
+			TVResult<TArray<I<CMDSDocument> > >(documentCollector.getDocuments());
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSDocumentStorage::documentCreate(const CString& documentType,
 		const TArray<CMDSDocument::CreateInfo>& documentCreateInfos)
 //----------------------------------------------------------------------------------------------------------------------
