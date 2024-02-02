@@ -865,7 +865,7 @@ OV<SError> CMDSEphemeral::associationIterateTo(const CString& name, const CStrin
 	if (!found)
 		return OV<SError>(getUnknownDocumentIDError(toDocumentID));
 
-	if ((*association)->getToDocumentType() != fromDocumentType)
+	if ((*association)->getFromDocumentType() != fromDocumentType)
 		return OV<SError>(getInvalidDocumentTypeError(fromDocumentType));
 
 	// Get association items

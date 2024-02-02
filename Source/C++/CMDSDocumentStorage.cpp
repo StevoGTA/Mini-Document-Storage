@@ -80,6 +80,9 @@ TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocuments
 		const CMDSDocument::Info& toDocumentInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
+	// Register
+	registerDocumentCreateInfo(toDocumentInfo);
+
 	// Setup
 	CMDSDocument::Collector	documentCollector(toDocumentInfo);
 
@@ -100,6 +103,9 @@ TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocuments
 		const CMDSDocument::Info& fromDocumentInfo, const CMDSDocument& toDocument)
 //----------------------------------------------------------------------------------------------------------------------
 {
+	// Register
+	registerDocumentCreateInfo(fromDocumentInfo);
+
 	// Setup
 	CMDSDocument::Collector	documentCollector(fromDocumentInfo);
 
@@ -145,7 +151,10 @@ TVResult<I<CMDSDocument> > CMDSDocumentStorage::documentCreate(const CMDSDocumen
 void CMDSDocumentStorage::registerDocumentCreateInfo(const CMDSDocument::Info& documentInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	mInternals->mDocumentCreateInfoByDocumentType.set(documentInfo.getDocumentType(), documentInfo);
+	// Check if already have it
+	if (!mInternals->mDocumentCreateInfoByDocumentType.contains(documentInfo.getDocumentType()))
+		// Add
+		mInternals->mDocumentCreateInfoByDocumentType.set(documentInfo.getDocumentType(), documentInfo);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
