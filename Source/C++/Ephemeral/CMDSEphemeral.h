@@ -56,6 +56,8 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 															const TArray<CMDSDocument::CreateInfo>&
 																	documentCreateInfos);
 		TVResult<UInt32>							documentGetCount(const CString& documentType) const;
+		TVResult<UInt32>							documentGetCount(const CMDSDocument::Info& documentInfo) const
+														{ return documentGetCount(documentInfo.getDocumentType()); }
 		OV<SError>									documentIterate(const CMDSDocument::Info& documentInfo,
 															const TArray<CString>& documentIDs, CMDSDocument::Proc proc,
 															void* procUserData) const;

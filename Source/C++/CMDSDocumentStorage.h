@@ -221,8 +221,6 @@ class CMDSDocumentStorage {
 																		documentCreateInfos);
 						TVResult<I<CMDSDocument> >		documentCreate(
 																const CMDSDocument::InfoForNew& documentInfoForNew);
-						TVResult<UInt32>				documentGetCount(const CMDSDocument::Info& documentInfo) const
-															{ return documentGetCount(documentInfo.getDocumentType()); }
 
 						OV<SError>						indexRegister(const CString& name,
 																const CString& documentType,
