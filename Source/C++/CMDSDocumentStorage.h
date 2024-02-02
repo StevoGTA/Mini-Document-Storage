@@ -57,6 +57,7 @@ class CMDSDocumentStorage {
 	typedef	OR<CMDSDocument::IsIncludedPerformer>				DocumentIsIncludedPerformer;
 	typedef	OR<CMDSDocument::KeysPerformer>						DocumentKeysPerformer;
 	typedef	OR<CMDSDocument::ValueInfo>							DocumentValueInfo;
+	typedef	TVResult<TArray<I<CMDSDocument> > >					DocumentsResult;
 
 	// Classes
 	private:
@@ -79,8 +80,8 @@ class CMDSDocumentStorage {
 																const CString& toDocumentType,
 																CMDSDocument::Proc proc, void* procUserData) const = 0;
 		virtual			OV<SError>						associationIterateTo(const CString& name,
-																const CString& toDocumentID,
 																const CString& fromDocumentType,
+																const CString& toDocumentID,
 																CMDSDocument::Proc proc, void* procUserData) const = 0;
 		virtual			TVResult<CDictionary>			associationGetIntegerValues(const CString& name,
 																CMDSAssociation::GetIntegerValueAction action,
@@ -203,10 +204,11 @@ class CMDSDocumentStorage {
 																					fromDocument.getID(),
 																					toDocument.getID()))); }
 
-						TVResult<TArray<I<CMDSDocument> > >	associationGetDocumentsFrom(
-																	const CMDSDocument& fromDocument,
-																	const CMDSDocument::Info& toDocumentInfo);
-
+						DocumentsResult					associationGetDocumentsFrom(const CMDSDocument& fromDocument,
+																const CMDSDocument::Info& toDocumentInfo);
+						DocumentsResult					associationGetDocumentsTo(
+																const CMDSDocument::Info& fromDocumentInfo,
+																const CMDSDocument& toDocument);
 						OV<SError>						collectionRegister(const CString& name,
 																const CString& documentType,
 																const TArray<CString>& relevantProperties,

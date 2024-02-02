@@ -116,7 +116,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func associationIterate(for name :String, to toDocumentID :String, fromDocumentType :String,
+	public func associationIterate(for name :String, fromDocumentType :String, to toDocumentID :String,
 			proc :(_ document :MDSDocument) -> Void) throws {
 		// Validate
 		guard let association = association(for: name) else {
