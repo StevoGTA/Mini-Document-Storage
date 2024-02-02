@@ -26,11 +26,13 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 															const CString& toDocumentType);
 		AssociationItemsResult						associationGet(const CString& name) const;
 		OV<SError>									associationIterateFrom(const CString& name,
-														const CString& fromDocumentID, const CString& toDocumentType,
-														CMDSDocument::Proc proc, void* procUserData) const;
+															const CString& fromDocumentID,
+															const CString& toDocumentType, CMDSDocument::Proc proc,
+															void* procUserData) const;
 		OV<SError>									associationIterateTo(const CString& name,
-														const CString& toDocumentID, const CString& fromDocumentType,
-														CMDSDocument::Proc proc, void* procUserData) const;
+															const CString& fromDocumentType,
+															const CString& toDocumentID, CMDSDocument::Proc proc,
+															void* procUserData) const;
 		TVResult<CDictionary>						associationGetIntegerValues(const CString& name,
 															CMDSAssociation::GetIntegerValueAction action,
 															const TArray<CString>& fromDocumentIDs,
