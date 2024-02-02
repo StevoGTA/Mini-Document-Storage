@@ -75,13 +75,13 @@ class CMDSDocumentStorage {
 																const CString& toDocumentType) = 0;
 		virtual			AssociationItemsResult			associationGet(const CString& name) const = 0;
 		virtual			OV<SError>						associationIterateFrom(const CString& name,
-															const CString& fromDocumentID,
-															const CString& toDocumentType,
-															CMDSDocument::Proc proc, void* procUserData) const = 0;
+																const CString& fromDocumentID,
+																const CString& toDocumentType,
+																CMDSDocument::Proc proc, void* procUserData) const = 0;
 		virtual			OV<SError>						associationIterateTo(const CString& name,
-															const CString& toDocumentID,
-															const CString& fromDocumentType,
-															CMDSDocument::Proc proc, void* procUserData) const = 0;
+																const CString& toDocumentID,
+																const CString& fromDocumentType,
+																CMDSDocument::Proc proc, void* procUserData) const = 0;
 		virtual			TVResult<CDictionary>			associationGetIntegerValues(const CString& name,
 																CMDSAssociation::GetIntegerValueAction action,
 																const TArray<CString>& fromDocumentIDs,
@@ -221,6 +221,8 @@ class CMDSDocumentStorage {
 																		documentCreateInfos);
 						TVResult<I<CMDSDocument> >		documentCreate(
 																const CMDSDocument::InfoForNew& documentInfoForNew);
+						TVResult<UInt32>				documentGetCount(const CMDSDocument::Info& documentInfo) const
+															{ return documentGetCount(documentInfo.getDocumentType()); }
 
 						OV<SError>						indexRegister(const CString& name,
 																const CString& documentType,
