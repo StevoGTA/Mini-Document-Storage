@@ -41,8 +41,12 @@ class CMDSDocumentStorage::Internals {
 		};
 
 	public:
-		Internals()
-			{}
+						Internals()
+							{}
+
+		static	void	updateDocumentMap(const CString& key, const I<CMDSDocument>& document,
+								TNDictionary<I<CMDSDocument> >* documentMap)
+							{ documentMap->set(key, document); }
 
 		TNDictionary<CMDSDocument::Info>				mDocumentCreateInfoByDocumentType;
 		TNArrayDictionary<CMDSDocument::ChangedInfo>	mDocumentChangedInfoByDocumentType;
@@ -148,6 +152,23 @@ TVResult<I<CMDSDocument> > CMDSDocumentStorage::documentCreate(const CMDSDocumen
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+TVResult<TDictionary<I<CMDSDocument> > > CMDSDocumentStorage::indexDocumentMap(const CString& name,
+		const CString& documentType, const TArray<CString>& keys)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	TNDictionary<I<CMDSDocument> >	documentMap;
+
+	// Iterate index
+	OV<SError>	error =
+						indexIterate(name, documentType, keys, (CMDSDocument::KeyProc) Internals::updateDocumentMap,
+								&documentMap);
+	ReturnValueIfError(error, TVResult<TDictionary<I<CMDSDocument> > >(*error));
+
+	return TVResult<TDictionary<I<CMDSDocument> > >(documentMap);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void CMDSDocumentStorage::registerDocumentCreateInfo(const CMDSDocument::Info& documentInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -237,24 +258,24 @@ void CMDSDocumentStorage::notifyDocumentChanged(const CMDSDocument& document,
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OR<CMDSDocument::IsIncludedPerformer> CMDSDocumentStorage::documentIsIncludedPerformer(const CString& selector) const
+const CMDSDocument::IsIncludedPerformer& CMDSDocumentStorage::documentIsIncludedPerformer(const CString& selector) const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return mInternals->mDocumentIsIncludedPerformerBySelector[selector];
+	return *mInternals->mDocumentIsIncludedPerformerBySelector[selector];
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OR<CMDSDocument::KeysPerformer> CMDSDocumentStorage::documentKeysPerformer(const CString& selector) const
+const CMDSDocument::KeysPerformer& CMDSDocumentStorage::documentKeysPerformer(const CString& selector) const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return mInternals->mDocumentKeysPerformerBySelector[selector];
+	return *mInternals->mDocumentKeysPerformerBySelector[selector];
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OR<CMDSDocument::ValueInfo> CMDSDocumentStorage::documentValueInfo(const CString& selector) const
+const CMDSDocument::ValueInfo& CMDSDocumentStorage::documentValueInfo(const CString& selector) const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return mInternals->mDocumentValueInfoBySelector[selector];
+	return *mInternals->mDocumentValueInfoBySelector[selector];
 }
 
 // MARK: Class methods

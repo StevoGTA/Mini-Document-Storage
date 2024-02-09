@@ -102,8 +102,9 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 															const CDictionary& keysInfo,
 															const CMDSDocument::KeysPerformer& documentKeysPerformer);
 		OV<SError>									indexIterate(const CString& name, const CString& documentType,
-															const TArray<CString>& keys, CMDSDocument::KeyProc keyProc,
-															void* keyProcUserData) const;
+															const TArray<CString>& keys,
+															CMDSDocument::KeyProc documentKeyProc,
+															void* documentKeyProcUserData) const;
 
 		TVResult<TDictionary<CString> >				infoGet(const TArray<CString>& keys) const;
 		OV<SError>									infoSet(const TDictionary<CString>& info);

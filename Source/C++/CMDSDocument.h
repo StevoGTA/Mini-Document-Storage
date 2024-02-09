@@ -380,7 +380,7 @@ class CMDSDocument : public CHashable {
 	// Procs
 	public:
 		typedef	I<CMDSDocument>	(*CreateProc)(const CString& id, CMDSDocumentStorage& documentStorage);
-		typedef	void			(*KeyProc)(const CString& key, CMDSDocument& document, void* userData);
+		typedef	void			(*KeyProc)(const CString& key, const I<CMDSDocument>& document, void* userData);
 		typedef	void			(*Proc)(const I<CMDSDocument>& document, void* userData);
 
 	// Infos

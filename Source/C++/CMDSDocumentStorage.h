@@ -54,10 +54,11 @@ class CMDSDocumentStorage {
 	typedef	TVResult<CMDSDocument::AttachmentInfoMap>			DocumentAttachmentInfoMapResult;
 	typedef	TArray<CMDSDocument::ChangedInfo>					DocumentChangedInfos;
 	typedef	TVResult<TArray<CMDSDocument::CreateResultInfo> >	DocumentCreateResultInfosResult;
-	typedef	OR<CMDSDocument::IsIncludedPerformer>				DocumentIsIncludedPerformer;
-	typedef	OR<CMDSDocument::KeysPerformer>						DocumentKeysPerformer;
-	typedef	OR<CMDSDocument::ValueInfo>							DocumentValueInfo;
+	typedef	CMDSDocument::IsIncludedPerformer					DocumentIsIncludedPerformer;
+	typedef	CMDSDocument::KeysPerformer							DocumentKeysPerformer;
+	typedef	CMDSDocument::ValueInfo								DocumentValueInfo;
 	typedef	TVResult<TArray<I<CMDSDocument> > >					DocumentsResult;
+	typedef	TVResult<TDictionary<I<CMDSDocument> > >			IndexDocumentMapResult;
 
 	// Classes
 	private:
@@ -100,7 +101,7 @@ class CMDSDocumentStorage {
 																const CString& documentType,
 																const TArray<CString>& relevantProperties,
 																bool isUpToDate, const CDictionary& isIncludedInfo,
-																const CMDSDocument::IsIncludedPerformer&
+																const DocumentIsIncludedPerformer&
 																		documentIsIncludedPerformer) = 0;
 		virtual			TVResult<UInt32>				collectionGetDocumentCount(const CString& name) const = 0;
 		virtual			OV<SError>						collectionIterate(const CString& name,
@@ -154,17 +155,14 @@ class CMDSDocumentStorage {
 
 		virtual			OV<SError>						documentRemove(const CMDSDocument& document) = 0;
 
-		virtual			OV<SError>						indexRegister(const CString& name,
-																const CString& documentType,
+		virtual			OV<SError>						indexRegister(const CString& name, const CString& documentType,
 																const TArray<CString>& relevantProperties,
 																const CDictionary& keysInfo,
-																const CMDSDocument::KeysPerformer&
-																		documentKeysPerformer) = 0;
-		virtual			OV<SError>						indexIterate(const CString& name,
-																const CString& documentType,
+																const DocumentKeysPerformer& documentKeysPerformer) = 0;
+		virtual			OV<SError>						indexIterate(const CString& name, const CString& documentType,
 																const TArray<CString>& keys,
-																CMDSDocument::KeyProc keyProc, void* keyProcUserData)
-																const = 0;
+																CMDSDocument::KeyProc documentKeyProc,
+																void* documentKeyProcUserData) const = 0;
 
 		virtual			TVResult<TDictionary<CString> >	infoGet(const TArray<CString>& keys) const = 0;
 		virtual			OV<SError>						infoSet(const TDictionary<CString>& info) = 0;
@@ -209,6 +207,7 @@ class CMDSDocumentStorage {
 						DocumentsResult					associationGetDocumentsTo(
 																const CMDSDocument::Info& fromDocumentInfo,
 																const CMDSDocument& toDocument);
+
 						OV<SError>						collectionRegister(const CString& name,
 																const CString& documentType,
 																const TArray<CString>& relevantProperties,
@@ -216,7 +215,7 @@ class CMDSDocumentStorage {
 																const CString& isIncludedSelector)
 															{ return collectionRegister(name, documentType,
 																	relevantProperties, isUpToDate, isIncludedInfo,
-																	*documentIsIncludedPerformer(isIncludedSelector)); }
+																	documentIsIncludedPerformer(isIncludedSelector)); }
 
 						DocumentCreateResultInfosResult	documentCreate(const CString& documentType,
 																const TArray<CMDSDocument::CreateInfo>&
@@ -231,7 +230,10 @@ class CMDSDocumentStorage {
 																const CString& keysSelector)
 															{ return indexRegister(name, documentType,
 																	relevantProperties, keysInfo,
-																	*documentKeysPerformer(keysSelector)); }
+																	documentKeysPerformer(keysSelector)); }
+						IndexDocumentMapResult			indexDocumentMap(const CString& name,
+																const CString& documentType,
+																const TArray<CString>& keys);
 
 														// Instance methods
 						void							registerDocumentCreateInfo(
@@ -240,14 +242,13 @@ class CMDSDocumentStorage {
 																const CMDSDocument::Info& documentInfo,
 																const CMDSDocument::ChangedInfo& documentChangedInfo);
 						void							registerDocumentIsIncludedPerformers(
-																const TArray<CMDSDocument::IsIncludedPerformer>&
+																const TArray<DocumentIsIncludedPerformer>&
 																		documentIsIncludedPerformers);
 						void							registerDocumentKeysPerformers(
-																const TArray<CMDSDocument::KeysPerformer>&
+																const TArray<DocumentKeysPerformer>&
 																		documentKeysPerformers);
 						void							registerValueInfos(
-																const TArray<CMDSDocument::ValueInfo>&
-																		documentValueInfos);
+																const TArray<DocumentValueInfo>& documentValueInfos);
 
 
 														// Class methods
@@ -283,9 +284,9 @@ class CMDSDocumentStorage {
 						DocumentChangedInfos			documentChangedInfos(const CString& documentType) const;
 						void							notifyDocumentChanged(const CMDSDocument& document,
 																CMDSDocument::ChangeKind documentChangeKind) const;
-						DocumentIsIncludedPerformer		documentIsIncludedPerformer(const CString& selector) const;
-						DocumentKeysPerformer			documentKeysPerformer(const CString& selector) const;
-						DocumentValueInfo				documentValueInfo(const CString& selector) const;
+				const	DocumentIsIncludedPerformer&	documentIsIncludedPerformer(const CString& selector) const;
+				const	DocumentKeysPerformer&			documentKeysPerformer(const CString& selector) const;
+				const	DocumentValueInfo&				documentValueInfo(const CString& selector) const;
 
 	private:
 														// Instance methods
