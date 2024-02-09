@@ -195,12 +195,12 @@ public class MDSBatch<DB : MDSDocumentBacking> {
 						self.documentInfosByDocumentID.forEach() {
 							// Add
 							if var documentInfoInfo = info[$1.documentType] {
-								//
+								// Update
 								info[$1.documentType] = nil
 								documentInfoInfo[$0] = $1
 								info[$1.documentType] = documentInfoInfo
 							} else {
-								//
+								// Add
 								info[$1.documentType] = [$0 : $1]
 							}
 						}
@@ -275,6 +275,12 @@ public class MDSBatch<DB : MDSDocumentBacking> {
 		self.documentInfosByDocumentID[documentID] = documentInfo
 
 		return documentInfo
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentIDs(for documentType :String) -> [String] {
+		// Return document IDs
+		return self.documentInfosByDocumentID.compactMap({ ($0.value.documentType == documentType) ? $0.key : nil })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

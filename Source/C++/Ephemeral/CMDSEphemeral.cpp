@@ -793,16 +793,6 @@ OV<SError> CMDSEphemeral::associationRegister(const CString& name, const CString
 		const CString& toDocumentType)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	// Validate
-	mInternals->mDocumentMapsLock.lockForReading();
-	bool	isFromDocumentTypeKnown = mInternals->mDocumentIDsByDocumentType.contains(fromDocumentType);
-	bool	isToDocumentTypeKnown = mInternals->mDocumentIDsByDocumentType.contains(toDocumentType);
-	mInternals->mDocumentMapsLock.unlockForReading();
-	if (!isFromDocumentTypeKnown)
-		return OV<SError>(getUnknownDocumentTypeError(fromDocumentType));
-	if (!isToDocumentTypeKnown)
-		return OV<SError>(getUnknownDocumentTypeError(toDocumentType));
-
 	// Check if have association already
 	if (!mInternals->mAssociationByName.get(name).hasReference())
 		// Create
@@ -954,20 +944,67 @@ OV<SError> CMDSEphemeral::associationUpdate(const CString& name, const TArray<CM
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Validate
-	if (!mInternals->mAssociationByName.contains(name))
+	OR<I<CMDSAssociation> >	association = mInternals->mAssociationByName.get(name);
+	if (!association.hasReference())
 		return OV<SError>(getUnknownAssociationError(name));
 
 	// Check if have updates
 	if (updates.isEmpty())
 		return OV<SError>();
 
+	// Setup
+	TNSet<CString>	updateFromDocumentIDs(updates,
+							(TNSet<CString>::ArrayMapProc) CMDSAssociation::Update::getFromDocumentIDFromItem);
+	TNSet<CString>	updateToDocumentIDs(updates,
+							(TNSet<CString>::ArrayMapProc) CMDSAssociation::Update::getToDocumentIDFromItem);
+
 	// Check for batch
 	OR<I<Internals::Batch> >	batch = mInternals->mBatchByThreadRef.get(CThread::getCurrentRef());
-	if (batch.hasReference())
+	if (batch.hasReference()) {
 		// In batch
+		mInternals->mDocumentMapsLock.lockForReading();
+		TNSet<CString>	existingFromDocumentIDs =
+								mInternals->mDocumentIDsByDocumentType.get((*association)->getFromDocumentType(),
+										TNSet<CString>());
+		mInternals->mDocumentMapsLock.unlockForReading();
+		updateFromDocumentIDs -= existingFromDocumentIDs;
+		updateFromDocumentIDs -= (*batch)->documentIDsGet((*association)->getFromDocumentType());
+		if (!updateFromDocumentIDs.isEmpty())
+			return OV<SError>(getUnknownDocumentIDError(updateFromDocumentIDs.getArray()[0]));
+
+		mInternals->mDocumentMapsLock.lockForReading();
+		TNSet<CString>	existingToDocumentIDs =
+								mInternals->mDocumentIDsByDocumentType.get((*association)->getToDocumentType(),
+										TNSet<CString>());
+		mInternals->mDocumentMapsLock.unlockForReading();
+		updateToDocumentIDs -= existingToDocumentIDs;
+		updateToDocumentIDs -= (*batch)->documentIDsGet((*association)->getToDocumentType());
+		if (!updateToDocumentIDs.isEmpty())
+			return OV<SError>(getUnknownDocumentIDError(updateToDocumentIDs.getArray()[0]));
+
+		// Update
 		(*batch)->associationNoteUpdated(name, updates);
-	else
+	} else {
 		// Not in batch
+		mInternals->mDocumentMapsLock.lockForReading();
+		TNSet<CString>	existingFromDocumentIDs =
+								mInternals->mDocumentIDsByDocumentType.get((*association)->getFromDocumentType(),
+										TNSet<CString>());
+		mInternals->mDocumentMapsLock.unlockForReading();
+		updateFromDocumentIDs -= existingFromDocumentIDs;
+		if (!updateFromDocumentIDs.isEmpty())
+			return OV<SError>(getUnknownDocumentIDError(updateFromDocumentIDs.getArray()[0]));
+
+		mInternals->mDocumentMapsLock.lockForReading();
+		TNSet<CString>	existingToDocumentIDs =
+								mInternals->mDocumentIDsByDocumentType.get((*association)->getToDocumentType(),
+										TNSet<CString>());
+		mInternals->mDocumentMapsLock.unlockForReading();
+		updateToDocumentIDs -= existingToDocumentIDs;
+		if (!updateToDocumentIDs.isEmpty())
+			return OV<SError>(getUnknownDocumentIDError(updateToDocumentIDs.getArray()[0]));
+
+		// Iterate updates
 		for (TIteratorD<CMDSAssociation::Update> iterator = updates.getIterator(); iterator.hasValue();
 				iterator.advance())
 			// Check Add or Remove
@@ -977,6 +1014,7 @@ OV<SError> CMDSEphemeral::associationUpdate(const CString& name, const TArray<CM
 			else
 				// Remove
 				mInternals->mAssociationItemsByName.remove(name, iterator->getItem());
+	}
 
 	return OV<SError>();
 }

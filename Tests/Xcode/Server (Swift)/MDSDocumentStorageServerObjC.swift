@@ -94,7 +94,7 @@ class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageS
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func associationIterate(for name :String, to toDocumentID :String, fromDocumentType :String,
+	func associationIterate(for name :String, fromDocumentType :String, to toDocumentID :String,
 			proc :(_ document :MDSDocument) -> Void) throws {
 		fatalError("Unimplemented")
 	}

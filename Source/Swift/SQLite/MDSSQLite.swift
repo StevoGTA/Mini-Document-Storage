@@ -47,14 +47,6 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	// MARK: MDSDocumentStorage methods
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationRegister(named name :String, fromDocumentType :String, toDocumentType :String) throws {
-		// Validate
-		guard self.databaseManager.isKnown(documentType: fromDocumentType) else {
-			throw MDSDocumentStorageError.unknownDocumentType(documentType: fromDocumentType)
-		}
-		guard self.databaseManager.isKnown(documentType: toDocumentType) else {
-			throw MDSDocumentStorageError.unknownDocumentType(documentType: toDocumentType)
-		}
-
 		// Register
 		self.databaseManager.associationRegister(name: name, fromDocumentType: fromDocumentType,
 				toDocumentType: toDocumentType)
@@ -196,12 +188,44 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Check if have updates
 		guard !updates.isEmpty else { return }
 
+		// Setup
+		var	updateFromDocumentIDs = Set<String>(updates.map({ $0.item.fromDocumentID }))
+		self.databaseManager.documentInfoIterate(documentType: association.fromDocumentType,
+				documentIDs: Array(updateFromDocumentIDs)) { updateFromDocumentIDs.remove($0.documentID) }
+
+		var	updateToDocumentIDs = Set<String>(updates.map({ $0.item.toDocumentID }))
+		self.databaseManager.documentInfoIterate(documentType: association.toDocumentType,
+				documentIDs: Array(updateToDocumentIDs)) { updateToDocumentIDs.remove($0.documentID) }
+
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current) {
 			// In batch
+			// Ensure all update from documentIDs exist
+			let	missingFromDocumentIDs =
+						updateFromDocumentIDs.subtracting(batch.documentIDs(for: association.fromDocumentType))
+			guard missingFromDocumentIDs.isEmpty else {
+				throw MDSDocumentStorageError.unknownDocumentID(documentID: missingFromDocumentIDs.first!)
+			}
+
+			// Ensure all update to documentIDs exist
+			let	missingToDocumentIDs =
+						updateToDocumentIDs.subtracting(batch.documentIDs(for: association.toDocumentType))
+			guard missingToDocumentIDs.isEmpty else {
+				throw MDSDocumentStorageError.unknownDocumentID(documentID: missingToDocumentIDs.first!)
+			}
+
+			// Update
 			batch.associationNoteUpdated(for: name, updates: updates)
 		} else {
 			// Not in batch
+			guard updateFromDocumentIDs.isEmpty else {
+				throw MDSDocumentStorageError.unknownDocumentID(documentID: updateFromDocumentIDs.first!)
+			}
+			guard updateToDocumentIDs.isEmpty else {
+				throw MDSDocumentStorageError.unknownDocumentID(documentID: updateToDocumentIDs.first!)
+			}
+
+			// Update
 			self.databaseManager.associationUpdate(name: name, updates: updates,
 					fromDocumentType: association.fromDocumentType, toDocumentType: association.toDocumentType)
 		}

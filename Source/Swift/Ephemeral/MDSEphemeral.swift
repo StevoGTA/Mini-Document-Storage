@@ -154,14 +154,6 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	// MARK: MDSDocumentStorage methods
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationRegister(named name :String, fromDocumentType :String, toDocumentType :String) throws {
-		// Validate
-		guard self.documentMapsLock.read({ self.documentIDsByDocumentType[fromDocumentType] }) != nil else {
-			throw MDSDocumentStorageError.unknownDocumentType(documentType: fromDocumentType)
-		}
-		guard self.documentMapsLock.read({ self.documentIDsByDocumentType[toDocumentType] }) != nil else {
-			throw MDSDocumentStorageError.unknownDocumentType(documentType: toDocumentType)
-		}
-
 		// Check if have association already
 		if self.associationByName.value(for: name) == nil {
 			// Create
@@ -274,19 +266,65 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationUpdate(for name :String, updates :[MDSAssociation.Update]) throws {
 		// Validate
-		guard self.associationByName.value(for: name) != nil else {
+		guard let association = self.associationByName.value(for: name) else {
 			throw MDSDocumentStorageError.unknownAssociation(name: name)
 		}
 
 		// Check if have updates
 		guard !updates.isEmpty else { return }
 
+		// Setup
+		let	updateFromDocumentIDs = Set<String>(updates.map({ $0.item.fromDocumentID }))
+		let	updateToDocumentIDs = Set<String>(updates.map({ $0.item.toDocumentID }))
+
 		// Check for batch
 		if let batch = self.batchByThread.value(for: .current) {
 			// In batch
+			try self.documentMapsLock.read({
+				// Ensure all update from documentIDs exist
+				let	existingFromDocumentIDs =
+							Set<String>(
+									(self.documentIDsByDocumentType[association.fromDocumentType] ?? []) +
+											batch.documentIDs(for: association.fromDocumentType))
+				let	missingFromDocumentIDs = updateFromDocumentIDs.subtracting(existingFromDocumentIDs)
+				guard missingFromDocumentIDs.isEmpty else {
+					throw MDSDocumentStorageError.unknownDocumentID(documentID: missingFromDocumentIDs.first!)
+				}
+
+				// Ensure all update to documentIDs exist
+				let	existingToDocumentIDs =
+							Set<String>(
+									(self.documentIDsByDocumentType[association.toDocumentType] ?? []) +
+											batch.documentIDs(for: association.toDocumentType))
+				let	missingToDocumentIDs = updateToDocumentIDs.subtracting(existingToDocumentIDs)
+				guard missingToDocumentIDs.isEmpty else {
+					throw MDSDocumentStorageError.unknownDocumentID(documentID: missingToDocumentIDs.first!)
+				}
+			})
+
+			// Update
 			batch.associationNoteUpdated(for: name, updates: updates)
 		} else {
 			// Not in batch
+			try self.documentMapsLock.read({
+				// Ensure all update from documentIDs exist
+				let	existingFromDocumentIDs =
+							Set<String>(self.documentIDsByDocumentType[association.fromDocumentType] ?? [])
+				let	missingFromDocumentIDs = updateFromDocumentIDs.subtracting(existingFromDocumentIDs)
+				guard missingFromDocumentIDs.isEmpty else {
+					throw MDSDocumentStorageError.unknownDocumentID(documentID: missingFromDocumentIDs.first!)
+				}
+
+				// Ensure all update to documentIDs exist
+				let	existingToDocumentIDs =
+							Set<String>(self.documentIDsByDocumentType[association.toDocumentType] ?? [])
+				let	missingToDocumentIDs = updateToDocumentIDs.subtracting(existingToDocumentIDs)
+				guard missingToDocumentIDs.isEmpty else {
+					throw MDSDocumentStorageError.unknownDocumentID(documentID: missingToDocumentIDs.first!)
+				}
+			})
+
+			// Update
 			self.associationItemsByName.remove(updates.filter({ $0.action == .remove }).map({ $0.item }), for: name)
 			self.associationItemsByName.append(updates.filter({ $0.action == .add }).map({ $0.item }), for: name)
 		}
