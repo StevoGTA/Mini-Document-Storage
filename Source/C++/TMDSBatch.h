@@ -388,20 +388,14 @@ template <typename DB> class TMDSBatch {
 
 															return *mDocumentInfoByDocumentID[documentID];
 														}
-		OR<DocumentInfo>							documentInfoGet(const CString& documentID) const
-														{ return mDocumentInfoByDocumentID.contains(documentID) ?
-																mDocumentInfoByDocumentID[documentID] :
-																OR<DocumentInfo>(); }
 		TDictionary<TNDictionary<DocumentInfo> >	documentGetInfosByDocumentType()
 														{
 															// Setup
 															TNDictionary<TNDictionary<DocumentInfo> >	info;
 
 															// Iterate changes
-															TSet<CString>	documentIDs =
-																					mDocumentInfoByDocumentID.getKeys();
-															for (TIteratorS<CString> iterator =
-																			documentIDs.getIterator();
+															TSet<CString>	keys = mDocumentInfoByDocumentID.getKeys();
+															for (TIteratorS<CString> iterator = keys.getIterator();
 																	iterator.hasValue(); iterator.advance()) {
 																// Update
 																DocumentInfo&	documentInfo =
@@ -417,6 +411,30 @@ template <typename DB> class TMDSBatch {
 
 															return info;
 														}
+		TArray<CString>								documentIDsGet(const CString& documentType) const
+														{
+															// Setup
+															TNArray<CString>	documentIDs;
+
+															// Iterate changes
+															TSet<CString>	keys = mDocumentInfoByDocumentID.getKeys();
+															for (TIteratorS<CString> iterator = keys.getIterator();
+																	iterator.hasValue(); iterator.advance()) {
+																// Update
+																DocumentInfo&	documentInfo =
+																						*mDocumentInfoByDocumentID[
+																								*iterator];
+																if (documentInfo.getDocumentType() == documentType)
+																	// Add document ID
+																	documentIDs += *iterator;
+															}
+
+															return documentIDs;
+														}
+		OR<DocumentInfo>							documentInfoGet(const CString& documentID) const
+														{ return mDocumentInfoByDocumentID.contains(documentID) ?
+																mDocumentInfoByDocumentID[documentID] :
+																OR<DocumentInfo>(); }
 
 	// Properties
 	private:

@@ -449,7 +449,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 				// Add document
 				_ = batch.documentAdd(documentType: documentType, documentID: documentID,
 						creationDate: $0.creationDate ?? date, modificationDate: $0.modificationDate ?? date,
-						initialPropertyMap: !$0.propertyMap.isEmpty ? $0.propertyMap : nil)
+						propertyMap: !$0.propertyMap.isEmpty ? $0.propertyMap : nil)
 				infos.append((proc(documentID, self), nil))
 			}
 		} else {
@@ -656,9 +656,9 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 			let	documentBacking =
 						try! self.documentBacking(for: type(of: document).documentType, documentID: document.id)
 			batch.documentAdd(documentType: documentBacking.type, documentID: document.id,
-							documentBacking: documentBacking, creationDate: documentBacking.creationDate,
+							creationDate: documentBacking.creationDate,
 							modificationDate: documentBacking.modificationDate,
-							initialPropertyMap: documentBacking.propertyMap)
+							propertyMap: documentBacking.propertyMap)
 					.set(valueUse, for: property)
 		}
 	}
@@ -677,9 +677,9 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 				let	documentBacking = try self.documentBacking(for: documentType, documentID: documentID)
 
 				return batch.documentAdd(documentType: documentBacking.type, documentID: documentID,
-								documentBacking: documentBacking, creationDate: documentBacking.creationDate,
+								creationDate: documentBacking.creationDate,
 								modificationDate: documentBacking.modificationDate,
-								initialPropertyMap: documentBacking.propertyMap)
+								propertyMap: documentBacking.propertyMap)
 						.attachmentAdd(info: info, content: content)
 			}
 		} else {
@@ -758,9 +758,9 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 				let	attachmentInfo =
 							try documentAttachmentInfoMap(for: documentType, documentID: documentID)[attachmentID]!
 				batch.documentAdd(documentType: documentBacking.type, documentID: documentID,
-								documentBacking: documentBacking, creationDate: documentBacking.creationDate,
+								creationDate: documentBacking.creationDate,
 								modificationDate: documentBacking.modificationDate,
-								initialPropertyMap: documentBacking.propertyMap)
+								propertyMap: documentBacking.propertyMap)
 						.attachmentUpdate(id: attachmentID, currentRevision: attachmentInfo.revision,
 								info: updatedInfo, content: updatedContent)
 			}
@@ -785,9 +785,9 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 				// Don't have document in batch
 				let	documentBacking = try self.documentBacking(for: documentType, documentID: documentID)
 				batch.documentAdd(documentType: documentBacking.type, documentID: documentID,
-								documentBacking: documentBacking, creationDate: documentBacking.creationDate,
+								creationDate: documentBacking.creationDate,
 								modificationDate: documentBacking.modificationDate,
-								initialPropertyMap: documentBacking.propertyMap)
+								propertyMap: documentBacking.propertyMap)
 						.attachmentRemove(id: attachmentID)
 			}
 		} else {
@@ -811,9 +811,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 			} else {
 				// Don't have document in batch
 				let	documentBacking = try! self.documentBacking(for: documentType, documentID: document.id)
-				batch.documentAdd(documentType: documentType, documentID: document.id, documentBacking: documentBacking,
-								creationDate: documentBacking.creationDate,
-								modificationDate: documentBacking.modificationDate)
+				batch.documentAdd(documentType: documentType, documentBacking: documentBacking)
 						.remove()
 			}
 		} else {
@@ -1007,7 +1005,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func batch(_ proc :() throws -> MDSBatch<Any>.Result) rethrows {
+	public func batch(_ proc :() throws -> MDSBatchResult) rethrows {
 		// Setup
 		let	batch = Batch()
 
@@ -1015,7 +1013,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 		self.batchMap.set(batch, for: .current)
 
 		// Run lean
-		var	result = MDSBatch<Any>.Result.commit
+		var	result = MDSBatchResult.commit
 		try autoreleasepool() {
 			// Call proc
 			result = try proc()

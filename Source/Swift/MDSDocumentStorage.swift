@@ -400,6 +400,7 @@ extension MDSDocumentStorage {
 		// Setup
 		var	documentMap = [String : T]()
 
+		// Iterate index
 		try indexIterate(name: name, keys: keys) { (key :String, document :T) in documentMap[key] = document }
 
 		return documentMap
