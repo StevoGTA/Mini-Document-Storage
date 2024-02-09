@@ -988,8 +988,7 @@ OV<SError> CMDSEphemeral::cacheRegister(const CString& name, const CString& docu
 	TNArray<SMDSCacheValueInfo>	_cacheValueInfos;
 	for (TIteratorD<CacheValueInfo> iterator = cacheValueInfos.getIterator(); iterator.hasValue(); iterator.advance())
 		// Add
-		_cacheValueInfos +=
-				SMDSCacheValueInfo(iterator->getValueInfo(), *documentValueInfo(iterator->getSelector()));
+		_cacheValueInfos += SMDSCacheValueInfo(iterator->getValueInfo(), documentValueInfo(iterator->getSelector()));
 
 	// Create or re-create
 	I<Internals::Cache>	cache(new Internals::Cache(name, documentType, relevantProperties, _cacheValueInfos, 0));
@@ -1768,7 +1767,7 @@ OV<SError> CMDSEphemeral::indexIterate(const CString& name, const CString& docum
 			return OV<SError>(getMissingFromIndexError(*iterator));
 
 		// Call proc
-		keyProc(*iterator, *documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), keyProcUserData);
+		keyProc(*iterator, documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), keyProcUserData);
 	}
 
 	return OV<SError>();
