@@ -289,8 +289,11 @@ class CMDSEphemeral::Internals {
 													{
 														// Setup
 														TNSet<CString>	notIncludedIDs(
-																				collectionUpdateResults->getNotIncludedIDs().hasValue() ?
-																						*collectionUpdateResults->getNotIncludedIDs() :
+																				collectionUpdateResults->
+																								getNotIncludedIDs()
+																								.hasValue() ?
+																						*collectionUpdateResults->
+																								getNotIncludedIDs() :
 																						TNArray<CString>());
 
 														// Compose updated values
@@ -388,7 +391,9 @@ class CMDSEphemeral::Internals {
 																									mDocumentBackingByDocumentID.get(*iterator);
 															if (!documentBacking.hasReference()) {
 																// Document ID not found
-																error.setValue(mDocumentStorage.getUnknownDocumentIDError(*iterator));
+																error.setValue(
+																		mDocumentStorage.getUnknownDocumentIDError(
+																				*iterator));
 																break;
 															}
 
@@ -412,8 +417,8 @@ class CMDSEphemeral::Internals {
 														if (indexUpdateResults.getKeysInfos().hasValue())
 															// Update storage
 															mIndexValuesByName.update(index->getName(),
-
-																	(TNLockingDictionary<TDictionary<CString> >::UpdateProc)
+																	(TNLockingDictionary<TDictionary<CString> >::
+																					UpdateProc)
 																			indexUpdateFromUpdateResults,
 																	&indexUpdateResults);
 													}
@@ -647,7 +652,8 @@ class CMDSEphemeral::Internals {
 																iterator.hasValue(); iterator.advance())
 															// Update storage
 															mIndexValuesByName.update(*iterator,
-																	(TNLockingDictionary<TDictionary<CString> >::UpdateProc)
+																	(TNLockingDictionary<TDictionary<CString> >::
+																					UpdateProc)
 																			updateIndexValuesWithRemovedDocumentIDs,
 																	(void*) &documentIDs);
 													}
@@ -699,7 +705,8 @@ class CMDSEphemeral::Internals {
 														// Filter document ids
 														TNArray<CString>	filteredDocumentIDs =
 																					currentDocumentIDs->filtered(
-																							(TNArray<CString>::IsMatchProc)
+																							(TNArray<CString>::
+																											IsMatchProc)
 																									TSet<CString>::
 																											containsItem,
 																							documentIDs);
@@ -1767,7 +1774,7 @@ OV<SError> CMDSEphemeral::indexIterate(const CString& name, const CString& docum
 			return OV<SError>(getMissingFromIndexError(*iterator));
 
 		// Call proc
-		keyProc(*iterator, documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), keyProcUserData);
+		keyProc(*iterator, documentInfo.create(*documentID, (CMDSDocumentStorage&) *this), keyProcUserData);
 	}
 
 	return OV<SError>();
