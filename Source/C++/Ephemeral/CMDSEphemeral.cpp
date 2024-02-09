@@ -922,17 +922,19 @@ TVResult<CDictionary> CMDSEphemeral::associationGetIntegerValues(const CString& 
 	// Process association items
 	TDictionary<CDictionary>&	cacheValueInfos = *mInternals->mCacheValuesByName.get(cacheName);
 	CDictionary					results;
-	for (TIteratorD<CMDSAssociation::Item> iterator = associationItems.getIterator(); iterator.hasValue();
-			iterator.advance()) {
+	for (TIteratorD<CMDSAssociation::Item> associationItemIterator = associationItems.getIterator();
+			associationItemIterator.hasValue(); associationItemIterator.advance()) {
 		// Check fromDocumentID
-		if (fromDocumentIDsUse.contains(iterator->getFromDocumentID())) {
+		if (fromDocumentIDsUse.contains(associationItemIterator->getFromDocumentID())) {
 			// Get value and sum
-			CDictionary&	valueInfos = *cacheValueInfos.get(iterator->getToDocumentID());
+			CDictionary&	valueInfos = *cacheValueInfos.get(associationItemIterator->getToDocumentID());
 
 			// Iterate cachedValueNames
-			for (TIteratorD<CString> iterator = cachedValueNames.getIterator(); iterator.hasValue(); iterator.advance())
+			for (TIteratorD<CString> cacheValueNameIterator = cachedValueNames.getIterator();
+					cacheValueNameIterator.hasValue(); cacheValueNameIterator.advance())
 				// Update results
-				results.set(*iterator, results.getSInt64(*iterator) + valueInfos.getSInt64(*iterator));
+				results.set(*cacheValueNameIterator,
+						results.getSInt64(*cacheValueNameIterator) + valueInfos.getSInt64(*cacheValueNameIterator));
 		}
 	}
 
@@ -1953,18 +1955,18 @@ OV<SError> CMDSEphemeral::batch(BatchProc batchProc, void* userData)
 								CMDSDocument::ChangeKind::kChangeKindUpdated);
 					} else {
 						// Add document
-						I<Internals::DocumentBacking>	documentBacking(
+						I<Internals::DocumentBacking>	newDocumentBacking(
 																new Internals::DocumentBacking(*documentIDIterator,
 																		mInternals->nextRevision(*documentTypeIterator),
 																		batchDocumentInfo.getCreationUniversalTime(),
 																		batchDocumentInfo
 																				.getModificationUniversalTime(),
 																		batchDocumentInfo.getUpdatedPropertyMap()));
-						mInternals->mDocumentBackingByDocumentID.set(*documentIDIterator, documentBacking);
+						mInternals->mDocumentBackingByDocumentID.set(*documentIDIterator, newDocumentBacking);
 						mInternals->mDocumentIDsByDocumentType.insert(*documentTypeIterator, *documentIDIterator);
 
 						// Process
-						mInternals->process(*documentIDIterator, batchDocumentInfo, *documentBacking,
+						mInternals->process(*documentIDIterator, batchDocumentInfo, *newDocumentBacking,
 								batchDocumentInfo.getUpdatedPropertyMap().getKeys(), documentInfo, updateInfos,
 								documentChangedInfos, CMDSDocument::ChangeKind::kChangeKindCreated);
 					}
