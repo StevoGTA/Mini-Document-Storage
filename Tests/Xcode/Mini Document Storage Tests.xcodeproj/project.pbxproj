@@ -10,6 +10,10 @@
 		0A0485932A9568F200CFF609 /* MDSRemoteStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551EF27C5D8E7003E497B /* MDSRemoteStorage.swift */; };
 		0A0EAB362B32794F0058835E /* CSQLiteTrigger.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F2C62A0E133900E4F149 /* CSQLiteTrigger.cpp */; };
 		0A0F72C22A8315900099C6D9 /* SError.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F3892A0E133C00E4F149 /* SError.cpp */; };
+		0A1DFB322B892C9E00C9FA6F /* DateFormatter+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1DFB312B892C9E00C9FA6F /* DateFormatter+Extensions.swift */; };
+		0A1DFB332B892C9E00C9FA6F /* DateFormatter+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1DFB312B892C9E00C9FA6F /* DateFormatter+Extensions.swift */; };
+		0A1DFB342B892C9E00C9FA6F /* DateFormatter+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1DFB312B892C9E00C9FA6F /* DateFormatter+Extensions.swift */; };
+		0A1DFB352B892C9E00C9FA6F /* DateFormatter+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1DFB312B892C9E00C9FA6F /* DateFormatter+Extensions.swift */; };
 		0A1F7FDD27E40244007F8920 /* DocumentUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1F7FDC27E40244007F8920 /* DocumentUnitTests.swift */; };
 		0A1F7FE727E40519007F8920 /* MDSRemoteStorageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551F127C5D8E7003E497B /* MDSRemoteStorageCache.swift */; };
 		0A1F7FE827E40519007F8920 /* MDSRemoteStorageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551F127C5D8E7003E497B /* MDSRemoteStorageCache.swift */; };
@@ -638,6 +642,8 @@
 		0A16F3F32A0E133E00E4F149 /* CQuickTimeMediaFile.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CQuickTimeMediaFile.h; sourceTree = "<group>"; };
 		0A16F3F42A0E133E00E4F149 /* CMediaEngine.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CMediaEngine.cpp; sourceTree = "<group>"; };
 		0A16F3F52A0E133E00E4F149 /* SMediaPacket.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SMediaPacket.cpp; sourceTree = "<group>"; };
+		0A1DFB312B892C9E00C9FA6F /* DateFormatter+Extensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "DateFormatter+Extensions.swift"; sourceTree = "<group>"; };
+		0A1DFB362B892CC600C9FA6F /* XMLNode+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "XMLNode+Extensions.swift"; sourceTree = "<group>"; };
 		0A1F7FDC27E40244007F8920 /* DocumentUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentUnitTests.swift; sourceTree = "<group>"; };
 		0A1F801D27E40558007F8920 /* ConcurrentQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConcurrentQueue.swift; sourceTree = "<group>"; };
 		0A1F801E27E40558007F8920 /* BatchQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchQueue.swift; sourceTree = "<group>"; };
@@ -1619,6 +1625,7 @@
 				0A55521C27C5DA60003E497B /* Data+Extensions.swift */,
 				0A55521A27C5DA60003E497B /* Date+Extensions.swift */,
 				0A55521127C5DA60003E497B /* DateComponents+Extension.swift */,
+				0A1DFB312B892C9E00C9FA6F /* DateFormatter+Extensions.swift */,
 				0A55521427C5DA60003E497B /* Dictionary+Extensions.swift */,
 				0A55520B27C5DA60003E497B /* Dispatch+Extensions.swift */,
 				0A55520F27C5DA60003E497B /* FileManager+Extensions.swift */,
@@ -1633,10 +1640,11 @@
 				0A55520827C5DA60003E497B /* String+Extensions.swift */,
 				0A55520A27C5DA60003E497B /* Timer+Extensions.swift */,
 				0A55521827C5DA60003E497B /* TimeInterval+Extensions.swift */,
+				0A55521627C5DA60003E497B /* URL+Extensions.swift */,
 				0A55520727C5DA60003E497B /* URLComponents+Extensions.swift */,
 				0A55521227C5DA60003E497B /* UserDefaults+Extensions.swift */,
-				0A55521627C5DA60003E497B /* URL+Extensions.swift */,
 				0A55521727C5DA60003E497B /* UUID+Extensions.swift */,
+				0A1DFB362B892CC600C9FA6F /* XMLNode+Extensions.swift */,
 			);
 			path = "Swift Extensions";
 			sourceTree = "<group>";
@@ -2042,6 +2050,7 @@
 				0AAF04972A70DE8C000AF19F /* MDSEphemeral.swift in Sources */,
 				0A55526227C5DB5B003E497B /* HTTPEndpoint.swift in Sources */,
 				0A687FE628EE59E200715660 /* MDSCache.swift in Sources */,
+				0A1DFB322B892C9E00C9FA6F /* DateFormatter+Extensions.swift in Sources */,
 				0A5551FF27C5D949003E497B /* MDSDocument.swift in Sources */,
 				0A91AB7528127F6600FE1549 /* Parent.swift in Sources */,
 				0A55527127C5DC3E003E497B /* Int+Extensions.swift in Sources */,
@@ -2104,6 +2113,7 @@
 				0AAF04982A70DE8D000AF19F /* MDSEphemeral.swift in Sources */,
 				0A5E187227C71F5D0089E550 /* HTTPEndpointClient.swift in Sources */,
 				0A5E185027C716FB0089E550 /* HTTPURLResponse+Extensions.swift in Sources */,
+				0A1DFB332B892C9E00C9FA6F /* DateFormatter+Extensions.swift in Sources */,
 				0A5E188627C71F9A0089E550 /* URLComponents+Extensions.swift in Sources */,
 				0A1F7FF927E40528007F8920 /* MDSDocumentBackingCache.swift in Sources */,
 				0A1F801327E40544007F8920 /* SQLiteTrigger.swift in Sources */,
@@ -2186,6 +2196,7 @@
 				0A5E186527C71F2A0089E550 /* MDSDocument.swift in Sources */,
 				0A5E187D27C71F830089E550 /* Dispatch+Extensions.swift in Sources */,
 				0A1F802527E40578007F8920 /* UUID+Extensions.swift in Sources */,
+				0A1DFB342B892C9E00C9FA6F /* DateFormatter+Extensions.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2231,6 +2242,7 @@
 				0ADC8EAE28BED8D900632551 /* Date+Extensions.swift in Sources */,
 				0ADC8EA528BED85200632551 /* SQLiteTableColumn.swift in Sources */,
 				0A9C63752A19EAC300800DBA /* CSQLiteOrderBy.cpp in Sources */,
+				0A1DFB352B892C9E00C9FA6F /* DateFormatter+Extensions.swift in Sources */,
 				0ADC8E9328BED81400632551 /* MDSDocumentBackingCache.swift in Sources */,
 				0ADC8E9B28BED82200632551 /* MDSEphemeral.swift in Sources */,
 				0A9C63722A19EAC300800DBA /* CSQLiteTable.cpp in Sources */,

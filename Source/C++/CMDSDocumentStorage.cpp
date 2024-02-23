@@ -152,6 +152,19 @@ TVResult<I<CMDSDocument> > CMDSDocumentStorage::documentCreate(const CMDSDocumen
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+CMDSDocumentStorage::DocumentAttachmentInfoResult CMDSDocumentStorage::documentAttachmentAdd(
+		const CString& documentType, const CString& documentID, const CString& type, const CDictionary& info,
+		const CData& content)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	CDictionary	infoUse(info);
+	infoUse.set(CString(OSSTR("type")), type);
+
+	return documentAttachmentAdd(documentType, documentID, infoUse, content);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 TVResult<TDictionary<I<CMDSDocument> > > CMDSDocumentStorage::indexDocumentMap(const CString& name,
 		const CString& documentType, const TArray<CString>& keys)
 //----------------------------------------------------------------------------------------------------------------------

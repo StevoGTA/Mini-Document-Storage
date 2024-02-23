@@ -326,13 +326,12 @@ extension MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentAttachmentAdd<T : MDSDocument>(to document :T, type :String, info :[String : Any],
-			content :Data) throws {
+			content :Data) throws -> MDSDocument.AttachmentInfo {
 		// Setup
 		var	infoUse = info
 		infoUse["type"] = type
 
-		// Add document attachment
-		_ = try documentAttachmentAdd(for: T.documentType, documentID: document.id, info: infoUse, content: content)
+		return try documentAttachmentAdd(for: T.documentType, documentID: document.id, info: infoUse, content: content)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

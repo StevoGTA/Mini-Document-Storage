@@ -522,8 +522,6 @@ class CMDSDocument : public CHashable {
 						OV<UniversalTime>					setUniversalTime(const CString& property,
 																	UniversalTime value) const;
 
-						OV<TArray<CMDSDocument> >			getDocuments(const CString& property,
-																	const CMDSDocument::Info& info) const;
 						void								set(const CString& property,
 																	const TArray<CMDSDocument>& documents) const;
 
@@ -538,27 +536,30 @@ class CMDSDocument : public CHashable {
 																	const AttachmentInfo& attachmentInfo) const;
 						TArray<CDictionary>					getAttachmentContentAsArrayOfDictionaries(
 																	const AttachmentInfo& attachmentInfo) const;
-						void								addAttachment(const CString& type, const CDictionary& info,
+						AttachmentInfo						addAttachment(const CString& type, const CDictionary& info,
 																	const CData& content);
-						void								addAttachment(const CString& type, const CData& content)
-																{ addAttachment(type, CDictionary::mEmpty, content); }
-						void								addAttachment(const CString& type, const CDictionary& info,
+						AttachmentInfo						addAttachment(const CString& type, const CData& content)
+																{ return addAttachment(type, CDictionary::mEmpty,
+																		content); }
+						AttachmentInfo						addAttachment(const CString& type, const CDictionary& info,
 																	const CString& content)
-																{ addAttachment(type, info,
+																{ return addAttachment(type, info,
 																		content.getData(CString::kEncodingUTF8)); }
-						void								addAttachment(const CString& type, const CString& content)
-																{ addAttachment(type, CDictionary::mEmpty,
+						AttachmentInfo						addAttachment(const CString& type, const CString& content)
+																{ return addAttachment(type, CDictionary::mEmpty,
 																		content.getData(CString::kEncodingUTF8)); }
-						void								addAttachment(const CString& type, const CDictionary& info,
+						AttachmentInfo						addAttachment(const CString& type, const CDictionary& info,
 																	const CDictionary& content);
-						void								addAttachment(const CString& type,
+						AttachmentInfo						addAttachment(const CString& type,
 																	const CDictionary& content)
-																{ addAttachment(type, CDictionary::mEmpty, content); }
-						void								addAttachment(const CString& type, const CDictionary& info,
+																{ return addAttachment(type, CDictionary::mEmpty,
+																		content); }
+						AttachmentInfo						addAttachment(const CString& type, const CDictionary& info,
 																	const TArray<CDictionary>& content);
-						void								addAttachment(const CString& type,
+						AttachmentInfo						addAttachment(const CString& type,
 																	const TArray<CDictionary>& content)
-																{ addAttachment(type, CDictionary::mEmpty, content); }
+																{ return addAttachment(type, CDictionary::mEmpty,
+																		content); }
 						void								updateAttachment(const AttachmentInfo& attachmentInfo,
 																	const CDictionary& updatedInfo,
 																	const CData& updatedContent);
@@ -568,7 +569,10 @@ class CMDSDocument : public CHashable {
 																		updatedContent); }
 						void								updateAttachment(const AttachmentInfo& attachmentInfo,
 																	const CDictionary& updatedInfo,
-																	const CString& updatedContent);
+																	const CString& updatedContent)
+																{ updateAttachment(attachmentInfo, updatedInfo,
+																		updatedContent.getData(
+																				CString::kEncodingUTF8)); }
 						void								updateAttachment(const AttachmentInfo& attachmentInfo,
 																	const CString& updatedContent)
 																{ updateAttachment(attachmentInfo, CDictionary::mEmpty,

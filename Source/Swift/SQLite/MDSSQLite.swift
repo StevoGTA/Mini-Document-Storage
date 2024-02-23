@@ -575,7 +575,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			valueUse = data.base64EncodedString()
 		} else if let date = value as? Date {
 			// Date
-			valueUse = date.rfc3339Extended
+			valueUse = date.rfc3339ExtendedString
 		} else {
 			// Everythng else
 			valueUse = value

@@ -4,6 +4,7 @@
 
 #include "CMDSDocument.h"
 
+#include "CJSON.h"
 #include "CMDSDocumentStorage.h"
 #include "CReferenceCountable.h"
 
@@ -451,6 +452,136 @@ void CMDSDocument::remove(const CString& property) const
 {
 	// Set value
 	mInternals->mDocumentStorage.documentSet(property, OV<SValue>(), *this);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TArray<CMDSDocument::AttachmentInfo> CMDSDocument::getAttachmentInfos(const CString& type) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Get attachment info map
+	TVResult<CMDSDocument::AttachmentInfoMap>	attachmentInfoMap =
+														getDocumentStorage().documentAttachmentInfoMap(
+																getDocumentType(), getID());
+
+	// Filter by type
+	TSet<CString>			attachmentIDs = attachmentInfoMap->getKeys();
+	TNArray<AttachmentInfo>	attachmentInfos;
+	for (TIteratorS<CString> iterator = attachmentIDs.getIterator(); iterator.hasValue(); iterator.advance()) {
+		// Get Attachment Info
+		AttachmentInfo&	attachmentInfo = *(attachmentInfoMap->get(*iterator));
+
+		// Check type
+		if (attachmentInfo.getType() == type)
+			// Match!
+			attachmentInfos += attachmentInfo;
+	}
+
+	return attachmentInfos;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+CData CMDSDocument::getAttachmentContent(const AttachmentInfo& attachmentInfo) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Return content
+	return *getDocumentStorage().documentAttachmentContent(getDocumentType(), getID(), attachmentInfo.getID());
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+CString CMDSDocument::getAttachmentContentAsString(const AttachmentInfo& attachmentInfo) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Get attachment content
+	CData	data = *getDocumentStorage().documentAttachmentContent(getDocumentType(), getID(), attachmentInfo.getID());
+
+	return CString(data);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+CDictionary CMDSDocument::getAttachmentContentAsDictionary(const AttachmentInfo& attachmentInfo) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Get attachment content
+	CData	data = *getDocumentStorage().documentAttachmentContent(getDocumentType(), getID(), attachmentInfo.getID());
+
+	return *CJSON::dictionaryFrom(data);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TArray<CDictionary> CMDSDocument::getAttachmentContentAsArrayOfDictionaries(const AttachmentInfo& attachmentInfo) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Get attachment content
+	CData	data = *getDocumentStorage().documentAttachmentContent(getDocumentType(), getID(), attachmentInfo.getID());
+
+	return *CJSON::arrayOfDictionariesFrom(data);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+CMDSDocument::AttachmentInfo CMDSDocument::addAttachment(const CString& type, const CDictionary& info,
+		const CData& content)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Add attachment
+	return *getDocumentStorage().documentAttachmentAdd(getDocumentType(), getID(), type, info, content);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+CMDSDocument::AttachmentInfo CMDSDocument::addAttachment(const CString& type, const CDictionary& info,
+		const CDictionary& content)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Add attachment
+	return *getDocumentStorage().documentAttachmentAdd(getDocumentType(), getID(), type, info,
+			*CJSON::dataFrom(content));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+CMDSDocument::AttachmentInfo CMDSDocument::addAttachment(const CString& type, const CDictionary& info,
+		const TArray<CDictionary>& content)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Add attachment
+	return *getDocumentStorage().documentAttachmentAdd(getDocumentType(), getID(), type, info,
+			*CJSON::dataFrom(content));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocument::updateAttachment(const AttachmentInfo& attachmentInfo, const CDictionary& updatedInfo,
+		const CData& updatedContent)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Update attachment
+	getDocumentStorage().documentAttachmentUpdate(getDocumentType(), getID(), attachmentInfo.getID(), updatedInfo,
+			updatedContent);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocument::updateAttachment(const AttachmentInfo& attachmentInfo, const CDictionary& updatedInfo,
+		const CDictionary& updatedContent)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Update attachment
+	getDocumentStorage().documentAttachmentUpdate(getDocumentType(), getID(), attachmentInfo.getID(), updatedInfo,
+			*CJSON::dataFrom(updatedContent));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocument::updateAttachment(const AttachmentInfo& attachmentInfo, const CDictionary& updatedInfo,
+		const TArray<CDictionary>& updatedContent)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Update attachment
+	getDocumentStorage().documentAttachmentUpdate(getDocumentType(), getID(), attachmentInfo.getID(), updatedInfo,
+			*CJSON::dataFrom(updatedContent));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocument::remove(const AttachmentInfo& attachmentInfo)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Remove attachment
+	getDocumentStorage().documentAttachmentRemove(getDocumentType(), getID(), attachmentInfo.getID());
 }
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -222,6 +222,9 @@ class CMDSDocumentStorage {
 																		documentCreateInfos);
 						TVResult<I<CMDSDocument> >		documentCreate(
 																const CMDSDocument::InfoForNew& documentInfoForNew);
+						DocumentAttachmentInfoResult	documentAttachmentAdd(const CString& documentType,
+																const CString& documentID, const CString& type,
+																const CDictionary& info, const CData& content);
 
 						OV<SError>						indexRegister(const CString& name,
 																const CString& documentType,
