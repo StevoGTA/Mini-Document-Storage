@@ -83,8 +83,8 @@ extension MDSDocument.OverviewInfo {
 				[
 					"documentID": self.documentID,
 					"revision": self.revision,
-					"creationDate": self.creationDate.rfc3339Extended,
-					"modificationDate": self.modificationDate.rfc3339Extended,
+					"creationDate": self.creationDate.rfc3339ExtendedString,
+					"modificationDate": self.modificationDate.rfc3339ExtendedString,
 				]
 			}
 
@@ -116,8 +116,8 @@ extension MDSDocument.FullInfo {
 					"documentID": self.documentID,
 					"revision": self.revision,
 					"active": self.active,
-					"creationDate": self.creationDate.rfc3339Extended,
-					"modificationDate": self.modificationDate.rfc3339Extended,
+					"creationDate": self.creationDate.rfc3339ExtendedString,
+					"modificationDate": self.modificationDate.rfc3339ExtendedString,
 					"json": self.propertyMap,
 					"attachments": self.attachmentInfoMap.mapValues({ $0.httpServicesInfo }),
 				]
@@ -163,8 +163,8 @@ extension MDSDocument.CreateInfo {
 				// Compose info
 				var	info :[String : Any] = ["json": self.propertyMap]
 				info["documentID"] = self.documentID
-				info["creationDate"] = self.creationDate?.rfc3339Extended
-				info["modificationDate"] = self.modificationDate?.rfc3339Extended
+				info["creationDate"] = self.creationDate?.rfc3339ExtendedString
+				info["modificationDate"] = self.modificationDate?.rfc3339ExtendedString
 
 				return info
 			}

@@ -133,9 +133,6 @@ open class MDSDocument : Hashable {
 			public	var	creationDate :Date { self.documentStorage.documentCreationDate(for: self) }
 			public	var	modificationDate :Date { self.documentStorage.documentModificationDate(for: self) }
 
-			private	var	attachmentInfoMap :AttachmentInfoMap
-							{ try! self.documentStorage.documentAttachmentInfoMap(for: self) }
-
 	// MARK: Equatable implementation
 	//------------------------------------------------------------------------------------------------------------------
 	static public func ==(lhs :MDSDocument, rhs :MDSDocument) -> Bool { lhs.id == rhs.id }
@@ -413,7 +410,7 @@ open class MDSDocument : Hashable {
 	//------------------------------------------------------------------------------------------------------------------
 	public func attachmentInfos(for type :String) -> [AttachmentInfo] {
 		// Return filtered attachment infos
-		return self.attachmentInfoMap.values.filter({ $0.type == type })
+		return try! self.documentStorage.documentAttachmentInfoMap(for: self).values.filter({ $0.type == type })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -439,27 +436,27 @@ open class MDSDocument : Hashable {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func attachmentAdd(type :String, info :[String : Any] = [:], content :Data) {
+	public func attachmentAdd(type :String, info :[String : Any] = [:], content :Data) -> AttachmentInfo {
 		// Add attachment
-		try! self.documentStorage.documentAttachmentAdd(to: self, type: type, info: info, content: content)
+		return try! self.documentStorage.documentAttachmentAdd(to: self, type: type, info: info, content: content)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func attachmentAdd(type :String, info :[String : Any] = [:], content :String) {
+	public func attachmentAdd(type :String, info :[String : Any] = [:], content :String) -> AttachmentInfo {
 		// Add attachment
 		try! self.documentStorage.documentAttachmentAdd(to: self, type: type, info: info,
 				content: content.data(using: .utf8)!)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func attachmentAdd(type :String, info :[String : Any] = [:], content :[String : Any]) {
+	public func attachmentAdd(type :String, info :[String : Any] = [:], content :[String : Any]) -> AttachmentInfo {
 		// Add attachment
 		try! self.documentStorage.documentAttachmentAdd(to: self, type: type, info: info,
 				content: try! JSONSerialization.data(withJSONObject: content, options: []))
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func attachmentAdd(type :String, info :[String : Any] = [:], content :[[String : Any]]) {
+	public func attachmentAdd(type :String, info :[String : Any] = [:], content :[[String : Any]]) -> AttachmentInfo {
 		// Add attachment
 		try! self.documentStorage.documentAttachmentAdd(to: self, type: type, info: info,
 				content: try! JSONSerialization.data(withJSONObject: content, options: []))

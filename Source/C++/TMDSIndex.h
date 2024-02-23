@@ -15,17 +15,17 @@ template <typename T> class TMDSIndex : public CEquatable {
 		struct KeysInfo {
 			// Methods
 													// Lifecycle methods
-													KeysInfo(const TArray<CString>& keys, T id) :
+													KeysInfo(const TArray<CString>& keys, const T& id) :
 														mKeys(keys), mID(id)
 														{}
 
 													// Instance methods
 						const	TArray<CString>&	getKeys() const
 														{ return mKeys; }
-								T					getID() const
+						const	T&					getID() const
 														{ return mID; }
 
-				static			CString				getID(CArray::ItemRef item, void* userData)
+				static			T					getID(CArray::ItemRef item, void* userData)
 														{ return ((KeysInfo*) item)->mID; }
 
 			// Properties

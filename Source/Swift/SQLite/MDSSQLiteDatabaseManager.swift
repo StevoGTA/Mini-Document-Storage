@@ -765,8 +765,8 @@ class MDSSQLiteDatabaseManager {
 			// Insert
 			_ = table.insertRow([
 									(self.idTableColumn, id),
-									(self.creationDateTableColumn, creationDate.rfc3339Extended),
-									(self.modificationDateTableColumn, modificationDate.rfc3339Extended),
+									(self.creationDateTableColumn, creationDate.rfc3339ExtendedString),
+									(self.modificationDateTableColumn, modificationDate.rfc3339ExtendedString),
 									(self.jsonTableColumn, try! JSONSerialization.data(withJSONObject: propertyMap)),
 								])
 		}
@@ -776,7 +776,7 @@ class MDSSQLiteDatabaseManager {
 			// Update
 			 table.update(
 					[
-						(self.modificationDateTableColumn, modificationDate.rfc3339Extended),
+						(self.modificationDateTableColumn, modificationDate.rfc3339ExtendedString),
 						(self.jsonTableColumn, try! JSONSerialization.data(withJSONObject: propertyMap))
 					],
 					where: SQLiteWhere(tableColumn: self.idTableColumn, value: id))
@@ -787,7 +787,7 @@ class MDSSQLiteDatabaseManager {
 			// Update
 			 table.update(
 					[
-						(self.modificationDateTableColumn, modificationDate.rfc3339Extended),
+						(self.modificationDateTableColumn, modificationDate.rfc3339ExtendedString),
 					],
 					where: SQLiteWhere(tableColumn: self.idTableColumn, value: id))
 		}
@@ -797,8 +797,8 @@ class MDSSQLiteDatabaseManager {
 			// Update
 			table.update(
 					[
-						(self.modificationDateTableColumn, Date().rfc3339Extended),
-						(self.jsonTableColumn, try! JSONSerialization.data(withJSONObject: [String:Any](), options: []))
+						(self.modificationDateTableColumn, Date().rfc3339ExtendedString),
+						(self.jsonTableColumn, try! JSONSerialization.data(withJSONObject: [String : Any]()))
 					],
 					where: SQLiteWhere(tableColumn: self.idTableColumn, value: id))
 		}
