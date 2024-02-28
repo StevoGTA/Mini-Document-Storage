@@ -66,9 +66,13 @@ class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
-		let	options = {method: 'PATCH', headers: headers};
-		if (bodyObject)
+		let	options = {method: 'PATCH', headers};
+		if (typeof bodyObject == 'object')
+			// Object
 			options.body = JSON.stringify(bodyObject);
+		else
+			// Pass through
+			options.body = bodyObject;
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
@@ -85,7 +89,13 @@ class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
-		let	options = {method: 'POST', headers: headers, body: JSON.stringify(bodyObject)};
+		let	options = {method: 'POST', headers};
+		if (typeof bodyObject == 'object')
+			// Object
+			options.body = JSON.stringify(bodyObject);
+		else
+			// Pass through
+			options.body = bodyObject;
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
@@ -102,7 +112,13 @@ class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
-		let	options = {method: 'PUT', headers: headers, body: JSON.stringify(bodyObject)};
+		let	options = {method: 'PUT', headers};
+		if (typeof bodyObject == 'object')
+			// Object
+			options.body = JSON.stringify(bodyObject);
+		else
+			// Pass through
+			options.body = bodyObject;
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
@@ -124,7 +140,7 @@ class MDSClient {
 		let	options =
 					{
 						method: 'PUT',
-						headers: headers,
+						headers,
 						body:
 								JSON.stringify(
 										{
@@ -156,7 +172,7 @@ class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
-		let	options = {method: 'PUT', headers: headers, body: JSON.stringify(updates)};
+		let	options = {method: 'PUT', headers, body: JSON.stringify(updates)};
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
@@ -359,7 +375,7 @@ class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
-		let	options = {headers: headers};
+		let	options = {headers};
 
 		// Max each call at 10 documentIDs
 		var	results = {};
@@ -404,7 +420,7 @@ class MDSClient {
 		let	options =
 					{
 						method: 'PUT',
-						headers: headers,
+						headers,
 						body:
 								JSON.stringify(
 										{
@@ -434,7 +450,7 @@ class MDSClient {
 		let	options =
 					{
 						method: 'PUT',
-						headers: headers,
+						headers,
 						body:
 								JSON.stringify(
 										{
@@ -567,7 +583,7 @@ class MDSClient {
 		let	options =
 					{
 						method: 'POST',
-						headers: headers,
+						headers,
 						body: JSON.stringify(documentsToCreate.map(document => document.createInfo())),
 					};
 
@@ -748,7 +764,7 @@ class MDSClient {
 			let	options =
 						{
 							method: 'PATCH',
-							headers: headers,
+							headers,
 							body: JSON.stringify(documentsSlice.map(document => document.updateInfo())),
 						};
 
@@ -786,7 +802,7 @@ class MDSClient {
 		let	options = 
 					{
 						method: 'POST',
-						headers: headers,
+						headers,
 						body:
 								JSON.stringify(
 										{
@@ -836,7 +852,7 @@ class MDSClient {
 		let	options =
 					{
 						method: 'PATCH',
-						headers: headers,
+						headers,
 						body:
 								JSON.stringify(
 										{
@@ -879,7 +895,7 @@ class MDSClient {
 		let	options =
 					{
 						method: 'PUT',
-						headers: headers,
+						headers,
 						body:
 								JSON.stringify(
 										{
@@ -979,7 +995,7 @@ class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
-		let	options = {method: 'POST', headers: headers, body: JSON.stringify(info)};
+		let	options = {method: 'POST', headers, body: JSON.stringify(info)};
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
@@ -996,7 +1012,7 @@ class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
-		let	options = {method: 'POST', headers: headers, body: JSON.stringify(info)};
+		let	options = {method: 'POST', headers, body: JSON.stringify(info)};
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
