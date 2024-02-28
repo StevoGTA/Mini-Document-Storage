@@ -67,7 +67,10 @@ class MDSClient {
 		headers['Content-Type'] = 'application/json';
 
 		let	options = {method: 'PATCH', headers};
-		if (typeof bodyObject == 'object')
+		if ((bodyObject instanceof File) || (bodyObject instanceof ArrayBuffer))
+			// Pass through
+			options.body = bodyObject;
+		else if (typeof bodyObject == 'object')
 			// Object
 			options.body = JSON.stringify(bodyObject);
 		else
@@ -90,7 +93,10 @@ class MDSClient {
 		headers['Content-Type'] = 'application/json';
 
 		let	options = {method: 'POST', headers};
-		if (typeof bodyObject == 'object')
+		if ((bodyObject instanceof File) || (bodyObject instanceof ArrayBuffer))
+			// Pass through
+			options.body = bodyObject;
+		else if (typeof bodyObject == 'object')
 			// Object
 			options.body = JSON.stringify(bodyObject);
 		else
@@ -113,7 +119,10 @@ class MDSClient {
 		headers['Content-Type'] = 'application/json';
 
 		let	options = {method: 'PUT', headers};
-		if (typeof bodyObject == 'object')
+		if ((bodyObject instanceof File) || (bodyObject instanceof ArrayBuffer))
+			// Pass through
+			options.body = bodyObject;
+		else if (typeof bodyObject == 'object')
 			// Object
 			options.body = JSON.stringify(bodyObject);
 		else
