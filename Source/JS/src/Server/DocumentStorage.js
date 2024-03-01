@@ -52,6 +52,11 @@ module.exports = class DocumentStorage {
 									selector: documentPropertyIsValue,
 									checkRelevantProperties: true,
 								},
+							'documentPropertiesMatch()':
+								{
+									selector: documentPropertiesMatch,
+									checkRelevantProperties: true,
+								},
 							'documentPropertyIsOneOfValues()':
 								{
 									selector: documentPropertyIsOneOfValues,
@@ -790,6 +795,19 @@ function documentPropertyIsValue(propertyMap, configuration) {
 	let	value = configuration.value;
 	
 	return property && (value != null) && (propertyMap[property] == value);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+function documentPropertiesMatch(propertyMap, configuration) {
+	// Setup
+	for (let [key, value] of Object.entries(configuration)) {
+		// Check this key and value
+		if (!(key in propertyMap) || propertyMap[key] != value)
+			// Nope
+			return false;
+	}
+
+	return true;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
