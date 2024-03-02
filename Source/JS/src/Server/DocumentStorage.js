@@ -63,10 +63,10 @@ module.exports = class DocumentStorage {
 									checkRelevantProperties: true,
 								},
 							'documentPropertyIsNotValue()':
-							{
-								selector: documentPropertyIsNotValue,
-								checkRelevantProperties: true,
-							},
+								{
+									selector: documentPropertyIsNotValue,
+									checkRelevantProperties: true,
+								},
 					},
 						collectionIsIncludedSelectorInfo || {});
 		this.indexKeysSelectorInfo =
