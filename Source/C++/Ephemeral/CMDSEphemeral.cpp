@@ -213,6 +213,9 @@ class CMDSEphemeral::Internals {
 				CDictionary							mPropertyMap;
 				TNDictionary<AttachmentContentInfo>	mAttachmentContentInfoByAttachmentID;
 		};
+
+	// More Types
+	public:
 		typedef	TMDSBatch<DocumentBacking>	Batch;
 		typedef	Batch::DocumentInfo			BatchDocumentInfo;
 		typedef	TArray<I<DocumentBacking> >	DocumentBackings;

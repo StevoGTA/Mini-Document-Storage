@@ -158,7 +158,7 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 		DocumentFullInfoDictionaryResult			indexGetDocumentFullInfos(const CString& name,
 															const TArray<CString>& keys) const;
 
-	// Proeprties
+	// Properties
 	private:
 		Internals*	mInternals;
 };
