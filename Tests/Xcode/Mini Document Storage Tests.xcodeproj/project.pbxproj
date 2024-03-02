@@ -66,7 +66,6 @@
 		0A2F307F2A17432900855E9B /* CDictionary.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F3782A0E133C00E4F149 /* CDictionary.cpp */; };
 		0A2F30802A17434D00855E9B /* CSet.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F3922A0E133C00E4F149 /* CSet.cpp */; };
 		0A2F30812A17435300855E9B /* SValue.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F37E2A0E133C00E4F149 /* SValue.cpp */; };
-		0A2F30822A17436800855E9B /* CHashing.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F39E2A0E133D00E4F149 /* CHashing.cpp */; };
 		0A2F30832A17437300855E9B /* CData.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F3A22A0E133D00E4F149 /* CData.cpp */; };
 		0A2F30852A1743D600855E9B /* CppToolboxAssert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F3882A0E133C00E4F149 /* CppToolboxAssert.cpp */; };
 		0A2F30862A17442700855E9B /* CppToolboxAssert-Apple.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F34C2A0E133B00E4F149 /* CppToolboxAssert-Apple.cpp */; };
@@ -173,6 +172,7 @@
 		0A6BAAE529C3EB36006ECB61 /* MDSSQLite+MDSDocumentStorageServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A6BAAE429C3EB36006ECB61 /* MDSSQLite+MDSDocumentStorageServer.swift */; };
 		0A7A4C722B6471EF003EB26D /* Int64+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A7A4C712B6471EF003EB26D /* Int64+Extensions.swift */; };
 		0A7BB5D629109A53009CD1F9 /* CacheTransactionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A7BB5D529109A53009CD1F9 /* CacheTransactionTests.swift */; };
+		0A7F3FE22B92A93300E22467 /* CHashable.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A7F3FE02B92A93300E22467 /* CHashable.cpp */; };
 		0A82EDA928C83857008F0218 /* HTTPServer+MDS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A82EDA828C83857008F0218 /* HTTPServer+MDS.swift */; };
 		0A87432D294AF48900DAB65D /* SQLiteLimit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A87432C294AF48900DAB65D /* SQLiteLimit.swift */; };
 		0A87432E294AF48900DAB65D /* SQLiteLimit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A87432C294AF48900DAB65D /* SQLiteLimit.swift */; };
@@ -559,12 +559,10 @@
 		0A16F39B2A0E133D00E4F149 /* CLogServices.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CLogServices.h; sourceTree = "<group>"; };
 		0A16F39C2A0E133D00E4F149 /* CData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CData.h; sourceTree = "<group>"; };
 		0A16F39D2A0E133D00E4F149 /* CLogServices.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CLogServices.cpp; sourceTree = "<group>"; };
-		0A16F39E2A0E133D00E4F149 /* CHashing.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CHashing.cpp; sourceTree = "<group>"; };
 		0A16F39F2A0E133D00E4F149 /* SValue.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SValue.h; sourceTree = "<group>"; };
 		0A16F3A02A0E133D00E4F149 /* CTreeItem.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CTreeItem.h; sourceTree = "<group>"; };
 		0A16F3A12A0E133D00E4F149 /* CTreeViewBacking.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CTreeViewBacking.h; sourceTree = "<group>"; };
 		0A16F3A22A0E133D00E4F149 /* CData.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CData.cpp; sourceTree = "<group>"; };
-		0A16F3A32A0E133D00E4F149 /* CHashing.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CHashing.h; sourceTree = "<group>"; };
 		0A16F3A52A0E133D00E4F149 /* CCodecRegistry.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CCodecRegistry.cpp; sourceTree = "<group>"; };
 		0A16F3A72A0E133D00E4F149 /* CH264VideoCodec.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CH264VideoCodec.cpp; sourceTree = "<group>"; };
 		0A16F3A82A0E133D00E4F149 /* CVideoDecoder.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CVideoDecoder.cpp; sourceTree = "<group>"; };
@@ -762,6 +760,8 @@
 		0A6BAAE429C3EB36006ECB61 /* MDSSQLite+MDSDocumentStorageServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MDSSQLite+MDSDocumentStorageServer.swift"; sourceTree = "<group>"; };
 		0A7A4C712B6471EF003EB26D /* Int64+Extensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Int64+Extensions.swift"; sourceTree = "<group>"; };
 		0A7BB5D529109A53009CD1F9 /* CacheTransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CacheTransactionTests.swift; sourceTree = "<group>"; };
+		0A7F3FE02B92A93300E22467 /* CHashable.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = CHashable.cpp; sourceTree = "<group>"; };
+		0A7F3FE12B92A93300E22467 /* CHashable.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CHashable.h; sourceTree = "<group>"; };
 		0A82EDA828C83857008F0218 /* HTTPServer+MDS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HTTPServer+MDS.swift"; sourceTree = "<group>"; };
 		0A87432C294AF48900DAB65D /* SQLiteLimit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteLimit.swift; sourceTree = "<group>"; };
 		0A8A9B6F27FD375B00B2139A /* AssociationUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssociationUnitTests.swift; sourceTree = "<group>"; };
@@ -1312,14 +1312,14 @@
 				0A16F3712A0E133C00E4F149 /* CDictionary.h */,
 				0A16F3782A0E133C00E4F149 /* CDictionary.cpp */,
 				0A16F3942A0E133C00E4F149 /* CEquatable.h */,
+				0A7F3FE12B92A93300E22467 /* CHashable.h */,
+				0A7F3FE02B92A93300E22467 /* CHashable.cpp */,
 				0A16F38F2A0E133C00E4F149 /* CNotificationCenter.h */,
 				0A16F3752A0E133C00E4F149 /* CNotificationCenter.cpp */,
 				0A16F38B2A0E133C00E4F149 /* Compare.h */,
 				0A16F3732A0E133C00E4F149 /* Compare.cpp */,
 				0A16F3722A0E133C00E4F149 /* CppToolboxAssert.h */,
 				0A16F3882A0E133C00E4F149 /* CppToolboxAssert.cpp */,
-				0A16F3A32A0E133D00E4F149 /* CHashing.h */,
-				0A16F39E2A0E133D00E4F149 /* CHashing.cpp */,
 				0A16F38E2A0E133C00E4F149 /* CIterator.h */,
 				0A9C63672A19E8B600800DBA /* CLogFile.h */,
 				0A9C63682A19E8B600800DBA /* CLogFile.cpp */,
@@ -2269,7 +2269,6 @@
 				0A2F30832A17437300855E9B /* CData.cpp in Sources */,
 				0A36CDF92A1F3210005C7A40 /* CMDSDocumentStorage.cpp in Sources */,
 				0ADC8EAD28BED8D000632551 /* FileManager+Extensions.swift in Sources */,
-				0A2F30822A17436800855E9B /* CHashing.cpp in Sources */,
 				0A2F30812A17435300855E9B /* SValue.cpp in Sources */,
 				0ADC8E9128BED81400632551 /* MDSIndex.swift in Sources */,
 				0A4313B328E3C1BC00CD1A6B /* MDSAssociation.swift in Sources */,
@@ -2294,6 +2293,7 @@
 				0AED2DBE29E61C2B00E07C13 /* VaporHTTPServer-4.x.swift in Sources */,
 				0ADC8E9628BED81400632551 /* MDSCollection.swift in Sources */,
 				0A9C636D2A19EA9200800DBA /* CCoreFoundation.cpp in Sources */,
+				0A7F3FE22B92A93300E22467 /* CHashable.cpp in Sources */,
 				0AE25CD02B20019400EB2BDE /* CMDSSQLiteDocumentBacking.cpp in Sources */,
 				0ADC8EB528BED92400632551 /* URLComponents+Extensions.swift in Sources */,
 				0ADC8E9828BED81C00632551 /* MDSSQLite.swift in Sources */,

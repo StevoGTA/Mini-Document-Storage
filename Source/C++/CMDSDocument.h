@@ -5,7 +5,7 @@
 #pragma once
 
 #include "CDictionary.h"
-#include "CHashing.h"
+#include "CHashable.h"
 #include "TimeAndDate.h"
 #include "TResult.h"
 #include "TWrappers.h"
@@ -459,8 +459,9 @@ class CMDSDocument : public CHashable {
 																{ return getID() == ((CMDSDocument&) other).getID(); }
 
 															// CHashable methods
-						void								hashInto(CHasher& hasher) const
-																{ getID().hashInto(hasher); }
+						void								hashInto(CHashable::HashCollector& hashableHashCollector)
+																	const
+																{ getID().hashInto(hashableHashCollector); }
 
 															// Instance methods
 		virtual	const	Info&								getInfo() const = 0;
