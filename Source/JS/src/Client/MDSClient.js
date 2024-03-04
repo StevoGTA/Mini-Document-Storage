@@ -33,10 +33,10 @@ class MDSClient {
 	setHeaders(headers) { this.headers = headers || {}; }
 
 	//------------------------------------------------------------------------------------------------------------------
-	async queueDELETE(subPath) {
+	async queueDELETE(subPath, headers = {}) {
 		// Setup
 		let	url = this.urlBase + subPath;
-		let	options = {method: 'DELETE', headers: this.headers};
+		let	options = {method: 'DELETE', headers: {...this.headers, ...headers}};
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
@@ -46,10 +46,10 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async queueGET(subPath) {
+	async queueGET(subPath, headers = {}) {
 		// Setup
 		let	url = this.urlBase + subPath;
-		let	options = {headers: this.headers};
+		let	options = {headers: {...this.headers, ...headers}};
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
@@ -59,11 +59,11 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async queuePATCH(subPath, bodyObject) {
+	async queuePATCH(subPath, bodyObject, headers = {}) {
 		// Setup
 		let	url = this.urlBase + subPath;
 
-		let	headers = {...this.headers};
+		let	headers = {...this.headers, ...headers};
 		headers['Content-Type'] = 'application/json';
 
 		let	options = {method: 'PATCH', headers};
@@ -85,11 +85,11 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async queuePOST(subPath, bodyObject) {
+	async queuePOST(subPath, bodyObject, headers = {}) {
 		// Setup
 		let	url = this.urlBase + subPath;
 
-		let	headers = {...this.headers};
+		let	headers = {...this.headers, ...headers};
 		headers['Content-Type'] = 'application/json';
 
 		let	options = {method: 'POST', headers};
