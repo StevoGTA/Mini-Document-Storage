@@ -63,10 +63,10 @@ class MDSClient {
 		// Setup
 		let	url = this.urlBase + subPath;
 
-		let	headers = {...this.headers, ...headers};
-		headers['Content-Type'] = 'application/json';
+		let	headersUse = {...this.headers, ...headers};
+		headersUse['Content-Type'] = 'application/json';
 
-		let	options = {method: 'PATCH', headers};
+		let	options = {method: 'PATCH', headers: headersUse};
 		if ((bodyObject instanceof File) || (bodyObject instanceof ArrayBuffer))
 			// Pass through
 			options.body = bodyObject;
@@ -89,10 +89,10 @@ class MDSClient {
 		// Setup
 		let	url = this.urlBase + subPath;
 
-		let	headers = {...this.headers, ...headers};
-		headers['Content-Type'] = 'application/json';
+		let	headersUse = {...this.headers, ...headers};
+		headersUse['Content-Type'] = 'application/json';
 
-		let	options = {method: 'POST', headers};
+		let	options = {method: 'POST', headersUse};
 		if ((bodyObject instanceof File) || (bodyObject instanceof ArrayBuffer))
 			// Pass through
 			options.body = bodyObject;
