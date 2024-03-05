@@ -111,14 +111,14 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async queuePUT(subPath, bodyObject) {
+	async queuePUT(subPath, bodyObject, headers = {}) {
 		// Setup
 		let	url = this.urlBase + subPath;
 
-		let	headers = {...this.headers};
-		headers['Content-Type'] = 'application/json';
+		let	headersUse = {...this.headers, ...headers};
+		headersUse['Content-Type'] = 'application/json';
 
-		let	options = {method: 'PUT', headers};
+		let	options = {method: 'PUT', headersUse};
 		if ((bodyObject instanceof File) || (bodyObject instanceof ArrayBuffer))
 			// Pass through
 			options.body = bodyObject;
