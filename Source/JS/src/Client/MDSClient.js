@@ -92,7 +92,7 @@ class MDSClient {
 		let	headersUse = {...this.headers, ...headers};
 		headersUse['Content-Type'] = 'application/json';
 
-		let	options = {method: 'POST', headersUse};
+		let	options = {method: 'POST', headers: headersUse};
 		if ((bodyObject instanceof File) || (bodyObject instanceof ArrayBuffer))
 			// Pass through
 			options.body = bodyObject;
@@ -118,7 +118,7 @@ class MDSClient {
 		let	headersUse = {...this.headers, ...headers};
 		headersUse['Content-Type'] = 'application/json';
 
-		let	options = {method: 'PUT', headersUse};
+		let	options = {method: 'PUT', headers: headersUse};
 		if ((bodyObject instanceof File) || (bodyObject instanceof ArrayBuffer))
 			// Pass through
 			options.body = bodyObject;
