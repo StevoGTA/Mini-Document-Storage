@@ -64,18 +64,20 @@ class MDSClient {
 		let	url = this.urlBase + subPath;
 
 		let	headersUse = {...this.headers, ...headers};
-		headersUse['Content-Type'] = 'application/json';
-
 		let	options = {method: 'PATCH', headers: headersUse};
-		if ((bodyObject instanceof File) || (bodyObject instanceof ArrayBuffer))
+		if ((bodyObject instanceof File) || (bodyObject instanceof ArrayBuffer)) {
 			// Pass through
+			headersUse['Content-Type'] = 'application/octet-stream';
 			options.body = bodyObject;
-		else if (typeof bodyObject == 'object')
+		} else if (typeof bodyObject == 'object') {
 			// Object
+			headersUse['Content-Type'] = 'application/json';
 			options.body = JSON.stringify(bodyObject);
-		else
+		} else {
 			// Pass through
+			headersUse['Content-Type'] = 'application/octet-stream';
 			options.body = bodyObject;
+		}
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
@@ -90,18 +92,21 @@ class MDSClient {
 		let	url = this.urlBase + subPath;
 
 		let	headersUse = {...this.headers, ...headers};
-		headersUse['Content-Type'] = 'application/json';
 
 		let	options = {method: 'POST', headers: headersUse};
-		if ((bodyObject instanceof File) || (bodyObject instanceof ArrayBuffer))
+		if ((bodyObject instanceof File) || (bodyObject instanceof ArrayBuffer)) {
 			// Pass through
+			headersUse['Content-Type'] = 'application/octet-stream';
 			options.body = bodyObject;
-		else if (typeof bodyObject == 'object')
+		} else if (typeof bodyObject == 'object') {
 			// Object
+			headersUse['Content-Type'] = 'application/json';
 			options.body = JSON.stringify(bodyObject);
-		else
+		} else {
 			// Pass through
+			headersUse['Content-Type'] = 'application/octet-stream';
 			options.body = bodyObject;
+		}
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
@@ -116,18 +121,20 @@ class MDSClient {
 		let	url = this.urlBase + subPath;
 
 		let	headersUse = {...this.headers, ...headers};
-		headersUse['Content-Type'] = 'application/json';
-
 		let	options = {method: 'PUT', headers: headersUse};
-		if ((bodyObject instanceof File) || (bodyObject instanceof ArrayBuffer))
+		if ((bodyObject instanceof File) || (bodyObject instanceof ArrayBuffer)) {
 			// Pass through
+			headersUse['Content-Type'] = 'application/octet-stream';
 			options.body = bodyObject;
-		else if (typeof bodyObject == 'object')
+		} else if (typeof bodyObject == 'object') {
 			// Object
+			headersUse['Content-Type'] = 'application/json';
 			options.body = JSON.stringify(bodyObject);
-		else
+		} else {
 			// Pass through
+			headersUse['Content-Type'] = 'application/octet-stream';
 			options.body = bodyObject;
+		}
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
