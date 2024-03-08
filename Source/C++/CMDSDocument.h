@@ -529,13 +529,13 @@ class CMDSDocument : public CHashable {
 						void								remove(const CString& property) const;
 
 						TArray<AttachmentInfo>				getAttachmentInfos(const CString& type) const;
-						CData								getAttachmentContent(const AttachmentInfo& attachmentInfo)
+						TVResult<CData>						getAttachmentContent(const AttachmentInfo& attachmentInfo)
 																	const;
-						CString								getAttachmentContentAsString(
+						TVResult<CString>					getAttachmentContentAsString(
 																	const AttachmentInfo& attachmentInfo) const;
-						CDictionary							getAttachmentContentAsDictionary(
+						TVResult<CDictionary>				getAttachmentContentAsDictionary(
 																	const AttachmentInfo& attachmentInfo) const;
-						TArray<CDictionary>					getAttachmentContentAsArrayOfDictionaries(
+						TVResult<TArray<CDictionary> >		getAttachmentContentAsArrayOfDictionaries(
 																	const AttachmentInfo& attachmentInfo) const;
 						AttachmentInfo						addAttachment(const CString& type, const CDictionary& info,
 																	const CData& content);

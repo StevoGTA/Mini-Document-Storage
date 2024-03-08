@@ -480,41 +480,51 @@ TArray<CMDSDocument::AttachmentInfo> CMDSDocument::getAttachmentInfos(const CStr
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-CData CMDSDocument::getAttachmentContent(const AttachmentInfo& attachmentInfo) const
+TVResult<CData> CMDSDocument::getAttachmentContent(const AttachmentInfo& attachmentInfo) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Return content
-	return *getDocumentStorage().documentAttachmentContent(getDocumentType(), getID(), attachmentInfo.getID());
+	return getDocumentStorage().documentAttachmentContent(getDocumentType(), getID(), attachmentInfo.getID());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-CString CMDSDocument::getAttachmentContentAsString(const AttachmentInfo& attachmentInfo) const
+TVResult<CString> CMDSDocument::getAttachmentContentAsString(const AttachmentInfo& attachmentInfo) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get attachment content
-	CData	data = *getDocumentStorage().documentAttachmentContent(getDocumentType(), getID(), attachmentInfo.getID());
+	TVResult<CData>	data =
+							getDocumentStorage().documentAttachmentContent(getDocumentType(), getID(),
+									attachmentInfo.getID());
+	ReturnValueIfResultError(data, TVResult<CString>(data.getError()));
 
-	return CString(data);
+	return CString(*data);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-CDictionary CMDSDocument::getAttachmentContentAsDictionary(const AttachmentInfo& attachmentInfo) const
+TVResult<CDictionary> CMDSDocument::getAttachmentContentAsDictionary(const AttachmentInfo& attachmentInfo) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get attachment content
-	CData	data = *getDocumentStorage().documentAttachmentContent(getDocumentType(), getID(), attachmentInfo.getID());
+	TVResult<CData>	data =
+							getDocumentStorage().documentAttachmentContent(getDocumentType(), getID(),
+									attachmentInfo.getID());
+	ReturnValueIfResultError(data, TVResult<CDictionary>(data.getError()));
 
-	return *CJSON::dictionaryFrom(data);
+	return *CJSON::dictionaryFrom(*data);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TArray<CDictionary> CMDSDocument::getAttachmentContentAsArrayOfDictionaries(const AttachmentInfo& attachmentInfo) const
+TVResult<TArray<CDictionary> > CMDSDocument::getAttachmentContentAsArrayOfDictionaries(
+		const AttachmentInfo& attachmentInfo) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get attachment content
-	CData	data = *getDocumentStorage().documentAttachmentContent(getDocumentType(), getID(), attachmentInfo.getID());
+	TVResult<CData>	data =
+							getDocumentStorage().documentAttachmentContent(getDocumentType(), getID(),
+									attachmentInfo.getID());
+	ReturnValueIfResultError(data, TVResult<TArray<CDictionary> >(data.getError()));
 
-	return *CJSON::arrayOfDictionariesFrom(data);
+	return *CJSON::arrayOfDictionariesFrom(*data);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
