@@ -42,18 +42,30 @@ class MDSClient:
 		self.headers = headers
 
 	#-------------------------------------------------------------------------------------------------------------------
-	async def delete(self, subpath, params = {}):
+	async def delete(self, subpath, params = {}, headers = {}):
 		# Queue request
-		async with self.session.delete(subpath, headers = self.headers, params = params) as response:
+		async with self.session.delete(subpath, headers = {**self.headers, **headers}, params = params) as response:
 			# Process response
 			await self.process_response(response)
 
 			return response
 
 	#-------------------------------------------------------------------------------------------------------------------
-	async def getJSON(self, subpath, params = {}):
+	async def get_bytes(self, subpath, params = {}, headers = {}):
 		# Queue request
-		async with self.session.get(subpath, headers = self.headers, params = params) as response:
+		async with self.session.get(subpath, headers = {**self.headers, **headers}, params = params) as response:
+			# Process response
+			await self.process_response(response)
+
+			# Get Binary
+			bytes = await response.read()
+
+			return {'headers': response.headers, 'bytes': bytes}
+
+	#-------------------------------------------------------------------------------------------------------------------
+	async def get_json(self, subpath, params = {}, headers = {}):
+		# Queue request
+		async with self.session.get(subpath, headers = {**self.headers, **headers}, params = params) as response:
 			# Process response
 			await self.process_response(response)
 
@@ -63,31 +75,58 @@ class MDSClient:
 			return {'headers': response.headers, 'json': json}
 
 	#-------------------------------------------------------------------------------------------------------------------
-	async def patch(self, subpath, params = {}, json = {}):
-		# Queue request
-		async with self.session.patch(subpath, headers = self.headers, params = params, json = json) as response:
-			# Process response
-			await self.process_response(response)
+	async def patch(self, subpath, params = {}, body = None, headers = {}):
+		# Check body type
+		if isinstance(body, (bytes, bytearray)):
+			# Bytes
+			async with self.session.patch(subpath, headers = self.headers, params = params, data = body) as response:
+				# Process response
+				await self.process_response(response)
 
-			return response
+				return response
+		else:
+			# Assume JSON
+			async with self.session.patch(subpath, headers = self.headers, params = params, json = body) as response:
+				# Process response
+				await self.process_response(response)
+
+				return response
 
 	#-------------------------------------------------------------------------------------------------------------------
-	async def post(self, subpath, params = {}, json = {}):
-		# Queue request
-		async with self.session.post(subpath, headers = self.headers, params = params, json = json) as response:
-			# Process response
-			await self.process_response(response)
+	async def post(self, subpath, params = {}, body = None, headers = {}):
+		# Check body type
+		if isinstance(body, (bytes, bytearray)):
+			# Bytes
+			async with self.session.post(subpath, headers = self.headers, params = params, data = body) as response:
+				# Process response
+				await self.process_response(response)
 
-			return response
+				return response
+		else:
+			# Assume JSON
+			async with self.session.post(subpath, headers = self.headers, params = params, json = body) as response:
+				# Process response
+				await self.process_response(response)
+
+				return response
 
 	# #-------------------------------------------------------------------------------------------------------------------
-	async def put(self, subpath, params = {}, json = {}):
-		# Queue request
-		async with self.session.put(subpath, headers = self.headers, params = params, json = json) as response:
-			# Process response
-			await self.process_response(response)
+	async def put(self, subpath, params = {}, body = None, headers = {}):
+		# Check body type
+		if isinstance(body, (bytes, bytearray)):
+			# Bytes
+			async with self.session.put(subpath, headers = self.headers, params = params, data = body) as response:
+				# Process response
+				await self.process_response(response)
 
-			return response
+				return response
+		else:
+			# Assume JSON
+			async with self.session.put(subpath, headers = self.headers, params = params, json = body) as response:
+				# Process response
+				await self.process_response(response)
+
+				return response
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def association_register(self, name, from_document_type, to_document_type, document_storage_id = None):
