@@ -309,7 +309,7 @@ class MDSClient {
 
 			// Retrieve "to" documents of interest and create object based on document ID
 			let	toDocuments =
-						await this.documentGet(documentType, Array(toDocumentIDs), documentCreationProc,
+						await this.documentGet(documentType, [...toDocumentIDs], documentCreationProc,
 								documentStorageIDUse);
 			let	toDocumentByDocumentID = {};
 			for (let toDocument of toDocuments)
@@ -317,7 +317,7 @@ class MDSClient {
 				toDocumentByDocumentID[toDocument.documentID] = toDocument;
 			
 			// Compose final object
-			for (let fromDocumentID in fromDocumentIDs) {
+			for (let fromDocumentID of fromDocumentIDs) {
 				// Update final object
 				let	toDocumentIDs = toDocumentIDsByFromDocumentID[fromDocumentID] || [];
 				toDocumentsByFromDocumentID[fromDocumentID] =

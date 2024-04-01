@@ -79,14 +79,16 @@ class MDSClient:
 		# Check body type
 		if isinstance(body, (bytes, bytearray)):
 			# Bytes
-			async with self.session.patch(subpath, headers = self.headers, params = params, data = body) as response:
+			async with self.session.patch(subpath, headers = {**self.headers, **headers}, params = params,
+					data = body) as response:
 				# Process response
 				await self.process_response(response)
 
 				return response
 		else:
 			# Assume JSON
-			async with self.session.patch(subpath, headers = self.headers, params = params, json = body) as response:
+			async with self.session.patch(subpath, headers = {**self.headers, **headers}, params = params,
+					json = body) as response:
 				# Process response
 				await self.process_response(response)
 
@@ -97,32 +99,36 @@ class MDSClient:
 		# Check body type
 		if isinstance(body, (bytes, bytearray)):
 			# Bytes
-			async with self.session.post(subpath, headers = self.headers, params = params, data = body) as response:
+			async with self.session.post(subpath, headers = {**self.headers, **headers}, params = params,
+					data = body) as response:
 				# Process response
 				await self.process_response(response)
 
 				return response
 		else:
 			# Assume JSON
-			async with self.session.post(subpath, headers = self.headers, params = params, json = body) as response:
+			async with self.session.post(subpath, headers = {**self.headers, **headers}, params = params,
+					json = body) as response:
 				# Process response
 				await self.process_response(response)
 
 				return response
 
-	# #-------------------------------------------------------------------------------------------------------------------
+	#-------------------------------------------------------------------------------------------------------------------
 	async def put(self, subpath, params = {}, body = None, headers = {}):
 		# Check body type
 		if isinstance(body, (bytes, bytearray)):
 			# Bytes
-			async with self.session.put(subpath, headers = self.headers, params = params, data = body) as response:
+			async with self.session.put(subpath, headers = {**self.headers, **headers}, params = params,
+					data = body) as response:
 				# Process response
 				await self.process_response(response)
 
 				return response
 		else:
 			# Assume JSON
-			async with self.session.put(subpath, headers = self.headers, params = params, json = body) as response:
+			async with self.session.put(subpath, headers = {**self.headers, **headers}, params = params,
+					json = body) as response:
 				# Process response
 				await self.process_response(response)
 
@@ -131,7 +137,7 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def association_register(self, name, from_document_type, to_document_type, document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 		json = {
 			'name': name,
 			'fromDocumentType': from_document_type,
@@ -152,7 +158,7 @@ class MDSClient:
 			return
 
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		# Queue request
 		async with self.session.put(f'/v1/association/{document_storage_id}/{name}', headers = self.headers,
@@ -163,7 +169,7 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def association_get_document_infos(self, name, start_index = 0, count = None, document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		params = {'startIndex': start_index}
 		if count:
@@ -181,7 +187,7 @@ class MDSClient:
 	async def association_get_document_infos_from(self, name, document, start_index = 0, count = None,
 			document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		params = {'fromID': document.document_id, 'startIndex': start_index, 'fullInfo': 0}
 		if count:
@@ -199,7 +205,7 @@ class MDSClient:
 	async def association_get_documents_from(self, name, document, start_index, count, document_creation_function,
 			document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		params = {'fromID': document.document_id, 'startIndex': start_index, 'fullInfo': 1}
 		if count:
@@ -298,7 +304,7 @@ class MDSClient:
 	async def association_get_document_infos_to(self, name, document, start_index = 0, count = None,
 			document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		params = {'toID': document.document_id, 'startIndex': start_index, 'fullInfo': 0}
 		if count:
@@ -316,7 +322,7 @@ class MDSClient:
 	async def association_get_documents_to(self, name, document, start_index, count, document_creation_function,
 			document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		params = {'toID': document.document_id, 'startIndex': start_index, 'fullInfo': 1}
 		if count:
@@ -415,7 +421,7 @@ class MDSClient:
 	async def association_get_value(self, name, action, from_documents, cache_name, cached_value_names,
 			document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 		from_document_ids = list(map(lambda document: document.document_id, from_documents))
 
 		params = {
@@ -461,7 +467,7 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def cache_register(self, name, document_type, relevant_properties, value_infos, document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 		json = {
 			'name': name,
 			'documentType': document_type,
@@ -479,7 +485,7 @@ class MDSClient:
 	async def collection_register(self, name, document_type, relevant_properties, is_up_to_date, is_included_selector,
 			is_included_selector_info, document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 		json = {
 			'name': name,
 			'documentType': document_type,
@@ -498,7 +504,7 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def collection_get_document_count(self, name, document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		# Loop until up-to-date
 		while True:
@@ -525,7 +531,7 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def collection_get_document_infos(self, name, start_index = 0, count = None, document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		params = {'startIndex': start_index, 'fullInfo': 0}
 		if count:
@@ -547,7 +553,7 @@ class MDSClient:
 	async def collection_get_documents(self, name, start_index, count, document_creation_function,
 			document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		params = {'startIndex': start_index, 'fullInfo': 1}
 		if count:
@@ -577,7 +583,7 @@ class MDSClient:
 			return
 		
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 		json = [document.create_info() for document in documents_to_create]
 
 		# Queue request
@@ -598,7 +604,7 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def document_get_count(self, document_type, document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		# Queue request
 		async with self.session.head(f'/v1/document/{document_storage_id}/{document_type}',
@@ -622,7 +628,7 @@ class MDSClient:
 	async def document_get_since_revision(self, document_type, since_revision, count, document_creation_function,
 			full_info = True, document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		params = {'sinceRevision': since_revision, 'fullInfo': 1 if full_info else 0}
 		if count:
@@ -643,7 +649,7 @@ class MDSClient:
 	async def document_get_all_since_revision(self, document_type, since_revision, batch_count,
 			document_creation_function, document_storage_id = None, proc = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		params = {'fullInfo': 1}
 		if batch_count:
@@ -689,7 +695,7 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def document_get(self, document_type, document_ids, document_creation_function, document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		# Define worker function
 		async def worker(document_ids):
@@ -725,7 +731,7 @@ class MDSClient:
 			return
 		
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		async def worker(documents):
 			# Setup
@@ -760,7 +766,7 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def document_attachment_add(self, document_type, document_id, info, content, document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		if type(content) is dict:
 			# Convert to string
@@ -783,7 +789,7 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def document_attachment_get(self, document_type, document_id, attachment_id, document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		# Queue request
 		async with self.session.get(
@@ -798,7 +804,7 @@ class MDSClient:
 	async def document_attachment_update(self, document_type, document_id, attachment_id, info, content,
 			document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		if type(content) is dict:
 			# Convert to string
@@ -820,7 +826,7 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def document_attachment_remove(self, document_type, document_id, attachment_id, document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		# Queue request
 		async with self.session.delete(
@@ -833,7 +839,7 @@ class MDSClient:
 	async def index_register(self, name, document_type, relevant_properties, keys_selector, keys_selector_info = {},
 			document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 		json = {
 			'name': name,
 			'documentType': document_type,
@@ -851,7 +857,7 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def index_get_document_infos(self, name, keys, document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		# Loop until up-to-date
 		while True:
@@ -868,7 +874,7 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def index_get_documents(self, name, keys, document_creation_function, document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		# Loop until up-to-date
 		while True:
@@ -887,7 +893,7 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def info_get(self, keys, document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		# Queue request
 		async with self.session.get(f'/v1/info/{document_storage_id}', headers = self.headers,
@@ -900,7 +906,7 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def info_set(self, info, document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		# Queue request
 		async with self.session.post(f'/v1/info/{document_storage_id}', headers = self.headers,
@@ -911,7 +917,7 @@ class MDSClient:
 	#-------------------------------------------------------------------------------------------------------------------
 	async def internal_set(self, info, document_storage_id = None):
 		# Setup
-		document_storage_id = document_storage_id if document_storage_id else self.document_storage_id
+		document_storage_id = document_storage_id or self.document_storage_id
 
 		# Queue request
 		async with self.session.post(f'/v1/internal/{document_storage_id}', headers = self.headers,
