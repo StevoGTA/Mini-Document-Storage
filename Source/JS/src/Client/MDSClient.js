@@ -273,7 +273,7 @@ class MDSClient {
 
 		var	toDocumentsByFromDocumentID = {};
 
-		// Check ho wmany documents in play
+		// Check how many documents in play
 		if (documents.length <= individualRetrievalThreshold)
 			// Retrieve associations for each document
 			for (let document of documents)
