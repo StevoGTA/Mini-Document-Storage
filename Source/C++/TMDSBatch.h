@@ -96,8 +96,8 @@ template <typename DB> class TMDSBatch {
 	public:
 		struct DocumentInfo {
 			// Types
-			typedef	CMDSDocument::AttachmentInfo	AttachmentInfo;
-			typedef	CMDSDocument::AttachmentInfoMap	AttachmentInfoMap;
+			typedef	CMDSDocument::AttachmentInfo		AttachmentInfo;
+			typedef	CMDSDocument::AttachmentInfoByID	AttachmentInfoByID;
 
 														// Lifecycle methods
 														DocumentInfo(const CString& documentType,
@@ -105,13 +105,13 @@ template <typename DB> class TMDSBatch {
 															mDocumentType(documentType),
 																	mDocumentBacking(*documentBacking),
 																	mCreationUniversalTime(
-																			documentBacking->
+																			(*documentBacking)->
 																					getCreationUniversalTime()),
 																	mModificationUniversalTime(
 																			SUniversalTime::getCurrent()),
 																	mRemoved(false),
 																	mInitialPropertyMap(
-																			documentBacking->getPropertyMap())
+																			(*documentBacking)->getPropertyMap())
 															{}
 														DocumentInfo(const CString& documentType,
 																UniversalTime creationUniversalTime,
@@ -128,6 +128,8 @@ template <typename DB> class TMDSBatch {
 														// Instance methods
 			const	CString&							getDocumentType() const
 															{ return mDocumentType; }
+			const	OR<DB>&								getDocumentBacking() const
+															{ return mDocumentBacking; }
 
 					UniversalTime						getCreationUniversalTime() const
 															{ return mCreationUniversalTime; }
@@ -177,22 +179,22 @@ template <typename DB> class TMDSBatch {
 																		SUniversalTime::getCurrent();
 															}
 
-					AttachmentInfoMap					getUpdatedDocumentAttachmentInfoMap(
-																const CMDSDocument::AttachmentInfoMap&
-																		initialDocumentAttachmentInfoMap)
+					AttachmentInfoByID					getUpdatedDocumentAttachmentInfoByID(
+																const CMDSDocument::AttachmentInfoByID&
+																		initialDocumentAttachmentInfoByID)
 																const
 															{
 																// Start with initial
 																TNDictionary<CMDSDocument::AttachmentInfo>
-																		updatedDocumentAttachmentInfoMap(
-																				initialDocumentAttachmentInfoMap);
+																		updatedDocumentAttachmentInfoByID(
+																				initialDocumentAttachmentInfoByID);
 
 																// Process adds
 																TSet<CString>	keys = mAddAttachmentInfosByID.getKeys();
 																for (TIteratorS<CString> iterator = keys.getIterator();
 																		iterator.hasValue(); iterator.advance())
 																	// Process add
-																	updatedDocumentAttachmentInfoMap.set(*iterator,
+																	updatedDocumentAttachmentInfoByID.set(*iterator,
 																			mAddAttachmentInfosByID[*iterator]->
 																					getDocumentAttachmentInfo());
 
@@ -201,15 +203,15 @@ template <typename DB> class TMDSBatch {
 																for (TIteratorS<CString> iterator = keys.getIterator();
 																		iterator.hasValue(); iterator.advance())
 																	// Process update
-																	updatedDocumentAttachmentInfoMap.set(*iterator,
+																	updatedDocumentAttachmentInfoByID.set(*iterator,
 																			mUpdateAttachmentInfosByID[*iterator]->
 																					getDocumentAttachmentInfo());
 
 																// Process removes
-																updatedDocumentAttachmentInfoMap.remove(
+																updatedDocumentAttachmentInfoByID.remove(
 																		mRemovedAttachmentIDs);
 
-																return updatedDocumentAttachmentInfoMap;
+																return updatedDocumentAttachmentInfoByID;
 															}
 					OV<CData>							getAttachmentContent(const CString& id) const
 															{
@@ -297,147 +299,147 @@ template <typename DB> class TMDSBatch {
 						OV<CDictionary>						mInitialPropertyMap;
 		};
 
+		typedef	TNDictionary<DocumentInfo>				DocumentInfoByDocumentID;
+		typedef	TDictionary<DocumentInfoByDocumentID>	DocumentInfoByDocumentIDByDocumentType;
+
 	// Methods
 	public:
-													// Lifecycle methods
-													TMDSBatch() {}
+												// Lifecycle methods
+												TMDSBatch() {}
 
-													// Instance methods
-		void										associationNoteUpdated(const CString& name,
-															const TArray<CMDSAssociation::Update>& updates)
-														{ mAssociationUpdatesByAssociationName.add(name, updates); }
-		TSet<CString>								associationGetUpdatedNames() const
-														{ return mAssociationUpdatesByAssociationName.getKeys(); }
-		TArray<CMDSAssociation::Update>				associationGetUpdates(const CString& name) const
-														{ return *mAssociationUpdatesByAssociationName[name]; }
-		TArray<CMDSAssociation::Item>				associationItemsApplyingChanges(const CString& name,
-															const TArray<CMDSAssociation::Item>&
-																	initialAssociationItems)
-															const
-														{
-															// Start with initial
-															TNArray<CMDSAssociation::Item>	associationItemsUpdated(
-																									initialAssociationItems);
+												// Instance methods
+		void									associationNoteUpdated(const CString& name,
+														const TArray<CMDSAssociation::Update>& updates)
+													{ mAssociationUpdatesByAssociationName.add(name, updates); }
+		TSet<CString>							associationGetUpdatedNames() const
+													{ return mAssociationUpdatesByAssociationName.getKeys(); }
+		TArray<CMDSAssociation::Update>			associationGetUpdates(const CString& name) const
+													{ return *mAssociationUpdatesByAssociationName[name]; }
+		TArray<CMDSAssociation::Item>			associationItemsApplyingChanges(const CString& name,
+														const TArray<CMDSAssociation::Item>& initialAssociationItems)
+														const
+													{
+														// Start with initial
+														TNArray<CMDSAssociation::Item>	associationItemsUpdated(
+																								initialAssociationItems);
 
-															// Check if have updates
-															if (mAssociationUpdatesByAssociationName.contains(name)) {
-																// Get updates
-																TArray<CMDSAssociation::Update>	associationUpdates =
-																										*mAssociationUpdatesByAssociationName[name];
-																for (TIteratorD<CMDSAssociation::Update> iterator =
-																				associationUpdates.getIterator();
-																		iterator.hasValue(); iterator.advance()) {
-																	// Check update
-																	if (iterator->getAction() ==
-																			CMDSAssociation::Update::kActionAdd)
-																		// Add
-																		associationItemsUpdated.add(iterator->getItem());
-																	else
-																		// Remove
-																		associationItemsUpdated.remove(
-																				iterator->getItem());
-																}
-															}
-
-															return associationItemsUpdated;
-														}
-
-		DocumentInfo&								documentAdd(const CString& documentType, const CString& documentID,
-															const OR<DB>& documentBacking,
-															UniversalTime creationUniversalTime,
-															UniversalTime modificationUniversalTime,
-															const OV<CDictionary>& initialPropertyMap)
-														{
-															// Setup
-															DocumentInfo	documentInfo(documentType, documentBacking,
-																					creationUniversalTime,
-																					modificationUniversalTime,
-																					initialPropertyMap);
-
-															// Store
-															mDocumentInfoByDocumentID.set(documentID, documentInfo);
-
-															return *mDocumentInfoByDocumentID[documentID];
-														}
-		DocumentInfo&								documentAdd(const CString& documentType,
-															const R<DB>& documentBacking)
-														{
-															// Setup
-															DocumentInfo	documentInfo(documentType, documentBacking);
-
-															// Store
-															mDocumentInfoByDocumentID.set(
-																	documentBacking->getDocumentID(), documentInfo);
-
-															return *mDocumentInfoByDocumentID[
-																	documentBacking->getDocumentID()];
-														}
-		DocumentInfo&								documentAdd(const CString& documentType, const CString& documentID,
-															UniversalTime creationUniversalTime,
-															UniversalTime modificationUniversalTime,
-															const OV<CDictionary>& initialPropertyMap)
-														{
-															// Setup
-															DocumentInfo	documentInfo(documentType,
-																					creationUniversalTime,
-																					modificationUniversalTime,
-																					initialPropertyMap);
-
-															// Store
-															mDocumentInfoByDocumentID.set(documentID, documentInfo);
-
-															return *mDocumentInfoByDocumentID[documentID];
-														}
-		TDictionary<TNDictionary<DocumentInfo> >	documentGetInfosByDocumentType()
-														{
-															// Setup
-															TNDictionary<TNDictionary<DocumentInfo> >	info;
-
-															// Iterate changes
-															TSet<CString>	keys = mDocumentInfoByDocumentID.getKeys();
-															for (TIteratorS<CString> iterator = keys.getIterator();
+														// Check if have updates
+														if (mAssociationUpdatesByAssociationName.contains(name)) {
+															// Get updates
+															TArray<CMDSAssociation::Update>	associationUpdates =
+																									*mAssociationUpdatesByAssociationName[name];
+															for (TIteratorD<CMDSAssociation::Update> iterator =
+																			associationUpdates.getIterator();
 																	iterator.hasValue(); iterator.advance()) {
-																// Update
-																DocumentInfo&	documentInfo =
-																						*mDocumentInfoByDocumentID[
-																								*iterator];
-																if (!info.contains(documentInfo.getDocumentType()))
-																	// Create dictionary
-																	info.set(documentInfo.getDocumentType(),
-																			TNDictionary<DocumentInfo>());
-																info[documentInfo.getDocumentType()]->set(*iterator,
-																		documentInfo);
+																// Check update
+																if (iterator->getAction() ==
+																		CMDSAssociation::Update::kActionAdd)
+																	// Add
+																	associationItemsUpdated.add(iterator->getItem());
+																else
+																	// Remove
+																	associationItemsUpdated.remove(iterator->getItem());
 															}
-
-															return info;
 														}
-		TArray<CString>								documentIDsGet(const CString& documentType) const
-														{
-															// Setup
-															TNArray<CString>	documentIDs;
 
-															// Iterate changes
-															TSet<CString>	keys = mDocumentInfoByDocumentID.getKeys();
-															for (TIteratorS<CString> iterator = keys.getIterator();
-																	iterator.hasValue(); iterator.advance()) {
-																// Update
-																DocumentInfo&	documentInfo =
-																						*mDocumentInfoByDocumentID[
-																								*iterator];
-																if (documentInfo.getDocumentType() == documentType)
-																	// Add document ID
-																	documentIDs += *iterator;
-															}
+														return associationItemsUpdated;
+													}
 
-															return documentIDs;
+		DocumentInfo&							documentAdd(const CString& documentType, const CString& documentID,
+														const OR<DB>& documentBacking,
+														UniversalTime creationUniversalTime,
+														UniversalTime modificationUniversalTime,
+														const OV<CDictionary>& initialPropertyMap)
+													{
+														// Setup
+														DocumentInfo	documentInfo(documentType, documentBacking,
+																				creationUniversalTime,
+																				modificationUniversalTime,
+																				initialPropertyMap);
+
+														// Store
+														mDocumentInfoByDocumentID.set(documentID, documentInfo);
+
+														return *mDocumentInfoByDocumentID[documentID];
+													}
+		DocumentInfo&							documentAdd(const CString& documentType, const R<DB>& documentBacking)
+													{
+														// Setup
+														DocumentInfo	documentInfo(documentType, documentBacking);
+
+														// Store
+														mDocumentInfoByDocumentID.set(
+																(*documentBacking)->getDocumentID(), documentInfo);
+
+														return *mDocumentInfoByDocumentID[
+																(*documentBacking)->getDocumentID()];
+													}
+		DocumentInfo&							documentAdd(const CString& documentType, const CString& documentID,
+														UniversalTime creationUniversalTime,
+														UniversalTime modificationUniversalTime,
+														const OV<CDictionary>& initialPropertyMap)
+													{
+														// Setup
+														DocumentInfo	documentInfo(documentType,
+																				creationUniversalTime,
+																				modificationUniversalTime,
+																				initialPropertyMap);
+
+														// Store
+														mDocumentInfoByDocumentID.set(documentID, documentInfo);
+
+														return *mDocumentInfoByDocumentID[documentID];
+													}
+		DocumentInfoByDocumentIDByDocumentType	documentGetInfosByDocumentType() const
+													{
+														// Setup
+														TNDictionary<DocumentInfoByDocumentID >	info;
+
+														// Iterate changes
+														TSet<CString>	keys = mDocumentInfoByDocumentID.getKeys();
+														for (TIteratorS<CString> iterator = keys.getIterator();
+																iterator.hasValue(); iterator.advance()) {
+															// Update
+															DocumentInfo&	documentInfo =
+																					*mDocumentInfoByDocumentID[
+																							*iterator];
+															if (!info.contains(documentInfo.getDocumentType()))
+																// Create dictionary
+																info.set(documentInfo.getDocumentType(),
+																		DocumentInfoByDocumentID());
+															info[documentInfo.getDocumentType()]->set(*iterator,
+																	documentInfo);
 														}
-		OR<DocumentInfo>							documentInfoGet(const CString& documentID) const
-														{ return mDocumentInfoByDocumentID.contains(documentID) ?
-																mDocumentInfoByDocumentID[documentID] :
-																OR<DocumentInfo>(); }
+
+														return info;
+													}
+		TArray<CString>							documentIDsGet(const CString& documentType) const
+													{
+														// Setup
+														TNArray<CString>	documentIDs;
+
+														// Iterate changes
+														TSet<CString>	keys = mDocumentInfoByDocumentID.getKeys();
+														for (TIteratorS<CString> iterator = keys.getIterator();
+																iterator.hasValue(); iterator.advance()) {
+															// Update
+															DocumentInfo&	documentInfo =
+																					*mDocumentInfoByDocumentID[
+																							*iterator];
+															if (documentInfo.getDocumentType() == documentType)
+																// Add document ID
+																documentIDs += *iterator;
+														}
+
+														return documentIDs;
+													}
+		OR<DocumentInfo>						documentInfoGet(const CString& documentID) const
+													{ return mDocumentInfoByDocumentID.contains(documentID) ?
+															mDocumentInfoByDocumentID[documentID] :
+															OR<DocumentInfo>(); }
 
 	// Properties
 	private:
-		TNDictionary<DocumentInfo>					mDocumentInfoByDocumentID;
+		DocumentInfoByDocumentID					mDocumentInfoByDocumentID;
 		TNArrayDictionary<CMDSAssociation::Update>	mAssociationUpdatesByAssociationName;
 };

@@ -9,14 +9,19 @@
 
 class CMDSDocumentStorage::Internals {
 	public:
-		class PlaceholderDocument : public CMDSDocument {
+		class GenericDocument : public CMDSDocument {
 			public:
-								PlaceholderDocument(const CString& id, CMDSDocumentStorage& documentStorage) :
-									CMDSDocument(id, documentStorage)
-									{}
+												GenericDocument(const CString& id,
+														CMDSDocumentStorage& documentStorage) :
+													CMDSDocument(id, documentStorage)
+													{}
 
-				const	Info&	getInfo() const
-									{ return mInfo; }
+						const	Info&			getInfo() const
+													{ return mInfo; }
+
+				static			I<CMDSDocument>	create(const CString& id, CMDSDocumentStorage& documentStorage)
+													{ return I<CMDSDocument>(
+															new GenericDocument(id, documentStorage)); }
 
 			public:
 				static	Info	mInfo;
@@ -35,7 +40,7 @@ class CMDSDocumentStorage::Internals {
 				const	CString&		getDocumentType() const
 											{ return mDocumentType; }
 						I<CMDSDocument>	create(const CString& id, CMDSDocumentStorage& documentStorage) const
-											{ return I<CMDSDocument>(new PlaceholderDocument(id, documentStorage)); }
+											{ return I<CMDSDocument>(new GenericDocument(id, documentStorage)); }
 
 				CString	mDocumentType;
 		};
@@ -55,7 +60,7 @@ class CMDSDocumentStorage::Internals {
 		TNDictionary<CMDSDocument::ValueInfo>			mDocumentValueInfoBySelector;
 };
 
-CMDSDocument::Info	CMDSDocumentStorage::Internals::PlaceholderDocument::mInfo(CString(OSSTR("placeholder")), nil);
+CMDSDocument::Info	CMDSDocumentStorage::Internals::GenericDocument::mInfo(CString(OSSTR("generic")), create);
 
 //----------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------
@@ -192,55 +197,21 @@ void CMDSDocumentStorage::registerDocumentCreateInfo(const CMDSDocument::Info& d
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+const CMDSDocument::Info& CMDSDocumentStorage::documentCreateInfo(const CString& documentType) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Get info
+	const	OR<CMDSDocument::Info>	documentCreateInfo = mInternals->mDocumentCreateInfoByDocumentType[documentType];
+
+	return documentCreateInfo.hasReference() ? *documentCreateInfo : Internals::GenericDocument::mInfo;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void CMDSDocumentStorage::registerDocumentChangedInfos(const CMDSDocument::Info& documentInfo,
 		const CMDSDocument::ChangedInfo& documentChangedInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	mInternals->mDocumentChangedInfoByDocumentType.add(documentInfo.getDocumentType(), documentChangedInfo);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSDocumentStorage::registerDocumentIsIncludedPerformers(
-		const TArray<CMDSDocument::IsIncludedPerformer>& documentIsIncludedPerformers)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Iterate
-	for (TIteratorD<CMDSDocument::IsIncludedPerformer> iterator = documentIsIncludedPerformers.getIterator();
-			iterator.hasValue(); iterator.advance())
-		// Add
-		mInternals->mDocumentIsIncludedPerformerBySelector.set(iterator->getSelector(), *iterator);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSDocumentStorage::registerDocumentKeysPerformers(
-		const TArray<CMDSDocument::KeysPerformer>& documentKeysPerformers)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Iterate
-	for (TIteratorD<CMDSDocument::KeysPerformer> iterator = documentKeysPerformers.getIterator(); iterator.hasValue();
-			iterator.advance())
-		// Add
-		mInternals->mDocumentKeysPerformerBySelector.set(iterator->getSelector(), *iterator);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSDocumentStorage::registerValueInfos(const TArray<CMDSDocument::ValueInfo>& documentValueInfos)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Iterate
-	for (TIteratorD<CMDSDocument::ValueInfo> iterator = documentValueInfos.getIterator(); iterator.hasValue();
-			iterator.advance())
-		// Add
-		mInternals->mDocumentValueInfoBySelector.set(iterator->getSelector(), *iterator);
-}
-
-// MARK: Subclass methods
-
-//----------------------------------------------------------------------------------------------------------------------
-const CMDSDocument::Info& CMDSDocumentStorage::documentCreateInfo(const CString& documentType) const
-//----------------------------------------------------------------------------------------------------------------------
-{
-	return *mInternals->mDocumentCreateInfoByDocumentType[documentType];
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -256,6 +227,64 @@ CMDSDocumentStorage::DocumentChangedInfos CMDSDocumentStorage::documentChangedIn
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void CMDSDocumentStorage::registerDocumentIsIncludedPerformers(
+		const TArray<CMDSDocument::IsIncludedPerformer>& documentIsIncludedPerformers)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Iterate
+	for (TIteratorD<CMDSDocument::IsIncludedPerformer> iterator = documentIsIncludedPerformers.getIterator();
+			iterator.hasValue(); iterator.advance())
+		// Add
+		mInternals->mDocumentIsIncludedPerformerBySelector.set(iterator->getSelector(), *iterator);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+const CMDSDocument::IsIncludedPerformer& CMDSDocumentStorage::documentIsIncludedPerformer(const CString& selector) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return *mInternals->mDocumentIsIncludedPerformerBySelector[selector];
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocumentStorage::registerDocumentKeysPerformers(
+		const TArray<CMDSDocument::KeysPerformer>& documentKeysPerformers)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Iterate
+	for (TIteratorD<CMDSDocument::KeysPerformer> iterator = documentKeysPerformers.getIterator(); iterator.hasValue();
+			iterator.advance())
+		// Add
+		mInternals->mDocumentKeysPerformerBySelector.set(iterator->getSelector(), *iterator);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+const CMDSDocument::KeysPerformer& CMDSDocumentStorage::documentKeysPerformer(const CString& selector) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return *mInternals->mDocumentKeysPerformerBySelector[selector];
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocumentStorage::registerValueInfos(const TArray<CMDSDocument::ValueInfo>& documentValueInfos)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Iterate
+	for (TIteratorD<CMDSDocument::ValueInfo> iterator = documentValueInfos.getIterator(); iterator.hasValue();
+			iterator.advance())
+		// Add
+		mInternals->mDocumentValueInfoBySelector.set(iterator->getSelector(), *iterator);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+const CMDSDocument::ValueInfo& CMDSDocumentStorage::documentValueInfo(const CString& selector) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return *mInternals->mDocumentValueInfoBySelector[selector];
+}
+
+// MARK: Subclass methods
+
+//----------------------------------------------------------------------------------------------------------------------
 void CMDSDocumentStorage::notifyDocumentChanged(const CMDSDocument& document,
 		CMDSDocument::ChangeKind documentChangeKind) const
 //----------------------------------------------------------------------------------------------------------------------
@@ -268,27 +297,6 @@ void CMDSDocumentStorage::notifyDocumentChanged(const CMDSDocument& document,
 			iterator.hasValue(); iterator.advance())
 		// Call proc
 		iterator->notify(document, documentChangeKind);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-const CMDSDocument::IsIncludedPerformer& CMDSDocumentStorage::documentIsIncludedPerformer(const CString& selector) const
-//----------------------------------------------------------------------------------------------------------------------
-{
-	return *mInternals->mDocumentIsIncludedPerformerBySelector[selector];
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-const CMDSDocument::KeysPerformer& CMDSDocumentStorage::documentKeysPerformer(const CString& selector) const
-//----------------------------------------------------------------------------------------------------------------------
-{
-	return *mInternals->mDocumentKeysPerformerBySelector[selector];
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-const CMDSDocument::ValueInfo& CMDSDocumentStorage::documentValueInfo(const CString& selector) const
-//----------------------------------------------------------------------------------------------------------------------
-{
-	return *mInternals->mDocumentValueInfoBySelector[selector];
 }
 
 // MARK: Class methods

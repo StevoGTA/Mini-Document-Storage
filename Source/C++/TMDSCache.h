@@ -41,29 +41,28 @@ struct SMDSCacheValueInfo {
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - TMDSCache
 
-template <typename T> class TMDSCache : public CEquatable {
+template <typename T, typename U> class TMDSCache : public CEquatable {
 	// UpdateResults
 	public:
 		struct UpdateResults {
-													// Lifecycle methods
-													UpdateResults(const OV<TDictionary<CDictionary> > infosByID,
-															const OV<UInt32>& lastRevision) :
-														mInfosByID(infosByID), mLastRevision(lastRevision)
-														{}
-													UpdateResults(const UpdateResults& other) :
-														mInfosByID(other.mInfosByID), mLastRevision(other.mLastRevision)
-														{}
+								// Lifecycle methods
+								UpdateResults(const OV<U> valueInfoByID, const OV<UInt32>& lastRevision) :
+									mValueInfoByID(valueInfoByID), mLastRevision(lastRevision)
+									{}
+								UpdateResults(const UpdateResults& other) :
+									mValueInfoByID(other.mValueInfoByID), mLastRevision(other.mLastRevision)
+									{}
 
-													// Instance methods
-			const	OV<TDictionary<CDictionary> >&	getInfosByID() const
-														{ return mInfosByID; }
-			const	OV<UInt32>&						getLastRevision() const
-														{ return mLastRevision; }
+								// Instance methods
+			const	OV<U>&		getValueInfoByID() const
+									{ return mValueInfoByID; }
+			const	OV<UInt32>&	getLastRevision() const
+									{ return mLastRevision; }
 
 			// Properties
 			private:
-				OV<TDictionary<CDictionary> >	mInfosByID;
-				OV<UInt32>						mLastRevision;
+				OV<U>		mValueInfoByID;
+				OV<UInt32>	mLastRevision;
 		};
 
 	// Methods
@@ -92,8 +91,8 @@ template <typename T> class TMDSCache : public CEquatable {
 				UpdateResults	update(const TArray<TMDSUpdateInfo<T> >& updateInfos)
 									{
 										// Compose results
-										TNDictionary<CDictionary>	infosByID;
-										OV<UInt32>					lastRevision;
+										U			valueInfoByID;
+										OV<UInt32>	lastRevision;
 										for (TIteratorD<TMDSUpdateInfo<T> > updateInfoIterator =
 														updateInfos.getIterator();
 												updateInfoIterator.hasValue(); updateInfoIterator.advance()) {
@@ -102,7 +101,7 @@ template <typename T> class TMDSCache : public CEquatable {
 													(mRelevantProperties.intersects(
 															*updateInfoIterator->getChangedProperties()))) {
 												// Collect value infos
-												CDictionary	valuesByName;
+												CDictionary	valueByName;
 												for (TIteratorD<SMDSCacheValueInfo> valueInfoIterator =
 																mValueInfos.getIterator();
 														valueInfoIterator.hasValue(); valueInfoIterator.advance()) {
@@ -110,14 +109,14 @@ template <typename T> class TMDSCache : public CEquatable {
 													const	CString&	valueName =
 																				valueInfoIterator->getValueInfo()
 																						.getName();
-													valuesByName.set(valueName,
+													valueByName.set(valueName,
 															valueInfoIterator->getDocumentValueInfo().perform(
 																	mDocumentType, updateInfoIterator->getDocument(),
 																	valueName));
 												}
 
 												// Update
-												infosByID.set(updateInfoIterator->getID(), valuesByName);
+												valueInfoByID.set(updateInfoIterator->getID(), valueByName);
 											}
 
 											// Update last revision
@@ -126,10 +125,7 @@ template <typename T> class TMDSCache : public CEquatable {
 											lastRevision.setValue(mLastRevision);
 										}
 
-										return UpdateResults(
-												!infosByID.isEmpty() ?
-														OV<TDictionary<CDictionary> >(infosByID) :
-														OV<TDictionary<CDictionary> >(),
+										return UpdateResults(!valueInfoByID.isEmpty() ? OV<U>(valueInfoByID) : OV<U>(),
 												lastRevision);
 									}
 

@@ -75,16 +75,22 @@ class CMDSAssociation : public CEquatable {
 													{ return Update(kActionRemove, fromDocumentID, toDocumentID); }
 
 												// Class methods
-				static			TArray<CString>	getFromDocumentIDs(const TArray<Update>& updates)
+				static			TArray<CString>	getFromDocumentIDsArray(const TArray<Update>& updates)
 													{ return TNSet<CString>(updates,
 																	(TNSet<CString>::ArrayMapProc)
 																			getFromDocumentIDFromItem)
 															.getArray(); }
-				static			TArray<CString>	getToDocumentIDs(const TArray<Update>& updates)
+				static			TNSet<CString>	getFromDocumentIDsSet(const TArray<Update>& updates)
+													{ return TNSet<CString>(updates,
+															(TNSet<CString>::ArrayMapProc) getFromDocumentIDFromItem); }
+				static			TArray<CString>	getToDocumentIDsArray(const TArray<Update>& updates)
 													{ return TNSet<CString>(updates,
 																	(TNSet<CString>::ArrayMapProc)
 																			getToDocumentIDFromItem)
 															.getArray(); }
+				static			TNSet<CString>	getToDocumentIDsSet(const TArray<Update>& updates)
+													{ return TNSet<CString>(updates,
+															(TNSet<CString>::ArrayMapProc) getToDocumentIDFromItem); }
 				static			CString			getFromDocumentIDFromItem(const Update* update)
 													{ return update->mItem.getFromDocumentID(); }
 				static			CString			getToDocumentIDFromItem(const Update* update)

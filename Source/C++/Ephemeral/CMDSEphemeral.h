@@ -84,11 +84,11 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 		DocumentAttachmentInfoResult				documentAttachmentAdd(const CString& documentType,
 															const CString& documentID, const CDictionary& info,
 															const CData& content);
-		DocumentAttachmentInfoMapResult				documentAttachmentInfoMap(const CString& documentType,
+		DocumentAttachmentInfoByIDResult			documentAttachmentInfoByID(const CString& documentType,
 															const CString& documentID);
 		TVResult<CData>								documentAttachmentContent(const CString& documentType,
 															const CString& documentID, const CString& attachmentID);
-		TVResult<UInt32>							documentAttachmentUpdate(const CString& documentType,
+		TVResult<OV<UInt32> >						documentAttachmentUpdate(const CString& documentType,
 															const CString& documentID, const CString& attachmentID,
 															const CDictionary& updatedInfo,
 															const CData& updatedContent);

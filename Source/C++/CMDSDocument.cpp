@@ -84,7 +84,7 @@ OV<TArray<CString> > CMDSDocument::getArrayOfStrings(const CString& property) co
 {
 	// Get value
 	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
-	AssertFailIf(value.hasValue() && (value->getType() != SValue::kArrayOfStrings));
+	AssertFailIf(value.hasValue() && (value->getType() != SValue::kTypeArrayOfStrings));
 
 	return value.hasValue() ? OV<TArray<CString> >(value->getArrayOfStrings()) : OV<TArray<CString> >();
 }
@@ -103,7 +103,7 @@ OV<TArray<CDictionary> > CMDSDocument::getArrayOfDictionaries(const CString& pro
 {
 	// Get value
 	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
-	AssertFailIf(value.hasValue() && (value->getType() != SValue::kArrayOfDictionaries));
+	AssertFailIf(value.hasValue() && (value->getType() != SValue::kTypeArrayOfDictionaries));
 
 	return value.hasValue() ? OV<TArray<CDictionary> >(value->getArrayOfDictionaries()) : OV<TArray<CDictionary> >();
 }
@@ -122,7 +122,7 @@ OV<bool> CMDSDocument::getBool(const CString& property) const
 {
 	// Get value
 	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
-	AssertFailIf(value.hasValue() && (value->getType() != SValue::kBool));
+	AssertFailIf(value.hasValue() && (value->getType() != SValue::kTypeBool));
 
 	return value.hasValue() ? OV<bool>(value->getBool()) : OV<bool>();
 }
@@ -166,7 +166,7 @@ OV<CDictionary> CMDSDocument::getDictionary(const CString& property) const
 {
 	// Get value
 	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
-	AssertFailIf(value.hasValue() && (value->getType() != SValue::kDictionary));
+	AssertFailIf(value.hasValue() && (value->getType() != SValue::kTypeDictionary));
 
 	return value.hasValue() ? OV<CDictionary>(value->getDictionary()) : OV<CDictionary>();
 }
@@ -190,7 +190,7 @@ OV<Float32> CMDSDocument::getFloat32(const CString& property) const
 {
 	// Get value
 	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
-	AssertFailIf(value.hasValue() && (value->getType() != SValue::kFloat32));
+	AssertFailIf(value.hasValue() && (value->getType() != SValue::kTypeFloat32));
 
 	return value.hasValue() ? OV<Float32>(value->getFloat32()) : OV<Float32>();
 }
@@ -214,7 +214,7 @@ OV<Float64> CMDSDocument::getFloat64(const CString& property) const
 {
 	// Get value
 	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
-	AssertFailIf(value.hasValue() && (value->getType() != SValue::kFloat64));
+	AssertFailIf(value.hasValue() && (value->getType() != SValue::kTypeFloat64));
 
 	return value.hasValue() ? OV<Float64>(value->getFloat64()) : OV<Float64>();
 }
@@ -238,7 +238,7 @@ OV<SInt32> CMDSDocument::getSInt32(const CString& property) const
 {
 	// Get value
 	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
-	AssertFailIf(value.hasValue() && (value->getType() != SValue::kSInt32));
+	AssertFailIf(value.hasValue() && (value->getType() != SValue::kTypeSInt32));
 
 	return value.hasValue() ? OV<SInt32>(value->getSInt32()) : OV<SInt32>();
 }
@@ -262,7 +262,7 @@ OV<SInt64> CMDSDocument::getSInt64(const CString& property) const
 {
 	// Get value
 	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
-	AssertFailIf(value.hasValue() && (value->getType() != SValue::kSInt64));
+	AssertFailIf(value.hasValue() && (value->getType() != SValue::kTypeSInt64));
 
 	return value.hasValue() ? OV<SInt64>(value->getSInt64()) : OV<SInt64>();
 }
@@ -286,7 +286,7 @@ OV<CString> CMDSDocument::getString(const CString& property) const
 {
 	// Get value
 	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
-	AssertFailIf(value.hasValue() && (value->getType() != SValue::kString));
+	AssertFailIf(value.hasValue() && (value->getType() != SValue::kTypeString));
 
 	return value.hasValue() ? OV<CString>(value->getString()) : OV<CString>();
 }
@@ -310,7 +310,7 @@ OV<UInt8> CMDSDocument::getUInt8(const CString& property) const
 {
 	// Get value
 	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
-	AssertFailIf(value.hasValue() && (value->getType() != SValue::kUInt8));
+	AssertFailIf(value.hasValue() && (value->getType() != SValue::kTypeUInt8));
 
 	return value.hasValue() ? OV<UInt8>(value->getUInt8()) : OV<UInt8>();
 }
@@ -347,7 +347,7 @@ OV<UInt16> CMDSDocument::getUInt16(const CString& property) const
 {
 	// Get value
 	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
-	AssertFailIf(value.hasValue() && (value->getType() != SValue::kUInt16));
+	AssertFailIf(value.hasValue() && (value->getType() != SValue::kTypeUInt16));
 
 	return value.hasValue() ? OV<UInt16>(value->getUInt16()) : OV<UInt16>();
 }
@@ -371,7 +371,7 @@ OV<UInt32> CMDSDocument::getUInt32(const CString& property) const
 {
 	// Get value
 	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
-	AssertFailIf(value.hasValue() && (value->getType() != SValue::kUInt32));
+	AssertFailIf(value.hasValue() && (value->getType() != SValue::kTypeUInt32));
 
 	return value.hasValue() ? OV<UInt32>(value->getUInt32()) : OV<UInt32>();
 }
@@ -395,7 +395,7 @@ OV<UInt64> CMDSDocument::getUInt64(const CString& property) const
 {
 	// Get value
 	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, *this);
-	AssertFailIf(value.hasValue() && (value->getType() != SValue::kUInt64));
+	AssertFailIf(value.hasValue() && (value->getType() != SValue::kTypeUInt64));
 
 	return value.hasValue() ? OV<UInt64>(value->getUInt64()) : OV<UInt64>();
 }
@@ -459,16 +459,16 @@ TArray<CMDSDocument::AttachmentInfo> CMDSDocument::getAttachmentInfos(const CStr
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get attachment info map
-	TVResult<CMDSDocument::AttachmentInfoMap>	attachmentInfoMap =
-														getDocumentStorage().documentAttachmentInfoMap(
+	TVResult<CMDSDocument::AttachmentInfoByID>	attachmentInfoByID =
+														getDocumentStorage().documentAttachmentInfoByID(
 																getDocumentType(), getID());
 
 	// Filter by type
-	TSet<CString>			attachmentIDs = attachmentInfoMap->getKeys();
+	TSet<CString>			attachmentIDs = attachmentInfoByID->getKeys();
 	TNArray<AttachmentInfo>	attachmentInfos;
 	for (TIteratorS<CString> iterator = attachmentIDs.getIterator(); iterator.hasValue(); iterator.advance()) {
 		// Get Attachment Info
-		AttachmentInfo&	attachmentInfo = *(attachmentInfoMap->get(*iterator));
+		AttachmentInfo&	attachmentInfo = *(attachmentInfoByID->get(*iterator));
 
 		// Check type
 		if (attachmentInfo.getType() == type)
@@ -628,3 +628,9 @@ TVResult<TArray<I<CMDSDocument> > > CMDSDocument::associationGetDocumentsFrom(co
 {
 	return mInternals->mDocumentStorage.associationGetDocumentsFrom(*this, toInfo);
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - SMDSValueType
+
+const	CString	SMDSValueType::mInteger(OSSTR("integer"));
