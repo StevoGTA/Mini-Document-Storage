@@ -14,107 +14,110 @@ template <typename T> class TMDSDocumentBackingCache {
 	public:
 		struct DocumentIDsInfo {
 			// Methods
-			DocumentIDsInfo(const TArray<CString>& foundDocumentIDs, const TArray<CString>& notFoundDocumentIDs) :
-				mFoundDocumentIDs(foundDocumentIDs), mNotFoundDocumentIDs(notFoundDocumentIDs)
-				{}
-			DocumentIDsInfo(const DocumentIDsInfo& other) :
-				mFoundDocumentIDs(other.mFoundDocumentIDs), mNotFoundDocumentIDs(other.mNotFoundDocumentIDs)
-				{}
+			public:
+											// Lifecycle methods
+											DocumentIDsInfo(const TArray<CString>& foundDocumentIDs,
+													const TArray<CString>& notFoundDocumentIDs) :
+												mFoundDocumentIDs(foundDocumentIDs),
+														mNotFoundDocumentIDs(notFoundDocumentIDs)
+												{}
+											DocumentIDsInfo(const DocumentIDsInfo& other) :
+												mFoundDocumentIDs(other.mFoundDocumentIDs),
+														mNotFoundDocumentIDs(other.mNotFoundDocumentIDs)
+												{}
+
+											// Instance methods
+				const	TArray<CString>&	getFoundDocumentIDs() const
+												{ return mFoundDocumentIDs; }
+				const	TArray<CString>&	getNotFoundDocumentIDs() const
+												{ return mNotFoundDocumentIDs; }
 
 			// Properties
-			TArray<CString>	mFoundDocumentIDs;
-			TArray<CString>	mNotFoundDocumentIDs;
+			private:
+				TArray<CString>	mFoundDocumentIDs;
+				TArray<CString>	mNotFoundDocumentIDs;
 		};
 
 	// DocumentBackingsInfo
 	public:
 		struct DocumentBackingsInfo {
 			// Methods
-			DocumentBackingsInfo(const TArray<CMDSDocument::BackingInfo<T> >& foundDocumentBackingInfos,
-					const TArray<CString>& notFoundDocumentIDs) :
-				mFoundDocumentBackingInfos(foundDocumentBackingInfos), mNotFoundDocumentIDs(notFoundDocumentIDs)
-				{}
-			DocumentBackingsInfo(const DocumentBackingsInfo& other) :
-				mFoundDocumentBackingInfos(other.mFoundDocumentBackingInfos),
-						mNotFoundDocumentIDs(other.mNotFoundDocumentIDs)
-				{}
+			public:
+											// Lifecycle methods
+											DocumentBackingsInfo(const TArray<T>& foundDocumentBackings,
+													const TArray<CString>& notFoundDocumentIDs) :
+												mFoundDocumentBackings(foundDocumentBackings),
+														mNotFoundDocumentIDs(notFoundDocumentIDs)
+												{}
+											DocumentBackingsInfo(const DocumentBackingsInfo& other) :
+												mFoundDocumentBackings(other.mFoundDocumentBackings),
+														mNotFoundDocumentIDs(other.mNotFoundDocumentIDs)
+												{}
 
+											// Instance methods
+				const	TArray<T>&			getFoundDocumentBackings() const
+												{ return mFoundDocumentBackings; }
+				const	TArray<CString>&	getNotFoundDocumentIDs() const
+												{ return mNotFoundDocumentIDs; }
 			// Properties
-			TArray<CMDSDocument::BackingInfo<T> >	mFoundDocumentBackingInfos;
-			TArray<CString>							mNotFoundDocumentIDs;
+			private:
+				TArray<T>		mFoundDocumentBackings;
+				TArray<CString>	mNotFoundDocumentIDs;
 		};
 
 	// Reference
 	private:
-		template <typename U> class Reference {
+		class Reference {
 			// Methods
 			public:
 						// Lifecycle methods
-						Reference(const CMDSDocument::BackingInfo<U>& documentBackingInfo) :
-							mDocumentBackingInfo(documentBackingInfo),
+						Reference(const T& documentBacking) :
+							mDocumentBacking(documentBacking),
 									mLastReferencedUniversalTime(SUniversalTime::getCurrent())
 							{}
 
 						// Instance methods
 				void	noteWasReferenced()
 							{ mLastReferencedUniversalTime = SUniversalTime::getCurrent(); }
-				OR<U>	getDocumentBacking()
-							{ return OR<U>(mDocumentBackingInfo.mDocumentBacking); }
+				T&		getDocumentBacking()
+							{ return mDocumentBacking; }
 
 			// Properties
 			private:
-				CMDSDocument::BackingInfo<U>	mDocumentBackingInfo;
-				UniversalTime					mLastReferencedUniversalTime;
+				T				mDocumentBacking;
+				UniversalTime	mLastReferencedUniversalTime;
 		};
 
 	// Methods:
 	public:
 										// Lifecycle methods
 										TMDSDocumentBackingCache(UInt32 limit = 1000000) : mLimit(limit) {}
-//										~TMDSDocumentBackingCache()
-//											{ if (mTimer.hasInstance()) mTimer.invalidate(); }
 
 										// Instance methods
-				void					add(const CMDSDocument::BackingInfo<T>& documentBackingInfo)
-											{
-												// Setup
-												mLock.lockForWriting();
-
-												// Store
-												mReferenceMap.set(documentBackingInfo.mDocumentID,
-														Reference<T>(documentBackingInfo));
-
-												// Reset pruning timer if needed
-												resetPruningTimerIfNeeded();
-
-												// Done
-												mLock.unlockForWriting();
-											}
-				void					add(const TArray<CMDSDocument::BackingInfo<T> >& documentBackingInfos)
+				void					add(const TArray<T>& documentBackings)
 											{
 												// Setup
 												mLock.lockForWriting();
 
 												// Iterate all backing infos
-												for (TIteratorD<CMDSDocument::BackingInfo<T> > iterator =
-																documentBackingInfos.getIterator();
+												for (TIteratorD<T> iterator = documentBackings.getIterator();
 														iterator.hasValue(); iterator.advance())
 													// Store
-													mReferenceMap.set(iterator->mDocumentID, Reference<T>(*iterator));
+													mReferenceByDocumentID.set((*iterator)->getDocumentID(),
+															Reference(*iterator));
 
 												// Reset pruning timer if needed
-												resetPruningTimerIfNeeded();
 
 												// Done
 												mLock.unlockForWriting();
 											}
-				OR<T>					getDocumentBacking(const CString& documentID)
+		const	OR<T>					getDocumentBacking(const CString& documentID) const
 											{
 												// Setup
 												mLock.lockForReading();
 
 												// Retrieve
-												OR<Reference<T> >	reference = mReferenceMap[documentID];
+												const	OR<Reference>	reference = mReferenceByDocumentID[documentID];
 												if (reference.hasReference())
 													// Note was referenced
 													reference->noteWasReferenced();
@@ -123,9 +126,9 @@ template <typename T> class TMDSDocumentBackingCache {
 												mLock.unlockForReading();
 
 												return reference.hasReference() ?
-														reference->getDocumentBacking() : OR<T>();
+														OR<T>(reference->getDocumentBacking()) : OR<T>();
 											}
-				DocumentIDsInfo			getDocumentIDsInfo(const TArray<CString>& documentIDs)
+				DocumentIDsInfo			queryDocumentIDs(const TArray<CString>& documentIDs)
 											{
 												// Setup
 												TNArray<CString>	foundDocumentIDs;
@@ -137,7 +140,7 @@ template <typename T> class TMDSDocumentBackingCache {
 												for (TIteratorD<CString> iterator = documentIDs.getIterator();
 														iterator.hasValue(); iterator.advance()) {
 													// Look up reference for this document ID
-													OR<Reference<T> >	reference = mReferenceMap[*iterator];
+													const	OR<T>	reference = mReferenceByDocumentID[*iterator];
 													if (reference.hasReference()) {
 														// Found
 														foundDocumentIDs += *iterator;
@@ -152,11 +155,11 @@ template <typename T> class TMDSDocumentBackingCache {
 
 												return DocumentIDsInfo(foundDocumentIDs, notFoundDocumentIDs);
 											}
-				DocumentBackingsInfo	getDocumentBackingsInfo(const TArray<CString>& documentIDs)
+				DocumentBackingsInfo	queryDocumentBackings(const TArray<CString>& documentIDs)
 											{
 												// Setup
-												TNArray<CMDSDocument::BackingInfo<T> >	foundDocumentInfos;
-												TNArray<CString>						notFoundDocumentIDs;
+												TNArray<T>			foundDocumentBackings;
+												TNArray<CString>	notFoundDocumentIDs;
 
 												mLock.lockForReading();
 
@@ -164,10 +167,10 @@ template <typename T> class TMDSDocumentBackingCache {
 												for (TIteratorD<CString> iterator = documentIDs.getIterator();
 														iterator.hasValue(); iterator.advance()) {
 													// Look up reference for this document ID
-													OR<Reference<T> >	reference = mReferenceMap[*iterator];
+													const	OR<T>	reference = mReferenceByDocumentID[*iterator];
 													if (reference.hasReference()) {
 														// Found
-														foundDocumentInfos += reference->mDocumentBackingInfo;
+														foundDocumentBackings += reference->getDocumentBacking();
 														reference->noteWasReferenced();
 													} else
 														// Not found
@@ -177,7 +180,7 @@ template <typename T> class TMDSDocumentBackingCache {
 												// Done
 												mLock.unlockForReading();
 
-												return DocumentBackingsInfo(foundDocumentInfos, notFoundDocumentIDs);
+												return DocumentBackingsInfo(foundDocumentBackings, notFoundDocumentIDs);
 											}
 				void					remove(const TArray<CString>& documentIDs)
 											{
@@ -188,63 +191,19 @@ template <typename T> class TMDSDocumentBackingCache {
 												for (TIteratorD<CString> iterator = documentIDs.getIterator();
 														iterator.hasValue(); iterator.advance())
 													// Remove from storage
-													mReferenceMap.remove(*iterator);
+													mReferenceByDocumentID.remove(*iterator);
 
 												// Reset pruning timer if needed
-												resetPruningTimerIfNeeded();
 
 												// Done
 												mLock.unlockForWriting();
 											}
+
+		const	OR<T>					operator[](const CString& documentID) const
+											{ return getDocumentBacking(documentID); }
 
 	private:
-										// Instance methods
-				void					resetPruningTimerIfNeeded()
-											{
-												// Invalidate existing timer
-//												if (mTimer.hasInstance()) mTimer.invalidate();
-
-//												// Check if need to prune
-//												if (mReferenceMap.getKeyCount() > mLimit)
-//													// Need to prune
-//													mTimer = OI<CTimer>(CTimer(5.0, timerProc));
-											}
-				void					prune()
-											{
-												// Setup
-												mLock.lockForWriting();
-
-												// Only need to consider things if we have moved past the document limit
-												SInt32	countToRemove = mReferenceMap.getKeyCount() - mLimit;
-												if (countToRemove > 0) {
-													// Iterate all references
-// Currently broken in Swift.  Waiting until is fixed there to implement here.
-//													UniversalTime	earliestReferencedUniversalTime =
-//																			SUniversalTime::getDistantFuture();
-//													for (TIteratorS<Reference<T> > iterator =
-//																	mReferenceMap.getIterator();
-//															iterator.hasValue(); iterator.advance()) {
-//														// Compare date
-//														if (iterator->mLastReferencedUniversalTime <
-//																earliestReferencedUniversalTime) {
-//															// Update references to remove
-//
-//														}
-//													}
-												}
-
-												// Done
-												mLock.unlockForWriting();
-											}
-
-										// Class methods
-		static	void					timerProc(TMDSDocumentBackingCache<T>& documentBackingCache)
-											{ documentBackingCache.prune(); }
 
 	// Properties:
 	private:
-		CReadPreferringLock			mLock;
-//		OI<CTimer>					mTimer;
-		TNDictionary<Reference<T> >	mReferenceMap;
-		UInt32						mLimit;
 };

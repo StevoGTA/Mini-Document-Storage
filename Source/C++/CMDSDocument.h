@@ -54,9 +54,9 @@ class CMDSDocument : public CHashable {
 				CDictionary	mInfo;
 		};
 
-	// AttachmentInfoMap
+	// AttachmentInfoByID
 	public:
-		typedef	TDictionary<AttachmentInfo>	AttachmentInfoMap;
+		typedef	TDictionary<AttachmentInfo>	AttachmentInfoByID;
 
 	// RevisionInfo
 	public:
@@ -124,12 +124,12 @@ class CMDSDocument : public CHashable {
 													UniversalTime creationUniversalTime,
 													UniversalTime modificationUniversalTime,
 													const CDictionary& propertyMap,
-													const AttachmentInfoMap& attachmentInfoMap) :
+													const AttachmentInfoByID& attachmentInfoByID) :
 												mDocumentID(documentID), mRevision(revision), mActive(active),
 														mCreationUniversalTime(creationUniversalTime),
 														mModificationUniversalTime(modificationUniversalTime),
 														mPropertyMap(propertyMap),
-														mAttachmentInfoMap(attachmentInfoMap)
+														mAttachmentInfoByID(attachmentInfoByID)
 												{}
 											FullInfo(const FullInfo& other) :
 												mDocumentID(other.mDocumentID), mRevision(other.mRevision),
@@ -137,7 +137,7 @@ class CMDSDocument : public CHashable {
 														mCreationUniversalTime(other.mCreationUniversalTime),
 														mModificationUniversalTime(other.mModificationUniversalTime),
 														mPropertyMap(other.mPropertyMap),
-														mAttachmentInfoMap(other.mAttachmentInfoMap)
+														mAttachmentInfoByID(other.mAttachmentInfoByID)
 											{}
 
 											// Instance methods
@@ -153,8 +153,8 @@ class CMDSDocument : public CHashable {
 												{ return mModificationUniversalTime; }
 				const	CDictionary&		getPropertyMap() const
 												{ return mPropertyMap; }
-				const	AttachmentInfoMap&	getAttachmentInfoMap() const
-												{ return mAttachmentInfoMap; }
+				const	AttachmentInfoByID&	getAttachmentInfoByID() const
+												{ return mAttachmentInfoByID; }
 
 			// Properties
 			private:
@@ -164,7 +164,7 @@ class CMDSDocument : public CHashable {
 				UniversalTime		mCreationUniversalTime;
 				UniversalTime		mModificationUniversalTime;
 				CDictionary			mPropertyMap;
-				AttachmentInfoMap	mAttachmentInfoMap;
+				AttachmentInfoByID	mAttachmentInfoByID;
 		};
 
 	// CreateInfo
@@ -653,27 +653,29 @@ template <typename T> struct TMDSUpdateInfo {
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: - EMDSValueType
-enum EMDSValueType {
-	kMDSValueTypeInteger,
+// MARK: - SMDSValueType
+struct SMDSValueType {
+
+	// Properties
+	static	const	CString	mInteger;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - SMDSValueInfo
 struct SMDSValueInfo {
-								// Lifecycle methods
-								SMDSValueInfo(const CString& name, EMDSValueType valueType) :
-									mName(name), mValueType(valueType)
-									{}
+							// Lifecycle methods
+							SMDSValueInfo(const CString& name, const CString& valueType) :
+								mName(name), mValueType(valueType)
+								{}
 
-								// Instance methods
-		const	CString&		getName() const
-									{ return mName; }
-				EMDSValueType	getValueType() const
-									{ return mValueType; }
+							// Instance methods
+		const	CString&	getName() const
+								{ return mName; }
+		const	CString&	getValueType() const
+								{ return mValueType; }
 
 	// Properties
 	private:
-		CString			mName;
-		EMDSValueType	mValueType;
+		CString	mName;
+		CString	mValueType;
 };

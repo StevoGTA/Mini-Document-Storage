@@ -14,21 +14,22 @@
 #include "TMDSIndex.h"
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: CMDSEphemeral::Internals
+// MARK: Types
+
+typedef	TMDSCache<CString, TNDictionary<CDictionary> >	Cache;
+typedef	TNDictionary<CDictionary>						CacheValueMap;
+
+typedef	TMDSCollection<CString, TNArray<CString> >		Collection;
+
+typedef	TNDictionary<CMDSDocument::AttachmentInfo>		DocumentAttachmentInfoDictionary;
+
+typedef	TMDSIndex<CString>								Index;
+
+typedef	TMDSUpdateInfo<CString>							UpdateInfo;
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - CMDSEphemeral::Internals
 class CMDSEphemeral::Internals {
-	// Types
-	public:
-		typedef	TMDSCache<CString>							Cache;
-		typedef	TNDictionary<CDictionary>					CacheValueMap;
-
-		typedef	TMDSCollection<CString, TNArray<CString> >	Collection;
-
-		typedef	TNDictionary<CMDSDocument::AttachmentInfo>	DocumentAttachmentInfoDictionary;
-
-		typedef	TMDSIndex<CString>							Index;
-
-		typedef	TMDSUpdateInfo<CString>						UpdateInfo;
-
 	// AttachmentContentInfo
 	public:
 		struct AttachmentContentInfo {
@@ -64,143 +65,150 @@ class CMDSEphemeral::Internals {
 			// Methods
 			public:
 
-												// Lifecycle methods
-												DocumentBacking(const CString& documentID, UInt32 revision,
-														UniversalTime creationUniversalTime,
-														UniversalTime modificationUniversalTime,
-														const CDictionary& propertyMap) :
-													mDocumentID(documentID), mRevision(revision),
-															mCreationUniversalTime(creationUniversalTime),
-															mModificationUniversalTime(modificationUniversalTime),
-															mPropertyMap(propertyMap)
-													{}
+													// Lifecycle methods
+													DocumentBacking(const CString& documentID, UInt32 revision,
+															UniversalTime creationUniversalTime,
+															UniversalTime modificationUniversalTime,
+															const CDictionary& propertyMap) :
+														mDocumentID(documentID), mRevision(revision),
+																mCreationUniversalTime(creationUniversalTime),
+																mModificationUniversalTime(modificationUniversalTime),
+																mPropertyMap(propertyMap)
+														{}
 
-												// Instance methods
-		const	CString&						getDocumentID() const
-													{ return mDocumentID; }
-				UniversalTime					getCreationUniversalTime() const
-													{ return mCreationUniversalTime; }
-				UniversalTime					getModificationUniversalTime() const
-													{ return mModificationUniversalTime; }
+													// Instance methods
+		const	CString&							getDocumentID() const
+														{ return mDocumentID; }
+				UniversalTime						getCreationUniversalTime() const
+														{ return mCreationUniversalTime; }
+				UniversalTime						getModificationUniversalTime() const
+														{ return mModificationUniversalTime; }
 
-				UInt32							getRevision() const
-													{ return mRevision; }
-				bool							isActive() const
-													{ return mActive; }
-				void							setActive(bool active)
-													{ mActive = active; }
-				CDictionary&					getPropertyMap()
-													{ return mPropertyMap; }
-				CMDSDocument::AttachmentInfoMap	getDocumentAttachmentInfoMap() const
-													{
-														// Setup
-														TNDictionary<CMDSDocument::AttachmentInfo>
-																documentAttachmentInfoMap;
-														TSet<CString>
-																keys = mAttachmentContentInfoByAttachmentID.getKeys();
-														for (TIteratorS<CString> iterator = keys.getIterator();
-																iterator.hasValue(); iterator.advance())
-															// Copy
-															documentAttachmentInfoMap.set(*iterator,
-																	mAttachmentContentInfoByAttachmentID[*iterator]->
-																			getDocumentAttachmentInfo());
+				UInt32								getRevision() const
+														{ return mRevision; }
+				bool								isActive() const
+														{ return mActive; }
+				void								setActive(bool active)
+														{ mActive = active; }
+				CDictionary&						getPropertyMap()
+														{ return mPropertyMap; }
+				CMDSDocument::AttachmentInfoByID	getDocumentAttachmentInfoByID() const
+														{
+															// Setup
+															TNDictionary<CMDSDocument::AttachmentInfo>
+																	documentAttachmentInfoByID;
+															TSet<CString>
+																	keys = mAttachmentContentInfoByAttachmentID
+																			.getKeys();
+															for (TIteratorS<CString> iterator = keys.getIterator();
+																	iterator.hasValue(); iterator.advance())
+																// Copy
+																documentAttachmentInfoByID.set(*iterator,
+																		mAttachmentContentInfoByAttachmentID[
+																						*iterator]->
+																				getDocumentAttachmentInfo());
 
-														return documentAttachmentInfoMap;
-													}
+															return documentAttachmentInfoByID;
+														}
 
-				CMDSDocument::RevisionInfo		getDocumentRevisionInfo() const
-													{ return CMDSDocument::RevisionInfo(mDocumentID, mRevision); }
-				CMDSDocument::FullInfo			getDocumentFullInfo() const
-													{
-														// Setup
-														DocumentAttachmentInfoDictionary	documentAttachmentInfoMap;
-														TSet<CString>						attachmentIDs =
-																									mAttachmentContentInfoByAttachmentID
-																											.getKeys();
-														for (TIteratorS<CString> iterator = attachmentIDs.getIterator();
-																iterator.hasValue(); iterator.advance())
+				CMDSDocument::RevisionInfo			getDocumentRevisionInfo() const
+														{ return CMDSDocument::RevisionInfo(mDocumentID, mRevision); }
+				CMDSDocument::FullInfo				getDocumentFullInfo() const
+														{
+															// Setup
+															DocumentAttachmentInfoDictionary	documentAttachmentInfoByID;
+															TSet<CString>						attachmentIDs =
+																										mAttachmentContentInfoByAttachmentID
+																												.getKeys();
+															for (TIteratorS<CString> iterator =
+																			attachmentIDs.getIterator();
+																	iterator.hasValue(); iterator.advance())
+																// Update
+																documentAttachmentInfoByID.set(*iterator,
+																		mAttachmentContentInfoByAttachmentID[
+																						*iterator]->
+																				getDocumentAttachmentInfo());
+
+															return CMDSDocument::FullInfo(mDocumentID, mRevision,
+																	mActive, mCreationUniversalTime,
+																	mModificationUniversalTime, mPropertyMap,
+																	documentAttachmentInfoByID);
+														}
+
+				void								update(UInt32 revision, const OV<CDictionary>& updatedPropertyMap,
+															const OV<TSet<CString> >& removedProperties)
+														{
 															// Update
-															documentAttachmentInfoMap.set(*iterator,
-																	mAttachmentContentInfoByAttachmentID[*iterator]->
-																			getDocumentAttachmentInfo());
+															mRevision = revision;
+															mModificationUniversalTime = SUniversalTime::getCurrent();
+															if (updatedPropertyMap.hasValue())
+																// Update property map
+																mPropertyMap += *updatedPropertyMap;
+															if (removedProperties.hasValue())
+																// Update property map
+																mPropertyMap.remove(*removedProperties);
+														}
+				CMDSDocument::AttachmentInfo		attachmentAdd(UInt32 revision, const CDictionary& info,
+															const CData& content)
+														{
+															// Setup
+															CString							attachmentID =
+																									CUUID().getBase64String();
+															CMDSDocument::AttachmentInfo	documentAttachmentInfo(
+																									attachmentID, 1,
+																									info);
 
-														return CMDSDocument::FullInfo(mDocumentID, mRevision, mActive,
-																mCreationUniversalTime, mModificationUniversalTime,
-																mPropertyMap, documentAttachmentInfoMap);
+															// Add
+															mAttachmentContentInfoByAttachmentID.set(attachmentID,
+																	AttachmentContentInfo(documentAttachmentInfo,
+																			content));
+
+															// Update
+															mRevision = revision;
+															mModificationUniversalTime = SUniversalTime::getCurrent();
+
+															return documentAttachmentInfo;
 													}
+				OR<AttachmentContentInfo>			getAttachmentContentInfo(const CString& attachmentID)
+														{ return mAttachmentContentInfoByAttachmentID.get(attachmentID); }
+				UInt32								attachmentUpdate(UInt32 revision, const CString& attachmentID,
+															const CDictionary& updatedInfo, const CData& updatedContent)
+														{
+															// Setup
+															UInt32	attachmentRevision =
+																			mAttachmentContentInfoByAttachmentID.get(
+																					attachmentID)->
+																							getDocumentAttachmentInfo()
+																									.getRevision() + 1;
 
-				void							update(UInt32 revision, const OV<CDictionary>& updatedPropertyMap,
-														const OV<TSet<CString> >& removedProperties)
-													{
-														// Update
-														mRevision = revision;
-														mModificationUniversalTime = SUniversalTime::getCurrent();
-														if (updatedPropertyMap.hasValue())
-															// Update property map
-															mPropertyMap += *updatedPropertyMap;
-														if (removedProperties.hasValue())
-															// Update property map
-															mPropertyMap.remove(*removedProperties);
-													}
-				CMDSDocument::AttachmentInfo	attachmentAdd(UInt32 revision, const CDictionary& info,
-														const CData& content)
-													{
-														// Setup
-														CString							attachmentID =
-																								CUUID().getBase64String();
-														CMDSDocument::AttachmentInfo	documentAttachmentInfo(
-																								attachmentID, 1, info);
+															// Update
+															mAttachmentContentInfoByAttachmentID.set(attachmentID,
+																	AttachmentContentInfo(
+																			CMDSDocument::AttachmentInfo(attachmentID,
+																					attachmentRevision, updatedInfo),
+																			updatedContent));
 
-														// Add
-														mAttachmentContentInfoByAttachmentID.set(attachmentID,
-																AttachmentContentInfo(documentAttachmentInfo, content));
+															// Update
+															mRevision = revision;
+															mModificationUniversalTime = SUniversalTime::getCurrent();
 
-														// Update
-														mRevision = revision;
-														mModificationUniversalTime = SUniversalTime::getCurrent();
+															return revision;
+														}
+				void								attachmentRemove(UInt32 revision, const CString& attachmentID)
+														{
+															// Remove
+															mAttachmentContentInfoByAttachmentID.remove(attachmentID);
 
-														return documentAttachmentInfo;
-													}
-				OR<AttachmentContentInfo>		getAttachmentContentInfo(const CString& attachmentID)
-													{ return mAttachmentContentInfoByAttachmentID.get(attachmentID); }
-				UInt32							attachmentUpdate(UInt32 revision, const CString& attachmentID,
-														const CDictionary& updatedInfo, const CData& updatedContent)
-													{
-														// Setup
-														UInt32	attachmentRevision =
-																		mAttachmentContentInfoByAttachmentID.get(
-																				attachmentID)->
-																						getDocumentAttachmentInfo()
-																								.getRevision() + 1;
+															// Update
+															mRevision = revision;
+															mModificationUniversalTime = SUniversalTime::getCurrent();
+														}
 
-														// Update
-														mAttachmentContentInfoByAttachmentID.set(attachmentID,
-																AttachmentContentInfo(
-																		CMDSDocument::AttachmentInfo(attachmentID,
-																				attachmentRevision, updatedInfo),
-																		updatedContent));
-
-														// Update
-														mRevision = revision;
-														mModificationUniversalTime = SUniversalTime::getCurrent();
-
-														return revision;
-													}
-				void							attachmentRemove(UInt32 revision, const CString& attachmentID)
-													{
-														// Remove
-														mAttachmentContentInfoByAttachmentID.remove(attachmentID);
-
-														// Update
-														mRevision = revision;
-														mModificationUniversalTime = SUniversalTime::getCurrent();
-													}
-
-												// Class methods
-		static	bool							compareRevision(const I<DocumentBacking>& documentBacking1,
-														const I<DocumentBacking>& documentBacking2, void* userData)
-													{ return documentBacking1->getRevision() <
-															documentBacking2->getRevision(); }
+													// Class methods
+		static	bool								compareRevision(const I<DocumentBacking>& documentBacking1,
+															const I<DocumentBacking>& documentBacking2, void* userData)
+														{ return documentBacking1->getRevision() <
+																documentBacking2->getRevision(); }
 
 			// Properties
 			private:
@@ -216,10 +224,12 @@ class CMDSEphemeral::Internals {
 
 	// More Types
 	public:
-		typedef	TMDSBatch<DocumentBacking>	Batch;
-		typedef	Batch::DocumentInfo			BatchDocumentInfo;
-		typedef	TArray<I<DocumentBacking> >	DocumentBackings;
-		typedef	TVResult<DocumentBackings>	DocumentBackingsResult;
+		typedef	TMDSBatch<I<DocumentBacking> >				Batch;
+		typedef	Batch::DocumentInfo							BatchDocumentInfo;
+		typedef	TNDictionary<BatchDocumentInfo>				BatchDocumentInfoByDocumentID;
+		typedef	TDictionary<BatchDocumentInfoByDocumentID>	BatchDocumentInfoByDocumentIDByDocumentType;
+		typedef	TArray<I<DocumentBacking> >					DocumentBackings;
+		typedef	TVResult<DocumentBackings>					DocumentBackingsResult;
 
 	// Methods
 	public:
@@ -240,8 +250,9 @@ class CMDSEphemeral::Internals {
 
 														// Check for batch
 														OR<I<Batch> >	batch =
-																				mBatchByThreadRef.get(
-																						CThread::getCurrentRef());
+																				mBatchByThreadRef[
+																						CThread::
+																								getCurrentRefAsString()];
 														if (batch.hasReference())
 															// Apply batch changes
 															associationItems =
@@ -257,17 +268,17 @@ class CMDSEphemeral::Internals {
 																Cache::UpdateResults			cacheUpdateResults =
 																										cache->update(
 																												updateInfos);
-														const	OV<TDictionary<CDictionary> >&	infosByID =
+														const	OV<TNDictionary<CDictionary> >&	valueInfoByID =
 																										cacheUpdateResults
-																												.getInfosByID();
+																												.getValueInfoByID();
 
 														// Check if have updates
-														if (infosByID.hasValue())
+														if (valueInfoByID.hasValue())
 															// Update storage
 															mCacheValuesByName.update(cache->getName(),
 																	(TNLockingDictionary<CacheValueMap>::UpdateProc)
 																			updateCacheValueMapWithUpdateInfosByID,
-																	(void*) &(*infosByID));
+																	(void*) &(*valueInfoByID));
 													}
 				void							collectionUpdate(const I<Collection>& collection,
 														const TArray<UpdateInfo>& updateInfos)
@@ -906,7 +917,7 @@ TVResult<CDictionary> CMDSEphemeral::associationGetIntegerValues(const CString& 
 	if (error.hasValue())
 		return TVResult<CDictionary>(*error);
 
-	OR<I<Internals::Cache> >	cache = mInternals->mCacheByName.get(cacheName);
+	OR<I<Cache> >	cache = mInternals->mCacheByName.get(cacheName);
 	if (!cache.hasReference())
 		return TVResult<CDictionary>(getUnknownCacheError(cacheName));
 
@@ -964,7 +975,7 @@ OV<SError> CMDSEphemeral::associationUpdate(const CString& name, const TArray<CM
 							(TNSet<CString>::ArrayMapProc) CMDSAssociation::Update::getToDocumentIDFromItem);
 
 	// Check for batch
-	OR<I<Internals::Batch> >	batch = mInternals->mBatchByThreadRef.get(CThread::getCurrentRef());
+	const	OR<I<Internals::Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
 	if (batch.hasReference()) {
 		// In batch
 		mInternals->mDocumentMapsLock.lockForReading();
@@ -1041,7 +1052,7 @@ OV<SError> CMDSEphemeral::cacheRegister(const CString& name, const CString& docu
 		_cacheValueInfos += SMDSCacheValueInfo(iterator->getValueInfo(), documentValueInfo(iterator->getSelector()));
 
 	// Create or re-create
-	I<Internals::Cache>	cache(new Internals::Cache(name, documentType, relevantProperties, _cacheValueInfos, 0));
+	I<Cache>	cache(new Cache(name, documentType, relevantProperties, _cacheValueInfos, 0));
 
 	// Add to maps
 	mInternals->mCacheByName.set(name, cache);
@@ -1060,7 +1071,7 @@ OV<SError> CMDSEphemeral::collectionRegister(const CString& name, const CString&
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Remove current collection if found
-	OR<I<Internals::Collection> >	existingCollection = mInternals->mCollectionByName.get(name);
+	OR<I<Collection> >	existingCollection = mInternals->mCollectionByName.get(name);
 	if (existingCollection.hasReference())
 		// Remove
 		mInternals->mCollectionsByDocumentType.remove(documentType, *existingCollection);
@@ -1076,9 +1087,9 @@ OV<SError> CMDSEphemeral::collectionRegister(const CString& name, const CString&
 		// Start fresh
 		lastRevision = 0;
 
-	I<Internals::Collection>	collection(
-										new Internals::Collection(name, documentType, relevantProperties,
-												documentIsIncludedPerformer, isIncludedInfo, lastRevision));
+	I<Collection>	collection(
+							new Collection(name, documentType, relevantProperties, documentIsIncludedPerformer,
+									isIncludedInfo, lastRevision));
 
 	// Add to maps
 	mInternals->mCollectionByName.set(name, collection);
@@ -1101,7 +1112,7 @@ TVResult<UInt32> CMDSEphemeral::collectionGetDocumentCount(const CString& name) 
 	const	OR<TNArray<CString> >	documentIDs = mInternals->mCollectionValuesByName.get(name);
 	if (!documentIDs.hasReference())
 		return TVResult<UInt32>(getUnknownCollectionError(name));
-	if (mInternals->mBatchByThreadRef.get(CThread::getCurrentRef()).hasReference())
+	if (mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()].hasReference())
 		return TVResult<UInt32>(getIllegalInBatchError());
 
 	return TVResult<UInt32>(documentIDs->getCount());
@@ -1116,7 +1127,7 @@ OV<SError> CMDSEphemeral::collectionIterate(const CString& name, const CString& 
 	const	OR<TNArray<CString> >	documentIDs = mInternals->mCollectionValuesByName.get(name);
 	if (!documentIDs.hasReference())
 		return OV<SError>(getUnknownCollectionError(name));
-	if (mInternals->mBatchByThreadRef.get(CThread::getCurrentRef()).hasReference())
+	if (mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()].hasReference())
 		return OV<SError>(getIllegalInBatchError());
 
 	// Setup
@@ -1159,7 +1170,7 @@ TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSEphemeral::documentCreate(
 		}
 	} else {
 		// Setup
-		TNArray<Internals::UpdateInfo>	updateInfos;
+		TNArray<UpdateInfo>	updateInfos;
 
 		// Iterate document create infos
 		for (TIteratorD<CMDSDocument::CreateInfo> iterator = documentCreateInfos.getIterator(); iterator.hasValue();
@@ -1202,7 +1213,7 @@ TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSEphemeral::documentCreate(
 			notifyDocumentChanged(*document, CMDSDocument::kChangeKindCreated);
 
 			// Add update info
-			updateInfos += Internals::UpdateInfo(document, revision, documentID, propertyMap.getKeys());
+			updateInfos += UpdateInfo(document, revision, documentID, propertyMap.getKeys());
 		}
 
 		// Update stuffs
@@ -1222,7 +1233,7 @@ TVResult<UInt32> CMDSEphemeral::documentGetCount(const CString& documentType) co
 	mInternals->mDocumentMapsLock.unlockForReading();
 	if (!documentIDs.hasReference())
 		return TVResult<UInt32>(getUnknownDocumentTypeError(documentType));
-	if (mInternals->mBatchByThreadRef.get(CThread::getCurrentRef()).hasReference())
+	if (mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()].hasReference())
 		return TVResult<UInt32>(getIllegalInBatchError());
 
 	return TVResult<UInt32>(documentIDs->getCount());
@@ -1291,32 +1302,28 @@ UniversalTime CMDSEphemeral::documentCreationUniversalTime(const CMDSDocument& d
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check for batch
-	const	OR<I<Internals::Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
-	if (batch.hasReference()) {
+	const	OR<I<Internals::Batch> >			batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+			OR<Internals::BatchDocumentInfo>	batchDocumentInfo =
+														batch.hasReference() ?
+																(*batch)->documentInfoGet(document.getID()) :
+																OR<Internals::BatchDocumentInfo>();
+	if (batchDocumentInfo.hasReference())
 		// In batch
-		const	OR<Internals::BatchDocumentInfo>	batchDocumentInfo = (*batch)->documentInfoGet(document.getID());
-		if (batchDocumentInfo.hasReference())
-			// In batch
-			return batchDocumentInfo->getCreationUniversalTime();
-	}
-
-	// Check if being created
-	const	OR<CDictionary>	propertyMap = mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID[document.getID()];
-	if (propertyMap.hasReference())
+		return batchDocumentInfo->getCreationUniversalTime();
+	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(document.getID()))
 		// Being created
 		return SUniversalTime::getCurrent();
+	else {
+		// "Idle"
+		mInternals->mDocumentMapsLock.lockForReading();
+		const	OR<I<Internals::DocumentBacking> >	documentBacking =
+															mInternals->mDocumentBackingByDocumentID.get(
+																	document.getID());
+		mInternals->mDocumentMapsLock.unlockForReading();
 
-	// "Idle"
-	mInternals->mDocumentMapsLock.lockForReading();
-	const	OR<I<Internals::DocumentBacking> >	documentBacking =
-														mInternals->mDocumentBackingByDocumentID.get(document.getID());
-			UniversalTime						universalTime =
-														documentBacking.hasReference() ?
-																(*documentBacking)->getCreationUniversalTime() :
-																SUniversalTime::getCurrent();
-	mInternals->mDocumentMapsLock.unlockForReading();
-
-	return universalTime;
+		return documentBacking.hasReference() ?
+				(*documentBacking)->getCreationUniversalTime() : SUniversalTime::getCurrent();
+	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1324,32 +1331,28 @@ UniversalTime CMDSEphemeral::documentModificationUniversalTime(const CMDSDocumen
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check for batch
-	const	OR<I<Internals::Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
-	if (batch.hasReference()) {
+	const	OR<I<Internals::Batch> >			batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+			OR<Internals::BatchDocumentInfo>	batchDocumentInfo =
+														batch.hasReference() ?
+																(*batch)->documentInfoGet(document.getID()) :
+																OR<Internals::BatchDocumentInfo>();
+	if (batchDocumentInfo.hasReference())
 		// In batch
-		const	OR<Internals::BatchDocumentInfo>	batchDocumentInfo = (*batch)->documentInfoGet(document.getID());
-		if (batchDocumentInfo.hasReference())
-			// In batch
-			return batchDocumentInfo->getModificationUniversalTime();
-	}
-
-	// Check if being created
-	const	OR<CDictionary>	propertyMap = mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID[document.getID()];
-	if (propertyMap.hasReference())
+		return batchDocumentInfo->getModificationUniversalTime();
+	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(document.getID()))
 		// Being created
 		return SUniversalTime::getCurrent();
+	else {
+		// "Idle"
+		mInternals->mDocumentMapsLock.lockForReading();
+		const	OR<I<Internals::DocumentBacking> >	documentBacking =
+															mInternals->mDocumentBackingByDocumentID.get(
+																	document.getID());
+		mInternals->mDocumentMapsLock.unlockForReading();
 
-	// "Idle"
-	mInternals->mDocumentMapsLock.lockForReading();
-	const	OR<I<Internals::DocumentBacking> >	documentBacking =
-														mInternals->mDocumentBackingByDocumentID.get(document.getID());
-			UniversalTime						universalTime =
-														documentBacking.hasReference() ?
-																(*documentBacking)->getModificationUniversalTime() :
-																SUniversalTime::getCurrent();
-	mInternals->mDocumentMapsLock.unlockForReading();
-
-	return universalTime;
+		return documentBacking.hasReference() ?
+				(*documentBacking)->getModificationUniversalTime() : SUniversalTime::getCurrent();
+	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1357,36 +1360,26 @@ OV<SValue> CMDSEphemeral::documentValue(const CString& property, const CMDSDocum
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check for batch
-	const	OR<I<Internals::Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
-	if (batch.hasReference()) {
+	const	OR<I<Internals::Batch> >			batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+			OR<Internals::BatchDocumentInfo>	batchDocumentInfo =
+														batch.hasReference() ?
+																(*batch)->documentInfoGet(document.getID()) :
+																OR<Internals::BatchDocumentInfo>();
+	if (batchDocumentInfo.hasReference())
 		// In batch
-		const	OR<Internals::BatchDocumentInfo>	batchDocumentInfo = (*batch)->documentInfoGet(document.getID());
-		if (batchDocumentInfo.hasReference())
-			// In batch
-			return batchDocumentInfo->getValue(property);
-	}
-
-	// Check if being created
-	const	OR<CDictionary>	propertyMap = mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID[document.getID()];
-	if (propertyMap.hasReference())
+		return batchDocumentInfo->getValue(property);
+	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(document.getID()))
 		// Being created
-		return propertyMap->contains(property) ? OV<SValue>(propertyMap->getValue(property)) : OV<SValue>();
+		return mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID[document.getID()]->getOValue(property);
+	else {
+		// "Idle"
+		mInternals->mDocumentMapsLock.lockForReading();
+		const	OR<I<Internals::DocumentBacking> >	documentBacking =
+															mInternals->mDocumentBackingByDocumentID[document.getID()];
+		mInternals->mDocumentMapsLock.unlockForReading();
 
-	// "Idle"
-	mInternals->mDocumentMapsLock.lockForReading();
-	const	OR<I<Internals::DocumentBacking> >	documentBacking =
-														mInternals->mDocumentBackingByDocumentID[document.getID()];
-			OV<SValue>							value =
-														(documentBacking.hasReference() &&
-																		(*documentBacking)->getPropertyMap().contains(
-																				property)) ?
-																OV<SValue>(
-																		(*documentBacking)->getPropertyMap().getValue(
-																				property)) :
-																OV<SValue>();
-	mInternals->mDocumentMapsLock.unlockForReading();
-
-	return value;
+		return (*documentBacking)->getPropertyMap().getOValue(property);
+	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1396,7 +1389,7 @@ OV<CData> CMDSEphemeral::documentData(const CString& property, const CMDSDocumen
 	// Get value
 	OV<SValue>	value = documentValue(property, document);
 
-	return (value.hasValue() && (value->getType() == SValue::kData)) ? OV<CData>(value->getData()) : OV<CData>();
+	return (value.hasValue() && (value->getType() == SValue::kTypeData)) ? OV<CData>(value->getData()) : OV<CData>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1406,7 +1399,7 @@ OV<UniversalTime> CMDSEphemeral::documentUniversalTime(const CString& property, 
 	// Get value
 	OV<SValue>	value = documentValue(property, document);
 
-	return (value.hasValue() && (value->getType() == SValue::kFloat64)) ?
+	return (value.hasValue() && (value->getType() == SValue::kTypeFloat64)) ?
 			OV<UniversalTime>(value->getFloat64()) : OV<UniversalTime>();
 }
 
@@ -1433,7 +1426,7 @@ void CMDSEphemeral::documentSet(const CString& property, const OV<SValue>& value
 														mInternals->mDocumentBackingByDocumentID.get(document.getID());
 			mInternals->mDocumentMapsLock.unlockForReading();
 
-			(*batch)->documentAdd(documentType, R<Internals::DocumentBacking>(**documentBacking))
+			(*batch)->documentAdd(documentType, R<I<Internals::DocumentBacking> >(*documentBacking))
 					.set(property, value);
 		}
 	} else {
@@ -1453,8 +1446,8 @@ void CMDSEphemeral::documentSet(const CString& property, const OV<SValue>& value
 
 			// Update stuffs
 			mInternals->update(documentType,
-					TSArray<Internals::UpdateInfo>(
-							Internals::UpdateInfo(document, (*documentBacking)->getRevision(), document.getID(),
+					TSArray<UpdateInfo>(
+							UpdateInfo(document, (*documentBacking)->getRevision(), document.getID(),
 								TSSet<CString>(property))));
 
 			// Call document changed procs
@@ -1493,7 +1486,7 @@ TVResult<CMDSDocument::AttachmentInfo> CMDSEphemeral::documentAttachmentAdd(cons
 				return TVResult<CMDSDocument::AttachmentInfo>(getUnknownDocumentIDError(documentID));
 
 			return TVResult<CMDSDocument::AttachmentInfo>(
-					(*batch)->documentAdd(documentType, R<Internals::DocumentBacking>(**documentBacking))
+					(*batch)->documentAdd(documentType, R<I<Internals::DocumentBacking> >(*documentBacking))
 							.attachmentAdd(info, content));
 		}
 	} else {
@@ -1507,18 +1500,14 @@ TVResult<CMDSDocument::AttachmentInfo> CMDSEphemeral::documentAttachmentAdd(cons
 					(*documentBacking)->attachmentAdd(mInternals->nextRevision(documentType), info, content));
 		mInternals->mDocumentMapsLock.unlockForWriting();
 
-		// Handle results
-		if (documentAttachmentInfo.hasValue())
-			// Success
-			return TVResult<CMDSDocument::AttachmentInfo>(*documentAttachmentInfo);
-		else
-			// No document
-			return TVResult<CMDSDocument::AttachmentInfo>(getUnknownDocumentIDError(documentID));
+		return documentAttachmentInfo.hasValue() ?
+				TVResult<CMDSDocument::AttachmentInfo>(*documentAttachmentInfo) :
+				TVResult<CMDSDocument::AttachmentInfo>(getUnknownDocumentIDError(documentID));
 	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TVResult<CMDSDocument::AttachmentInfoMap> CMDSEphemeral::documentAttachmentInfoMap(const CString& documentType,
+TVResult<CMDSDocument::AttachmentInfoByID> CMDSEphemeral::documentAttachmentInfoByID(const CString& documentType,
 		const CString& documentID)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -1527,41 +1516,36 @@ TVResult<CMDSDocument::AttachmentInfoMap> CMDSEphemeral::documentAttachmentInfoM
 	bool	isKnownDocumentType = mInternals->mDocumentIDsByDocumentType.contains(documentType);
 	mInternals->mDocumentMapsLock.unlockForReading();
 	if (!isKnownDocumentType)
-		return TVResult<CMDSDocument::AttachmentInfoMap>(getUnknownDocumentTypeError(documentType));
+		return TVResult<CMDSDocument::AttachmentInfoByID>(getUnknownDocumentTypeError(documentType));
 
 	// Check for batch
-	const	OR<I<Internals::Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
-	if (batch.hasReference()) {
-		// In batch
-		const	OR<Internals::BatchDocumentInfo>	batchDocumentInfo = (*batch)->documentInfoGet(documentID);
-		if (batchDocumentInfo.hasReference()) {
-			// Have document in batch
-			mInternals->mDocumentMapsLock.lockForReading();
-			CMDSDocument::AttachmentInfoMap	documentAttachmentInfoMap =
+	const	OR<I<Internals::Batch> >			batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+			OR<Internals::BatchDocumentInfo>	batchDocumentInfo =
+														batch.hasReference() ?
+																(*batch)->documentInfoGet(documentID) :
+																OR<Internals::BatchDocumentInfo>();
+	if (batchDocumentInfo.hasReference()) {
+		// Have document in batch
+		mInternals->mDocumentMapsLock.lockForReading();
+		CMDSDocument::AttachmentInfoByID	documentAttachmentInfoByID =
 													(*mInternals->mDocumentBackingByDocumentID.get(documentID))->
-															getDocumentAttachmentInfoMap();
-			mInternals->mDocumentMapsLock.unlockForReading();
+															getDocumentAttachmentInfoByID();
+		mInternals->mDocumentMapsLock.unlockForReading();
 
-			return TVResult<CMDSDocument::AttachmentInfoMap>(
-					batchDocumentInfo->getUpdatedDocumentAttachmentInfoMap(documentAttachmentInfoMap));
-		}
-	}
-
-	// Check if creating
-	if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.get(documentID).hasReference())
+		return TVResult<CMDSDocument::AttachmentInfoByID>(
+				batchDocumentInfo->getUpdatedDocumentAttachmentInfoByID(documentAttachmentInfoByID));
+	} else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.get(documentID).hasReference())
 		// Creating
-		return TVResult<CMDSDocument::AttachmentInfoMap>(TNDictionary<CMDSDocument::AttachmentInfo>());
+		return TVResult<CMDSDocument::AttachmentInfoByID>(TNDictionary<CMDSDocument::AttachmentInfo>());
 
 	// Not in batch, not creating
 	mInternals->mDocumentMapsLock.lockForReading();
 	OR<I<Internals::DocumentBacking> >	documentBacking = mInternals->mDocumentBackingByDocumentID.get(documentID);
 	mInternals->mDocumentMapsLock.unlockForReading();
-	if (documentBacking.hasReference())
-		// Not in batch and not creating
-		return TVResult<CMDSDocument::AttachmentInfoMap>((*documentBacking)->getDocumentAttachmentInfoMap());
-	else
-		// Unknown documentID
-		return TVResult<CMDSDocument::AttachmentInfoMap>(getUnknownDocumentIDError(documentID));
+
+	return documentBacking.hasReference() ?
+			TVResult<CMDSDocument::AttachmentInfoByID>((*documentBacking)->getDocumentAttachmentInfoByID()) :
+			TVResult<CMDSDocument::AttachmentInfoByID>(getUnknownDocumentIDError(documentID));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1577,21 +1561,23 @@ TVResult<CData> CMDSEphemeral::documentAttachmentContent(const CString& document
 		return TVResult<CData>(getUnknownDocumentTypeError(documentType));
 
 	// Check situation
-	const	OR<I<Internals::Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
-	if (batch.hasReference()) {
-		// In batch
-		const	OR<Internals::BatchDocumentInfo>	batchDocumentInfo = (*batch)->documentInfoGet(documentID);
-		if (batchDocumentInfo.hasReference()) {
-			// Have document in batch
-			OV<CData>	content = batchDocumentInfo->getAttachmentContent(attachmentID);
-			if (content.hasValue())
-				return TVResult<CData>(*content);
-		}
-	} else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.get(documentID).hasReference())
+	const	OR<I<Internals::Batch> >			batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+			OR<Internals::BatchDocumentInfo>	batchDocumentInfo =
+														batch.hasReference() ?
+																(*batch)->documentInfoGet(documentID) :
+																OR<Internals::BatchDocumentInfo>();
+			OV<CData>							data =
+														batchDocumentInfo.hasReference() ?
+																batchDocumentInfo->getAttachmentContent(attachmentID) :
+																OV<CData>();
+	if (data.hasValue())
+		// Found
+		return TVResult<CData>(*data);
+	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.get(documentID).hasReference())
 		// Creating
 		return TVResult<CData>(getUnknownAttachmentIDError(attachmentID));
 
-	// Get non-batch attachmentInfoByAttachmentID
+	// Get non-batch attachment content
 	mInternals->mDocumentMapsLock.lockForReading();
 	OR<I<Internals::DocumentBacking> >		documentBacking = mInternals->mDocumentBackingByDocumentID.get(documentID);
 	OR<Internals::AttachmentContentInfo>	attachmentContentInfo =
@@ -1608,7 +1594,7 @@ TVResult<CData> CMDSEphemeral::documentAttachmentContent(const CString& document
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TVResult<UInt32> CMDSEphemeral::documentAttachmentUpdate(const CString& documentType, const CString& documentID,
+TVResult<OV<UInt32> > CMDSEphemeral::documentAttachmentUpdate(const CString& documentType, const CString& documentID,
 		const CString& attachmentID, const CDictionary& updatedInfo, const CData& updatedContent)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -1619,9 +1605,9 @@ TVResult<UInt32> CMDSEphemeral::documentAttachmentUpdate(const CString& document
 	OR<I<Internals::DocumentBacking> >	documentBacking = mInternals->mDocumentBackingByDocumentID.get(documentID);
 	mInternals->mDocumentMapsLock.unlockForReading();
 	if (!isKnownDocumentType)
-		return TVResult<UInt32>(getUnknownDocumentTypeError(documentType));
+		return TVResult<OV<UInt32> >(getUnknownDocumentTypeError(documentType));
 	if (!documentBacking.hasReference())
-		return TVResult<UInt32>(getUnknownDocumentIDError(documentID));
+		return TVResult<OV<UInt32> >(getUnknownDocumentIDError(documentID));
 
 	// Check for batch
 	const	OR<I<Internals::Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
@@ -1630,12 +1616,12 @@ TVResult<UInt32> CMDSEphemeral::documentAttachmentUpdate(const CString& document
 		const	OR<Internals::BatchDocumentInfo>	batchDocumentInfo = (*batch)->documentInfoGet(documentID);
 		if (batchDocumentInfo.hasReference()) {
 			// Have document in batch
-			CMDSDocument::AttachmentInfoMap 	documentAttachmentInfoMap =
-														batchDocumentInfo->getUpdatedDocumentAttachmentInfoMap(
-																(*documentBacking)->getDocumentAttachmentInfoMap());
-			OR<CMDSDocument::AttachmentInfo>	documentAttachmentInfo = documentAttachmentInfoMap.get(attachmentID);
+			CMDSDocument::AttachmentInfoByID 	documentAttachmentInfoByID =
+														batchDocumentInfo->getUpdatedDocumentAttachmentInfoByID(
+																(*documentBacking)->getDocumentAttachmentInfoByID());
+			OR<CMDSDocument::AttachmentInfo>	documentAttachmentInfo = documentAttachmentInfoByID.get(attachmentID);
 			if (!documentAttachmentInfo.hasReference())
-				return TVResult<UInt32>(getUnknownAttachmentIDError(attachmentID));
+				return TVResult<OV<UInt32> >(getUnknownAttachmentIDError(attachmentID));
 
 			batchDocumentInfo->attachmentUpdate(attachmentID, documentAttachmentInfo->getRevision(),
 					updatedInfo, updatedContent);
@@ -1644,20 +1630,20 @@ TVResult<UInt32> CMDSEphemeral::documentAttachmentUpdate(const CString& document
 			OR<Internals::AttachmentContentInfo>	attachmentContentInfo =
 															(*documentBacking)->getAttachmentContentInfo(attachmentID);
 			if (!attachmentContentInfo.hasReference())
-				return TVResult<UInt32>(getUnknownAttachmentIDError(attachmentID));
+				return TVResult<OV<UInt32> >(getUnknownAttachmentIDError(attachmentID));
 
-			(*batch)->documentAdd(documentType, R<Internals::DocumentBacking>(**documentBacking))
+			(*batch)->documentAdd(documentType, R<I<Internals::DocumentBacking> >(*documentBacking))
 					.attachmentUpdate(attachmentID, attachmentContentInfo->getDocumentAttachmentInfo().getRevision(),
 							updatedInfo, updatedContent);
 		}
 
-		return TVResult<UInt32>(-1);
+		return TVResult<OV<UInt32> >(OV<UInt32>());
 	} else {
 		// Not in batch
 		OR<Internals::AttachmentContentInfo>	attachmentContentInfo =
 														(*documentBacking)->getAttachmentContentInfo(attachmentID);
 		if (!attachmentContentInfo.hasReference())
-			return TVResult<UInt32>(getUnknownAttachmentIDError(attachmentID));
+			return TVResult<OV<UInt32> >(getUnknownAttachmentIDError(attachmentID));
 
 		mInternals->mDocumentMapsLock.lockForWriting();
 		UInt32	revision =
@@ -1665,7 +1651,7 @@ TVResult<UInt32> CMDSEphemeral::documentAttachmentUpdate(const CString& document
 								updatedInfo, updatedContent);
 		mInternals->mDocumentMapsLock.unlockForWriting();
 
-		return TVResult<UInt32>(revision);
+		return TVResult<OV<UInt32> >(OV<UInt32>(revision));
 	}
 }
 
@@ -1692,10 +1678,10 @@ OV<SError> CMDSEphemeral::documentAttachmentRemove(const CString& documentType, 
 		const	OR<Internals::BatchDocumentInfo>	batchDocumentInfo = (*batch)->documentInfoGet(documentID);
 		if (batchDocumentInfo.hasReference()) {
 			// Have document in batch
-			CMDSDocument::AttachmentInfoMap 	documentAttachmentInfoMap =
-														batchDocumentInfo->getUpdatedDocumentAttachmentInfoMap(
-																(*documentBacking)->getDocumentAttachmentInfoMap());
-			OR<CMDSDocument::AttachmentInfo>	documentAttachmentInfo = documentAttachmentInfoMap.get(attachmentID);
+			CMDSDocument::AttachmentInfoByID 	documentAttachmentInfoByID =
+														batchDocumentInfo->getUpdatedDocumentAttachmentInfoByID(
+																(*documentBacking)->getDocumentAttachmentInfoByID());
+			OR<CMDSDocument::AttachmentInfo>	documentAttachmentInfo = documentAttachmentInfoByID.get(attachmentID);
 			if (!documentAttachmentInfo.hasReference())
 				return OV<SError>(getUnknownAttachmentIDError(attachmentID));
 
@@ -1707,7 +1693,7 @@ OV<SError> CMDSEphemeral::documentAttachmentRemove(const CString& documentType, 
 			if (!attachmentContentInfo.hasReference())
 				return OV<SError>(getUnknownAttachmentIDError(attachmentID));
 
-			(*batch)->documentAdd(documentType, R<Internals::DocumentBacking>(**documentBacking))
+			(*batch)->documentAdd(documentType, R<I<Internals::DocumentBacking> >(*documentBacking))
 					.attachmentRemove(attachmentID);
 		}
 
@@ -1749,7 +1735,7 @@ OV<SError> CMDSEphemeral::documentRemove(const CMDSDocument& document)
 														mInternals->mDocumentBackingByDocumentID.get(document.getID());
 			mInternals->mDocumentMapsLock.unlockForReading();
 
-			(*batch)->documentAdd(documentType, R<Internals::DocumentBacking>(**documentBacking)).remove();
+			(*batch)->documentAdd(documentType, R<I<Internals::DocumentBacking> >(*documentBacking)).remove();
 		}
 	} else {
 		// Not in batch
@@ -1774,15 +1760,13 @@ OV<SError> CMDSEphemeral::indexRegister(const CString& name, const CString& docu
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Remove current index if found
-	OR<I<Internals::Index> >	existingIndex = mInternals->mIndexByName.get(name);
+	OR<I<Index> >	existingIndex = mInternals->mIndexByName.get(name);
 	if (existingIndex.hasReference())
 		// Remove
 		mInternals->mIndexesByDocumentType.remove(documentType, *existingIndex);
 
 	// Create or re-create index
-	I<Internals::Index>	index(
-								new Internals::Index(name, documentType, relevantProperties, documentKeysPerformer,
-										keysInfo, 0));
+	I<Index>	index(new Index(name, documentType, relevantProperties, documentKeysPerformer, keysInfo, 0));
 
 	// Add to maps
 	mInternals->mIndexByName.set(name, index);
@@ -1803,7 +1787,7 @@ OV<SError> CMDSEphemeral::indexIterate(const CString& name, const CString& docum
 	const	OR<TDictionary<CString> >	items = mInternals->mIndexValuesByName.get(name);
 	if (!items.hasReference())
 		return OV<SError>(getUnknownIndexError(name));
-	if (mInternals->mBatchByThreadRef.get(CThread::getCurrentRef()).hasReference())
+	if (mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()].hasReference())
 		return OV<SError>(getIllegalInBatchError());
 
 	// Setup
@@ -1911,23 +1895,21 @@ OV<SError> CMDSEphemeral::batch(BatchProc batchProc, void* userData)
 	ReturnErrorIfResultError(batchResult);
 	if (*batchResult == kMDSBatchResultCommit) {
 		// Iterate all document changes
-		TDictionary<TNDictionary<Internals::BatchDocumentInfo> >	batchDocumentInfoByDocumentType =
-																			batch->documentGetInfosByDocumentType();
-		TSet<CString>												documentTypes =
-																			batchDocumentInfoByDocumentType.getKeys();
+		Internals::BatchDocumentInfoByDocumentIDByDocumentType	batchDocumentInfoByDocumentType =
+																		batch->documentGetInfosByDocumentType();
+		TSet<CString>											documentTypes =
+																		batchDocumentInfoByDocumentType.getKeys();
 		for (TIteratorS<CString> documentTypeIterator = documentTypes.getIterator(); documentTypeIterator.hasValue();
 				documentTypeIterator.advance()) {
 			// Setup
-			const	CMDSDocument::Info&				documentInfo =
-															this->documentCreateInfo(*documentTypeIterator);
-					DocumentChangedInfos			documentChangedInfos =
-															this->documentChangedInfos(*documentTypeIterator);
+//			const	CMDSDocument::Info&		documentInfo = documentCreateInfo(*documentTypeIterator);
+					DocumentChangedInfos	documentChangedInfos = this->documentChangedInfos(*documentTypeIterator);
 
-					TNArray<Internals::UpdateInfo>	updateInfos;
-					TNSet<CString>					removedDocumentIDs;
+					TNArray<UpdateInfo>		updateInfos;
+					TNSet<CString>			removedDocumentIDs;
 
 			// Update documents
-			TDictionary<Internals::BatchDocumentInfo>	batchDocumentInfoByDocumentID =
+			Internals::BatchDocumentInfoByDocumentID	batchDocumentInfoByDocumentID =
 																*batchDocumentInfoByDocumentType.get(
 																		*documentTypeIterator);
 			TSet<CString>								documentIDs = batchDocumentInfoByDocumentID.getKeys();
@@ -2035,8 +2017,8 @@ OV<SError> CMDSEphemeral::batch(BatchProc batchProc, void* userData)
 // MARK: CMDSDocumentStorageServer methods
 
 //----------------------------------------------------------------------------------------------------------------------
-TVResult<CMDSDocumentStorageServer::DocumentRevisionInfosWithTotalCount> CMDSEphemeral::
-				associationGetDocumentRevisionInfosFrom(
+TVResult<CMDSDocumentStorageServer::DocumentRevisionInfosWithTotalCount>
+				CMDSEphemeral::associationGetDocumentRevisionInfosFrom(
 		const CString& name, const CString& fromDocumentID, UInt32 startIndex, const OV<UInt32>& count) const
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -2085,8 +2067,8 @@ TVResult<CMDSDocumentStorageServer::DocumentRevisionInfosWithTotalCount> CMDSEph
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TVResult<CMDSDocumentStorageServer::DocumentRevisionInfosWithTotalCount> CMDSEphemeral::
-				associationGetDocumentRevisionInfosTo(
+TVResult<CMDSDocumentStorageServer::DocumentRevisionInfosWithTotalCount>
+				CMDSEphemeral::associationGetDocumentRevisionInfosTo(
 		const CString& name, const CString& toDocumentID, UInt32 startIndex, const OV<UInt32>& count) const
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -2391,7 +2373,7 @@ OV<SInt64> CMDSEphemeral::documentIntegerValue(const CString& documentType, cons
 			// In batch
 			OV<SValue>	value = batchDocumentInfo->getValue(property);
 
-			return (value.hasValue() && value->canCoerceToType(SValue::kSInt64)) ?
+			return (value.hasValue() && value->canCoerceToType(SValue::kTypeSInt64)) ?
 					OV<SInt64>(value->getSInt64()) : OV<SInt64>();
 		}
 	}
@@ -2404,7 +2386,7 @@ OV<SInt64> CMDSEphemeral::documentIntegerValue(const CString& documentType, cons
 							propertyMap->contains(property) ?
 									OV<SValue>(propertyMap->getValue(property)) : OV<SValue>();
 
-		return (value.hasValue() && value->canCoerceToType(SValue::kSInt64)) ?
+		return (value.hasValue() && value->canCoerceToType(SValue::kTypeSInt64)) ?
 				OV<SInt64>(value->getSInt64()) : OV<SInt64>();
 	}
 
@@ -2422,7 +2404,7 @@ OV<SInt64> CMDSEphemeral::documentIntegerValue(const CString& documentType, cons
 																OV<SValue>();
 	mInternals->mDocumentMapsLock.unlockForReading();
 
-	return (value.hasValue() && value->canCoerceToType(SValue::kSInt64)) ?
+	return (value.hasValue() && value->canCoerceToType(SValue::kTypeSInt64)) ?
 			OV<SInt64>(value->getSInt64()) : OV<SInt64>();
 }
 
@@ -2434,7 +2416,7 @@ OV<CString> CMDSEphemeral::documentStringValue(const CString& documentType, cons
 	// Get value
 	OV<SValue>	value = documentValue(property, document);
 
-	return (value.hasValue() && (value->getType() == SValue::kString)) ?
+	return (value.hasValue() && (value->getType() == SValue::kTypeString)) ?
 			OV<CString>(value->getString()) : OV<CString>();
 }
 
@@ -2452,7 +2434,7 @@ TVResult<TArray<CMDSDocument::FullInfo> > CMDSEphemeral::documentUpdate(const CS
 
 	// Setup
 	const	CMDSDocument::Info&				documentInfo = documentCreateInfo(documentType);
-			TNArray<Internals::UpdateInfo>	updateInfos;
+			TNArray<UpdateInfo>				updateInfos;
 			TNSet<CString>					removedDocumentIDs;
 			TNArray<CMDSDocument::FullInfo>	documentFullInfos;
 
@@ -2478,7 +2460,7 @@ TVResult<TArray<CMDSDocument::FullInfo> > CMDSEphemeral::documentUpdate(const CS
 
 				// Add update info
 				updateInfos +=
-						Internals::UpdateInfo(document, (*documentBacking)->getRevision(), iterator->getDocumentID(),
+						UpdateInfo(document, (*documentBacking)->getRevision(), iterator->getDocumentID(),
 								TNSet<CString>(iterator->getUpdated().getKeys()).insertFrom(iterator->getRemoved()));
 
 				// Add full info
