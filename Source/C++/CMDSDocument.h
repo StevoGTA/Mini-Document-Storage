@@ -44,6 +44,7 @@ class CMDSDocument : public CHashable {
 											{ return mRevision; }
 				const	CDictionary&	getInfo() const
 											{ return mInfo; }
+
 				const	CString&		getType() const
 											{ return mInfo.getString(CString(OSSTR("type"))); }
 

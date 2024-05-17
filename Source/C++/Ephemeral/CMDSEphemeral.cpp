@@ -148,27 +148,26 @@ class CMDSEphemeral::Internals {
 																// Update property map
 																mPropertyMap.remove(*removedProperties);
 														}
-				CMDSDocument::AttachmentInfo		attachmentAdd(UInt32 revision, const CDictionary& info,
-															const CData& content)
+				CMDSDocument::AttachmentInfo		attachmentAdd(const CString& attachmentID, UInt32 documentRevision,
+															const CDictionary& attachmentInfo,
+															const CData& attachmentContent)
 														{
 															// Setup
-															CString							attachmentID =
-																									CUUID().getBase64String();
 															CMDSDocument::AttachmentInfo	documentAttachmentInfo(
 																									attachmentID, 1,
-																									info);
+																									attachmentInfo);
 
 															// Add
 															mAttachmentContentInfoByAttachmentID.set(attachmentID,
 																	AttachmentContentInfo(documentAttachmentInfo,
-																			content));
+																			attachmentContent));
 
 															// Update
-															mRevision = revision;
+															mRevision = documentRevision;
 															mModificationUniversalTime = SUniversalTime::getCurrent();
 
 															return documentAttachmentInfo;
-													}
+														}
 				OR<AttachmentContentInfo>			getAttachmentContentInfo(const CString& attachmentID)
 														{ return mAttachmentContentInfoByAttachmentID.get(attachmentID); }
 				UInt32								attachmentUpdate(UInt32 revision, const CString& attachmentID,
@@ -510,9 +509,10 @@ class CMDSEphemeral::Internals {
 																iterator.hasValue(); iterator.advance()) {
 															// Add attachment
 															const	Batch::AddAttachmentInfo&	batchAddAttachmentInfo =
-																										*addAttachmentInfosByID[
-																												*iterator];
-															documentBacking.attachmentAdd(documentBacking.getRevision(),
+																										*addAttachmentInfosByID[*iterator];
+															documentBacking.attachmentAdd(
+																	batchAddAttachmentInfo.getID(),
+																	documentBacking.getRevision(),
 																	batchAddAttachmentInfo.getInfo(),
 																	batchAddAttachmentInfo.getContent());
 														}
@@ -1501,7 +1501,8 @@ TVResult<CMDSDocument::AttachmentInfo> CMDSEphemeral::documentAttachmentAdd(cons
 		if (documentBacking.hasReference())
 			// Add attachment
 			documentAttachmentInfo.setValue(
-					(*documentBacking)->attachmentAdd(mInternals->nextRevision(documentType), info, content));
+					(*documentBacking)->attachmentAdd(CUUID().getBase64String(), mInternals->nextRevision(documentType),
+							info, content));
 		mInternals->mDocumentMapsLock.unlockForWriting();
 
 		return documentAttachmentInfo.hasValue() ?
