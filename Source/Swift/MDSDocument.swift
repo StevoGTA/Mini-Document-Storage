@@ -41,8 +41,8 @@ open class MDSDocument : Hashable {
 		}
 	}
 
-	// MARK: AttachmentInfoMap
-	public typealias AttachmentInfoMap = [/* Attachment ID */ String : AttachmentInfo]
+	// MARK: AttachmentInfoByID
+	public typealias AttachmentInfoByID = [/* Attachment ID */ String : AttachmentInfo]
 
 	// MARK: RevisionInfo
 	public struct RevisionInfo {
@@ -72,7 +72,7 @@ open class MDSDocument : Hashable {
 		let	creationDate :Date
 		let	modificationDate :Date
 		let	propertyMap :[String : Any]
-		let	attachmentInfoMap :AttachmentInfoMap
+		let	attachmentInfoByID :AttachmentInfoByID
 	}
 
 	// MARK: CreateInfo
@@ -410,7 +410,7 @@ open class MDSDocument : Hashable {
 	//------------------------------------------------------------------------------------------------------------------
 	public func attachmentInfos(for type :String) -> [AttachmentInfo] {
 		// Return filtered attachment infos
-		return try! self.documentStorage.documentAttachmentInfoMap(for: self).values.filter({ $0.type == type })
+		return try! self.documentStorage.documentAttachmentInfoByID(for: self).values.filter({ $0.type == type })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

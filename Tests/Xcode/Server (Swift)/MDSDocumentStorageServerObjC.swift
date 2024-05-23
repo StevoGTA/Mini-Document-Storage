@@ -44,8 +44,8 @@ fileprivate extension MDSDocument.FullInfo {
 				active: documentFullInfo.active, creationDate: documentFullInfo.creationDate,
 				modificationDate: documentFullInfo.modificationDate,
 				propertyMap: documentFullInfo.propertyMap as! [String : Any],
-				attachmentInfoMap:
-						documentFullInfo.attachmentInfoMap
+				attachmentInfoByID:
+						documentFullInfo.attachmentInfoByID
 								.mapValues(
 										{ MDSDocument.AttachmentInfo(id: $0._id, revision: $0.revision,
 												info: $0.info ) }))
@@ -262,8 +262,8 @@ class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageS
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentAttachmentInfoMap(for documentType :String, documentID :String) throws ->
-			MDSDocument.AttachmentInfoMap {
+	func documentAttachmentInfoByID(for documentType :String, documentID :String) throws ->
+			MDSDocument.AttachmentInfoByID {
 		fatalError("Unimplemented")
 	}
 
@@ -279,7 +279,7 @@ class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageS
 
 	//------------------------------------------------------------------------------------------------------------------
 	func documentAttachmentUpdate(for documentType :String, documentID :String, attachmentID :String,
-			updatedInfo :[String : Any], updatedContent :Data) throws -> Int {
+			updatedInfo :[String : Any], updatedContent :Data) throws -> Int? {
 		// Update
 		var	revision :NSInteger = 0
 		try self.documentStorageObjC.documentAttachmentUpdateDocumentType(documentType, documentID: documentID,

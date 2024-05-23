@@ -92,7 +92,7 @@ typedef	NSArray<MDSAssociationUpdate*>	MDSAssociationUpdateArray;
 
 @end
 
-typedef	NSDictionary<NSString*, MDSDocumentAttachmentInfo*>	MDSDocumentAttachmentInfoMap;
+typedef	NSDictionary<NSString*, MDSDocumentAttachmentInfo*>	MDSDocumentAttachmentInfoByID;
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSDocumentCreateInfo
@@ -126,7 +126,7 @@ typedef	NSDictionary<NSString*, MDSDocumentAttachmentInfo*>	MDSDocumentAttachmen
 @property (nonatomic, strong)	NSDate*							creationDate;
 @property (nonatomic, strong)	NSDate*							modificationDate;
 @property (nonatomic, strong)	NSDictionary*					propertyMap;
-@property (nonatomic, strong)	MDSDocumentAttachmentInfoMap*	attachmentInfoMap;
+@property (nonatomic, strong)	MDSDocumentAttachmentInfoByID*	attachmentInfoByID;
 
 @end
 

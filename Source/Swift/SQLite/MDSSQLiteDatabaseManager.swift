@@ -7,7 +7,7 @@
 //
 
 /*
-	See https://docs.google.com/document/d/1zgMAzYLemHA05F_FR4QZP_dn51cYcVfKMcUfai60FXE/edit for overview
+	See https://docs.google.com/document/d/1zgMAzYLemHA05F_FR4QZP_dn51cYcVfKMcUfai60FXE for overview
 
 	Summary:
 		Associations table
@@ -62,6 +62,36 @@ class MDSSQLiteDatabaseManager {
 		let	name :String
 		let	valueType :MDSValueType
 		let	selector :String
+
+		var	info :[String : Any]
+					{ ["name": self.name, "valueType": self.valueType.rawValue, "selector": self.selector] }
+
+		// MARK: Lifecycle methods
+		//--------------------------------------------------------------------------------------------------------------
+		init(name :String, valueType :MDSValueType, selector :String) {
+			// Store
+			self.name = name
+			self.valueType = valueType
+			self.selector = selector
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		init(info :[String : Any]) {
+			// Store
+			self.name = info["name"] as! String
+			self.valueType = MDSValueType(rawValue: info["valueType"] as! String)!
+			self.selector = info["selector"] as! String
+		}
+	}
+
+	// MARK: DocumentContentInfo
+	struct DocumentContentInfo {
+
+		// MARK: Properties
+		let	id :Int64
+		let	creationDate :Date
+		let	modificationDate :Date
+		let	propertyMap :[String : Any]
 	}
 
 	// MARK: DocumentInfo
@@ -77,22 +107,12 @@ class MDSSQLiteDatabaseManager {
 				{ MDSDocument.RevisionInfo(documentID: self.documentID, revision: self.revision) }
 	}
 
-	// MARK: DocumentContentInfo
-	struct DocumentContentInfo {
-
-		// MARK: Properties
-		let	id :Int64
-		let	creationDate :Date
-		let	modificationDate :Date
-		let	propertyMap :[String : Any]
-	}
-
 	// MARK: Types
 	private	typealias DocumentTables =
 					(infoTable :SQLiteTable, contentsTable :SQLiteTable, attachmentsTable :SQLiteTable)
 
 	private	typealias CacheUpdateInfo =
-						(infosByValue :[Int64 : [/* Name */ String : Any]], removedIDs :[Int64], lastRevision :Int?)
+						(valueInfoByID :[Int64 : [/* Name */ String : Any]], removedIDs :[Int64], lastRevision :Int?)
 	private	typealias CollectionUpdateInfo = (includedIDs :[Int64], notIncludedIDs :[Int64], lastRevision :Int?)
 	private	typealias IndexUpdateInfo =
 						(keysInfos :[(keys :[String], id :Int64)], removedIDs :[Int64], lastRevision :Int?)
@@ -100,11 +120,90 @@ class MDSSQLiteDatabaseManager {
 	// MARK: BatchInfo
 	private class BatchInfo {
 
+		// MARK: Instance methods
+		//--------------------------------------------------------------------------------------------------------------
+		func noteDocumentTypeNeedingLastRevisionWrite(documentType :String) {
+			// Add
+			self.documentLastRevisionTypesNeedingWrite.insert(documentType)
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		func noteCacheUpdate(name :String, valueInfoByID :[Int64 : [/* Name */ String : Any]]?, removedIDs :[Int64],
+				lastRevision :Int?) {
+			// Check for existing
+			if let cacheUpdateInfo = self.cacheUpdateInfoByName[name] {
+				// Update
+				self.cacheUpdateInfoByName[name] =
+						(cacheUpdateInfo.valueInfoByID
+										.merging(valueInfoByID ?? [:],
+												uniquingKeysWith: { $0.merging($1, uniquingKeysWith: { $1 }) }),
+								cacheUpdateInfo.removedIDs + removedIDs, lastRevision)
+			} else {
+				// Add
+				self.cacheUpdateInfoByName[name] = (valueInfoByID ?? [:], removedIDs, lastRevision)
+			}
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		func noteCollectionUpdate(name :String, includedIDs :[Int64]?, notIncludedIDs :[Int64]?, lastRevision :Int?) {
+			// Check for existing
+			if let collectionUpdateInfo = self.collectionUpdateInfoByName[name] {
+				// Update
+				self.collectionUpdateInfoByName[name] =
+						(collectionUpdateInfo.includedIDs + (includedIDs ?? []),
+								collectionUpdateInfo.notIncludedIDs + (notIncludedIDs ?? []), lastRevision)
+			} else {
+				// Add
+				self.collectionUpdateInfoByName[name] = (includedIDs ?? [], notIncludedIDs ?? [], lastRevision)
+			}
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		func noteIndexUpdate(name :String, keysInfos :[(keys :[String], id :Int64)]?, removedIDs :[Int64]?,
+				lastRevision :Int?) {
+			// Check for existing
+			if let indexInfo = self.indexUpdateInfoByName[name] {
+				// Update
+				self.indexUpdateInfoByName[name] =
+						(indexInfo.keysInfos + (keysInfos ?? []), indexInfo.removedIDs + (removedIDs ?? []),
+								lastRevision)
+			} else {
+				// Add
+				self.indexUpdateInfoByName[name] = (keysInfos ?? [], removedIDs ?? [], lastRevision)
+			}
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		func iterateDocumentLastRevisionTypesNeedingWrite(_ proc :(_ documentType :String) -> Void) {
+			// Iterate
+			self.documentLastRevisionTypesNeedingWrite.forEach() { proc($0) }
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		func iterateCacheUpdateInfos(_ proc :(_ name :String, _ cacheUpdateInfo :CacheUpdateInfo) -> Void) {
+			// Iterate
+			self.cacheUpdateInfoByName.forEach() { proc($0, $1) }
+		}
+
+
+		//--------------------------------------------------------------------------------------------------------------
+		func iterateCollectionUpdateInfos(
+				_ proc :(_ name :String, _ collectionUpdateInfo :CollectionUpdateInfo) -> Void) {
+			// Iterate
+			self.collectionUpdateInfoByName.forEach() { proc($0, $1) }
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
+		func iterateIndexUpdateInfos(_ proc :(_ name :String, _ indexUpdateInfo :IndexUpdateInfo) -> Void) {
+			// Iterate
+			self.indexUpdateInfoByName.forEach() { proc($0, $1) }
+		}
+
 		// MARK: Properties
-		var	documentLastRevisionTypesNeedingWrite = Set<String>()
-		var	cacheInfo = [/* Cache name */ String : CacheUpdateInfo]()
-		var	collectionInfo = [/* Collection name */ String : CollectionUpdateInfo]()
-		var	indexInfo = [/* Index name */ String : IndexUpdateInfo]()
+		private	var	documentLastRevisionTypesNeedingWrite = Set<String>()
+		private	var	cacheUpdateInfoByName = [/* Cache name */ String : CacheUpdateInfo]()
+		private	var	collectionUpdateInfoByName = [/* Collection name */ String : CollectionUpdateInfo]()
+		private	var	indexUpdateInfoByName = [/* Index name */ String : IndexUpdateInfo]()
 	}
 
 	// MARK: AssociationsTable
@@ -163,8 +262,8 @@ class MDSSQLiteDatabaseManager {
 		}
 	}
 
-	// MARK: AssocationContentsTable
-	private struct AssocationContentsTable {
+	// MARK: AssociationContentsTable
+	private struct AssociationContentsTable {
 
 		// MARK: Properties
 		static	let	fromIDTableColumn = SQLiteTableColumn("fromID", .integer, [])
@@ -202,7 +301,8 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func get(from table :SQLiteTable, where sqliteWhere :SQLiteWhere? = nil) -> [(fromID :Int64, toID :Int64)] {
+		static func get(where sqliteWhere :SQLiteWhere? = nil, from table :SQLiteTable) ->
+				[(fromID :Int64, toID :Int64)] {
 			// Iterate all rows
 			var	items = [(fromID :Int64, toID :Int64)]()
 			try! table.select(where: sqliteWhere) {
@@ -218,7 +318,7 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func add(items :[(fromID :Int64, toID :Int64)], in table :SQLiteTable) {
+		static func add(items :[(fromID :Int64, toID :Int64)], to table :SQLiteTable) {
 			// Iterate items
 			items.forEach() {
 				// Insert
@@ -231,7 +331,7 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func remove(items :[(fromID :Int64, toID :Int64)], in table :SQLiteTable) {
+		static func remove(items :[(fromID :Int64, toID :Int64)], from table :SQLiteTable) {
 			// Iterate items
 			items.forEach() {
 				// Delete
@@ -294,20 +394,13 @@ class MDSSQLiteDatabaseManager {
 								$0.text(for: self.relevantPropertiesTableColumn)!
 										.components(separatedBy: ",")
 										.filter({ !$0.isEmpty })
-						let	_info =
-									try! JSONSerialization.jsonObject(with: $0.blob(for: self.infoTableColumn)!) as!
-											[[String : String]]
+						let	cacheValueInfos =
+									(try! JSONSerialization.jsonObject(with: $0.blob(for: self.infoTableColumn)!) as!
+											[[String : String]]).map({ CacheValueInfo(info: $0) })
 						let	lastRevision = Int($0.integer(for: self.lastRevisionTableColumn)!)
 
-						// Compose other info
-						let	valueInfos =
-									_info.map(
-											{ CacheValueInfo(name: $0["name"]!,
-													valueType: MDSValueType(rawValue: $0["valueType"]!)!,
-													selector: $0["selector"]!) })
-
 						// Set current info
-						info = (type, relevantProperties, valueInfos, lastRevision)
+						info = (type, relevantProperties, cacheValueInfos, lastRevision)
 					}
 
 			return info
@@ -316,18 +409,14 @@ class MDSSQLiteDatabaseManager {
 		//--------------------------------------------------------------------------------------------------------------
 		static func addOrUpdate(name :String, documentType :String, relevantProperties :[String],
 				valueInfos :[CacheValueInfo], in table :SQLiteTable) {
-			// Setup
-			let	info =
-						valueInfos.map(
-								{ ["name": $0.name, "valueType": $0.valueType.rawValue, "selector": $0.selector] })
-
 			// Insert or replace
 			table.insertOrReplaceRow(
 					[
 						(self.nameTableColumn, name),
 						(self.typeTableColumn, documentType),
 						(self.relevantPropertiesTableColumn, String(combining: relevantProperties, with: ",")),
-						(self.infoTableColumn, try! JSONSerialization.data(withJSONObject: info)),
+						(self.infoTableColumn,
+								try! JSONSerialization.data(withJSONObject: valueInfos.map({ $0.info }))),
 						(self.lastRevisionTableColumn, 0),
 					])
 		}
@@ -368,11 +457,11 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func update(infosByValue :[Int64 : [/* Name */ String : Any]], removedIDs :[Int64],
+		static func update(valueInfoByID :[Int64 : [/* Name */ String : Any]], removedIDs :[Int64],
 				in table :SQLiteTable) {
 			// Update
 			if !removedIDs.isEmpty { table.deleteRows(self.idTableColumn, values: removedIDs) }
-			infosByValue.forEach() {
+			valueInfoByID.forEach() {
 				// Insert or replace row for this id
 				table.insertOrReplaceRow(
 						[(self.idTableColumn, $0.key)] + $0.value.map({ (table.tableColumn(for: $0.key), $0.value) }))
@@ -513,7 +602,7 @@ class MDSSQLiteDatabaseManager {
 		// MARK: Class methods
 		//--------------------------------------------------------------------------------------------------------------
 		static func table(in database :SQLiteDatabase, name :String, internalsTable :SQLiteTable) -> SQLiteTable {
-			// Create table
+			// Setup
 			let	table =
 						database.table(name: "Collection-\(name)", options: [.withoutRowID],
 								tableColumns: self.tableColumns)
@@ -623,9 +712,9 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func ids(for documentIDs :[String], in table :SQLiteTable) -> [String : Int64] {
-			// Retrieve id
-			var	idsByDocumentID = [String : Int64]()
+		static func idByDocumentID(for documentIDs :[String], in table :SQLiteTable) -> [String : Int64] {
+			// Retrieve id map
+			var	idByDocumentID = [String : Int64]()
 			try! table.select(tableColumns: [self.idTableColumn, self.documentIDTableColumn],
 					where: SQLiteWhere(tableColumn: self.documentIDTableColumn, values: documentIDs))
 					{
@@ -633,16 +722,16 @@ class MDSSQLiteDatabaseManager {
 						let	id = $0.integer(for: self.idTableColumn)!
 						let	documentID = $0.text(for: self.documentIDTableColumn)!
 
-						// Update Map
-						idsByDocumentID[documentID] = id
+						// Update map
+						idByDocumentID[documentID] = id
 					}
 
-			return idsByDocumentID
+			return idByDocumentID
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func documentIDs(for ids :[Int64], in table :SQLiteTable) -> [Int64 : String] {
-			// Retrieve id
+		static func documentIDByID(for ids :[Int64], in table :SQLiteTable) -> [Int64 : String] {
+			// Retrieve documentID map
 			var	documentIDsByID = [Int64 : String]()
 			try! table.select(tableColumns: [self.idTableColumn, self.documentIDTableColumn],
 					where: SQLiteWhere(tableColumn: self.idTableColumn, values: ids))
@@ -651,7 +740,7 @@ class MDSSQLiteDatabaseManager {
 						let	id = $0.integer(for: self.idTableColumn)!
 						let	documentID = $0.text(for: self.documentIDTableColumn)!
 
-						// Update Map
+						// Update map
 						documentIDsByID[id] = documentID
 					}
 
@@ -659,10 +748,10 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func documentRevisionInfos(for ids :[Int64], in table :SQLiteTable) ->
+		static func documentRevisionInfoByID(for ids :[Int64], in table :SQLiteTable) ->
 				[Int64 : (documentID :String, revision :Int)] {
-			// Retrieve id
-			var	documentRevisionInfosByID = [Int64 : (documentID :String, revision :Int)]()
+			// Retrieve document revision map
+			var	documentRevisionInfoByID = [Int64 : (documentID :String, revision :Int)]()
 			try! table.select(tableColumns: [self.idTableColumn, self.documentIDTableColumn, self.revisionTableColumn],
 					where: SQLiteWhere(tableColumn: self.idTableColumn, values: ids))
 					{
@@ -671,11 +760,11 @@ class MDSSQLiteDatabaseManager {
 						let	revision = Int($0.integer(for: self.revisionTableColumn)!)
 						let	documentID = $0.text(for: self.documentIDTableColumn)!
 
-						// Update Map
-						documentRevisionInfosByID[id] = (documentID, revision)
+						// Update map
+						documentRevisionInfoByID[id] = (documentID, revision)
 					}
 
-			return documentRevisionInfosByID
+			return documentRevisionInfoByID
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
@@ -851,24 +940,24 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func documentAttachmentInfoMap(id :Int64, in table :SQLiteTable) -> MDSDocument.AttachmentInfoMap {
+		static func documentAttachmentInfoByID(id :Int64, in table :SQLiteTable) -> MDSDocument.AttachmentInfoByID {
 			// Get info
-			var	documentAttachmentInfoMap = MDSDocument.AttachmentInfoMap()
+			var	documentAttachmentInfoByID = MDSDocument.AttachmentInfoByID()
 			try! table.select(
 					tableColumns: [self.attachmentIDTableColumn, self.revisionTableColumn, self.infoTableColumn],
 					 where: SQLiteWhere(tableColumn: self.idTableColumn, value: id))  {
 						// Process values
-						let	id = $0.text(for: self.attachmentIDTableColumn)!
+						let	attachmentID = $0.text(for: self.attachmentIDTableColumn)!
 						let	revision = Int($0.integer(for: self.revisionTableColumn)!)
 						let	info =
 									try! JSONSerialization.jsonObject(
 											with: $0.blob(for: self.infoTableColumn)!) as! [String : Any]
 
-						documentAttachmentInfoMap[id] =
-								MDSDocument.AttachmentInfo(id: id, revision: revision, info: info)
+						documentAttachmentInfoByID[attachmentID] =
+								MDSDocument.AttachmentInfo(id: attachmentID, revision: revision, info: info)
 					 }
 
-			return documentAttachmentInfoMap
+			return documentAttachmentInfoByID
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
@@ -885,12 +974,13 @@ class MDSSQLiteDatabaseManager {
 			try! table.select(tableColumns: [self.revisionTableColumn], where: sqliteWhere)
 					{ revision = Int($0.integer(for: self.revisionTableColumn)!) }
 
+			// Update
 			table.update([
-								(self.revisionTableColumn, revision + 1),
-								(self.infoTableColumn, try! JSONSerialization.data(withJSONObject: updatedInfo)),
-								(self.contentTableColumn, updatedContent),
-							],
-					where: SQLiteWhere(tableColumn: self.attachmentIDTableColumn, value: attachmentID))
+							(self.revisionTableColumn, revision + 1),
+							(self.infoTableColumn, try! JSONSerialization.data(withJSONObject: updatedInfo)),
+							(self.contentTableColumn, updatedContent),
+						 ],
+					where: sqliteWhere)
 
 			return revision + 1
 		}
@@ -1227,7 +1317,7 @@ class MDSSQLiteDatabaseManager {
 
 	private	let	database :SQLiteDatabase
 
-	private	let	batchInfoMap = LockingDictionary<Thread, BatchInfo>()
+	private	let	batchInfoByThread = LockingDictionary<Thread, BatchInfo>()
 
 	private	let	associationsTable :SQLiteTable
 	private	let	associationTablesByName = LockingDictionary</* Association name */ String, SQLiteTable>()
@@ -1240,7 +1330,7 @@ class MDSSQLiteDatabaseManager {
 
 	private	let	documentsTable :SQLiteTable
 	private	let	documentTablesByDocumentType = LockingDictionary</* Document type */ String, DocumentTables>()
-	private	let	documentLastRevisionMap = LockingDictionary</* Document type */ String, Int>()
+	private	let	documentLastRevisionByDocumentType = LockingDictionary</* Document type */ String, Int>()
 
 	private	let	indexesTable :SQLiteTable
 	private	let	indexTablesByName = LockingDictionary</* Index name */ String, SQLiteTable>()
@@ -1257,7 +1347,7 @@ class MDSSQLiteDatabaseManager {
 		// Store
 		self.database = database
 
-		// Create tables
+		// Setup tables
 		self.infoTable = InfoTable.table(in: self.database)
 		self.internalsTable = InternalsTable.table(in: self.database)
 
@@ -1275,13 +1365,12 @@ class MDSSQLiteDatabaseManager {
 		// Finalize setup
 		InfoTable.set(value: nil, for: "version", in: self.infoTable)
 
-		// Load all existing document info
 		try! self.documentsTable.select() {
 			// Process results
 			let	(documentType, lastRevision) = DocumentsTable.info(for: $0)
 
 			// Update
-			self.documentLastRevisionMap.set(lastRevision, for: documentType)
+			self.documentLastRevisionByDocumentType.set(lastRevision, for: documentType)
 		}
 	}
 
@@ -1293,9 +1382,9 @@ class MDSSQLiteDatabaseManager {
 				in: self.associationsTable)
 
 		// Create contents table
-		let	associationContentsTable =
-					AssocationContentsTable.table(in: self.database, name: name, internalsTable: self.internalsTable)
-		self.associationTablesByName.set(associationContentsTable, for: name)
+		self.associationTablesByName.set(
+				AssociationContentsTable.table(in: self.database, name: name, internalsTable: self.internalsTable),
+				for: name)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1304,7 +1393,7 @@ class MDSSQLiteDatabaseManager {
 		if let info = AssociationsTable.info(for: name, in: self.associationsTable) {
 			// Found
 			let	associationContentsTable =
-						AssocationContentsTable.table(in: self.database, name: name,
+						AssociationContentsTable.table(in: self.database, name: name,
 								internalsTable: self.internalsTable)
 			self.associationTablesByName.set(associationContentsTable, for: name)
 
@@ -1322,23 +1411,23 @@ class MDSSQLiteDatabaseManager {
 		let	toDocumentTables = documentTables(for: toDocumentType)
 		let	associationContentsTable = self.associationTablesByName.value(for: name)!
 
-		// Get all
-		let	items = AssocationContentsTable.get(from: associationContentsTable)
-		let	fromDocumentIDsByID =
-					DocumentTypeInfoTable.documentIDs(for: Array(Set<Int64>(items.map({ $0.fromID }))),
+		// Get all items
+		let	items = AssociationContentsTable.get(from: associationContentsTable)
+		let	fromDocumentIDByID =
+					DocumentTypeInfoTable.documentIDByID(for: Array(Set<Int64>(items.map({ $0.fromID }))),
 							in: fromDocumentTables.infoTable)
-		let	toDocumentIDsByID =
-					DocumentTypeInfoTable.documentIDs(for: Array(Set<Int64>(items.map({ $0.toID }))),
+		let	toDocumentIDByID =
+					DocumentTypeInfoTable.documentIDByID(for: Array(Set<Int64>(items.map({ $0.toID }))),
 							in: toDocumentTables.infoTable)
 
 		return items.map(
-				{ MDSAssociation.Item(fromDocumentID: fromDocumentIDsByID[$0.fromID]!,
-						toDocumentID: toDocumentIDsByID[$0.toID]!) })
+				{ MDSAssociation.Item(fromDocumentID: fromDocumentIDByID[$0.fromID]!,
+						toDocumentID: toDocumentIDByID[$0.toID]!) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func associationGet(name :String, fromDocumentID :String, fromDocumentType :String, toDocumentType :String) throws
-			-> [MDSAssociation.Item] {
+	func associationGet(name :String, fromDocumentID :String, fromDocumentType :String, toDocumentType :String)
+			throws -> [MDSAssociation.Item] {
 		// Setup
 		let	fromDocumentTables = documentTables(for: fromDocumentType)
 		guard let fromID = DocumentTypeInfoTable.id(for: fromDocumentID, in: fromDocumentTables.infoTable) else {
@@ -1347,16 +1436,17 @@ class MDSSQLiteDatabaseManager {
 		let	toDocumentTables = documentTables(for: toDocumentType)
 		let	associationContentsTable = self.associationTablesByName.value(for: name)!
 
-		// Get all
+		// Get items
 		let	items =
-					AssocationContentsTable.get(from: associationContentsTable,
-							where: SQLiteWhere(tableColumn: AssocationContentsTable.fromIDTableColumn, value: fromID))
-		let	toDocumentIDsByID =
-					DocumentTypeInfoTable.documentIDs(for: Array(Set<Int64>(items.map({ $0.toID }))),
+					AssociationContentsTable.get(
+							where: SQLiteWhere(tableColumn: AssociationContentsTable.fromIDTableColumn, value: fromID),
+							from: associationContentsTable)
+		let	toDocumentIDByID =
+					DocumentTypeInfoTable.documentIDByID(for: Array(Set<Int64>(items.map({ $0.toID }))),
 							in: toDocumentTables.infoTable)
 
 		return items.map(
-				{ MDSAssociation.Item(fromDocumentID: fromDocumentID, toDocumentID: toDocumentIDsByID[$0.toID]!) })
+				{ MDSAssociation.Item(fromDocumentID: fromDocumentID, toDocumentID: toDocumentIDByID[$0.toID]!) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1370,16 +1460,17 @@ class MDSSQLiteDatabaseManager {
 		}
 		let	associationContentsTable = self.associationTablesByName.value(for: name)!
 
-		// Get all
+		// Get items
 		let	items =
-					AssocationContentsTable.get(from: associationContentsTable,
-							where: SQLiteWhere(tableColumn: AssocationContentsTable.toIDTableColumn, value: toID))
-		let	fromDocumentIDsByID =
-					DocumentTypeInfoTable.documentIDs(for: Array(Set<Int64>(items.map({ $0.fromID }))),
+					AssociationContentsTable.get(
+							where: SQLiteWhere(tableColumn: AssociationContentsTable.toIDTableColumn, value: toID),
+							from: associationContentsTable)
+		let	fromDocumentIDByID =
+					DocumentTypeInfoTable.documentIDByID(for: Array(Set<Int64>(items.map({ $0.fromID }))),
 							in: fromDocumentTables.infoTable)
 
 		return items.map(
-				{ MDSAssociation.Item(fromDocumentID: fromDocumentIDsByID[$0.fromID]!, toDocumentID: toDocumentID) })
+				{ MDSAssociation.Item(fromDocumentID: fromDocumentIDByID[$0.fromID]!, toDocumentID: toDocumentID) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1388,10 +1479,10 @@ class MDSSQLiteDatabaseManager {
 		let	documentTables = self.documentTables(for: fromDocumentType)
 		let	associationContentsTable = self.associationTablesByName.value(for: name)!
 
-		// Get document id
+		// Get id
 		guard let id = DocumentTypeInfoTable.id(for: fromDocumentID, in: documentTables.infoTable) else { return nil }
 
-		return AssocationContentsTable.count(fromID: id, in: associationContentsTable)
+		return AssociationContentsTable.count(fromID: id, in: associationContentsTable)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1399,9 +1490,11 @@ class MDSSQLiteDatabaseManager {
 		// Setup
 		let	documentTables = self.documentTables(for: toDocumentType)
 		let	associationContentsTable = self.associationTablesByName.value(for: name)!
+
+		// Get id
 		guard let id = DocumentTypeInfoTable.id(for: toDocumentID, in: documentTables.infoTable) else { return nil }
 
-		return AssocationContentsTable.count(toID: id, in: associationContentsTable)
+		return AssociationContentsTable.count(toID: id, in: associationContentsTable)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1412,18 +1505,18 @@ class MDSSQLiteDatabaseManager {
 		guard let fromID = DocumentTypeInfoTable.id(for: fromDocumentID, in: fromDocumentTables.infoTable) else {
 			throw MDSDocumentStorageError.unknownDocumentID(documentID: fromDocumentID)
 		}
-		let	associationContentsTable = self.associationTablesByName.value(for: name)!
 		let	toDocumentTables = documentTables(for: toDocumentType)
+		let	associationContentsTable = self.associationTablesByName.value(for: name)!
 
 		// Iterate rows
 		try! associationContentsTable.select(tableColumns: DocumentTypeInfoTable.tableColumns,
 				innerJoin:
 						SQLiteInnerJoin(associationContentsTable,
-								tableColumn: AssocationContentsTable.toIDTableColumn, to: toDocumentTables.infoTable,
+								tableColumn: AssociationContentsTable.toIDTableColumn, to: toDocumentTables.infoTable,
 								otherTableColumn: DocumentTypeInfoTable.idTableColumn),
-				where: SQLiteWhere(tableColumn: AssocationContentsTable.fromIDTableColumn, value: fromID),
-				orderBy: SQLiteOrderBy(tableColumn: AssocationContentsTable.toIDTableColumn),
-				limit: SQLiteLimit(limit: count ?? -1, offset: startIndex))
+				where: SQLiteWhere(tableColumn: AssociationContentsTable.fromIDTableColumn, value: fromID),
+				orderBy: SQLiteOrderBy(tableColumn: AssociationContentsTable.toIDTableColumn),
+				limit: SQLiteLimit(limit: count, offset: startIndex))
 				{ proc(DocumentTypeInfoTable.documentInfo(for: $0)) }
 	}
 
@@ -1443,12 +1536,12 @@ class MDSSQLiteDatabaseManager {
 		try! associationContentsTable.select(tableColumns: DocumentTypeInfoTable.tableColumns,
 				innerJoin:
 						SQLiteInnerJoin(associationContentsTable,
-								tableColumn: AssocationContentsTable.fromIDTableColumn,
+								tableColumn: AssociationContentsTable.fromIDTableColumn,
 								to: fromDocumentTables.infoTable,
 								otherTableColumn: DocumentTypeInfoTable.idTableColumn),
-				where: SQLiteWhere(tableColumn: AssocationContentsTable.toIDTableColumn, value: toID),
-				orderBy: SQLiteOrderBy(tableColumn: AssocationContentsTable.fromIDTableColumn),
-				limit: SQLiteLimit(limit: count ?? -1, offset: startIndex))
+				where: SQLiteWhere(tableColumn: AssociationContentsTable.toIDTableColumn, value: toID),
+				orderBy: SQLiteOrderBy(tableColumn: AssociationContentsTable.fromIDTableColumn),
+				limit: SQLiteLimit(limit: count, offset: startIndex))
 				{ proc(DocumentTypeInfoTable.documentInfo(for: $0)) }
 	}
 
@@ -1457,34 +1550,34 @@ class MDSSQLiteDatabaseManager {
 			toDocumentType :String) {
 		// Setup
 		let	fromDocumentTables = documentTables(for: fromDocumentType)
-		let	fromIDsByDocumentID =
-					DocumentTypeInfoTable.ids(for: Array(Set<String>(updates.map({ $0.item.fromDocumentID }))),
+		let	fromIDByDocumentID =
+					DocumentTypeInfoTable.idByDocumentID(
+							for: Array(Set<String>(updates.map({ $0.item.fromDocumentID }))),
 							in: fromDocumentTables.infoTable)
 
 		let	toDocumentTables = documentTables(for: toDocumentType)
-		let	toIDsByDocumentID =
-					DocumentTypeInfoTable.ids(for: Array(Set<String>(updates.map({ $0.item.toDocumentID }))),
+		let	toIDByDocumentID =
+					DocumentTypeInfoTable.idByDocumentID(for: Array(Set<String>(updates.map({ $0.item.toDocumentID }))),
 							in: toDocumentTables.infoTable)
 
 		let	associationContentsTable = self.associationTablesByName.value(for: name)!
 
 		// Update Association
-		AssocationContentsTable.remove(
+		AssociationContentsTable.remove(
 				items:
 						updates
 								.filter({ $0.action == .remove })
-								.map({ (fromIDsByDocumentID[$0.item.fromDocumentID]!,
-										toIDsByDocumentID[$0.item.toDocumentID]!) }),
-				in: associationContentsTable)
-		AssocationContentsTable.add(
+								.map({ (fromIDByDocumentID[$0.item.fromDocumentID]!,
+										toIDByDocumentID[$0.item.toDocumentID]!) }),
+				from: associationContentsTable)
+		AssociationContentsTable.add(
 				items:
 						updates
 								.filter({ $0.action == .add })
-								.map({ (fromIDsByDocumentID[$0.item.fromDocumentID]!,
-										toIDsByDocumentID[$0.item.toDocumentID]!) }),
-				in: associationContentsTable)
+								.map({ (fromIDByDocumentID[$0.item.fromDocumentID]!,
+										toIDByDocumentID[$0.item.toDocumentID]!) }),
+				to: associationContentsTable)
 	}
-
 
 	//------------------------------------------------------------------------------------------------------------------
 	func associationSum(name :String, fromDocumentIDs :[String], documentType :String, cacheName :String,
@@ -1507,9 +1600,9 @@ class MDSSQLiteDatabaseManager {
 		return try! associationContentsTable.sum(tableColumns: cacheContentsTableColumns,
 				innerJoin:
 						SQLiteInnerJoin(associationContentsTable,
-								tableColumn: AssocationContentsTable.toIDTableColumn, to: cacheContentsTable,
+								tableColumn: AssociationContentsTable.toIDTableColumn, to: cacheContentsTable,
 								otherTableColumn: CacheContentsTable.idTableColumn),
-				where: SQLiteWhere(tableColumn: AssocationContentsTable.fromIDTableColumn, values: fromIDs))
+				where: SQLiteWhere(tableColumn: AssociationContentsTable.fromIDTableColumn, values: fromIDs))
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1575,28 +1668,17 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func cacheUpdate(name :String, infosByValue :[Int64 : [/* Name */ String : Any]]?, removedIDs :[Int64],
+	func cacheUpdate(name :String, valueInfoByID :[Int64 : [/* Name */ String : Any]]?, removedIDs :[Int64],
 			lastRevision :Int?) {
 		// Check if in batch
-		if let batchInfo = self.batchInfoMap.value(for: .current) {
+		if let batchInfo = self.batchInfoByThread.value(for: .current) {
 			// Update batch info
-			let	cacheUpdateInfo = batchInfo.cacheInfo[name] ?? ([:], [], nil)
-			batchInfo.cacheInfo[name] =
-					(cacheUpdateInfo.infosByValue
-									.merging(infosByValue ?? [:],
-											uniquingKeysWith: { $0.merging($1, uniquingKeysWith: { $1 }) }),
-							cacheUpdateInfo.removedIDs + removedIDs, lastRevision)
+			batchInfo.noteCacheUpdate(name: name, valueInfoByID: valueInfoByID, removedIDs: removedIDs,
+					lastRevision: lastRevision)
 		} else {
-			// Update tables
-			if lastRevision != nil {
-				// Update Caches table
-				CachesTable.update(name: name, lastRevision: lastRevision!, in: self.cachesTable)
-			}
-			if (infosByValue != nil) || !removedIDs.isEmpty {
-				// Update Cache contents table
-				CacheContentsTable.update(infosByValue: infosByValue ?? [:], removedIDs: removedIDs,
-						in: self.cacheTablesByName.value(for: name)!)
-			}
+			// Update
+			cacheUpdateInternal(name: name, valueInfoByID: valueInfoByID, removedIDs: removedIDs,
+					lastRevision: lastRevision)
 		}
 	}
 
@@ -1616,7 +1698,7 @@ class MDSSQLiteDatabaseManager {
 		let	updateMasterTable :Bool
 		if currentInfo == nil {
 			// New
-			lastRevision = isUpToDate ? self.documentLastRevisionMap.value(for: documentType) ?? 0 : 0
+			lastRevision = isUpToDate ? self.documentLastRevisionByDocumentType.value(for: documentType) ?? 0 : 0
 			updateMasterTable = true
 		} else if (relevantProperties != currentInfo!.relevantProperties) ||
 				(isIncludedSelector != currentInfo!.isIncludedSelector) ||
@@ -1681,30 +1763,21 @@ class MDSSQLiteDatabaseManager {
 						SQLiteInnerJoin(collectionContentsTable, tableColumn: CollectionContentsTable.idTableColumn,
 								to: documentTables.infoTable),
 				orderBy: SQLiteOrderBy(tableColumn: CollectionContentsTable.idTableColumn),
-				limit: SQLiteLimit(limit: count ?? -1, offset: startIndex))
+				limit: SQLiteLimit(limit: count, offset: startIndex))
 				{ proc(DocumentTypeInfoTable.documentInfo(for: $0)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func collectionUpdate(name :String, includedIDs :[Int64]?, notIncludedIDs :[Int64]?, lastRevision :Int?) {
 		// Check if in batch
-		if let batchInfo = self.batchInfoMap.value(for: .current) {
+		if let batchInfo = self.batchInfoByThread.value(for: .current) {
 			// Update batch info
-			let	collectionUpdateInfo = batchInfo.collectionInfo[name] ?? ([], [], nil)
-			batchInfo.collectionInfo[name] =
-					(collectionUpdateInfo.includedIDs + (includedIDs ?? []),
-							collectionUpdateInfo.notIncludedIDs + (notIncludedIDs ?? []), lastRevision)
+			batchInfo.noteCollectionUpdate(name: name, includedIDs: includedIDs, notIncludedIDs: notIncludedIDs,
+					lastRevision: lastRevision)
 		} else {
-			// Update tables
-			if lastRevision != nil {
-				// Update Collections table
-				CollectionsTable.update(name: name, lastRevision: lastRevision!, in: self.collectionsTable)
-			}
-			if (includedIDs != nil) || (notIncludedIDs != nil) {
-				// Update Collection contents table
-				CollectionContentsTable.update(includedIDs: includedIDs ?? [], notIncludedIDs: notIncludedIDs ?? [],
-						in: self.collectionTablesByName.value(for: name)!)
-			}
+			// Update
+			collectionUpdateInternal(name: name, includedIDs: includedIDs, notIncludedIDs: notIncludedIDs,
+					lastRevision: lastRevision)
 		}
 	}
 
@@ -1729,7 +1802,10 @@ class MDSSQLiteDatabaseManager {
 	func documentCount(for documentType :String) -> Int { self.documentTables(for: documentType).infoTable.count() }
 
 	//------------------------------------------------------------------------------------------------------------------
-	func isKnown(documentType :String) -> Bool { self.documentLastRevisionMap.value(for: documentType) != nil }
+	func documentTypeIsKnown(_ documentType :String) -> Bool {
+		// Check if have last revision for this document type
+		self.documentLastRevisionByDocumentType.value(for: documentType) != nil
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func documentInfoIterate(documentType :String, documentIDs :[String],
@@ -1780,7 +1856,7 @@ class MDSSQLiteDatabaseManager {
 							SQLiteWhere(tableColumn: DocumentTypeInfoTable.revisionTableColumn, comparison: ">",
 											value: sinceRevision),
 				orderBy: SQLiteOrderBy(tableColumn: DocumentTypeInfoTable.revisionTableColumn),
-				limit: SQLiteLimit(limit: count ?? -1)) { proc(DocumentTypeInfoTable.documentInfo(for: $0)) }
+				limit: SQLiteLimit(limit: count)) { proc(DocumentTypeInfoTable.documentInfo(for: $0)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1831,11 +1907,11 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentAttachmentInfoMap(documentType :String, id :Int64) -> MDSDocument.AttachmentInfoMap {
+	func documentAttachmentInfoByID(documentType :String, id :Int64) -> MDSDocument.AttachmentInfoByID {
 		// Setup
 		let	documentTables = documentTables(for: documentType)
 
-		return DocumentTypeAttachmentsTable.documentAttachmentInfoMap(id: id, in: documentTables.attachmentsTable)
+		return DocumentTypeAttachmentsTable.documentAttachmentInfoByID(id: id, in: documentTables.attachmentsTable)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1910,7 +1986,7 @@ class MDSSQLiteDatabaseManager {
 			updateMasterTable = true
 		} else if (relevantProperties != currentInfo!.relevantProperties) ||
 				(keysSelector != currentInfo!.keysSelector) || !keysSelectorInfo.equals(currentInfo!.keysSelectorInfo) {
-			// Updated version
+			// Info has changed
 			lastRevision = 0
 			updateMasterTable = true
 		} else {
@@ -1972,25 +2048,16 @@ class MDSSQLiteDatabaseManager {
 	func indexUpdate(name :String, keysInfos :[(keys :[String], id :Int64)]?, removedIDs :[Int64]?,
 			lastRevision :Int?) {
 		// Check if in batch
-		if let batchInfo = self.batchInfoMap.value(for: .current) {
+		if let batchInfo = self.batchInfoByThread.value(for: .current) {
 			// Update batch info
-			let	indexInfo = batchInfo.indexInfo[name] ?? ([], [], nil)
-			batchInfo.indexInfo[name] =
-					(indexInfo.keysInfos + (keysInfos ?? []), indexInfo.removedIDs + (removedIDs ?? []),
-							lastRevision)
+			batchInfo.noteIndexUpdate(name: name, keysInfos: keysInfos, removedIDs: removedIDs,
+					lastRevision: lastRevision)
 		} else {
-			// Update tables
-			if lastRevision != nil {
-				// Update Indexes table
-				IndexesTable.update(name: name, lastRevision: lastRevision!, in: self.indexesTable)
-			}
-			if (keysInfos != nil) || (removedIDs != nil) {
-				// Update Index contents table
-				IndexContentsTable.update(keysInfos: keysInfos ?? [], removedIDs: removedIDs ?? [],
-						in: self.indexTablesByName.value(for: name)!)
-			}
+			// Update
+			indexUpdateInternal(name: name, keysInfos: keysInfos, removedIDs: removedIDs, lastRevision: lastRevision)
 		}
 	}
+
 	//------------------------------------------------------------------------------------------------------------------
 	func infoString(for key :String) -> String? { InfoTable.string(for: key, in: self.infoTable) }
 
@@ -2007,42 +2074,69 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func batch<T>(_ proc :() -> T) -> T {
+	func batch(_ proc :() -> Void) {
 		// Setup
 		let	batchInfo = BatchInfo()
-		self.batchInfoMap.set(batchInfo, for: .current)
+		self.batchInfoByThread.set(batchInfo, for: .current)
 
 		// Call proc
-		let	t = proc()
+		proc()
 
 		// Commit changes
-		self.batchInfoMap.set(nil, for: .current)
+		self.batchInfoByThread.set(nil, for: .current)
 
-		batchInfo.documentLastRevisionTypesNeedingWrite.forEach() {
+		batchInfo.iterateDocumentLastRevisionTypesNeedingWrite() {
 			// Update
-			DocumentsTable.set(lastRevision: self.documentLastRevisionMap.value(for: $0)!, for: $0,
+			DocumentsTable.set(lastRevision: self.documentLastRevisionByDocumentType.value(for: $0)!, for: $0,
 					in: self.documentsTable)
 		}
-		batchInfo.cacheInfo.forEach() {
+		batchInfo.iterateCacheUpdateInfos() {
 			// Update Cache
-			self.cacheUpdate(name: $0.key, infosByValue: $0.value.infosByValue, removedIDs: $0.value.removedIDs,
-					lastRevision: $0.value.lastRevision)
+			self.cacheUpdateInternal(name: $0, valueInfoByID: $1.valueInfoByID, removedIDs: $1.removedIDs,
+					lastRevision: $1.lastRevision)
 		}
-		batchInfo.collectionInfo.forEach() {
+		batchInfo.iterateCollectionUpdateInfos() {
 			// Update Collection
-			self.collectionUpdate(name: $0.key, includedIDs: $0.value.includedIDs,
-					notIncludedIDs: $0.value.notIncludedIDs, lastRevision: $0.value.lastRevision)
+			self.collectionUpdate(name: $0, includedIDs: $1.includedIDs, notIncludedIDs: $1.notIncludedIDs,
+					lastRevision: $1.lastRevision)
 		}
-		batchInfo.indexInfo.forEach() {
+		batchInfo.iterateIndexUpdateInfos() {
 			// Update Index
-			self.indexUpdate(name: $0.key, keysInfos: $0.value.keysInfos, removedIDs: $0.value.removedIDs,
-					lastRevision: $0.value.lastRevision)
+			self.indexUpdate(name: $0, keysInfos: $1.keysInfos, removedIDs: $1.removedIDs,
+					lastRevision: $1.lastRevision)
 		}
-
-		return t
 	}
 
 	// MARK: Private methods
+	//------------------------------------------------------------------------------------------------------------------
+	private func cacheUpdateInternal(name :String, valueInfoByID :[Int64 : [/* Name */ String : Any]]?,
+			removedIDs :[Int64], lastRevision :Int?) {
+		// Update tables
+		if lastRevision != nil {
+			// Update Caches table
+			CachesTable.update(name: name, lastRevision: lastRevision!, in: self.cachesTable)
+		}
+		if (valueInfoByID != nil) || !removedIDs.isEmpty {
+			// Update Cache contents table
+			CacheContentsTable.update(valueInfoByID: valueInfoByID ?? [:], removedIDs: removedIDs,
+					in: self.cacheTablesByName.value(for: name)!)
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func collectionUpdateInternal(name :String, includedIDs :[Int64]?, notIncludedIDs :[Int64]?, lastRevision :Int?) {
+		// Update tables
+		if lastRevision != nil {
+			// Update Collections table
+			CollectionsTable.update(name: name, lastRevision: lastRevision!, in: self.collectionsTable)
+		}
+		if (includedIDs != nil) || (notIncludedIDs != nil) {
+			// Update Collection contents table
+			CollectionContentsTable.update(includedIDs: includedIDs ?? [], notIncludedIDs: notIncludedIDs ?? [],
+					in: self.collectionTablesByName.value(for: name)!)
+		}
+	}
+
 	//------------------------------------------------------------------------------------------------------------------
 	private func documentTables(for documentType :String) -> DocumentTables {
 		// Ensure we actually have a document type
@@ -2076,20 +2170,35 @@ class MDSSQLiteDatabaseManager {
 	//------------------------------------------------------------------------------------------------------------------
 	private func documentNextRevision(for documentType :String) -> Int {
 		// Compose next revision
-		let	nextRevision = (self.documentLastRevisionMap.value(for: documentType) ?? 0) + 1
+		let	nextRevision = (self.documentLastRevisionByDocumentType.value(for: documentType) ?? 0) + 1
 
 		// Check if in batch
-		if let batchInfo = self.batchInfoMap.value(for: .current) {
+		if let batchInfo = self.batchInfoByThread.value(for: .current) {
 			// Update batch info
-			batchInfo.documentLastRevisionTypesNeedingWrite.insert(documentType)
+			batchInfo.noteDocumentTypeNeedingLastRevisionWrite(documentType: documentType)
 		} else {
 			// Update
 			DocumentsTable.set(lastRevision: nextRevision, for: documentType, in: self.documentsTable)
 		}
 
 		// Store
-		self.documentLastRevisionMap.set(nextRevision, for: documentType)
+		self.documentLastRevisionByDocumentType.set(nextRevision, for: documentType)
 
 		return nextRevision
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func indexUpdateInternal(name :String, keysInfos :[(keys :[String], id :Int64)]?, removedIDs :[Int64]?,
+			lastRevision :Int?) {
+		// Update tables
+		if lastRevision != nil {
+			// Update Indexes table
+			IndexesTable.update(name: name, lastRevision: lastRevision!, in: self.indexesTable)
+		}
+		if (keysInfos != nil) || (removedIDs != nil) {
+			// Update Index contents table
+			IndexContentsTable.update(keysInfos: keysInfos ?? [], removedIDs: removedIDs ?? [],
+					in: self.indexTablesByName.value(for: name)!)
+		}
 	}
 }

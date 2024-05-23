@@ -42,12 +42,12 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 		var	modificationDate :Date
 		var	revision :Int
 		var	propertyMap :[String : Any]
-		var	attachmentInfoMap :MDSDocument.AttachmentInfoMap
+		var	attachmentInfoByID :MDSDocument.AttachmentInfoByID
 
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
 		init(type :String, documentID :String, revision :Int, active :Bool, creationDate :Date, modificationDate :Date,
-				propertyMap :[String : Any], attachmentInfoMap :MDSDocument.AttachmentInfoMap) {
+				propertyMap :[String : Any], attachmentInfoByID :MDSDocument.AttachmentInfoByID) {
 			// Store
 			self.type = type
 			self.documentID = documentID
@@ -57,7 +57,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 			self.modificationDate = modificationDate
 			self.revision = revision
 			self.propertyMap = propertyMap
-			self.attachmentInfoMap = attachmentInfoMap
+			self.attachmentInfoByID = attachmentInfoByID
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
@@ -71,7 +71,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 			self.modificationDate = documentFullInfo.modificationDate
 			self.revision = documentFullInfo.revision
 			self.propertyMap = documentFullInfo.propertyMap
-			self.attachmentInfoMap = documentFullInfo.attachmentInfoMap
+			self.attachmentInfoByID = documentFullInfo.attachmentInfoByID
 		}
 	}
 
@@ -641,7 +641,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 			valueUse = data.base64EncodedString()
 		} else if let date = value as? Date {
 			// Date
-			valueUse = date.rfc3339Extended
+			valueUse = date.rfc3339ExtendedString
 		} else {
 			// Everythng else
 			valueUse = value
@@ -690,21 +690,21 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentAttachmentInfoMap(for documentType :String, documentID :String) throws ->
-			MDSDocument.AttachmentInfoMap {
+	public func documentAttachmentInfoByID(for documentType :String, documentID :String) throws ->
+			MDSDocument.AttachmentInfoByID {
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current),
 				let batchDocumentInfo = batch.documentInfoGet(for: documentID) {
 			// Have document in batch
-			return batchDocumentInfo.documentAttachmentInfoMap(
+			return batchDocumentInfo.documentAttachmentInfoByID(
 					applyingChangesTo:
-							try! self.documentBacking(for: documentType, documentID: documentID).attachmentInfoMap)
+							try! self.documentBacking(for: documentType, documentID: documentID).attachmentInfoByID)
 		} else if self.documentsBeingCreatedPropertyMapMap.value(for: documentID) != nil {
 			// Creating
 			return [:]
 		} else {
 			// Retrieve document backing
-			return try self.documentBacking(for: documentType, documentID: documentID).attachmentInfoMap
+			return try self.documentBacking(for: documentType, documentID: documentID).attachmentInfoByID
 		}
 	}
 
@@ -742,21 +742,21 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentAttachmentUpdate(for documentType :String, documentID :String, attachmentID :String,
-			updatedInfo :[String : Any], updatedContent :Data) throws -> Int {
+			updatedInfo :[String : Any], updatedContent :Data) throws -> Int? {
 		// Check for batch
 		if let batch = self.batchMap.value(for: .current) {
 			// In batch
 			if let batchDocumentInfo = batch.documentInfoGet(for: documentID) {
 				// Have document in batch
 				let	attachmentInfo =
-							try documentAttachmentInfoMap(for: documentType, documentID: documentID)[attachmentID]!
+							try documentAttachmentInfoByID(for: documentType, documentID: documentID)[attachmentID]!
 				batchDocumentInfo.attachmentUpdate(id: attachmentID, currentRevision: attachmentInfo.revision,
 						info: updatedInfo, content: updatedContent)
 			} else {
 				// Don't have document in batch
 				let	documentBacking = try self.documentBacking(for: documentType, documentID: documentID)
 				let	attachmentInfo =
-							try documentAttachmentInfoMap(for: documentType, documentID: documentID)[attachmentID]!
+							try documentAttachmentInfoByID(for: documentType, documentID: documentID)[attachmentID]!
 				batch.documentAdd(documentType: documentBacking.type, documentID: documentID,
 								creationDate: documentBacking.creationDate,
 								modificationDate: documentBacking.modificationDate,
@@ -765,7 +765,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 								info: updatedInfo, content: updatedContent)
 			}
 
-			return -1
+			return nil
 		} else {
 			// Not in batch
 			return try documentAttachmentUpdate(documentType: documentType, documentID: documentID, documentBacking: nil,
@@ -1175,7 +1175,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 						DocumentBacking(type: documentType, documentID: $0.documentID, revision: $0.revision,
 								active: $0.active, creationDate: $0.creationDate,
 								modificationDate: $0.modificationDate, propertyMap: $0.propertyMap,
-								attachmentInfoMap: $0.attachmentInfoMap)
+								attachmentInfoByID: $0.attachmentInfoByID)
 					}
 		self.documentBackingCache.add(documentBackings)
 
@@ -1237,7 +1237,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 									MDSDocument.FullInfo(documentID: $0.documentID, revision: $0.revision, active: true,
 											creationDate: $0.creationDate, modificationDate: $0.modificationDate,
 											propertyMap: documentCreateInfosMap[$0.documentID]!.propertyMap,
-											attachmentInfoMap: [:]) })
+											attachmentInfoByID: [:]) })
 				cacheUpdate(for: documentType, with: documentFullInfos)
 
 				// Update overview infos
@@ -1431,7 +1431,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 										creationDate: documentBacking.creationDate,
 										modificationDate: documentUpdateReturnInfo.modificationDate,
 										propertyMap: documentUpdateReturnInfo.propertyMap,
-										attachmentInfoMap: documentBacking.attachmentInfoMap)
+										attachmentInfoByID: documentBacking.attachmentInfoByID)
 							})
 				cacheUpdate(for: documentType, with: documentFullInfos)
 			}
@@ -1461,7 +1461,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 			}
 
 			// Update
-			documentBacking?.attachmentInfoMap[id] = MDSDocument.AttachmentInfo(id: id, revision: revision, info: info)
+			documentBacking?.attachmentInfoByID[id] = MDSDocument.AttachmentInfo(id: id, revision: revision, info: info)
 			self.remoteStorageCache.setAttachment(content: content, for: id)
 
 			return MDSDocument.AttachmentInfo(id: id, revision: revision, info: info)
@@ -1488,7 +1488,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 			}
 
 			// Update
-			documentBacking?.attachmentInfoMap[attachmentID] =
+			documentBacking?.attachmentInfoByID[attachmentID] =
 					MDSDocument.AttachmentInfo(id: attachmentID, revision: revision, info: info)
 			self.remoteStorageCache.setAttachment(content: content, for: attachmentID)
 
@@ -1509,7 +1509,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 							authorization: self.authorization)
 		if error == nil {
 			// Update
-			documentBacking?.attachmentInfoMap[attachmentID] = nil
+			documentBacking?.attachmentInfoByID[attachmentID] = nil
 			self.remoteStorageCache.setAttachment(for: attachmentID)
 		} else {
 			// Error

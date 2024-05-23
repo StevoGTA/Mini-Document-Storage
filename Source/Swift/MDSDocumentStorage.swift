@@ -113,10 +113,11 @@ public protocol MDSDocumentStorage {
 
 	func documentAttachmentAdd(for documentType :String, documentID :String, info :[String : Any], content :Data) throws
 			-> MDSDocument.AttachmentInfo
-	func documentAttachmentInfoMap(for documentType :String, documentID :String) throws -> MDSDocument.AttachmentInfoMap
+	func documentAttachmentInfoByID(for documentType :String, documentID :String) throws ->
+			MDSDocument.AttachmentInfoByID
 	func documentAttachmentContent(for documentType :String, documentID :String, attachmentID :String) throws -> Data
 	func documentAttachmentUpdate(for documentType :String, documentID :String, attachmentID :String,
-			updatedInfo :[String : Any], updatedContent :Data) throws -> Int
+			updatedInfo :[String : Any], updatedContent :Data) throws -> Int?
 	func documentAttachmentRemove(for documentType :String, documentID :String, attachmentID :String) throws
 
 	func documentRemove(_ document :MDSDocument) throws
@@ -335,9 +336,9 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentAttachmentInfoMap(for document :MDSDocument) throws -> MDSDocument.AttachmentInfoMap {
+	public func documentAttachmentInfoByID(for document :MDSDocument) throws -> MDSDocument.AttachmentInfoByID {
 		// Get document attachment info map
-		return try documentAttachmentInfoMap(for: type(of: document).documentType, documentID: document.id)
+		return try documentAttachmentInfoByID(for: type(of: document).documentType, documentID: document.id)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

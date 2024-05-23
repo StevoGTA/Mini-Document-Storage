@@ -69,7 +69,8 @@ class AssociationTransactionTests : XCTestCase {
 		// Retrieve from
 		let	(fromInfo1, fromError1) =
 					config.httpEndpointClient.associationGetDocumentRevisionInfos(
-							documentStorageID: config.documentStorageID, name: associationName, fromDocumentID: parent.id)
+							documentStorageID: config.documentStorageID, name: associationName,
+							fromDocumentID: parent.id)
 		XCTAssertNotNil(fromInfo1, "get from (1) did not receive info")
 		if fromInfo1 != nil {
 			XCTAssertEqual(fromInfo1!.documentRevisionInfos.count, 1, "get from (1) did not receive 1 info")
@@ -104,7 +105,8 @@ class AssociationTransactionTests : XCTestCase {
 		// Retrieve from
 		let	(fromInfo2, fromError2) =
 					config.httpEndpointClient.associationGetDocumentRevisionInfos(
-							documentStorageID: config.documentStorageID, name: associationName, fromDocumentID: parent.id)
+							documentStorageID: config.documentStorageID, name: associationName,
+							fromDocumentID: parent.id)
 		XCTAssertNotNil(fromInfo2, "get from (2) did not receive info")
 		if fromInfo2 != nil {
 			XCTAssertEqual(fromInfo2!.documentRevisionInfos.count, 0, "get from (2) received info")

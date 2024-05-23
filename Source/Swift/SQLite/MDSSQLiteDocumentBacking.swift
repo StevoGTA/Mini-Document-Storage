@@ -21,12 +21,15 @@ class MDSSQLiteDocumentBacking : MDSDocumentBacking {
 			var	active :Bool
 			var	modificationDate :Date
 			var	propertyMap :[String : Any] { self.propertiesLock.read({ self.propertyMapInternal }) }
-			var	documentAttachmentInfoMap :MDSDocument.AttachmentInfoMap
+			var	documentAttachmentInfoByID :MDSDocument.AttachmentInfoByID
 
 			var	documentFullInfo :MDSDocument.FullInfo
-					{ MDSDocument.FullInfo(documentID: self.documentID, revision: self.revision, active: self.active,
-						creationDate: self.creationDate, modificationDate: self.modificationDate,
-						propertyMap: self.propertyMap, attachmentInfoMap: self.documentAttachmentInfoMap) }
+					{ self.propertiesLock.read(
+							{ MDSDocument.FullInfo(documentID: self.documentID, revision: self.revision,
+									active: self.active, creationDate: self.creationDate,
+									modificationDate: self.modificationDate, propertyMap: self.propertyMap,
+									attachmentInfoByID: self.documentAttachmentInfoByID) })
+					}
 
 	private	var	propertyMapInternal :[String : Any]
 	private	let	propertiesLock = ReadPreferringReadWriteLock()
@@ -34,7 +37,7 @@ class MDSSQLiteDocumentBacking : MDSDocumentBacking {
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
 	init(id :Int64, documentID :String, revision :Int, active :Bool, creationDate :Date, modificationDate :Date,
-			propertyMap :[String : Any], documentAttachmentInfoMap :MDSDocument.AttachmentInfoMap) {
+			propertyMap :[String : Any], documentAttachmentInfoByID :MDSDocument.AttachmentInfoByID) {
 		// Store
 		self.id = id
 		self.documentID = documentID
@@ -44,7 +47,7 @@ class MDSSQLiteDocumentBacking : MDSDocumentBacking {
 		self.active = active
 		self.modificationDate = modificationDate
 		self.propertyMapInternal = propertyMap
-		self.documentAttachmentInfoMap = documentAttachmentInfoMap
+		self.documentAttachmentInfoByID = documentAttachmentInfoByID
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -64,7 +67,7 @@ class MDSSQLiteDocumentBacking : MDSDocumentBacking {
 		self.active = true
 		self.modificationDate = modificationDate
 		self.propertyMapInternal = propertyMap
-		self.documentAttachmentInfoMap = [:]
+		self.documentAttachmentInfoByID = [:]
 	}
 
 	// MARK: Instance methods
@@ -112,7 +115,7 @@ class MDSSQLiteDocumentBacking : MDSDocumentBacking {
 			// Update
 			self.revision = revision
 			self.modificationDate = modificationDate
-			self.documentAttachmentInfoMap[documentAttachmentInfo.id] = documentAttachmentInfo
+			self.documentAttachmentInfoByID[documentAttachmentInfo.id] = documentAttachmentInfo
 
 			return documentAttachmentInfo
 		}
@@ -139,7 +142,7 @@ class MDSSQLiteDocumentBacking : MDSDocumentBacking {
 			// Update
 			self.revision = revision
 			self.modificationDate = modificationDate
-			self.documentAttachmentInfoMap[attachmentID] = documentAttachmentInfo
+			self.documentAttachmentInfoByID[attachmentID] = documentAttachmentInfo
 
 			return documentAttachmentInfo.revision
 		}
@@ -157,7 +160,7 @@ class MDSSQLiteDocumentBacking : MDSDocumentBacking {
 			// Update
 			self.revision = revision
 			self.modificationDate = modificationDate
-			self.documentAttachmentInfoMap[attachmentID] = nil
+			self.documentAttachmentInfoByID[attachmentID] = nil
 		}
 	}
 }

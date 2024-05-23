@@ -190,7 +190,9 @@ template <typename DB> class TMDSBatch {
 																				initialDocumentAttachmentInfoByID);
 
 																// Process adds
-																TSet<CString>	keys = mAddAttachmentInfosByID.getKeys();
+																TSet<CString>	keys =
+																						mAddAttachmentInfosByID
+																								.getKeys();
 																for (TIteratorS<CString> iterator = keys.getIterator();
 																		iterator.hasValue(); iterator.advance())
 																	// Process add
@@ -223,7 +225,8 @@ template <typename DB> class TMDSBatch {
 																else if (mUpdateAttachmentInfosByID.contains(id))
 																	// Have update
 																	return OV<CData>(
-																			mUpdateAttachmentInfosByID[id]->getContent());
+																			mUpdateAttachmentInfosByID[id]->
+																					getContent());
 																else
 																	// Nope
 																	return OV<CData>();
@@ -327,7 +330,8 @@ template <typename DB> class TMDSBatch {
 														if (mAssociationUpdatesByAssociationName.contains(name)) {
 															// Get updates
 															TArray<CMDSAssociation::Update>	associationUpdates =
-																									*mAssociationUpdatesByAssociationName[name];
+																									*mAssociationUpdatesByAssociationName[
+																											name];
 															for (TIteratorD<CMDSAssociation::Update> iterator =
 																			associationUpdates.getIterator();
 																	iterator.hasValue(); iterator.advance()) {

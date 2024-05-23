@@ -30,10 +30,10 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 						{ MDSDocument.FullInfo(documentID: self.documentID, revision: self.revision,
 							active: self.active, creationDate: self.creationDate,
 							modificationDate: self.modificationDate, propertyMap: self.propertyMap,
-							attachmentInfoMap:
+							attachmentInfoByID:
 									self.attachmentContentInfoByAttachmentID.mapValues({ $0.attachmentInfo })) }
 
-				var	documentAttachmentInfoMap :MDSDocument.AttachmentInfoMap
+				var	documentAttachmentInfoByID :MDSDocument.AttachmentInfoByID
 						{ self.attachmentContentInfoByAttachmentID.mapValues({ $0.attachmentInfo }) }
 
 		private	var	attachmentContentInfoByAttachmentID =
@@ -701,8 +701,8 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentAttachmentInfoMap(for documentType :String, documentID :String) throws ->
-			MDSDocument.AttachmentInfoMap {
+	public func documentAttachmentInfoByID(for documentType :String, documentID :String) throws ->
+			MDSDocument.AttachmentInfoByID {
 		// Validate
 		guard self.documentMapsLock.read({ self.documentIDsByDocumentType[documentType] }) != nil else {
 			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
@@ -712,19 +712,19 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		if let batch = self.batchByThread.value(for: .current),
 				let batchDocumentInfo = batch.documentInfoGet(for: documentID) {
 			// Have document in batch
-			let	documentAttachmentInfoMap =
+			let	documentAttachmentInfoByID =
 						self.documentMapsLock.read(
-								{ self.documentBackingByDocumentID[documentID]!.documentAttachmentInfoMap })
+								{ self.documentBackingByDocumentID[documentID]!.documentAttachmentInfoByID })
 
-			return batchDocumentInfo.documentAttachmentInfoMap(applyingChangesTo: documentAttachmentInfoMap)
+			return batchDocumentInfo.documentAttachmentInfoByID(applyingChangesTo: documentAttachmentInfoByID)
 		} else if self.documentsBeingCreatedPropertyMapByDocumentID.value(for: documentID) != nil {
 			// Creating
 			return [:]
-		} else if let documentAttachmentInfoMap =
+		} else if let documentAttachmentInfoByID =
 				self.documentMapsLock.read(
-						{ self.documentBackingByDocumentID[documentID]?.documentAttachmentInfoMap }) {
+						{ self.documentBackingByDocumentID[documentID]?.documentAttachmentInfoByID }) {
 			// Not in batch and not creating
-			return documentAttachmentInfoMap
+			return documentAttachmentInfoByID
 		} else {
 			// Unknown documentID
 			throw MDSDocumentStorageError.unknownDocumentID(documentID: documentID)
@@ -750,7 +750,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
 		}
 
-		// Get non-batch attachmentInfoByAttachmentID
+		// Get non-batch attachment content
 		guard let documentBacking =
 				self.documentMapsLock.read({ self.documentBackingByDocumentID[documentID] }) else {
 			// Unknown documentID
@@ -766,7 +766,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentAttachmentUpdate(for documentType :String, documentID :String, attachmentID :String,
-			updatedInfo :[String : Any], updatedContent :Data) throws -> Int {
+			updatedInfo :[String : Any], updatedContent :Data) throws -> Int? {
 		// Validate
 		guard self.documentMapsLock.read({ self.documentIDsByDocumentType[documentType] }) != nil else {
 			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
@@ -780,10 +780,10 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			// In batch
 			if let batchDocumentInfo = batch.documentInfoGet(for: documentID) {
 				// Have document in batch
-				let	documentAttachmentInfoMap =
-							batchDocumentInfo.documentAttachmentInfoMap(
-									applyingChangesTo: documentBacking.documentAttachmentInfoMap)
-				guard let attachmentInfo = documentAttachmentInfoMap[attachmentID] else {
+				let	documentAttachmentInfoByID =
+							batchDocumentInfo.documentAttachmentInfoByID(
+									applyingChangesTo: documentBacking.documentAttachmentInfoByID)
+				guard let attachmentInfo = documentAttachmentInfoByID[attachmentID] else {
 					throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
 				}
 
@@ -801,7 +801,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 								content: updatedContent)
 			}
 
-			return -1
+			return nil
 		} else {
 			// Not in batch
 			guard documentBacking.attachmentContentInfo(for: attachmentID) != nil else {
@@ -831,10 +831,10 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			// In batch
 			if let batchDocumentInfo = batch.documentInfoGet(for: documentID) {
 				// Have document in batch
-				let	documentAttachmentInfoMap =
-							batchDocumentInfo.documentAttachmentInfoMap(
-									applyingChangesTo: documentBacking.documentAttachmentInfoMap)
-				guard documentAttachmentInfoMap[attachmentID] != nil else {
+				let	documentAttachmentInfoByID =
+							batchDocumentInfo.documentAttachmentInfoByID(
+									applyingChangesTo: documentBacking.documentAttachmentInfoByID)
+				guard documentAttachmentInfoByID[attachmentID] != nil else {
 					throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
 				}
 
@@ -988,8 +988,8 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 				let	process
 							:(_ documentID :String, _ batchDocumentInfo :Batch.DocumentInfo,
-									_ documentBacking :DocumentBacking,
-									_ changedProperties :Set<String>?, _ changeKind :MDSDocument.ChangeKind) -> Void =
+									_ documentBacking :DocumentBacking, _ changedProperties :Set<String>?,
+									_ changeKind :MDSDocument.ChangeKind) -> Void =
 							{ documentID, batchDocumentInfo, documentBacking, changedProperties, changeKind in
 								// Process attachments
 								batchDocumentInfo.removedAttachmentIDs.forEach() {
