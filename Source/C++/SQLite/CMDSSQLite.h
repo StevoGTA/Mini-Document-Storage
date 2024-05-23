@@ -5,98 +5,162 @@
 #pragma once
 
 #include "CFolder.h"
-#include "CMDSDocumentStorage.h"
+#include "CMDSDocumentStorageServer.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: CMDSSQLite
 
-class CMDSSQLiteInternals;
-class CMDSSQLite : public CMDSDocumentStorage {
-	// Procs
-	public:
-		typedef	void	(*LogErrorMessageProc)(const CString& errorMessage, void* userData);
+class CMDSSQLite : public CMDSDocumentStorageServer {
+	// Classes
+	private:
+		class Internals;
 
 	// Methods
 	public:
-										// Lifecycle methods
-										CMDSSQLite(const CFolder& folder,
-												const CString& name = CString(OSSTR("database")));
-										~CMDSSQLite();
+													// Lifecycle methods
+													CMDSSQLite(const CFolder& folder,
+															const CString& name = CString(OSSTR("database")));
+													~CMDSSQLite();
 
-										// CMDSDocumentStorage methods
-		const	CString&				getID() const;
+													// CMDSDocumentStorage methods
+		OV<SError>									associationRegister(const CString& name,
+															const CString& fromDocumentType,
+															const CString& toDocumentType);
+		AssociationItemsResult						associationGet(const CString& name) const;
+		OV<SError>									associationIterateFrom(const CString& name,
+															const CString& fromDocumentID,
+															const CString& toDocumentType, CMDSDocument::Proc proc,
+															void* procUserData) const;
+		OV<SError>									associationIterateTo(const CString& name,
+															const CString& fromDocumentType,
+															const CString& toDocumentID, CMDSDocument::Proc proc,
+															void* procUserData) const;
+		TVResult<CDictionary>						associationGetIntegerValues(const CString& name,
+															CMDSAssociation::GetIntegerValueAction action,
+															const TArray<CString>& fromDocumentIDs,
+															const CString& cacheName,
+															const TArray<CString>& cachedValueNames) const;
+		OV<SError>									associationUpdate(const CString& name,
+															const TArray<CMDSAssociation::Update>& updates);
 
-				TDictionary<CString>	getInfo(const TArray<CString>& keys) const;
-				void					set(const TDictionary<CString>& info);
-				void					remove(const TArray<CString>& keys);
+		OV<SError>									cacheRegister(const CString& name, const CString& documentType,
+															const TArray<CString>& relevantProperties,
+															const TArray<CacheValueInfo>& cacheValueInfos);
 
-				I<CMDSDocument>			newDocument(const CMDSDocument::InfoForNew& infoForNew);
+		OV<SError>									collectionRegister(const CString& name, const CString& documentType,
+															const TArray<CString>& relevantProperties, bool isUpToDate,
+															const CDictionary& isIncludedInfo,
+															const CMDSDocument::IsIncludedPerformer&
+																	documentIsIncludedPerformer);
+		TVResult<UInt32>							collectionGetDocumentCount(const CString& name) const;
+		OV<SError>									collectionIterate(const CString& name, const CString& documentType,
+															CMDSDocument::Proc proc, void* procUserData) const;
 
-				OI<CMDSDocument>		getDocument(const CString& documentID, const CMDSDocument::Info& documentInfo)
-												const;
+		DocumentCreateResultInfosResult				documentCreate(const CMDSDocument::InfoForNew& documentInfoForNew,
+															const TArray<CMDSDocument::CreateInfo>&
+																	documentCreateInfos);
+		TVResult<UInt32>							documentGetCount(const CString& documentType) const;
+		TVResult<UInt32>							documentGetCount(const CMDSDocument::Info& documentInfo) const
+														{ return documentGetCount(documentInfo.getDocumentType()); }
+		OV<SError>									documentIterate(const CMDSDocument::Info& documentInfo,
+															const TArray<CString>& documentIDs, CMDSDocument::Proc proc,
+															void* procUserData) const;
+		OV<SError>									documentIterate(const CMDSDocument::Info& documentInfo,
+															bool activeOnly, CMDSDocument::Proc proc,
+															void* procUserData) const;
 
-				UniversalTime			getCreationUniversalTime(const CMDSDocument& document) const;
-				UniversalTime			getModificationUniversalTime(const CMDSDocument& document) const;
+		UniversalTime								documentCreationUniversalTime(const CMDSDocument& document) const;
+		UniversalTime								documentModificationUniversalTime(const CMDSDocument& document)
+															const;
 
-				OV<SValue>				getValue(const CString& property, const CMDSDocument& document) const;
-				OV<CData>				getData(const CString& property, const CMDSDocument& document) const;
-				OV<UniversalTime>		getUniversalTime(const CString& property, const CMDSDocument& document) const;
-				void					set(const CString& property, const OV<SValue>& value,
-												const CMDSDocument& document,
-												SetValueInfo setValueInfo = kNothingSpecial);
+		OV<SValue>									documentValue(const CString& property, const CMDSDocument& document)
+															const;
+		OV<CData>									documentData(const CString& property, const CMDSDocument& document)
+															const;
+		OV<UniversalTime>							documentUniversalTime(const CString& property,
+															const CMDSDocument& document) const;
+		void										documentSet(const CString& property, const OV<SValue>& value,
+															const CMDSDocument& document,
+															SetValueKind setValueKind = kSetValueKindNothingSpecial);
 
-				void					remove(const CMDSDocument& document);
+		DocumentAttachmentInfoResult				documentAttachmentAdd(const CString& documentType,
+															const CString& documentID, const CDictionary& info,
+															const CData& content);
+		DocumentAttachmentInfoByIDResult			documentAttachmentInfoByID(const CString& documentType,
+															const CString& documentID);
+		TVResult<CData>								documentAttachmentContent(const CString& documentType,
+															const CString& documentID, const CString& attachmentID);
+		TVResult<OV<UInt32> >						documentAttachmentUpdate(const CString& documentType,
+															const CString& documentID, const CString& attachmentID,
+															const CDictionary& updatedInfo,
+															const CData& updatedContent);
+		OV<SError>									documentAttachmentRemove(const CString& documentType,
+															const CString& documentID, const CString& attachmentID);
 
-				void					iterate(const CMDSDocument::Info& documentInfo, CMDSDocument::Proc proc,
-												void* userData) const;
-				void					iterate(const CMDSDocument::Info& documentInfo,
-												const TArray<CString>& documentIDs, CMDSDocument::Proc proc,
-												void* userData) const;
+		OV<SError>									documentRemove(const CMDSDocument& document);
 
-				void					batch(BatchProc batchProc, void* userData);
+		OV<SError>									indexRegister(const CString& name, const CString& documentType,
+															const TArray<CString>& relevantProperties,
+															const CDictionary& keysInfo,
+															const CMDSDocument::KeysPerformer& documentKeysPerformer);
+		OV<SError>									indexIterate(const CString& name, const CString& documentType,
+															const TArray<CString>& keys,
+															CMDSDocument::KeyProc documentKeyProc,
+															void* documentKeyProcUserData) const;
 
-//				void					registerAssociation(const CString& name,
-//												const CMDSDocument::Info& fromDocumentInfo,
-//												const CMDSDocument::Info& toDocumentInfo);
-//				void					updateAssociation(const CString& name,
-//												const TArray<AssociationUpdate>& updates);
-//				void					iterateAssociationFrom(const CString& name, const CMDSDocument& fromDocument,
-//												CMDSDocument::Proc proc, void* userData) const;
-//				void					iterateAssociationTo(const CString& name, const CMDSDocument& toDocument,
-//												CMDSDocument::Proc proc, void* userData) const;
+		TVResult<TDictionary<CString> >				infoGet(const TArray<CString>& keys) const;
+		OV<SError>									infoSet(const TDictionary<CString>& info);
+		OV<SError>									infoRemove(const TArray<CString>& keys);
 
-//				SValue					retrieveAssociationValue(const CString& name, const CString& fromDocumentType,
-//												const CMDSDocument& toDocument, const CString& summedCachedValueName);
+		TVResult<TDictionary<CString> >				internalGet(const TArray<CString>& keys) const;
+		OV<SError>									internalSet(const TDictionary<CString>& info);
 
-//				void					registerCache(const CString& name, const CMDSDocument::Info& documentInfo,
-//												UInt32 version, const TArray<CString>& relevantProperties,
-//												const TArray<CacheValueInfo>& cacheValueInfos);
+		OV<SError>									batch(BatchProc batchProc, void* userData);
 
-				void					registerCollection(const CString& name, const CMDSDocument::Info& documentInfo,
-												UInt32 version, const TArray<CString>& relevantProperties,
-												bool isUpToDate, const CString& isIncludedSelector,
-												const CDictionary& isIncludedSelectorInfo,
-												CMDSDocument::IsIncludedProc isIncludedProc, void* userData);
-				UInt32					getCollectionDocumentCount(const CString& name) const;
-				void					iterateCollection(const CString& name, const CMDSDocument::Info& documentInfo,
-												CMDSDocument::Proc proc, void* userData) const;
+													// CMDSDocumentStorageServer methods
+		DocumentRevisionInfosWithTotalCountResult	associationGetDocumentRevisionInfosFrom(const CString& name,
+															const CString& fromDocumentID, UInt32 startIndex,
+															const OV<UInt32>& count) const;
+		DocumentRevisionInfosWithTotalCountResult	associationGetDocumentRevisionInfosTo(const CString& name,
+															const CString& toDocumentID, UInt32 startIndex,
+															const OV<UInt32>& count) const;
+		DocumentFullInfosWithTotalCountResult		associationGetDocumentFullInfosFrom(const CString& name,
+															const CString& fromDocumentID, UInt32 startIndex,
+															const OV<UInt32>& count) const;
+		DocumentFullInfosWithTotalCountResult		associationGetDocumentFullInfosTo(const CString& name,
+															const CString& toDocumentID, UInt32 startIndex,
+															const OV<UInt32>& count) const;
 
-				void					registerIndex(const CString& name, const CMDSDocument::Info& documentInfo,
-												UInt32 version, const TArray<CString>& relevantProperties,
-												bool isUpToDate, const CString& keysSelector,
-												const CDictionary& keysSelectorInfo, CMDSDocument::KeysProc keysProc,
-												void* userData);
-				void					iterateIndex(const CString& name, const TArray<CString>& keys,
-												const CMDSDocument::Info& documentInfo, CMDSDocument::KeyProc keyProc,
-												void* userData) const;
+		DocumentRevisionInfosResult					collectionGetDocumentRevisionInfos(const CString& name,
+															UInt32 startIndex, const OV<UInt32>& count) const;
+		DocumentFullInfosResult						collectionGetDocumentFullInfos(const CString& name,
+															UInt32 startIndex, const OV<UInt32>& count) const;
 
-				void					registerDocumentChangedProc(const CString& documentType,
-												CMDSDocument::ChangedProc changedProc, void* userData);
+		DocumentRevisionInfosResult					documentRevisionInfos(const CString& documentType,
+															const TArray<CString>& documentIDs) const;
+		DocumentRevisionInfosResult					documentRevisionInfos(const CString& documentType,
+															UInt32 sinceRevision, const OV<UInt32>& count) const;
+		DocumentFullInfosResult						documentFullInfos(const CString& documentType,
+															const TArray<CString>& documentIDs) const;
+		DocumentFullInfosResult						documentFullInfos(const CString& documentType, UInt32 sinceRevision,
+															const OV<UInt32>& count) const;
 
-										// Instance methods
-				void					setLogErrorMessageProc(LogErrorMessageProc logErrorMessageProc, void* userData);
+		OV<SInt64>									documentIntegerValue(const CString& documentType,
+															const CMDSDocument& document, const CString& property)
+															const;
+		OV<CString>									documentStringValue(const CString& documentType,
+															const CMDSDocument& document, const CString& property)
+															const;
+		DocumentFullInfosResult						documentUpdate(const CString& documentType,
+															const TArray<CMDSDocument::UpdateInfo>&
+																	documentUpdateInfos);
+
+		DocumentRevisionInfoDictionaryResult		indexGetDocumentRevisionInfos(const CString& name,
+															const TArray<CString>& keys) const;
+		DocumentFullInfoDictionaryResult			indexGetDocumentFullInfos(const CString& name,
+															const TArray<CString>& keys) const;
 
 	// Properties
 	private:
-		CMDSSQLiteInternals*	mInternals;
+		Internals*	mInternals;
 };

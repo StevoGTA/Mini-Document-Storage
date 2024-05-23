@@ -106,8 +106,6 @@ template <typename T> class TMDSDocumentBackingCache {
 													mReferenceByDocumentID.set((*iterator)->getDocumentID(),
 															Reference(*iterator));
 
-												// Reset pruning timer if needed
-
 												// Done
 												mLock.unlockForWriting();
 											}
@@ -193,8 +191,6 @@ template <typename T> class TMDSDocumentBackingCache {
 													// Remove from storage
 													mReferenceByDocumentID.remove(*iterator);
 
-												// Reset pruning timer if needed
-
 												// Done
 												mLock.unlockForWriting();
 											}
@@ -202,8 +198,9 @@ template <typename T> class TMDSDocumentBackingCache {
 		const	OR<T>					operator[](const CString& documentID) const
 											{ return getDocumentBacking(documentID); }
 
-	private:
-
 	// Properties:
 	private:
+		CReadPreferringLock		mLock;
+		TNDictionary<Reference>	mReferenceByDocumentID;
+		UInt32					mLimit;
 };

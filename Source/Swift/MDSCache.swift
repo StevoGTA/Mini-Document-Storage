@@ -74,14 +74,14 @@ public class MDSCache : Equatable {
 			if (updateInfo.changedProperties == nil) ||
 					!self.relevantProperties.intersection(updateInfo.changedProperties!).isEmpty {
 				// Collect value infos
-				var	valuesByName = [/* Name */ String : Any]()
+				var	valueByName = [/* Name */ String : Any]()
 				self.valueInfos.forEach() {
 					// Add entry for this ValueInfo
-					valuesByName[$0.valueInfo.name] = $0.proc(self.documentType, updateInfo.document, $0.valueInfo.name)
+					valueByName[$0.valueInfo.name] = $0.proc(self.documentType, updateInfo.document, $0.valueInfo.name)
 				}
 
 				// Update
-				valueInfoByID[updateInfo.id] = valuesByName
+				valueInfoByID[updateInfo.id] = valueByName
 			}
 
 			// Update last revision

@@ -15,7 +15,7 @@ struct Server : ParsableCommand {
 	// MARK: Configuration
 	static	var	configuration =
 						CommandConfiguration(commandName: "server",
-								abstract: "Server for Mini Documnet Storage.  Copyright © 2022, Stevo Brock",
+								abstract: "Server for Mini Document Storage.  Copyright © 2022, Stevo Brock",
 								version: "1.0")
 
 	// MARK: Arguments
@@ -24,7 +24,9 @@ struct Server : ParsableCommand {
 		case swiftEphemeral
 		case swiftSQLite
 		case cppEphemeral
+		case cppSQLite
 	}
+	
     @Option
     var	documentStorage :DocumentStorage
 
@@ -55,6 +57,15 @@ struct Server : ParsableCommand {
 				// C++ Ephemeral
 				documentStorage = MDSDocumentStorageServerObjC(documentStorageObjC: MDSEphemeralCpp())
 
+			case .cppSQLite:
+				// C++ SQLite
+				let	libraryFolder = FileManager.default.folder(for: .libraryDirectory)
+				let	applicationFolder = libraryFolder.folder(withSubPath: "Mini Document Storage Test Server (Swift)")
+				try! FileManager.default.create(applicationFolder)
+
+				documentStorage =
+						MDSDocumentStorageServerObjC(
+								documentStorageObjC: MDSSQLiteCpp(folderPath: applicationFolder.path))
 		}
 		MDSHTTPServices.register(documentStorage: documentStorage, for: "Sandbox")
 

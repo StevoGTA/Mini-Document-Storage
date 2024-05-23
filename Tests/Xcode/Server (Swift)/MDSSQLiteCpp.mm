@@ -1,13 +1,13 @@
 //
-//  MDSEphemeralCpp.mm
+//  MDSSQLiteCpp.mm
 //  Mini Document Storage Tests
 //
-//  Created by Stevo on 5/23/23.
+//  Created by Stevo on 4/16/24.
 //
 
-#import "MDSEphemeralCpp.h"
+#import "MDSSQLiteCpp.h"
 
-#import "CMDSEphemeral.h"
+#import "CMDSSQLite.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: MDSDocumentStorageObjC
@@ -20,20 +20,21 @@
 
 //----------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: - MDSEphemeralCpp
+// MARK: - MDSSQLiteCpp
 
-@implementation MDSEphemeralCpp
+@implementation MDSSQLiteCpp
 
 // MARK: Lifecycle methods
 
 //----------------------------------------------------------------------------------------------------------------------
-- (instancetype) init
+- (instancetype) initWithFolderPath:(NSString*) folderPath
 {
 	// Do super
 	self = [super init];
 	if (self) {
 		// Setup
-		self.documentStorageServer = new CMDSEphemeral();
+		self.documentStorageServer =
+				new CMDSSQLite(CFolder(CFilesystemPath(CString((__bridge CFStringRef) folderPath))));
 
 		// Complete setup
 		[self completeSetup];

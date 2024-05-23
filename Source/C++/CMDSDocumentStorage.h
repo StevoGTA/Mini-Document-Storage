@@ -212,7 +212,6 @@ class CMDSDocumentStorage {
 																				CMDSAssociation::Update::remove(
 																						fromDocument.getID(),
 																						toDocument.getID()))); }
-
 						DocumentsResult						associationGetDocumentsFrom(
 																	const CMDSDocument& fromDocument,
 																	const CMDSDocument::Info& toDocumentInfo);

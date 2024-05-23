@@ -9,8 +9,8 @@
 import Foundation
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: MDSDocument.AttachmentInfoMap extension
-extension MDSDocument.AttachmentInfoMap {
+// MARK: MDSDocument.AttachmentInfoByID extension
+extension MDSDocument.AttachmentInfoByID {
 
 	// MARK: Properties
 	var	data :Data
@@ -219,20 +219,20 @@ public class MDSRemoteStorageCache {
 						try! JSONSerialization.jsonObject(with: $0.blob(for: jsonTableColumn)!, options: [])
 								as! [String : Any]
 
-			let	attachmentInfoMap :MDSDocument.AttachmentInfoMap
+			let	attachmentInfoByID :MDSDocument.AttachmentInfoByID
 			if let data = $0.blob(for: attachmentInfoTableColumn) {
 				// Have info
-				attachmentInfoMap = MDSDocument.AttachmentInfoMap(data)
+				attachmentInfoByID = MDSDocument.AttachmentInfoByID(data)
 			} else {
 				// Don't have info
-				attachmentInfoMap = [:]
+				attachmentInfoByID = [:]
 			}
 
 			// Add to array
 			documentFullInfos.append(
 					MDSDocument.FullInfo(documentID: id, revision: revision, active: true, creationDate: creationDate,
 							modificationDate: modificationDate, propertyMap: propertyMap,
-							attachmentInfoMap: attachmentInfoMap))
+							attachmentInfoByID: attachmentInfoByID))
 		}
 
 		return documentFullInfos
@@ -272,10 +272,10 @@ public class MDSRemoteStorageCache {
 									try! JSONSerialization.jsonObject(with: $0.blob(for: jsonTableColumn)!, options: [])
 											as! [String : Any]
 
-						let	attachmentInfoMap :MDSDocument.AttachmentInfoMap
+						let	attachmentInfoByID :MDSDocument.AttachmentInfoByID
 						if let data = $0.blob(for: attachmentInfoTableColumn) {
 							// Have info
-							attachmentInfoMap =
+							attachmentInfoByID =
 									(try! JSONSerialization.jsonObject(with: data, options: [])
 													as! [String : [String : Any]])
 											.mapValues({
@@ -285,14 +285,14 @@ public class MDSRemoteStorageCache {
 											})
 						} else {
 							// Don't have info
-							attachmentInfoMap = [:]
+							attachmentInfoByID = [:]
 						}
 
 						// Add to array
 						documentFullInfos.append(
 								MDSDocument.FullInfo(documentID: id, revision: revision, active: active == 1,
 										creationDate: creationDate, modificationDate: modificationDate,
-										propertyMap: propertyMap, attachmentInfoMap: attachmentInfoMap))
+										propertyMap: propertyMap, attachmentInfoByID: attachmentInfoByID))
 					} else {
 						// Revision does not match
 						documentRevisionInfosNotResolved.append(
@@ -337,10 +337,10 @@ public class MDSRemoteStorageCache {
 						try! JSONSerialization.jsonObject(with: $0.blob(for: jsonTableColumn)!, options: [])
 								as! [String : Any]
 
-			let	attachmentInfoMap :MDSDocument.AttachmentInfoMap
+			let	attachmentInfoByID :MDSDocument.AttachmentInfoByID
 			if let data = $0.blob(for: attachmentInfoTableColumn) {
 				// Have info
-				attachmentInfoMap =
+				attachmentInfoByID =
 						(try! JSONSerialization.jsonObject(with: data, options: []) as! [String : [String : Any]])
 								.mapPairs({
 										($0,
@@ -349,14 +349,14 @@ public class MDSRemoteStorageCache {
 								})
 			} else {
 				// Don't have info
-				attachmentInfoMap = [:]
+				attachmentInfoByID = [:]
 			}
 
 			// Add
 			documentFullInfos.append(
 					MDSDocument.FullInfo(documentID: id, revision: revision, active: active == 1,
 							creationDate: creationDate, modificationDate: modificationDate,
-							propertyMap: propertyMap, attachmentInfoMap: attachmentInfoMap))
+							propertyMap: propertyMap, attachmentInfoByID: attachmentInfoByID))
 			documentIDsNotResolved.remove(id)
 		}
 
@@ -382,9 +382,9 @@ public class MDSRemoteStorageCache {
 										value: $0.modificationDate.timeIntervalSince1970),
 								(tableColumn: sqliteTable.jsonTableColumn, value: $0.propertyMap.data),
 							]
-				if !$0.attachmentInfoMap.isEmpty {
+				if !$0.attachmentInfoByID.isEmpty {
 					// Add attachment info
-					info.append((tableColumn: sqliteTable.attachmentInfoTableColumn, value: $0.attachmentInfoMap.data))
+					info.append((tableColumn: sqliteTable.attachmentInfoTableColumn, value: $0.attachmentInfoByID.data))
 				}
 
 				// Insert or replace

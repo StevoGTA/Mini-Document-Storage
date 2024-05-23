@@ -739,7 +739,7 @@ extension HTTPServer {
 				let	revision =
 							try documentStorage!.documentAttachmentUpdate(for: info.documentType,
 									documentID: info.documentID, attachmentID: info.attachmentID, updatedInfo: infoInfo,
-									updatedContent: infoContent)
+									updatedContent: infoContent)!
 
 				return (.ok, nil, .json(["revision": revision]))
 			} catch {

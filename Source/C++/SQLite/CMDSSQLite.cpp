@@ -7,723 +7,1378 @@
 #include "CMDSSQLiteDatabaseManager.h"
 #include "CMDSSQLiteDocumentBacking.h"
 #include "CThread.h"
-#include "CUUID.h"
 #include "TBatchQueue.h"
 #include "TLockingDictionary.h"
+#include "TMDSBatch.h"
+#include "TMDSCache.h"
+#include "TMDSCollection.h"
 #include "TMDSDocumentBackingCache.h"
+#include "TMDSIndex.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Types
 
-typedef	TMDSBatchInfo<CMDSSQLiteDocumentBacking>						CMDSSQLiteBatchInfo;
-typedef	CMDSSQLiteBatchInfo::DocumentInfo<CMDSSQLiteDocumentBacking>	CMDSSQLiteBatchDocumentInfo;
+typedef	CMDSSQLiteDatabaseManager::AssociationInfo		DMAssociationInfo;
+typedef	CMDSSQLiteDatabaseManager::CacheInfo			DMCacheInfo;
+typedef	CMDSSQLiteDatabaseManager::CacheValueInfo		DMCacheValueInfo;
+typedef	CMDSSQLiteDatabaseManager::CollectionInfo		DMCollectionInfo;
+typedef	CMDSSQLiteDatabaseManager::DocumentContentInfo	DMDocumentContentInfo;
+typedef	CMDSSQLiteDatabaseManager::DocumentInfo			DMDocumentInfo;
+typedef	CMDSSQLiteDatabaseManager::IDArray				DMIDArray;
+typedef	CMDSSQLiteDatabaseManager::IndexInfo			DMIndexInfo;
+typedef	CMDSSQLiteDatabaseManager::ValueInfoByID		DMValueInfoByID;
 
-typedef	CMDSSQLiteCollection::UpdateInfo<TNumberArray<SInt64> >			CMDSSQLiteCollectionUpdateInfo;
-
-typedef	TMDSDocumentBackingCache<CMDSSQLiteDocumentBacking>				CMDSSQLiteDocumentBackingCache;
-typedef	CMDSDocument::BackingInfo<CMDSSQLiteDocumentBacking>			CMDSSQLiteDocumentBackingInfo;
-
-typedef	TMDSUpdateInfo<SInt64>											CMDSSQLiteUpdateInfo;
-typedef	TMDSBringUpToDateInfo<SInt64>									CMDSSQLiteBringUpToDateInfo;
-
-typedef	CMDSSQLiteDatabaseManager::ExistingDocumentInfo					ExistingDocumentInfo;
-
-typedef	TBatchQueue<CMDSSQLiteUpdateInfo>								CMDSSQLiteUpdateInfoBatchQueue;
-
-//----------------------------------------------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: - Procs
-
-typedef	void	(*CMDSSQLiteDocumentBackingInfoProc)(const CMDSSQLiteDocumentBackingInfo& documentBackingInfo,
-						void* userData);
-typedef	void	(*CMDSSQLiteKeyDocumentBackingInfoProc)(const CString& key,
-						const CMDSSQLiteDocumentBackingInfo& documentBackingInfo, void* userData);
-typedef	void	(*CMDSSQLiteResultsRowDocumentBackingInfoProc)(const CMDSSQLiteDocumentBackingInfo& documentBackingInfo,
-						const CSQLiteResultsRow& resultsRow, void* userData);
-
+typedef	TMDSBatch<I<CMDSSQLiteDocumentBacking> >		Batch;
+typedef	Batch::DocumentInfo								BatchDocumentInfo;
+typedef	TNDictionary<BatchDocumentInfo>					BatchDocumentInfoByDocumentID;
+typedef	TDictionary<BatchDocumentInfoByDocumentID>		BatchDocumentInfoByDocumentIDByDocumentType;
+typedef	TMDSCache<SInt64, DMValueInfoByID>				Cache;
+typedef	TMDSCollection<SInt64, DMIDArray >				Collection;
+typedef	TVResult<I<CMDSSQLiteDocumentBacking> >			DocumentBackingResult;
+typedef	TNDictionary<CMDSDocument::UpdateInfo>			DocumentUpdateByDocumentID;
+typedef	TMDSIndex<SInt64>								Index;
+typedef	TMDSUpdateInfo<SInt64>							UpdateInfo;
+typedef	TBatchQueue<UpdateInfo, TNArray<UpdateInfo> >	UpdateInfoBatchQueue;
+typedef	TBatchQueue<SInt64, TNumberArray<SInt64> >		RemoveBatchQueue;
 
 //----------------------------------------------------------------------------------------------------------------------
-//----------------------------------------------------------------------------------------------------------------------
-// MARK: - CMDSSQLiteInternals
+// MARK: - CMDSSQLite::Internals
 
-class CMDSSQLiteInternals {
-	// BatchInfo
+class CMDSSQLite::Internals {
 	public:
 		struct BatchInfo {
-			// Lifecycle methods
-			BatchInfo(CMDSSQLiteInternals& internals, CMDSSQLiteBatchInfo& batchInfo) :
-				mInternals(internals), mBatchInfo(batchInfo)
-				{}
+			public:
+									BatchInfo(Internals& internals, const Batch& batch) :
+										mInternals(internals), mBatch(batch)
+										{}
 
-			// Properties
-			CMDSSQLiteInternals&	mInternals;
-			CMDSSQLiteBatchInfo&	mBatchInfo;
+						Internals&	getInternals() const
+										{ return mInternals; }
+				const	Batch&		getBatch() const
+										{ return mBatch; }
+
+			private:
+						Internals&	mInternals;
+				const	Batch&		mBatch;
 		};
 
-	// CollectionIndexBringUpToDateInfo
-	struct CollectionIndexBringUpToDateInfo {
-		// Lifecycle methods
-		CollectionIndexBringUpToDateInfo(CMDSSQLite& mdsSQLite, const OR<CMDSSQLiteBatchInfo>& batchInfo,
-				const CMDSDocument::Info& documentInfo) :
-			mMDSSQLite(mdsSQLite), mBatchInfo(batchInfo), mDocumentInfo(documentInfo)
-			{}
-
-		// Properties
-				CMDSSQLite&								mMDSSQLite;
-		const	OR<CMDSSQLiteBatchInfo>&				mBatchInfo;
-		const	CMDSDocument::Info&						mDocumentInfo;
-
-				TNArray<CMDSSQLiteBringUpToDateInfo>	mBringUpToDateInfos;
-				TNArray<I<CMDSDocument> >				mDocuments;
-	};
-
-	// CollectionIndexUpdateInfo
-	struct CollectionIndexUpdateInfo {
-		// Lifecycle methods
-		CollectionIndexUpdateInfo(const CString& documentType, CMDSSQLiteInternals& internals) :
-			mDocumentType(documentType), mInternals(internals)
-			{}
-
-		// Properties
-		const	CString&				mDocumentType;
-				CMDSSQLiteInternals&	mInternals;
-	};
-
-	// ProcessExistingDocumentInfoInfo
 	public:
-		struct ProcessExistingDocumentInfoInfo {
-					// Lifecycle methods
-					ProcessExistingDocumentInfoInfo(CMDSSQLiteDocumentBackingCache& documentBackingCache,
-							CMDSSQLiteDocumentBackingInfoProc documentBackingInfoProc, void* userData) :
-						mDocumentBackingCache(documentBackingCache), mDocumentBackingInfoProc(documentBackingInfoProc),
-								mKeyDocumentBackingInfoProc(nil), mResultsRowDocumentBackingInfoProc(nil),
-								mUserData(userData)
-						{}
-					ProcessExistingDocumentInfoInfo(CMDSSQLiteDocumentBackingCache& documentBackingCache,
-							CMDSSQLiteKeyDocumentBackingInfoProc keyDocumentBackingInfoProc, void* userData) :
-						mDocumentBackingCache(documentBackingCache), mDocumentBackingInfoProc(nil),
-								mKeyDocumentBackingInfoProc(keyDocumentBackingInfoProc),
-								mResultsRowDocumentBackingInfoProc(nil), mUserData(userData)
-						{}
+		struct DocumentCreateInfo {
+															DocumentCreateInfo(Internals& internals,
+																	const CMDSDocument::InfoForNew& documentInfoForNew,
+																	const TArray<CMDSDocument::CreateInfo>&
+																			documentCreateInfos,
+																	TNArray<CMDSDocument::CreateResultInfo>&
+																			documentCreateResultInfos) :
+																mInternals(internals),
+																		mDocumentInfoForNew(documentInfoForNew),
+																		mDocumentCreateInfos(documentCreateInfos),
+																		mDocumentCreateResultInfos(
+																				documentCreateResultInfos)
+																{}
 
-					ProcessExistingDocumentInfoInfo(CMDSSQLiteDocumentBackingCache& documentBackingCache,
-							CMDSSQLiteResultsRowDocumentBackingInfoProc resultsRowDocumentBackingInfoProc,
-							void* userData) :
-						mDocumentBackingCache(documentBackingCache), mDocumentBackingInfoProc(nil),
-								mKeyDocumentBackingInfoProc(nil),
-								mResultsRowDocumentBackingInfoProc(resultsRowDocumentBackingInfoProc),
-								mUserData(userData)
-						{}
-					ProcessExistingDocumentInfoInfo(CMDSSQLiteDocumentBackingCache& documentBackingCache,
-							CollectionIndexBringUpToDateInfo& collectionIndexBringUpToDateInfo) :
-						mDocumentBackingCache(documentBackingCache),
-								mDocumentBackingInfoProc(
-										(CMDSSQLiteDocumentBackingInfoProc) collectionIndexBringUpToDate),
-								mKeyDocumentBackingInfoProc(nil), mResultsRowDocumentBackingInfoProc(nil),
-								mUserData(&collectionIndexBringUpToDateInfo)
-						{}
+						Internals&							getInternals() const
+																{ return mInternals; }
+				const	CMDSDocument::InfoForNew&			getDocumentInfoForNew() const
+																{ return mDocumentInfoForNew; }
+				const	TArray<CMDSDocument::CreateInfo>&	getDocumentCreateInfos() const
+																{ return mDocumentCreateInfos; }
 
-					// Instance methods
-			void	perform(const CMDSSQLiteDocumentBackingInfo& documentBackingInfo,
-							const CSQLiteResultsRow& resultsRow)
-						{
-							// Check what proc we have
-							if (mDocumentBackingInfoProc != nil)
-								// Have document backing info proc
-								mDocumentBackingInfoProc(documentBackingInfo, mUserData);
-							else if (mKeyDocumentBackingInfoProc != nil)
-								// Have key document backing info proc
-								mKeyDocumentBackingInfoProc(CMDSSQLiteDatabaseManager::getIndexContentsKey(resultsRow),
-										documentBackingInfo, mUserData);
-							else
-								// Have results row document backing info proc
-								mResultsRowDocumentBackingInfoProc(documentBackingInfo, resultsRow, mUserData);
-						}
+						void								add(const CMDSDocument::CreateResultInfo&
+																	documentCreateResultInfo)
+																{ mDocumentCreateResultInfos +=
+																		documentCreateResultInfo; }
 
-			// Properties
-			CMDSSQLiteDocumentBackingCache&				mDocumentBackingCache;
-			CMDSSQLiteDocumentBackingInfoProc			mDocumentBackingInfoProc;
-			CMDSSQLiteKeyDocumentBackingInfoProc		mKeyDocumentBackingInfoProc;
-			CMDSSQLiteResultsRowDocumentBackingInfoProc	mResultsRowDocumentBackingInfoProc;
-			void*										mUserData;
+			private:
+						Internals&									mInternals;
+				const	CMDSDocument::InfoForNew&					mDocumentInfoForNew;
+				const	TArray<CMDSDocument::CreateInfo>&			mDocumentCreateInfos;
+						TNArray<CMDSDocument::CreateResultInfo>&	mDocumentCreateResultInfos;
 		};
 
-	// Methods
 	public:
-		CMDSSQLiteInternals(const CMDSSQLite& mdsSQLite, CSQLiteDatabase& database) :
-			mMDSSQLite(mdsSQLite), mDatabaseManager(database), mID(CUUID().getBase64String()),
-					mLogErrorMessageProc(nil), mLogErrorMessageProcUserData(nil)
-			{}
+		struct DocumentBackingDocumentIDsIterateInfo {
+			public:
+						DocumentBackingDocumentIDsIterateInfo(const CMDSDocument::Info& documentInfo,
+								CMDSDocumentStorage& documentStorage, TNArray<CString>& documentIDs,
+								CMDSDocument::Proc proc, void* procUserData) :
+							mDocumentIDs(documentIDs),
+									mDocumentInfo(documentInfo), mDocumentStorage(documentStorage), mProc(proc),
+									mProcUserData(procUserData)
+							{}
+						DocumentBackingDocumentIDsIterateInfo(TNArray<CMDSDocument::FullInfo>& documentFullInfos,
+								TNArray<CString>& documentIDs) :
+							mDocumentIDs(documentIDs),
+									mProc(nil), mProcUserData(nil), mDocumentFullInfos(documentFullInfos)
+							{}
 
-						OR<CMDSSQLiteDocumentBacking>	getDocumentBacking(const CString& documentType,
-																const CString& documentID);
+				void	process(const I<CMDSSQLiteDocumentBacking>& documentBacking) const
+							{
+								// Check how to process
+								if (mProc != nil)
+									// Call proc
+									mProc(mDocumentInfo->create(documentBacking->getDocumentID(), *mDocumentStorage),
+											mProcUserData);
+								else
+									// Add to array
+									mDocumentFullInfos->add(documentBacking->getDocumentFullInfo());
 
-						void							iterateCollection(const CString& name,
-																CMDSSQLiteDocumentBackingInfoProc
-																		documentBackingInfoProc,
-																void* userData);
-						void							updateCollections(const CString& documentType,
-																const TArray<CMDSSQLiteUpdateInfo>& updateInfos);
-						CMDSSQLiteCollection			bringCollectionUpToDate(const CString& name);
-						void							bringUpToDate(CMDSSQLiteCollection& collection);
-						void							removeFromCollections(const CString& documentType,
-																const TNumberArray<SInt64>& documentBackingIDs);
+								// Update
+								mDocumentIDs -= documentBacking->getDocumentID();
+							}
 
-						void							iterateIndex(const CString& name, const TArray<CString>& keys,
-																CMDSSQLiteKeyDocumentBackingInfoProc
-																		keyDocumentBackingInfoProc,
-																void* userData);
-						void							updateIndexes(const CString& documentType,
-																const TArray<CMDSSQLiteUpdateInfo>& updateInfos);
-						CMDSSQLiteIndex					bringIndexUpToDate(const CString& name);
-						void							bringUpToDate(CMDSSQLiteIndex& index);
-						void							removeFromIndexes(const CString& documentType,
-																const TNumberArray<SInt64>& documentBackingIDs);
+			private:
+				TNArray<CString>&						mDocumentIDs;
 
-						void							notifyDocumentChanged(const CString& documentType,
-																const CMDSDocument& document,
-																CMDSDocument::ChangeKind changeKind);
+				OR<const CMDSDocument::Info>					mDocumentInfo;
+				OR<CMDSDocumentStorage>					mDocumentStorage;
+				CMDSDocument::Proc						mProc;
+				void*									mProcUserData;
 
-		static	const	OV<SValue>						getDocumentBackingPropertyValue(const CString& documentID,
-																const CString& property,
-																CMDSSQLiteDocumentBacking* documentBacking);
-		static			void							processExistingDocumentInfo(
-																const ExistingDocumentInfo& existingDocumentInfo,
-																const CSQLiteResultsRow& resultsRow,
-																ProcessExistingDocumentInfoInfo*
-																		processExistingDocumentInfoInfo);
-		static			void							addDocumentID(
-																const CMDSSQLiteDocumentBackingInfo&
-																		documentBackingInfo,
-																TMArray<CString>* documentIDs)
-															{ (*documentIDs) += documentBackingInfo.mDocumentID; }
-		static			void							addDocumentIDWithKey(const CString& key,
-																const CMDSSQLiteDocumentBackingInfo&
-																		documentBackingInfo,
-																TNDictionary<CString>* keyMap)
-															{ keyMap->set(key, documentBackingInfo.mDocumentID); }
-		static			void							addDocumentIDWithResultsRow(
-																const CMDSSQLiteDocumentBackingInfo&
-																		documentBackingInfo,
-																const CSQLiteResultsRow& resultsRow,
-																TMArray<CString>* documentIDs)
-															{ (*documentIDs) += documentBackingInfo.mDocumentID; }
-		static			void							noteReference(
-																const CMDSSQLiteDocumentBackingInfo&
-																		documentBackingInfo,
-																void* userData)
-															{}
-		static			void							storeDocumentBackingInfo(
-																const CMDSSQLiteDocumentBackingInfo&
-																		documentBackingInfo,
-																OI<CMDSSQLiteDocumentBackingInfo>*
-																		outDocumentBackingInfo)
-															{ *outDocumentBackingInfo =
-																	OI<CMDSSQLiteDocumentBackingInfo>(
-																			documentBackingInfo); }
+				OR<TNArray<CMDSDocument::FullInfo> >	mDocumentFullInfos;
+		};
 
-		static			void							collectionIndexBringUpToDate(
-																const CMDSSQLiteDocumentBackingInfo&
-																		documentBackingInfo,
-																CollectionIndexBringUpToDateInfo*
-																		collectionBringUpToDateInfo);
-		static			void							updateCollectionsIndexes(
-																const TArray<CMDSSQLiteUpdateInfo>& updateInfos,
-																CollectionIndexUpdateInfo* collectionIndexUpdateInfo)
-															{
-																// Update collections and indexes
-																collectionIndexUpdateInfo->mInternals
-																		.updateCollections(
-																				collectionIndexUpdateInfo->
-																						mDocumentType,
-																				updateInfos);
-																collectionIndexUpdateInfo->mInternals
-																		.updateIndexes(
-																				collectionIndexUpdateInfo->
-																						mDocumentType,
-																				updateInfos);
+	public:
+		struct DocumentBackingSinceRevisionIterateInfo {
+						DocumentBackingSinceRevisionIterateInfo(const CMDSDocument::Info& documentInfo,
+								CMDSDocumentStorage& documentStorage, CMDSDocument::Proc proc, void* procUserData) :
+							mDocumentInfo(documentInfo), mDocumentStorage(documentStorage), mProc(proc),
+									mProcUserData(procUserData)
+							{}
+
+				void	process(const CString& documentID) const
+							{ mProc(mDocumentInfo.create(documentID, mDocumentStorage), mProcUserData); }
+
+			private:
+				const	CMDSDocument::Info&		mDocumentInfo;
+						CMDSDocumentStorage&	mDocumentStorage;
+						CMDSDocument::Proc		mProc;
+						void*					mProcUserData;
+		};
+
+	public:
+		struct DocumentUpdateInfo {
+			public:
+															DocumentUpdateInfo(Internals& internals,
+																	const CString& documentType,
+																	const TArray<CMDSDocument::UpdateInfo>&
+																			documentUpdateInfos,
+																	TNArray<CMDSDocument::FullInfo>&
+																			documentFullInfos) :
+																mInternals(internals), mDocumentType(documentType),
+																		mDocumentUpdateInfos(documentUpdateInfos),
+																		mDocumentFullInfos(documentFullInfos)
+																{}
+
+						Internals&							getInternals() const
+																{ return mInternals; }
+				const	CString&							getDocumentType() const
+																{ return mDocumentType; }
+				const	TArray<CMDSDocument::UpdateInfo>&	getDocumentUpdateInfos() const
+																{ return mDocumentUpdateInfos; }
+						TNArray<CMDSDocument::FullInfo>&	getDocumentFullInfos() const
+																{ return mDocumentFullInfos; }
+
+			private:
+						Internals&							mInternals;
+				const	CString&							mDocumentType;
+				const	TArray<CMDSDocument::UpdateInfo>&	mDocumentUpdateInfos;
+						TNArray<CMDSDocument::FullInfo>&	mDocumentFullInfos;
+		};
+
+	public:
+		struct UpdatesInfo {
+
+											UpdatesInfo(const TArray<UpdateInfo>& updateInfos,
+													const DMIDArray& removedIDs) :
+												mUpdateInfos(updateInfos), mRemovedIDs(removedIDs)
+												{}
+											UpdatesInfo(const TArray<UpdateInfo>& updateInfos) :
+												mUpdateInfos(updateInfos), mRemovedIDs(TNumberArray<SInt64>())
+												{}
+											UpdatesInfo(const DMIDArray& removedIDs) :
+												mUpdateInfos(TNArray<UpdateInfo>()), mRemovedIDs(removedIDs)
+												{}
+											UpdatesInfo(const UpdatesInfo& other) :
+												mUpdateInfos(other.mUpdateInfos), mRemovedIDs(other.mRemovedIDs)
+												{}
+
+				const	TArray<UpdateInfo>&	getUpdateInfos() const
+												{ return mUpdateInfos; }
+				const	DMIDArray&			getRemovedIDs() const
+												{ return mRemovedIDs; }
+
+			private:
+				TArray<UpdateInfo>	mUpdateInfos;
+				DMIDArray			mRemovedIDs;
+		};
+
+	private:
+		struct Info {
+			public:
+									Info(Internals& internals, const CString& documentType) :
+										mInternals(internals), mDocumentType(documentType)
+										{}
+
+						Internals&	getInternals() const
+										{ return mInternals; }
+				const	CString&	getDocumentType() const
+										{ return mDocumentType; }
+
+			private:
+						Internals&	mInternals;
+				const	CString&	mDocumentType;
+		};
+
+	private:
+		struct KeyAndDocumentInfo {
+										KeyAndDocumentInfo(const CString& key, const DMDocumentInfo& documentInfo) :
+											mKey(key), mDocumentInfo(documentInfo)
+											{}
+										KeyAndDocumentInfo(const KeyAndDocumentInfo& other) :
+											mKey(other.mKey), mDocumentInfo(other.mDocumentInfo)
+											{}
+
+				const	CString&		getKey() const
+											{ return mKey; }
+				const	DMDocumentInfo&	getDocumentInfo() const
+											{ return mDocumentInfo; }
+
+			private:
+				CString			mKey;
+				DMDocumentInfo	mDocumentInfo;
+		};
+
+	private:
+		struct ProcessDocumentUpdateInfo {
+			public:
+													ProcessDocumentUpdateInfo(Internals& internals,
+															const CString& documentType,
+															TNArray<CMDSDocument::FullInfo>& documentFullInfos,
+															const DocumentUpdateByDocumentID&
+																	documentUpdateByDocumentID,
+															UpdateInfoBatchQueue& updateInfoBatchQueue,
+															RemoveBatchQueue& removeBatchQueue) :
+														mInternals(internals), mDocumentType(documentType),
+																mDocumentInfo(
+																		mInternals.mDocumentStorage.documentCreateInfo(
+																				mDocumentType)),
+																mDocumentFullInfos(documentFullInfos),
+																mDocumentUpdateInfoByDocumentID(
+																		documentUpdateByDocumentID),
+																mUpdateInfoBatchQueue(updateInfoBatchQueue),
+																mRemoveBatchQueue(removeBatchQueue)
+														{}
+
+						Internals&					getInternals() const
+														{ return mInternals; }
+				const	CString&					getDocumentType() const
+														{ return mDocumentType; }
+				const	CMDSDocument::UpdateInfo&	getDocumentUpdateInfo(const CString& documentID) const
+														{ return *mDocumentUpdateInfoByDocumentID[documentID]; }
+
+						I<CMDSDocument>				documentCreate(const CString& documentID)
+														{ return mDocumentInfo.create(documentID,
+																mInternals.mDocumentStorage); }
+						void						update(const I<CMDSDocument>& document, UInt32 revision, SInt64 id,
+															const TSet<CString> changedProperties)
+														{ mUpdateInfoBatchQueue.add(
+																UpdateInfo(document, revision, id,
+																		changedProperties)); }
+						void						remove(SInt64 id)
+														{ mRemoveBatchQueue.add(id); }
+						void						add(const CMDSDocument::FullInfo& documentFullInfo)
+														{ mDocumentFullInfos += documentFullInfo; }
+
+			private:
+						Internals&							mInternals;
+				const	CString&							mDocumentType;
+				const	CMDSDocument::Info&					mDocumentInfo;
+						TNArray<CMDSDocument::FullInfo>&	mDocumentFullInfos;
+				const	DocumentUpdateByDocumentID&			mDocumentUpdateInfoByDocumentID;
+						UpdateInfoBatchQueue&				mUpdateInfoBatchQueue;
+						RemoveBatchQueue&					mRemoveBatchQueue;
+		};
+
+	private:
+		struct UpdatesInfoBuilder {
+
+										UpdatesInfoBuilder(CMDSDocumentStorage& documentStorage,
+												const CMDSDocument::Info& documentInfo,
+												const OR<I<Batch> >& batch) :
+											mDocumentStorage(documentStorage), mDocumentInfo(documentInfo),
+													mBatch(batch)
+											{}
+
+				const	OR<I<Batch> >&	getBatch() const
+											{ return mBatch; }
+
+						void			addUpdateInfo(const I<CMDSSQLiteDocumentBacking>& documentBacking)
+											{ mUpdateInfos +=
+													UpdateInfo(
+															mDocumentInfo.create(documentBacking->getDocumentID(),
+																	mDocumentStorage),
+															documentBacking->getRevision(), documentBacking->getID()); }
+						void			noteRemoved(const I<CMDSSQLiteDocumentBacking>& documentBacking)
+											{ mRemovedIDs += documentBacking->getID(); }
+
+						UpdatesInfo		getUpdatesInfo() const
+											{ return UpdatesInfo(mUpdateInfos, mRemovedIDs); }
+
+			private:
+						CMDSDocumentStorage&	mDocumentStorage;
+				const	CMDSDocument::Info&		mDocumentInfo;
+						OR<I<Batch> >			mBatch;
+
+						TNArray<UpdateInfo>		mUpdateInfos;
+						DMIDArray				mRemovedIDs;
+		};
+
+	public:
+										Internals(CMDSDocumentStorage& documentStorage, const CFolder& folder,
+												const CString& name) :
+											mDocumentStorage(documentStorage), mDatabaseManager(folder, name)
+											{}
+
+				OV<I<CMDSAssociation> >	associationGet(const CString& name)
+											{
+												// Check if have loaded
+												const	OR<I<CMDSAssociation> >	association = mAssociationByName[name];
+												if (association.hasReference())
+													// Have loaded
+													return OV<I<CMDSAssociation> >(*association);
+
+												// Check if have stored
+												OV<DMAssociationInfo>	associationInfo =
+																				mDatabaseManager.associationInfo(name);
+												if (associationInfo.hasValue()) {
+													// Have stored
+													I<CMDSAssociation>	association(
+																				new CMDSAssociation(name,
+																						associationInfo->
+																								getFromDocumentType(),
+																						associationInfo->
+																								getToDocumentType()));
+													mAssociationByName.set(name, association);
+
+													return OV<I<CMDSAssociation> >(association);
+												}
+
+												return OV<I<CMDSAssociation> >();
+											}
+				OV<SError>				associationIterateFrom(const I<CMDSAssociation>& association,
+												const CString& fromDocumentID, UInt32 startIndex,
+												const OV<UInt32>& count,
+												CMDSSQLiteDocumentBacking::KeyProc documentBackingKeyProc,
+												void* userData)
+											{
+												// Setup
+												OV<SError>	error;
+
+												// Collect KeyAndDocumentInfos
+												TNArray<KeyAndDocumentInfo>	keyAndDocumentInfos;
+												error =
+														mDatabaseManager
+																.associationIterateDocumentInfosFrom(
+																		association->getName(), fromDocumentID,
+																		association->getFromDocumentType(),
+																		association->getToDocumentType(), startIndex,
+																		count,
+																		DMDocumentInfo::ProcInfo(
+																				(DMDocumentInfo::ProcInfo::Proc)
+																						addDocumentInfoToKeyAndDocumentInfoArray,
+																				&keyAndDocumentInfos));
+												ReturnErrorIfError(error);
+
+												// Iterate document backings
+												documentBackingsIterate(association->getToDocumentType(),
+														keyAndDocumentInfos, documentBackingKeyProc, userData);
+
+												return OV<SError>();
+											}
+				OV<SError>				associationIterateTo(const I<CMDSAssociation>& association,
+												const CString& toDocumentID, UInt32 startIndex, const OV<UInt32>& count,
+												CMDSSQLiteDocumentBacking::KeyProc documentBackingKeyProc,
+												void* userData)
+											{
+												// Setup
+												OV<SError>	error;
+
+												// Collect KeyAndDocumentInfos
+												TNArray<KeyAndDocumentInfo>	keyAndDocumentInfos;
+												error =
+														mDatabaseManager
+																.associationIterateDocumentInfosTo(
+																		association->getName(), toDocumentID,
+																		association->getToDocumentType(),
+																		association->getFromDocumentType(), startIndex,
+																		count,
+																		DMDocumentInfo::ProcInfo(
+																				(DMDocumentInfo::ProcInfo::Proc)
+																						addDocumentInfoToKeyAndDocumentInfoArray,
+																				&keyAndDocumentInfos));
+												ReturnErrorIfError(error);
+
+												// Iterate document backings
+												documentBackingsIterate(association->getToDocumentType(),
+														keyAndDocumentInfos, documentBackingKeyProc, userData);
+
+												return OV<SError>();
+											}
+
+				OV<I<Cache> >			cacheGet(const CString& name)
+											{
+												// Check if have loaded
+												const	OR<I<Cache> >	cache = mCacheByName[name];
+												if (cache.hasReference())
+													// Have loaded
+													return OV<I<Cache> >(*cache);
+
+												// Check if have stored
+												OV<DMCacheInfo>	cacheInfo = mDatabaseManager.cacheInfo(name);
+												if (cacheInfo.hasValue()) {
+													// Have stored
+													TNArray<SMDSCacheValueInfo>	cacheValueInfos;
+													for (TIteratorD<DMCacheValueInfo> iterator =
+																	cacheInfo->getCacheValueInfos().getIterator();
+															iterator.hasValue(); iterator.advance())
+														// Add
+														cacheValueInfos +=
+																SMDSCacheValueInfo(
+																		SMDSValueInfo(iterator->getName(),
+																				iterator->getValueType()),
+																		mDocumentStorage.documentValueInfo(
+																				iterator->getSelector()));
+
+													I<Cache>	cache(
+																		new Cache(name, cacheInfo->getDocumentType(),
+																				cacheInfo->getRelevantProperties(),
+																				cacheValueInfos,
+																				cacheInfo->getLastRevision()));
+													mCacheByName.set(name, cache);
+
+													return OV<I<Cache> >(cache);
+												}
+
+												return OV<I<Cache> >();
+											}
+				void					cacheUpdate(const I<Cache>& cache, const UpdatesInfo& updatesInfo)
+											{
+												// Update Cache
+												Cache::UpdateResults	cacheUpdateResults =
+																				cache->update(
+																						updatesInfo.getUpdateInfos());
+
+												// Check if have updates
+												if (cacheUpdateResults.getValueInfoByID().hasValue() ||
+														!updatesInfo.getRemovedIDs().isEmpty())
+													// Update database
+													mDatabaseManager.cacheUpdate(cache->getName(),
+															cacheUpdateResults.getValueInfoByID(),
+															updatesInfo.getRemovedIDs(),
+															cacheUpdateResults.getLastRevision());
+											}
+
+				OV<I<Collection> >		collectionGet(const CString& name)
+											{
+												// Check if have loaded
+												const	OR<I<Collection> >	collection = mCollectionByName[name];
+												if (collection.hasReference())
+													// Have loaded
+													return OV<I<Collection> >(*collection);
+
+												// Check if have stored
+												OV<DMCollectionInfo>	collectionInfo =
+																				mDatabaseManager.collectionInfo(name);
+												if (collectionInfo.hasValue()) {
+													// Have stored
+													I<Collection>	collection(
+																			new Collection(name,
+																					collectionInfo->getDocumentType(),
+																					collectionInfo->
+																							getRelevantProperties(),
+																					mDocumentStorage
+																							.documentIsIncludedPerformer(
+																									collectionInfo->
+																											getIsIncludedSelector()),
+																					collectionInfo->
+																							getIsIncludedSelectorInfo(),
+																					collectionInfo->getLastRevision()));
+													mCollectionByName.set(name, collection);
+
+													return OV<I<Collection> >(collection);
+												}
+
+												return OV<I<Collection> >();
+											}
+				void					collectionIterate(const CString& name, const CString& documentType,
+												UInt32 startIndex, const OV<UInt32>& count,
+												CMDSSQLiteDocumentBacking::KeyProc documentBackingKeyProc,
+												void* userData)
+											{
+												// Collect KeyAndDocumentInfos
+												TNArray<KeyAndDocumentInfo>	keyAndDocumentInfos;
+												mDatabaseManager.collectionIterateDocumentInfos(name, documentType,
+														startIndex, count,
+														DMDocumentInfo::ProcInfo(
+																(DMDocumentInfo::ProcInfo::Proc)
+																		addDocumentInfoToKeyAndDocumentInfoArray,
+																&keyAndDocumentInfos));
+
+												// Iterate document backings
+												documentBackingsIterate(documentType, keyAndDocumentInfos,
+														documentBackingKeyProc, userData);
+											}
+				void					collectionUpdate(const I<Collection>& collection,
+												const UpdatesInfo& updatesInfo)
+											{
+												// Update Collection
+												Collection::UpdateResults	collectionUpdateResults =
+																					collection->update(
+																							updatesInfo
+																									.getUpdateInfos());
+
+												// Check if have updates
+												if (collectionUpdateResults.getIncludedIDs().hasValue() ||
+														collectionUpdateResults.getNotIncludedIDs().hasValue() ||
+														!updatesInfo.getRemovedIDs().isEmpty())
+													// Update database
+													mDatabaseManager.collectionUpdate(collection->getName(),
+															collectionUpdateResults.getIncludedIDs(),
+															OV<DMIDArray >(
+																	DMIDArray(
+																			collectionUpdateResults.getNotIncludedIDs()
+																							.getValue(DMIDArray()) +
+																					updatesInfo.getRemovedIDs())),
+															collectionUpdateResults.getLastRevision());
+											}
+
+				DocumentBackingResult	documentBackingGet(const CString& documentType, const CString& documentID)
+											{
+												// Try to retrieve from cache
+												OR<I<CMDSSQLiteDocumentBacking> >	documentBacking =
+																							mDocumentBackingByDocumentID[
+																									documentID];
+												if (documentBacking.hasReference())
+													return DocumentBackingResult(*documentBacking);
+
+												// Try to retrieve from database
+												OV<I<CMDSSQLiteDocumentBacking> >	documentBackingValue;
+												documentBackingsIterate(documentType, TSArray<CString>(documentID),
+														(CMDSSQLiteDocumentBacking::KeyProc) storeDocumentBacking,
+														&documentBackingValue);
+
+												// Check results
+												if (!documentBackingValue.hasValue())
+													return DocumentBackingResult(
+															mDocumentStorage.getUnknownDocumentIDError(documentID));
+
+												// Update cache
+												mDocumentBackingByDocumentID.add(
+														TSArray<I<CMDSSQLiteDocumentBacking> >(*documentBackingValue));
+
+												return DocumentBackingResult(*documentBackingValue);
+											}
+				void					documentBackingsIterate(const CString& documentType,
+												const TArray<CString>& documentIDs,
+												CMDSSQLiteDocumentBacking::KeyProc documentBackingKeyProc,
+												void* userData)
+											{
+												// Collect KeyAndDocumentInfos
+												TNArray<KeyAndDocumentInfo>	keyAndDocumentInfos;
+												mDatabaseManager.documentInfoIterate(documentType, documentIDs,
+														DMDocumentInfo::ProcInfo(
+																(DMDocumentInfo::ProcInfo::Proc)
+																		addDocumentInfoToKeyAndDocumentInfoArray,
+																&keyAndDocumentInfos));
+
+												// Iterate document backings
+												documentBackingsIterate(documentType, keyAndDocumentInfos,
+														documentBackingKeyProc, userData);
+											}
+				void					documentBackingsIterate(const CString& documentType, UInt32 sinceRevision,
+												const OV<UInt32>& count, bool activeOnly,
+												CMDSSQLiteDocumentBacking::KeyProc documentBackingKeyProc,
+												void* userData)
+											{
+												// Collect KeyAndDocumentInfos
+												TNArray<KeyAndDocumentInfo>	keyAndDocumentInfos;
+												mDatabaseManager.documentInfoIterate(documentType, sinceRevision, count,
+														activeOnly,
+														DMDocumentInfo::ProcInfo(
+																(DMDocumentInfo::ProcInfo::Proc)
+																		addDocumentInfoToKeyAndDocumentInfoArray,
+																&keyAndDocumentInfos));
+
+												// Iterate document backings
+												documentBackingsIterate(documentType, keyAndDocumentInfos,
+														documentBackingKeyProc, userData);
+											}
+				void					documentBackingsIterate(const CString& documentType,
+												const TArray<KeyAndDocumentInfo>& keyAndDocumentInfos,
+												CMDSSQLiteDocumentBacking::KeyProc documentBackingKeyProc,
+												void* userData)
+											{
+												// Iterate infos
+												TNArray<KeyAndDocumentInfo>	keyAndDocumentInfosNotFound;
+												TNArray<DMDocumentInfo>		documentInfosNotFound;
+												for (TIteratorD<KeyAndDocumentInfo> iterator =
+																keyAndDocumentInfos.getIterator();
+														iterator.hasValue(); iterator.advance()) {
+													// Check cache
+													const	CString&							documentID =
+																										iterator->
+																												getDocumentInfo()
+																												.getDocumentID();
+													const	OR<I<CMDSSQLiteDocumentBacking> >	documentBacking =
+																										mDocumentBackingByDocumentID[
+																												documentID];
+													if (documentBacking.hasReference())
+														// Have in cache
+														documentBackingKeyProc(iterator->getKey(), *documentBacking,
+																userData);
+													else {
+														// Don't have in cache
+														keyAndDocumentInfosNotFound += *iterator;
+														documentInfosNotFound += iterator->getDocumentInfo();
+													}
+												}
+
+												// Collect DocumentContentInfos
+												TNKeyConvertibleDictionary<SInt64, DMDocumentContentInfo>
+														documentContentInfoByID;
+												mDatabaseManager.documentContentInfoIterate(documentType,
+														documentInfosNotFound,
+														DMDocumentContentInfo::ProcInfo(
+																(DMDocumentContentInfo::ProcInfo::Proc)
+																		addDocumentContentInfoToDictionary,
+																&documentContentInfoByID));
+
+												// Iterate infos not found
+												for (TIteratorD<KeyAndDocumentInfo> iterator =
+																keyAndDocumentInfosNotFound.getIterator();
+														iterator.hasValue(); iterator.advance()) {
+													// Get DocumentContentInfo
+													const	DMDocumentInfo&				documentInfo =
+																								iterator->
+																										getDocumentInfo();
+															SInt64						id = documentInfo.getID();
+													const	DMDocumentContentInfo		documentContentInfo =
+																								*documentContentInfoByID[
+																										id];
+
+													// Load attachment info map
+													CMDSDocument::AttachmentInfoByID	documentAttachmentInfoByID =
+																								mDatabaseManager
+																										.documentAttachmentInfoByID(
+																												documentType,
+																												id);
+
+													// Create document backing
+													I<CMDSSQLiteDocumentBacking>		documentBacking(
+																								new CMDSSQLiteDocumentBacking(
+																										id,
+																										documentInfo
+																												.getDocumentID(),
+																										documentInfo
+																												.getRevision(),
+																										documentInfo
+																												.isActive(),
+																										documentContentInfo
+																												.getCreationUniversalTime(),
+																										documentContentInfo
+																												.getModificationUniversalTime(),
+																										documentContentInfo
+																												.getPropertyMap(),
+																										documentAttachmentInfoByID));
+													mDocumentBackingByDocumentID.add(
+															TSArray<I<CMDSSQLiteDocumentBacking> >(documentBacking));
+
+													// Call proc
+													documentBackingKeyProc(iterator->getKey(), documentBacking,
+															userData);
+												}
+											}
+
+				OV<I<Index> >			indexGet(const CString& name)
+											{
+												// Check if have loaded
+												const	OR<I<Index> >	index = mIndexByName[name];
+												if (index.hasReference())
+													// Have loaded
+													return OV<I<Index> >(*index);
+
+												// Check if have stored
+												OV<DMIndexInfo>	indexInfo = mDatabaseManager.indexInfo(name);
+												if (indexInfo.hasValue()) {
+													// Have stored
+													I<Index>	index(
+																		new Index(name, indexInfo->getDocumentType(),
+																				indexInfo->getRelevantProperties(),
+																				mDocumentStorage.documentKeysPerformer(
+																						indexInfo->getKeysSelector()),
+																				indexInfo->getKeysSelectorInfo(),
+																				indexInfo->getLastRevision()));
+													mIndexByName.set(name, index);
+
+													return OV<I<Index> >(index);
+												}
+
+												return OV<I<Index> >();
+											}
+				void					indexIterate(const CString& name, const CString& documentType,
+												const TArray<CString>& keys,
+												CMDSSQLiteDocumentBacking::KeyProc documentBackingKeyProc,
+												void* userData)
+											{
+												// Collect KeyAndDocumentInfos
+												TNArray<KeyAndDocumentInfo>	keyAndDocumentInfos;
+												mDatabaseManager.indexIterateDocumentInfos(name, documentType, keys,
+														DMDocumentInfo::KeyProcInfo(
+																(DMDocumentInfo::KeyProcInfo::Proc)
+																		addKeyAndDocumentInfoToArray,
+																&keyAndDocumentInfos));
+
+												// Iterate document backings
+												documentBackingsIterate(documentType, keyAndDocumentInfos,
+														documentBackingKeyProc, userData);
+											}
+				void					indexUpdate(const I<Index>& index, const UpdatesInfo& updatesInfo)
+											{
+												// Update Index
+												Index::UpdateResults	indexUpdateResults =
+																				index->update(
+																						updatesInfo.getUpdateInfos());
+
+												// Check if have updates
+												if (indexUpdateResults.getKeysInfos().hasValue() ||
+														!updatesInfo.getRemovedIDs().isEmpty())
+													// Update database
+													mDatabaseManager.indexUpdate(index->getName(),
+															indexUpdateResults.getKeysInfos(),
+															updatesInfo.getRemovedIDs(),
+															indexUpdateResults.getLastRevision());
+											}
+
+				UpdatesInfo				getUpdatesInfo(const CString& documentType, UInt32 sinceRevision)
+											{
+												// Collect update infos
+												UpdatesInfoBuilder	updatesInfoBuilder(mDocumentStorage,
+																			mDocumentStorage.documentCreateInfo(
+																					documentType),
+																			mBatchByThreadRef[
+																					CThread::getCurrentRefAsString()]);
+												documentBackingsIterate(documentType, sinceRevision, OV<UInt32>(),
+														false,
+														(CMDSSQLiteDocumentBacking::KeyProc)
+																processDocumentInfoForGetUpdatesInfo,
+														&updatesInfoBuilder);
+
+												return updatesInfoBuilder.getUpdatesInfo();
+											}
+
+				void					update(const CString& documentType, const UpdatesInfo& updatesInfo)
+											{
+												// Get caches
+												const	OR<TNArray<I<Cache> > >	caches =
+																						mCachesByDocumentType[
+																								documentType];
+												if (caches.hasReference())
+													// Iterate caches
+													for (TIteratorD<I<Cache> > iterator = caches->getIterator();
+															iterator.hasValue(); iterator.advance())
+														// Update cache
+														cacheUpdate(*iterator, updatesInfo);
+
+												// Get collections
+												const	OR<TNArray<I<Collection> > >	collections =
+																						mCollectionsByDocumentType[
+																								documentType];
+												if (collections.hasReference())
+													// Iterate collections
+													for (TIteratorD<I<Collection> > iterator =
+																	collections->getIterator();
+															iterator.hasValue(); iterator.advance())
+														// Update collection
+														collectionUpdate(*iterator, updatesInfo);
+
+												// Get indexes
+												const	OR<TNArray<I<Index> > >	indexes =
+																						mIndexesByDocumentType[
+																								documentType];
+												if (indexes.hasReference())
+													// Iterate indexes
+													for (TIteratorD<I<Index> > iterator = indexes->getIterator();
+															iterator.hasValue(); iterator.advance())
+														// Update index
+														indexUpdate(*iterator, updatesInfo);
+											}
+
+				void					process(const CString& documentID,
+												const BatchDocumentInfo& batchDocumentInfo,
+												const I<CMDSSQLiteDocumentBacking>& documentBacking,
+												const TSet<CString>& changedProperties,
+												const CMDSDocument::Info& documentInfo,
+												UpdateInfoBatchQueue& updateInfoBatchQueue,
+												const CMDSDocumentStorage::DocumentChangedInfos&
+														documentChangedInfos,
+												CMDSDocument::ChangeKind documentChangeKind)
+											{
+												// Create document
+												I<CMDSDocument>	document =
+																		documentInfo.create(documentID,
+																				mDocumentStorage);
+
+												// Add updates to BatchQueue
+												updateInfoBatchQueue.add(
+														UpdateInfo(document, documentBacking->getRevision(),
+																documentBacking->getID(), changedProperties));
+
+												// Process attachments
+												for (TIteratorS<CString> iterator =
+																batchDocumentInfo
+																		.getRemovedAttachmentIDs()
+																		.getIterator();
+														iterator.hasValue(); iterator.advance())
+													// Remove attachment
+													documentBacking->attachmentRemove(
+															batchDocumentInfo.getDocumentType(), *iterator,
+															mDatabaseManager);
+
+												const	TDictionary<Batch::AddAttachmentInfo>&
+																addAttachmentInfosByID =
+																		batchDocumentInfo.getAddAttachmentInfosByID();
+														TSet<CString>
+																attachmentIDs = addAttachmentInfosByID.getKeys();
+												for (TIteratorS<CString> iterator = attachmentIDs.getIterator();
+														iterator.hasValue(); iterator.advance()) {
+													// Add attachment
+													const	Batch::AddAttachmentInfo&	batchAddAttachmentInfo =
+																								*addAttachmentInfosByID[
+																										*iterator];
+													documentBacking->attachmentAdd(batchDocumentInfo.getDocumentType(),
+															batchAddAttachmentInfo.getInfo(),
+															batchAddAttachmentInfo.getContent(), mDatabaseManager);
+												}
+
+												const	TDictionary<Batch::UpdateAttachmentInfo>&
+																updateAttachmentInfosByID =
+																		batchDocumentInfo
+																				.getUpdateAttachmentInfosByID();
+												attachmentIDs = updateAttachmentInfosByID.getKeys();
+												for (TIteratorS<CString> iterator = attachmentIDs.getIterator();
+														iterator.hasValue(); iterator.advance()) {
+													// Update attachment
+													const	Batch::UpdateAttachmentInfo&
+																	batchUpdateAttachmentInfo =
+																			*updateAttachmentInfosByID[*iterator];
+													documentBacking->attachmentUpdate(
+															batchDocumentInfo.getDocumentType(),
+															batchUpdateAttachmentInfo.getID(),
+															batchUpdateAttachmentInfo.getInfo(),
+															batchUpdateAttachmentInfo.getContent(), mDatabaseManager);
+												}
+
+												// Call document changed procs
+												for (TIteratorD<CMDSDocument::ChangedInfo> iterator =
+																documentChangedInfos.getIterator();
+														iterator.hasValue(); iterator.advance())
+													// Call proc
+													iterator->notify(*document, documentChangeKind);
+											}
+
+		static	void					addDocumentInfoToDocumentFullInfoArray(const CString& key,
+												const I<CMDSSQLiteDocumentBacking>& documentBacking,
+												TNArray<CMDSDocument::FullInfo>* documentFullInfos)
+											{ (*documentFullInfos) += documentBacking->getDocumentFullInfo(); }
+		static	void					addDocumentIDToDocumentIDDictionary(const CString& key,
+												const I<CMDSSQLiteDocumentBacking>& documentBacking,
+												CDictionary* documentIDByKey)
+											{ documentIDByKey->set(key, documentBacking->getDocumentID()); }
+		static	void					addDocumentInfoToDocumentFullInfoDictionary(const CString& key,
+												const I<CMDSSQLiteDocumentBacking>& documentBacking,
+												TNDictionary<CMDSDocument::FullInfo>* documentFullInfoByKey)
+											{ documentFullInfoByKey->set(key, documentBacking->getDocumentFullInfo()); }
+		static	OV<SError>				addDocumentInfoToDocumentRevisionInfoArray(const DMDocumentInfo& documentInfo,
+												TNArray<CMDSDocument::RevisionInfo>* documentRevisionInfos)
+											{
+												// Add
+												(*documentRevisionInfos) += documentInfo.getDocumentRevisionInfo();
+
+												return OV<SError>();
+											}
+		static	OV<SError>				addDocumentInfoToDocumentRevisionInfoDictionary(const CString& key,
+												const DMDocumentInfo& documentInfo,
+												TNDictionary<CMDSDocument::RevisionInfo>* documentRevisionInfoByKey)
+											{
+												// Add
+												documentRevisionInfoByKey->set(key,
+														CMDSDocument::RevisionInfo(documentInfo.getDocumentID(),
+																documentInfo.getRevision()));
+
+												return OV<SError>();
+											}
+		static	OV<SError>				addDocumentInfoToKeyAndDocumentInfoArray(const DMDocumentInfo& documentInfo,
+												TNArray<KeyAndDocumentInfo>* keyAndDocumentInfos)
+											{
+												// Add
+												(*keyAndDocumentInfos) +=
+														KeyAndDocumentInfo(CString::mEmpty, documentInfo);
+
+												return OV<SError>();
+											}
+		static	OV<SError>				addKeyAndDocumentInfoToArray(const CString& key,
+												const DMDocumentInfo& documentInfo,
+												TNArray<KeyAndDocumentInfo>* keyAndDocumentInfos)
+											{
+												// Add
+												(*keyAndDocumentInfos) += KeyAndDocumentInfo(key, documentInfo);
+
+												return OV<SError>();
+											}
+		static	OV<SError>				addDocumentContentInfoToDictionary(
+												const DMDocumentContentInfo& documentContentInfo,
+												TNKeyConvertibleDictionary<SInt64, DMDocumentContentInfo>*
+														documentContentInfoByID)
+											{
+												// Add
+												documentContentInfoByID->set(documentContentInfo.getID(),
+														documentContentInfo);
+
+												return OV<SError>();
+											}
+		static	void					addDocumentIDToArray(const CString& key,
+												const I<CMDSSQLiteDocumentBacking>& documentBacking,
+												TNArray<CString>* documentIDs)
+											{ documentIDs->add(documentBacking->getDocumentID()); }
+
+		static	void					batch(BatchInfo* batchInfo)
+											{
+												// Setup
+														Internals&					internals =
+																							batchInfo->getInternals();
+														CMDSDocumentStorage&		documentStorage =
+																							internals.mDocumentStorage;
+														CMDSSQLiteDatabaseManager&	databaseManager =
+																							internals.mDatabaseManager;
+												const	Batch&						batch = batchInfo->getBatch();
+
+												// Iterate all document changes
+												BatchDocumentInfoByDocumentIDByDocumentType	batchDocumentInfoByDocumentType =
+																									batch.documentGetInfosByDocumentType();
+												TSet<CString>								documentTypes =
+																									batchDocumentInfoByDocumentType
+																											.getKeys();
+												for (TIteratorS<CString> documentTypeIterator =
+																documentTypes.getIterator();
+														documentTypeIterator.hasValue(); documentTypeIterator.advance()) {
+													// Setup
+													const	CMDSDocument::Info&		documentInfo =
+																							documentStorage
+																									.documentCreateInfo(
+																											*documentTypeIterator);
+															DocumentChangedInfos	documentChangedInfos =
+																							documentStorage
+																									.documentChangedInfos(
+																											*documentTypeIterator);
+
+
+
+															Info					info(internals,
+																							*documentTypeIterator);
+															UpdateInfoBatchQueue	updateInfoBatchQueue(
+																							databaseManager
+																									.getVariableNumberLimit(),
+																							(UpdateInfoBatchQueue::Proc)
+																									processUpdates,
+																							&info);
+															RemoveBatchQueue		removeBatchQueue(
+																							databaseManager
+																									.getVariableNumberLimit(),
+																							(RemoveBatchQueue::Proc)
+																									processRemoves,
+																							&info);
+
+													// Update documents
+													BatchDocumentInfoByDocumentID	batchDocumentInfoByDocumentID =
+																							*batchDocumentInfoByDocumentType.get(
+																									*documentTypeIterator);
+													TSet<CString>					documentIDs =
+																							batchDocumentInfoByDocumentID
+																									.getKeys();
+													for (TIteratorS<CString> documentIDIterator =
+																	documentIDs.getIterator();
+															documentIDIterator.hasValue(); documentIDIterator.advance()) {
+														// Setup
+														const	BatchDocumentInfo&	batchDocumentInfo =
+																							*batchDocumentInfoByDocumentID
+																									.get(*documentIDIterator);
+
+														// Check removed
+														const	OR<I<CMDSSQLiteDocumentBacking> >&	documentBacking =
+																											batchDocumentInfo
+																													.getDocumentBacking();
+														if (!batchDocumentInfo.isRemoved()) {
+															// Add/update document
+															if (documentBacking.hasReference()) {
+																// Update document
+																(*documentBacking)->update(*documentTypeIterator,
+																		batchDocumentInfo.getUpdatedPropertyMap(),
+																		batchDocumentInfo.getRemovedProperties(),
+																		databaseManager);
+
+																// Process
+																TNSet<CString>	changedProperties =
+																						TNSet<CString>(
+																								batchDocumentInfo
+																										.getUpdatedPropertyMap()
+																										.getKeys()) +
+																								batchDocumentInfo
+																										.getRemovedProperties();
+																internals.process(*documentIDIterator,
+																		batchDocumentInfo, *documentBacking,
+																		changedProperties, documentInfo,
+																		updateInfoBatchQueue, documentChangedInfos,
+																		CMDSDocument::kChangeKindUpdated);
+															} else {
+																// Add document
+																I<CMDSSQLiteDocumentBacking>	newDocumentBacking(
+																										new CMDSSQLiteDocumentBacking(
+																												*documentTypeIterator,
+																												*documentIDIterator,
+																												batchDocumentInfo.getCreationUniversalTime(),
+																												batchDocumentInfo
+																														.getModificationUniversalTime(),
+																												batchDocumentInfo.getUpdatedPropertyMap(),
+																												databaseManager));
+																internals.mDocumentBackingByDocumentID.add(
+																		TSArray<I<CMDSSQLiteDocumentBacking> >(
+																				newDocumentBacking));
+
+																// Process
+																internals.process(*documentIDIterator,
+																		batchDocumentInfo, newDocumentBacking,
+																		TNSet<CString>(), documentInfo,
+																		updateInfoBatchQueue, documentChangedInfos,
+																		CMDSDocument::kChangeKindCreated);
 															}
+														} else if (documentBacking.hasReference()) {
+															// Remove document
+															databaseManager.documentRemove(*documentTypeIterator,
+																	(*documentBacking)->getID());
+															internals.mDocumentBackingByDocumentID.remove(
+																	TSArray<CString>(
+																			(*documentBacking)->getDocumentID()));
 
-		static			void							batch(BatchInfo* batchInfo);
-		static			OV<SError>						batchMap(const CString& documentType,
-																const TDictionary<CMDSSQLiteBatchDocumentInfo >&
-																		documentInfosMap,
-																CMDSSQLiteInternals* internals);
+															// Add updates to BatchQueue
+															removeBatchQueue.add((*documentBacking)->getID());
 
-		const	CMDSSQLite&												mMDSSQLite;
-				CMDSSQLiteDatabaseManager								mDatabaseManager;
+															// Check if have documentChangedProcs
+															if (!documentChangedInfos.isEmpty()) {
+																// Create document
+																I<CMDSDocument>	document =
+																						documentInfo.create(
+																								*documentIDIterator,
+																								documentStorage);
 
-				CString													mID;
+																// Call document changed procs
+																for (TIteratorD<CMDSDocument::ChangedInfo> iterator =
+																				documentChangedInfos.getIterator();
+																		iterator.hasValue(); iterator.advance())
+																	// Call proc
+																	iterator->notify(*document,
+																			CMDSDocument::kChangeKindRemoved);
+															}
+														}
+													}
 
-				TNLockingDictionary<CMDSSQLiteBatchInfo>				mBatchInfoMap;
+													// Finalize updates
+													removeBatchQueue.finalize();
+													updateInfoBatchQueue.finalize();
+												}
 
-				CMDSSQLiteDocumentBackingCache							mDocumentBackingCache;
-				TNLockingArrayDictionary<CMDSDocument::ChangedProcInfo>	mDocumentChangedProcInfosMap;
-				TNLockingDictionary<CMDSDocument::Info>					mDocumentInfoMap;
-				TNLockingDictionary<CDictionary>						mDocumentsBeingCreatedPropertyMapMap;
+												// Iterate all association changes
+												TSet<CString>	associationNames = batch.associationGetUpdatedNames();
+												for (TIteratorS<CString> associationNameIterator =
+																associationNames.getIterator();
+														associationNameIterator.hasValue();
+														associationNameIterator.advance()) {
+													// Update association
+													DMAssociationInfo	associationInfo =
+																				*databaseManager
+																						.associationInfo(
+																								*associationNameIterator);
+													databaseManager.associationUpdate(*associationNameIterator,
+															batch.associationGetUpdates(*associationNameIterator),
+															associationInfo.getFromDocumentType(),
+															associationInfo.getToDocumentType());
+												}
+											}
 
-				TNLockingDictionary<CMDSSQLiteCollection>				mCollectionsByNameMap;
-				TNLockingArrayDictionary<CMDSSQLiteCollection>			mCollectionsByDocumentTypeMap;
+		static	void					documentUpdate(DocumentUpdateInfo* documentUpdateInfo)
+											{
+												// Setup
+												Internals&					internals =
+																					documentUpdateInfo->getInternals();
+												CMDSSQLiteDatabaseManager&	databaseManager =
+																					internals.mDatabaseManager;
 
-				TNLockingDictionary<CMDSSQLiteIndex>					mIndexesByNameMap;
-				TNLockingArrayDictionary<CMDSSQLiteIndex>				mIndexesByDocumentTypeMap;
+												DocumentUpdateByDocumentID	documentUpdateInfoByDocumentID;
+												TNArray<CString>			documentIDs;
+												for (TIteratorD<CMDSDocument::UpdateInfo> iterator =
+																documentUpdateInfo->getDocumentUpdateInfos()
+																		.getIterator();
+														iterator.hasValue(); iterator.advance()) {
+													// Update
+													documentUpdateInfoByDocumentID.set(iterator->getDocumentID(),
+															*iterator);
+													documentIDs += iterator->getDocumentID();
+												}
 
-				CMDSSQLite::LogErrorMessageProc							mLogErrorMessageProc;
-				void*													mLogErrorMessageProcUserData;
+												Info						info(internals,
+																					documentUpdateInfo->
+																							getDocumentType());
+												UpdateInfoBatchQueue		updateInfoBatchQueue(
+																					databaseManager
+																							.getVariableNumberLimit(),
+																					(UpdateInfoBatchQueue::Proc)
+																							processUpdates,
+																					&info);
+												RemoveBatchQueue			removeBatchQueue(
+																					databaseManager
+																							.getVariableNumberLimit(),
+																					(RemoveBatchQueue::Proc)
+																							processRemoves,
+																					&info);
+												ProcessDocumentUpdateInfo	processDocumentUpdateInfo(internals,
+																					documentUpdateInfo->
+																							getDocumentType(),
+																					documentUpdateInfo->
+																							getDocumentFullInfos(),
+																					documentUpdateInfoByDocumentID,
+																					updateInfoBatchQueue,
+																					removeBatchQueue);
+
+												// Iterate document IDs
+												internals.documentBackingsIterate(documentUpdateInfo->getDocumentType(),
+														documentIDs,
+														(CMDSSQLiteDocumentBacking::KeyProc)
+																processDocumentInfoForDocumentUpdate,
+														&processDocumentUpdateInfo);
+
+												// Finalize updates
+												updateInfoBatchQueue.finalize();
+												updateInfoBatchQueue.finalize();
+											}
+
+		static	void					processDocumentBackingForDocumentIDs(const CString& key,
+												const I<CMDSSQLiteDocumentBacking>& documentBacking,
+												DocumentBackingDocumentIDsIterateInfo*
+														documentBackingDocumentIDsIterateInfo)
+											{ documentBackingDocumentIDsIterateInfo->process(
+													documentBacking); }
+		static	void					processDocumentBackingForSinceRevision(const CString& key,
+												const I<CMDSSQLiteDocumentBacking>& documentBacking,
+												DocumentBackingSinceRevisionIterateInfo*
+														documentBackingSinceRevisionIterateInfo)
+											{ documentBackingSinceRevisionIterateInfo->process(
+													documentBacking->getDocumentID()); }
+		static	void					processDocumentCreate(DocumentCreateInfo* documentCreateInfo)
+											{
+												// Setup
+												Internals&				internals = documentCreateInfo->getInternals();
+												UniversalTime			universalTime = SUniversalTime::getCurrent();
+												Info					info(internals,
+																				documentCreateInfo->
+																						getDocumentInfoForNew()
+																						.getDocumentType());
+												UpdateInfoBatchQueue	batchQueue(
+																				internals.mDatabaseManager
+																						.getVariableNumberLimit(),
+																				(UpdateInfoBatchQueue::Proc)
+																						processUpdates,
+																				&info);
+
+												// Iterate document create infos
+												for (TIteratorD<CMDSDocument::CreateInfo> iterator =
+																documentCreateInfo->getDocumentCreateInfos()
+																		.getIterator();
+														iterator.hasValue(); iterator.advance()) {
+													// Setup
+													CString	documentID =
+																	iterator->getDocumentID().hasValue() ?
+																			*iterator->getDocumentID() :
+																			CUUID().getBase64String();
+
+													// Will be creating document
+													internals.mDocumentsBeingCreatedPropertyMapByDocumentID.set(
+															documentID, iterator->getPropertyMap());
+
+													// Create
+													I<CMDSDocument>	document =
+																			documentCreateInfo->getDocumentInfoForNew()
+																					.create(documentID,
+																							internals.mDocumentStorage);
+
+													// Remove property map
+													CDictionary	propertyMap =
+																		*internals
+																				.mDocumentsBeingCreatedPropertyMapByDocumentID
+																				.get(documentID);
+													internals.mDocumentsBeingCreatedPropertyMapByDocumentID.remove(
+															documentID);
+
+													// Add document
+													UniversalTime					creationUniversalTime =
+																							iterator->
+																									getCreationUniversalTime()
+																									.getValue(universalTime);
+													UniversalTime					modificationUniversalTime =
+																							iterator->
+																									getModificationUniversalTime()
+																									.getValue(universalTime);
+													I<CMDSSQLiteDocumentBacking>	documentBacking(
+																							new CMDSSQLiteDocumentBacking(
+																									documentCreateInfo->
+																											getDocumentInfoForNew()
+																											.getDocumentType(),
+																									documentID,
+																									creationUniversalTime,
+																									modificationUniversalTime,
+																									iterator->
+																											getPropertyMap(),
+																									internals
+																											.mDatabaseManager));
+													internals.mDocumentBackingByDocumentID.add(
+															TSArray<I<CMDSSQLiteDocumentBacking> >(documentBacking));
+													documentCreateInfo->add(
+															CMDSDocument::CreateResultInfo(
+																	documentCreateInfo->getDocumentInfoForNew().create(
+																			documentID, internals.mDocumentStorage),
+																			CMDSDocument::OverviewInfo(documentID,
+																					documentBacking->getRevision(),
+																					creationUniversalTime,
+																					modificationUniversalTime)));
+
+													// Add update info
+													batchQueue.add(
+															UpdateInfo(document, documentBacking->getRevision(),
+																	documentBacking->getID(), propertyMap.getKeys()));
+												}
+
+												// Finalize batch queue
+												batchQueue.finalize();
+											}
+		static	void					processDocumentInfoForDocumentUpdate(const CString& key,
+												const I<CMDSSQLiteDocumentBacking>& documentBacking,
+												ProcessDocumentUpdateInfo* processDocumentUpdateInfo)
+											{
+												// Setup
+														Internals&					internals =
+																							processDocumentUpdateInfo->
+																									getInternals();
+												const	CMDSDocument::UpdateInfo&	documentUpdateInfo =
+																							processDocumentUpdateInfo->
+																									getDocumentUpdateInfo(
+																											documentBacking->
+																													getDocumentID());
+
+												// Check active
+												if (documentUpdateInfo.getActive()) {
+													// Update document backing
+													documentBacking->update(processDocumentUpdateInfo->getDocumentType(),
+															documentUpdateInfo.getUpdated(),
+															documentUpdateInfo.getRemoved(),
+															internals.mDatabaseManager);
+
+													// Add update
+													processDocumentUpdateInfo->update(
+															processDocumentUpdateInfo->documentCreate(
+																	documentBacking->getDocumentID()),
+															documentBacking->getRevision(), documentBacking->getID(),
+															TNSet<CString>(documentUpdateInfo.getUpdated().getKeys()) +
+																	documentUpdateInfo.getRemoved());
+												} else {
+													// Remove document
+													internals.mDatabaseManager.documentRemove(
+															processDocumentUpdateInfo->getDocumentType(),
+															documentBacking->getID());
+													internals.mDocumentBackingByDocumentID.remove(
+															TSArray<CString>(documentBacking->getDocumentID()));
+
+													// Add remove
+													processDocumentUpdateInfo->remove(documentBacking->getID());
+												}
+
+												// Add document full info
+												processDocumentUpdateInfo->add(documentBacking->getDocumentFullInfo());
+											}
+		static	void					processDocumentInfoForGetUpdatesInfo(const CString& key,
+												const I<CMDSSQLiteDocumentBacking>& documentBacking,
+												UpdatesInfoBuilder* updatesInfoBuilder)
+											{
+												// Query batch info
+												bool	removed = false;
+												if (updatesInfoBuilder->getBatch().hasReference()) {
+													// Have batch
+													OR<BatchDocumentInfo>	batchDocumentInfo =
+																					(*updatesInfoBuilder->getBatch())->
+																									documentInfoGet(
+																							documentBacking->
+																									getDocumentID());
+													if (batchDocumentInfo.hasReference())
+														// Have document info
+														removed = batchDocumentInfo->isRemoved();
+												}
+
+												// Check if processing this document
+												if (!removed && documentBacking->getActive())
+													// Append info
+													updatesInfoBuilder->addUpdateInfo(documentBacking);
+												else
+													// Removed
+													updatesInfoBuilder->noteRemoved(documentBacking);
+											}
+		static	void					processRemoves(const DMIDArray& removedIDs, Info* info)
+											{ info->getInternals().update(info->getDocumentType(),
+													UpdatesInfo(removedIDs)); }
+		static	void					processUpdates(const TArray<UpdateInfo>& updateInfos, Info* info)
+											{ info->getInternals().update(info->getDocumentType(),
+													UpdatesInfo(updateInfos)); }
+		static	OV<SError>				removeDocumentIDFromSet(const DMDocumentInfo& documentInfo,
+												TNSet<CString>* documentIDs)
+											{
+												// Remove
+												documentIDs->remove(documentInfo.getDocumentID());
+
+												return OV<SError>();
+											}
+		static	void					storeDocumentBacking(const CString& key,
+												const I<CMDSSQLiteDocumentBacking>& documentBacking,
+												OV<I<CMDSSQLiteDocumentBacking> >* documentBackingValue)
+											{ documentBackingValue->setValue(documentBacking); }
+
+	public:
+		CMDSDocumentStorage&									mDocumentStorage;
+
+		TNLockingDictionary<I<CMDSAssociation> >				mAssociationByName;
+
+		TNLockingDictionary<I<Batch> >							mBatchByThreadRef;
+
+		TNLockingDictionary<I<Cache> >							mCacheByName;
+		TNLockingArrayDictionary<I<Cache> >						mCachesByDocumentType;
+
+		TNLockingDictionary<I<Collection> >						mCollectionByName;
+		TNLockingArrayDictionary<I<Collection> >				mCollectionsByDocumentType;
+
+		CMDSSQLiteDatabaseManager								mDatabaseManager;
+
+		TMDSDocumentBackingCache<I<CMDSSQLiteDocumentBacking> >	mDocumentBackingByDocumentID;
+		TNLockingDictionary<CDictionary>						mDocumentsBeingCreatedPropertyMapByDocumentID;
+
+		TNLockingDictionary<I<Index> >							mIndexByName;
+		TNLockingArrayDictionary<I<Index> >						mIndexesByDocumentType;
 };
-
-//----------------------------------------------------------------------------------------------------------------------
-OR<CMDSSQLiteDocumentBacking> CMDSSQLiteInternals::getDocumentBacking(const CString& documentType,
-		const CString& documentID)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Try to retrieve stored document
-	OR<CMDSSQLiteDocumentBacking>	documentBacking = mDocumentBackingCache.getDocumentBacking(documentID);
-	if (documentBacking.hasReference())
-		// Have document
-		return documentBacking;
-	else {
-		// Try to retrieve document backing
-		OI<CMDSSQLiteDocumentBackingInfo>	documentBackingInfo;
-		ProcessExistingDocumentInfoInfo		processExistingDocumentInfoInfo(mDocumentBackingCache,
-													(CMDSSQLiteDocumentBackingInfoProc) storeDocumentBackingInfo,
-													&documentBackingInfo);
-		mDatabaseManager.iterate(documentType, mDatabaseManager.getInnerJoin(documentType),
-				mDatabaseManager.getWhereForDocumentIDs(TSArray<CString>(documentID)),
-				(CMDSSQLiteDatabaseManager::ExistingDocumentInfoProc) processExistingDocumentInfo,
-				&processExistingDocumentInfoInfo);
-
-		// Check results
-		if (documentBackingInfo.hasInstance())
-			// Update cache
-			mDocumentBackingCache.add(*documentBackingInfo);
-		else {
-			// Not found
-			if (mLogErrorMessageProc != nil)
-				// Call proc
-				mLogErrorMessageProc(
-						CString(OSSTR("CMDSSQLite - Cannot find document of type ")) + documentType +
-								CString(OSSTR(" with documentID ")) + documentID,
-						mLogErrorMessageProcUserData);
-		}
-
-		return mDocumentBackingCache.getDocumentBacking(documentID);
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteInternals::iterateCollection(const CString& name,
-		CMDSSQLiteDocumentBackingInfoProc documentBackingInfoProc, void* userData)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Bring up to date
-	CMDSSQLiteCollection	collection = bringCollectionUpToDate(name);
-
-	// Iterate existing documents
-	ProcessExistingDocumentInfoInfo	processExistingDocumentInfoInfo(mDocumentBackingCache, documentBackingInfoProc,
-											userData);
-	mDatabaseManager.iterate(collection.getDocumentType(),
-			mDatabaseManager.getInnerJoinForCollection(collection.getDocumentType(), name),
-			(CMDSSQLiteDatabaseManager::ExistingDocumentInfoProc) processExistingDocumentInfo,
-			&processExistingDocumentInfoInfo);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteInternals::updateCollections(const CString& documentType,
-		const TArray<CMDSSQLiteUpdateInfo>& updateInfos)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Get collections
-	const	OR<TNArray<CMDSSQLiteCollection> >	collections = mCollectionsByDocumentTypeMap.get(documentType);
-	if (!collections.hasReference())
-		// No collections for this document type
-		return;
-
-	// Setup
-	UInt32	minRevision = 0;
-	for (TIteratorD<CMDSSQLiteUpdateInfo> iterator = updateInfos.getIterator(); iterator.hasValue(); iterator.advance())
-		// Update min revision
-		minRevision = std::min(minRevision, iterator->mRevision);
-
-	// Iterate collections
-	for (TIteratorD<CMDSSQLiteCollection> iterator = collections->getIterator(); iterator.hasValue();
-			iterator.advance()) {
-		// Check revision state
-		if ((iterator->getLastRevision() + 1) == minRevision) {
-			// Update collection
-			CMDSSQLiteCollectionUpdateInfo	updateInfo = iterator->update(updateInfos);
-
-			// Update database
-			mDatabaseManager.updateCollection(iterator->getName(), updateInfo.mIncludedValues,
-					updateInfo.mNotIncludedValues, updateInfo.mLastRevision);
-		} else
-			// Bring up to date
-			bringUpToDate(*iterator);
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-CMDSSQLiteCollection CMDSSQLiteInternals::bringCollectionUpToDate(const CString& name)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Setup
-	const	OR<CMDSSQLiteCollection>	collection = mCollectionsByNameMap.get(name);
-
-	// Bring up to date
-	bringUpToDate(*collection);
-
-	return *collection;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteInternals::bringUpToDate(CMDSSQLiteCollection& collection)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Collect infos
-	CollectionIndexBringUpToDateInfo		collectionIndexBringUpToDateInfo((CMDSSQLite&) mMDSSQLite,
-													mBatchInfoMap[CThread::getCurrentRefAsString()],
-													*mDocumentInfoMap[collection.getDocumentType()]);
-	ProcessExistingDocumentInfoInfo			processExistingDocumentInfoInfo(mDocumentBackingCache,
-													collectionIndexBringUpToDateInfo);
-	mDatabaseManager.iterate(collection.getDocumentType(), mDatabaseManager.getInnerJoin(collection.getDocumentType()),
-			mDatabaseManager.getWhere(collection.getLastRevision()),
-			(CMDSSQLiteDatabaseManager::ExistingDocumentInfoProc) processExistingDocumentInfo,
-			&processExistingDocumentInfoInfo);
-
-	// Bring up to date
-	CMDSSQLiteCollectionUpdateInfo	updateInfo =
-											collection.bringUpToDate(
-													collectionIndexBringUpToDateInfo.mBringUpToDateInfos);
-
-	// Update database
-	mDatabaseManager.updateCollection(collection.getName(), updateInfo.mIncludedValues, updateInfo.mNotIncludedValues,
-			updateInfo.mLastRevision);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteInternals::removeFromCollections(const CString& documentType,
-		const TNumberArray<SInt64>& documentBackingIDs)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Get collections for this document type
-	const	OR<TNArray<CMDSSQLiteCollection> >	collections = mCollectionsByDocumentTypeMap.get(documentType);
-	if (!collections.hasReference())
-		// No collections for this document type
-		return;
-
-	// Iterate collections
-	for (TIteratorD<CMDSSQLiteCollection> iterator = collections->getIterator(); iterator.hasValue();
-			iterator.advance())
-		// Update collection
-		mDatabaseManager.updateCollection(iterator->getName(), TNumberArray<SInt64>(), documentBackingIDs,
-				iterator->getLastRevision());
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteInternals::iterateIndex(const CString& name, const TArray<CString>& keys,
-		CMDSSQLiteKeyDocumentBackingInfoProc keyDocumentBackingInfoProc, void* userData)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Bring up to date
-	CMDSSQLiteIndex	index = bringIndexUpToDate(name);
-
-	// Iterate existing documents
-	ProcessExistingDocumentInfoInfo	processExistingDocumentInfoInfo(mDocumentBackingCache, keyDocumentBackingInfoProc,
-											userData);
-	mDatabaseManager.iterate(index.getDocumentType(),
-			mDatabaseManager.getInnerJoinForIndex(index.getDocumentType(), name),
-			mDatabaseManager.getWhereForIndexKeys(keys),
-			(CMDSSQLiteDatabaseManager::ExistingDocumentInfoProc) processExistingDocumentInfo,
-			&processExistingDocumentInfoInfo);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteInternals::updateIndexes(const CString& documentType, const TArray<CMDSSQLiteUpdateInfo>& updateInfos)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Get indexes
-	const	OR<TNArray<CMDSSQLiteIndex> >	indexes = mIndexesByDocumentTypeMap.get(documentType);
-	if (!indexes.hasReference())
-		// No indexes for this document type
-		return;
-
-	// Setup
-	UInt32	minRevision = 0;
-	for (TIteratorD<CMDSSQLiteUpdateInfo> iterator = updateInfos.getIterator(); iterator.hasValue(); iterator.advance())
-		// Update min revision
-		minRevision = std::min(minRevision, iterator->mRevision);
-
-	// Iterate indexes
-	for (TIteratorD<CMDSSQLiteIndex> iterator = indexes->getIterator(); iterator.hasValue(); iterator.advance()) {
-		// Check revision state
-		if ((iterator->getLastRevision() + 1) == minRevision) {
-			// Update index
-			CMDSSQLiteIndexUpdateInfo	updateInfo = iterator->update(updateInfos);
-
-			// Update database
-			mDatabaseManager.updateIndex(iterator->getName(), updateInfo.mKeysInfos, TNumberArray<SInt64>(),
-					updateInfo.mLastRevision);
-		} else
-			// Bring up to date
-			bringUpToDate(*iterator);
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-CMDSSQLiteIndex CMDSSQLiteInternals::bringIndexUpToDate(const CString& name)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Setup
-	const	OR<CMDSSQLiteIndex>	index = mIndexesByNameMap.get(name);
-
-	// Bring up to date
-	bringUpToDate(*index);
-
-	return *index;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteInternals::bringUpToDate(CMDSSQLiteIndex& index)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Collect infos
-	CollectionIndexBringUpToDateInfo		collectionIndexBringUpToDateInfo((CMDSSQLite&) mMDSSQLite,
-													mBatchInfoMap[CThread::getCurrentRefAsString()],
-													*mDocumentInfoMap[index.getDocumentType()]);
-	ProcessExistingDocumentInfoInfo			processExistingDocumentInfoInfo(mDocumentBackingCache,
-													collectionIndexBringUpToDateInfo);
-	mDatabaseManager.iterate(index.getDocumentType(), mDatabaseManager.getInnerJoin(index.getDocumentType()),
-			mDatabaseManager.getWhere(index.getLastRevision()),
-			(CMDSSQLiteDatabaseManager::ExistingDocumentInfoProc) processExistingDocumentInfo,
-			&processExistingDocumentInfoInfo);
-
-	// Bring up to date
-	CMDSSQLiteIndexUpdateInfo	updateInfo = index.bringUpToDate(collectionIndexBringUpToDateInfo.mBringUpToDateInfos);
-
-	// Update database
-	mDatabaseManager.updateIndex(index.getName(), updateInfo.mKeysInfos, TNumberArray<SInt64>(),
-			updateInfo.mLastRevision);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteInternals::removeFromIndexes(const CString& documentType, const TNumberArray<SInt64>& documentBackingIDs)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Get indexes for this document type
-	const	OR<TNArray<CMDSSQLiteIndex> >	indexes = mIndexesByDocumentTypeMap.get(documentType);
-	if (!indexes.hasReference())
-		// No indexes for this document type
-		return;
-
-	// Iterate indexes
-	for (TIteratorD<CMDSSQLiteIndex> iterator = indexes->getIterator(); iterator.hasValue(); iterator.advance())
-		// Update index
-		mDatabaseManager.updateIndex(iterator->getName(), TNArray<CMDSSQLiteIndexKeysInfo>(), documentBackingIDs,
-				iterator->getLastRevision());
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteInternals::notifyDocumentChanged(const CString& documentType, const CMDSDocument& document,
-		CMDSDocument::ChangeKind changeKind)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Get document changed procs for this document type
-	const	OR<TNArray<CMDSDocument::ChangedProcInfo> >	changedProcInfos =
-																mDocumentChangedProcInfosMap.get(documentType);
-	if (!changedProcInfos.hasReference())
-		// No document changed procs for this document type
-		return;
-
-	// Iterate document changed procs
-	for (TIteratorD<CMDSDocument::ChangedProcInfo> iterator = changedProcInfos->getIterator(); iterator.hasValue();
-			iterator.advance())
-		// Notify
-		iterator->notify(document, changeKind);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-const OV<SValue> CMDSSQLiteInternals::getDocumentBackingPropertyValue(const CString& documentID,
-		const CString& property, CMDSSQLiteDocumentBacking* documentBacking)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Return value
-	return documentBacking->getValue(property);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteInternals::processExistingDocumentInfo(const ExistingDocumentInfo& existingDocumentInfo,
-		const CSQLiteResultsRow& resultsRow, ProcessExistingDocumentInfoInfo* processExistingDocumentInfoInfo)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Try to retrieve document backing
-	OR<CMDSSQLiteDocumentBacking>	documentBacking =
-											processExistingDocumentInfoInfo->mDocumentBackingCache.getDocumentBacking(
-													existingDocumentInfo.mDocumentRevisionInfo.mDocumentID);
-	if (documentBacking.hasReference()) {
-		// Have document
-		CMDSSQLiteDocumentBackingInfo	documentBackingInfo(existingDocumentInfo.mDocumentRevisionInfo.mDocumentID,
-												*documentBacking);
-
-		// Note referenced
-		processExistingDocumentInfoInfo->mDocumentBackingCache.add(
-				TSArray<CMDSSQLiteDocumentBackingInfo>(documentBackingInfo));
-
-		// Call proc
-		processExistingDocumentInfoInfo->perform(documentBackingInfo, resultsRow);
-	} else {
-		// Read
-		CMDSSQLiteDocumentBackingInfo	documentBackingInfo =
-												CMDSSQLiteDatabaseManager::getDocumentBackingInfo(existingDocumentInfo,
-														resultsRow);
-
-		// Note referenced
-		processExistingDocumentInfoInfo->mDocumentBackingCache.add(
-				TSArray<CMDSSQLiteDocumentBackingInfo>(documentBackingInfo));
-
-		// Call proc
-		processExistingDocumentInfoInfo->perform(documentBackingInfo, resultsRow);
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteInternals::collectionIndexBringUpToDate(const CMDSSQLiteDocumentBackingInfo& documentBackingInfo,
-		CollectionIndexBringUpToDateInfo* collectionIndexBringUpToDateInfo)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Query batch info
-	const	OR<CMDSSQLiteBatchDocumentInfo>	batchDocumentInfo =
-													collectionIndexBringUpToDateInfo->mBatchInfo.hasReference() ?
-															collectionIndexBringUpToDateInfo->mBatchInfo->
-																	getDocumentInfo(documentBackingInfo.mDocumentID) :
-															OR<CMDSSQLiteBatchDocumentInfo>();
-
-	// Ensure we want to process this document
-	if (!batchDocumentInfo.hasReference() || !batchDocumentInfo->isRemoved()) {
-		// Create document
-		CMDSDocument*	document =
-								collectionIndexBringUpToDateInfo->mDocumentInfo.create(documentBackingInfo.mDocumentID,
-								collectionIndexBringUpToDateInfo->mMDSSQLite);
-		collectionIndexBringUpToDateInfo->mDocuments += I<CMDSDocument>(document);
-
-		// Append info
-		collectionIndexBringUpToDateInfo->mBringUpToDateInfos +=
-				CMDSSQLiteBringUpToDateInfo(*document, documentBackingInfo.mDocumentBacking.getRevision(),
-						documentBackingInfo.mDocumentBacking.getID());
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLiteInternals::batch(BatchInfo* batchInfo)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Iterate all document changes
-	batchInfo->mBatchInfo.iterate((CMDSSQLiteBatchDocumentInfo::MapProc) batchMap, &batchInfo->mInternals);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-OV<SError> CMDSSQLiteInternals::batchMap(const CString& documentType,
-		const TDictionary<CMDSSQLiteBatchDocumentInfo >& documentInfosMap, CMDSSQLiteInternals* internals)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Setup
-	const	OR<CMDSDocument::Info>&			documentInfo = internals->mDocumentInfoMap[documentType];
-			TNArray<I<CMDSDocument> >		documents;
-
-			CollectionIndexUpdateInfo		collectionIndexUpdateInfo(documentType, *internals);
-			CMDSSQLiteUpdateInfoBatchQueue	updateBatchQueue(
-													(CMDSSQLiteUpdateInfoBatchQueue::Proc) updateCollectionsIndexes,
-													&collectionIndexUpdateInfo);
-			TNumberArray<SInt64>			removedDocumentBackingIDs;
-
-	// Update documents
-	for (TIteratorS<CDictionary::Item> iterator = documentInfosMap.getIterator(); iterator.hasValue();
-			iterator.advance()) {
-		// Setup
-		const	CString&						documentID = iterator->mKey;
-		const	CMDSSQLiteBatchDocumentInfo&	batchDocumentInfo =
-														*((CMDSSQLiteBatchDocumentInfo*) iterator->mValue.getOpaque());
-		const	OI<CMDSSQLiteDocumentBacking>	existingDocumentBacking = batchDocumentInfo.getReference();
-
-
-		// Check removed
-		if (!batchDocumentInfo.isRemoved()) {
-			// Add/update document
-			if (existingDocumentBacking.hasInstance()) {
-				// Update document
-				existingDocumentBacking->update(documentType, batchDocumentInfo.getUpdatedPropertyMap(),
-						batchDocumentInfo.getRemovedProperties(), internals->mDatabaseManager);
-
-				// Check if we have document info
-				if (documentInfo.hasReference()) {
-					// Create document
-					CMDSDocument*	document =
-											documentInfo->create(documentID, *((CMDSSQLite*) &internals->mMDSSQLite));
-					documents += I<CMDSDocument>(document);
-
-					// Update collections and indexes
-					TSet<CString>	changedProperties =
-											batchDocumentInfo.getUpdatedPropertyMap().getKeys()
-												.addFrom(batchDocumentInfo.getRemovedProperties());
-					updateBatchQueue.add(
-							CMDSSQLiteUpdateInfo(*document, existingDocumentBacking->getRevision(),
-									existingDocumentBacking->getID(), changedProperties));
-
-					// Call document changed procs
-					internals->notifyDocumentChanged(documentType, *document, CMDSDocument::kUpdated);
-				}
-			} else {
-				// Add document
-				CMDSSQLiteDocumentBacking	documentBacking(documentType, documentID,
-													batchDocumentInfo.getCreationUniversalTime(),
-													batchDocumentInfo.getModificationUniversalTime(),
-													batchDocumentInfo.getUpdatedPropertyMap(),
-													internals->mDatabaseManager);
-				internals->mDocumentBackingCache.add(CMDSSQLiteDocumentBackingInfo(documentID, documentBacking));
-
-				// Check if we have document info
-				if (documentInfo.hasReference()) {
-					// Create document
-					CMDSDocument*	document =
-											documentInfo->create(documentID, *((CMDSSQLite*) &internals->mMDSSQLite));
-					documents += I<CMDSDocument>(document);
-
-					// Update collections and indexes
-					updateBatchQueue.add(
-							CMDSSQLiteUpdateInfo(*document, documentBacking.getRevision(), documentBacking.getID(),
-									TNSet<CString>()));
-
-					// Call document changed procs
-					internals->notifyDocumentChanged(documentType, *document, CMDSDocument::kCreated);
-				}
-			}
-		} else if (existingDocumentBacking.hasInstance()) {
-			// Remove document
-			internals->mDatabaseManager.removeDocument(documentType, existingDocumentBacking->getID());
-			internals->mDocumentBackingCache.remove(TSArray<CString>(documentID));
-
-			// Remove from collections and indexes
-			removedDocumentBackingIDs += existingDocumentBacking->getID();
-
-			// Check if we have document info
-			if (documentInfo.hasReference()) {
-				// Create document
-				CMDSDocument*	document =
-										documentInfo->create(documentID, *((CMDSSQLite*) &internals->mMDSSQLite));
-				documents += I<CMDSDocument>(document);
-
-				// Call document changed procs
-				internals->notifyDocumentChanged(documentType, *document, CMDSDocument::kRemoved);
-			}
-		}
-	}
-
-	// Finalize updates
-	updateBatchQueue.finalize();
-	internals->removeFromCollections(documentType, removedDocumentBackingIDs);
-	internals->removeFromIndexes(documentType, removedDocumentBackingIDs);
-
-	return OV<SError>();
-}
 
 //----------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------
@@ -735,9 +1390,7 @@ OV<SError> CMDSSQLiteInternals::batchMap(const CString& documentType,
 CMDSSQLite::CMDSSQLite(const CFolder& folder, const CString& name)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	// Setup
-	CSQLiteDatabase	database(folder, name);
-	mInternals = new CMDSSQLiteInternals(*this, database);
+	mInternals = new Internals(*this, folder, name);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -750,201 +1403,553 @@ CMDSSQLite::~CMDSSQLite()
 // MARK: CMDSDocumentStorage methods
 
 //----------------------------------------------------------------------------------------------------------------------
-const CString& CMDSSQLite::getID() const
+OV<SError> CMDSSQLite::associationRegister(const CString& name, const CString& fromDocumentType,
+		const CString& toDocumentType)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return mInternals->mID;
+	// Register
+	mInternals->mDatabaseManager.associationRegister(name, fromDocumentType, toDocumentType);
+
+	// Create or re-create association
+	I<CMDSAssociation>	association(new CMDSAssociation(name, fromDocumentType, toDocumentType));
+
+	// Add to map
+	mInternals->mAssociationByName.set(name, association);
+
+	return OV<SError>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TDictionary<CString> CMDSSQLite::getInfo(const TArray<CString>& keys) const
+TVResult<TArray<CMDSAssociation::Item> > CMDSSQLite::associationGet(const CString& name) const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	// Iterate all keys
-	TNDictionary<CString>	info;
-	for (TIteratorD<CString> iterator = keys.getIterator(); iterator.hasValue(); iterator.advance())
-		// Retrieve this key
-		info.set(*iterator, mInternals->mDatabaseManager.getString(*iterator));
+	// Validate
+	OV<I<CMDSAssociation> >	association = mInternals->associationGet(name);
+	if (!association.hasValue())
+		return TVResult<TArray<CMDSAssociation::Item> >(getUnknownAssociationError(name));
 
-	return info;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::set(const TDictionary<CString>& info)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Iterate all items
-	for (TIteratorS<CDictionary::Item> iterator = info.getIterator(); iterator.hasValue(); iterator.advance())
-		// Set value
-		mInternals->mDatabaseManager.set(iterator->mKey, OV<SValue>(iterator->mValue));
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::remove(const TArray<CString>& keys)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Iterate all keys
-	for (TIteratorD<CString> iterator = keys.getIterator(); iterator.hasValue(); iterator.advance())
-		// Remove value
-		mInternals->mDatabaseManager.set(*iterator, OV<SValue>());
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-I<CMDSDocument> CMDSSQLite::newDocument(const CMDSDocument::InfoForNew& infoForNew)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Setup
-	CString			documentID = CUUID().getBase64String();
-	UniversalTime	universalTime = SUniversalTime::getCurrent();
+	// Get association items
+	TArray<CMDSAssociation::Item>	associationItems =
+											mInternals->mDatabaseManager.associationGet(name,
+													(*association)->getFromDocumentType(),
+													(*association)->getToDocumentType());
 
 	// Check for batch
-	const	OR<CMDSSQLiteBatchInfo>	batchInfo = mInternals->mBatchInfoMap[CThread::getCurrentRefAsString()];
-	if (batchInfo.hasReference()) {
-		// In batch
-		batchInfo->addDocument(infoForNew.getDocumentType(), documentID, universalTime, universalTime);
+	const	OR<I<Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+	if (batch.hasReference())
+		// Apply batch changes
+		associationItems = (*batch)->associationItemsApplyingChanges(name, associationItems);
 
-		return I<CMDSDocument>(infoForNew.create(documentID, *this));
-	} else {
-		// Will be creating document
-		mInternals->mDocumentsBeingCreatedPropertyMapMap.set(documentID, CDictionary());
+	return TVResult<TArray<CMDSAssociation::Item> >(associationItems);
+}
 
-		// Create
-		CMDSDocument*	document = infoForNew.create(documentID, *this);
+//----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSSQLite::associationIterateFrom(const CString& name, const CString& fromDocumentID,
+		const CString& toDocumentType, CMDSDocument::Proc proc, void* procUserData) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	OV<I<CMDSAssociation> >	association = mInternals->associationGet(name);
+	if (!association.hasValue())
+		return OV<SError>(getUnknownAssociationError(name));
 
-		// Remove property map
-		const	OR<CDictionary>	propertyMap = mInternals->mDocumentsBeingCreatedPropertyMapMap.get(documentID);
-		mInternals->mDocumentsBeingCreatedPropertyMapMap.remove(documentID);
+	// Get association items
+	TVResult<TArray<CMDSAssociation::Item> >	associationItemsResult =
+														mInternals->mDatabaseManager.associationGetFrom(name,
+																fromDocumentID, (*association)->getFromDocumentType(),
+																toDocumentType);
+	ReturnErrorIfResultError(associationItemsResult);
+	TArray<CMDSAssociation::Item>	associationItems = *associationItemsResult;
 
-		// Add document
-		CMDSSQLiteDocumentBacking	documentBacking(infoForNew.getDocumentType(), documentID, universalTime,
-											universalTime, *propertyMap, mInternals->mDatabaseManager);
-		mInternals->mDocumentBackingCache.add(CMDSSQLiteDocumentBackingInfo(documentID, documentBacking));
+	// Check for batch
+	const	OR<I<Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+	if (batch.hasReference())
+		// Apply batch changes
+		associationItems = (*batch)->associationItemsApplyingChanges(name, associationItems);
 
-		// Update collections and indexes
-		CMDSSQLiteUpdateInfo	updateInfo(*document, documentBacking.getRevision(), documentBacking.getID());
-		mInternals->updateCollections(infoForNew.getDocumentType(), TSArray<CMDSSQLiteUpdateInfo>(updateInfo));
-		mInternals->updateIndexes(infoForNew.getDocumentType(), TSArray<CMDSSQLiteUpdateInfo>(updateInfo));
+	// Iterate document IDs;
+	const	CMDSDocument::Info&	documentInfo = documentCreateInfo(toDocumentType);
+	for (TIteratorD<CMDSAssociation::Item> iterator = associationItems.getIterator(); iterator.hasValue();
+			iterator.advance()) {
+		// Check fromDocumentID
+		if (iterator->getFromDocumentID() == fromDocumentID)
+			// Call proc
+			proc(documentInfo.create(iterator->getToDocumentID(), (CMDSDocumentStorage&) *this), procUserData);
+	}
 
-		// Call document changed procs
-		mInternals->notifyDocumentChanged(infoForNew.getDocumentType(), *document, CMDSDocument::kCreated);
+	return OV<SError>();
+}
 
-		return I<CMDSDocument>(document);
+//----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSSQLite::associationIterateTo(const CString& name, const CString& fromDocumentType,
+		const CString& toDocumentID, CMDSDocument::Proc proc, void* procUserData) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	OV<I<CMDSAssociation> >	association = mInternals->associationGet(name);
+	if (!association.hasValue())
+		return OV<SError>(getUnknownAssociationError(name));
+
+	// Get association items
+	TVResult<TArray<CMDSAssociation::Item> >	associationItemsResult =
+														mInternals->mDatabaseManager.associationGetTo(name,
+																fromDocumentType, toDocumentID,
+																(*association)->getToDocumentType());
+	ReturnErrorIfResultError(associationItemsResult);
+	TArray<CMDSAssociation::Item>	associationItems = *associationItemsResult;
+
+	// Check for batch
+	const	OR<I<Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+	if (batch.hasReference())
+		// Apply batch changes
+		associationItems = (*batch)->associationItemsApplyingChanges(name, associationItems);
+
+	// Iterate document IDs;
+	const	CMDSDocument::Info&	documentInfo = documentCreateInfo(fromDocumentType);
+	for (TIteratorD<CMDSAssociation::Item> iterator = associationItems.getIterator(); iterator.hasValue();
+			iterator.advance()) {
+		// Check fromDocumentID
+		if (iterator->getToDocumentID() == toDocumentID)
+			// Call proc
+			proc(documentInfo.create(iterator->getFromDocumentID(), (CMDSDocumentStorage&) *this), procUserData);
+	}
+
+	return OV<SError>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<CDictionary> CMDSSQLite::associationGetIntegerValues(const CString& name,
+		CMDSAssociation::GetIntegerValueAction action, const TArray<CString>& fromDocumentIDs, const CString& cacheName,
+		const TArray<CString>& cachedValueNames) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	OV<I<CMDSAssociation> >	association = mInternals->associationGet(name);
+	if (!association.hasValue())
+		return TVResult<CDictionary>(getUnknownAssociationError(name));
+	OV<I<Cache> >	cache = mInternals->cacheGet(cacheName);
+	if (!cache.hasValue())
+		return TVResult<CDictionary>(getUnknownCacheError(cacheName));
+	for (TIteratorD<CString> iterator = cachedValueNames.getIterator(); iterator.hasValue(); iterator.advance()) {
+		// Check if have info for this cachedValueName
+		if (!(*cache)->hasValueInfo(*iterator))
+			return TVResult<CDictionary>(getUnknownCacheValueName(*iterator));
+	}
+
+	// Setup
+	TNArray<CString>	fromDocumentIDsUse(fromDocumentIDs);
+
+	// Check for batch
+	const	OR<I<Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+	if (batch.hasReference()) {
+		// Get updates
+		TArray<CMDSAssociation::Update>	associationUpdates = (*batch)->associationGetUpdates(name);
+		for (TIteratorD<CMDSAssociation::Update> iterator = associationUpdates.getIterator(); iterator.hasValue();
+				iterator.advance()) {
+			// Check action
+			if (iterator->getAction() == CMDSAssociation::Update::kActionAdd)
+				// Add
+				fromDocumentIDsUse += iterator->getItem().getFromDocumentID();
+			else
+				// Remove
+				fromDocumentIDsUse -= iterator->getItem().getFromDocumentID();
+		}
+	}
+
+	// Check action
+	switch (action) {
+		case CMDSAssociation::kGetIntegerValueActionSum:
+			// Sum
+			return mInternals->mDatabaseManager.associationSum(name, fromDocumentIDsUse,
+					(*association)->getFromDocumentType(), cacheName, cachedValueNames);
 	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OI<CMDSDocument> CMDSSQLite::getDocument(const CString& documentID, const CMDSDocument::Info& documentInfo) const
+OV<SError> CMDSSQLite::associationUpdate(const CString& name, const TArray<CMDSAssociation::Update>& updates)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	// Check for batch
-	const	OR<CMDSSQLiteBatchInfo>			batchInfo = mInternals->mBatchInfoMap[CThread::getCurrentRefAsString()];
-	const	OR<CMDSSQLiteBatchDocumentInfo>	batchDocumentInfo =
-													batchInfo.hasReference() ?
-															batchInfo->getDocumentInfo(documentID) :
-															OR<CMDSSQLiteBatchDocumentInfo>();
-	if (batchDocumentInfo.hasReference())
-		// Have document in batch
-		return OI<CMDSDocument>(documentInfo.create(documentID, (CMDSDocumentStorage&) *this));
+	// Validate
+	OV<I<CMDSAssociation> >	association = mInternals->associationGet(name);
+	if (!association.hasValue())
+		return OV<SError>(getUnknownAssociationError(name));
 
-	// Check for document backing
-	OR<CMDSSQLiteDocumentBacking>	documentBacking =
-											mInternals->getDocumentBacking(documentInfo.getDocumentType(), documentID);
-	if (documentBacking.hasReference())
-		// Have document backing
-		return OI<CMDSDocument>(documentInfo.create(documentID, (CMDSDocumentStorage&) *this));
-	else
-		// Don't have document backing
-		return OI<CMDSDocument>();
+	// Check if have updates
+	if (updates.isEmpty())
+		return OV<SError>();
+
+	// Setup
+	TNSet<CString>	updateFromDocumentIDs = CMDSAssociation::Update::getFromDocumentIDsSet(updates);
+	mInternals->mDatabaseManager.documentInfoIterate((*association)->getFromDocumentType(),
+			updateFromDocumentIDs.getArray(),
+			DMDocumentInfo::ProcInfo((DMDocumentInfo::ProcInfo::Proc) Internals::removeDocumentIDFromSet,
+					&updateFromDocumentIDs));
+
+	TNSet<CString>	updateToDocumentIDs = CMDSAssociation::Update::getToDocumentIDsSet(updates);
+	mInternals->mDatabaseManager.documentInfoIterate((*association)->getToDocumentType(),
+			updateToDocumentIDs.getArray(),
+			DMDocumentInfo::ProcInfo((DMDocumentInfo::ProcInfo::Proc) Internals::removeDocumentIDFromSet,
+					&updateToDocumentIDs));
+
+	// Check for batch
+	const	OR<I<Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+	if (batch.hasReference()) {
+		// In batch
+		// Ensure all update from documentIDs exist
+		updateFromDocumentIDs -= (*batch)->documentIDsGet((*association)->getFromDocumentType());
+		if (!updateFromDocumentIDs.isEmpty())
+			return OV<SError>(getUnknownDocumentIDError(updateFromDocumentIDs.getArray()[0]));
+
+		// Ensure all update to documentIDs exist
+		updateToDocumentIDs -= (*batch)->documentIDsGet((*association)->getToDocumentType());
+		if (!updateToDocumentIDs.isEmpty())
+			return OV<SError>(getUnknownDocumentIDError(updateToDocumentIDs.getArray()[0]));
+
+		// Update
+		(*batch)->associationNoteUpdated(name, updates);
+	} else {
+		// Not in batch
+		if (!updateFromDocumentIDs.isEmpty())
+			return OV<SError>(getUnknownDocumentIDError(updateFromDocumentIDs.getArray()[0]));
+		if (!updateToDocumentIDs.isEmpty())
+			return OV<SError>(getUnknownDocumentIDError(updateToDocumentIDs.getArray()[0]));
+
+		// Update
+		mInternals->mDatabaseManager.associationUpdate(name, updates, (*association)->getFromDocumentType(),
+				(*association)->getToDocumentType());
+	}
+
+	return OV<SError>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-UniversalTime CMDSSQLite::getCreationUniversalTime(const CMDSDocument& document) const
+OV<SError> CMDSSQLite::cacheRegister(const CString& name, const CString& documentType,
+		const TArray<CString>& relevantProperties, const TArray<CacheValueInfo>& cacheValueInfos)
 //----------------------------------------------------------------------------------------------------------------------
 {
-//	// Check for batch
-	const	OR<CMDSSQLiteBatchInfo>			batchInfo = mInternals->mBatchInfoMap[CThread::getCurrentRefAsString()];
-	const	OR<CMDSSQLiteBatchDocumentInfo>	batchDocumentInfo =
-													batchInfo.hasReference() ?
-															batchInfo->getDocumentInfo(document.getID()) :
-															OR<CMDSSQLiteBatchDocumentInfo>();
+	// Remove current cache if found
+	if (mInternals->mCacheByName.contains(name))
+		// Remove
+		mInternals->mCacheByName.remove(name);
+
+	// Setup
+	TNArray<DMCacheValueInfo>	_cacheValueInfos;
+	TNArray<SMDSCacheValueInfo>	__cacheValueInfos;
+	for (TIteratorD<CacheValueInfo> iterator = cacheValueInfos.getIterator(); iterator.hasValue(); iterator.advance()) {
+		// Add
+		_cacheValueInfos +=
+				DMCacheValueInfo(iterator->getValueInfo().getName(), iterator->getValueInfo().getValueType(),
+						iterator->getSelector());
+		__cacheValueInfos +=
+				SMDSCacheValueInfo(iterator->getValueInfo(), documentValueInfo(iterator->getSelector()));
+	}
+
+	// Register cache
+	UInt32	lastRevision =
+					mInternals->mDatabaseManager.cacheRegister(name, documentType, relevantProperties, _cacheValueInfos);
+
+	// Create or re-create
+	I<Cache>	cache(new Cache(name, documentType, relevantProperties, __cacheValueInfos, lastRevision));
+
+	// Add to maps
+	mInternals->mCacheByName.set(name, cache);
+	mInternals->mCachesByDocumentType.add(documentType, cache);
+
+	// Bring up to date
+	mInternals->cacheUpdate(cache, mInternals->getUpdatesInfo(documentType, lastRevision));
+
+	return OV<SError>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSSQLite::collectionRegister(const CString& name, const CString& documentType,
+		const TArray<CString>& relevantProperties, bool isUpToDate, const CDictionary& isIncludedInfo,
+		const CMDSDocument::IsIncludedPerformer& documentIsIncludedPerformer)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Remove current collection if found
+	if (mInternals->mCollectionByName.contains(name))
+		// Remove
+		mInternals->mCollectionByName.remove(name);
+
+	// Register collection
+	UInt32	lastRevision =
+					mInternals->mDatabaseManager.collectionRegister(name, documentType, relevantProperties,
+							documentIsIncludedPerformer.getSelector(), isIncludedInfo, isUpToDate);
+
+	// Create or re-create collection
+	I<Collection>	collection(
+							new Collection(name, documentType, relevantProperties, documentIsIncludedPerformer,
+									isIncludedInfo, lastRevision));
+
+	// Add to maps
+	mInternals->mCollectionByName.set(name, collection);
+	mInternals->mCollectionsByDocumentType.add(documentType, collection);
+
+	// Check if is up to date
+	if (!isUpToDate)
+		// Bring up to date
+		mInternals->collectionUpdate(collection, mInternals->getUpdatesInfo(documentType, lastRevision));
+
+	return OV<SError>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<UInt32> CMDSSQLite::collectionGetDocumentCount(const CString& name) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	OV<I<Collection> >	collection = mInternals->collectionGet(name);
+	if (!collection.hasValue())
+		return TVResult<UInt32>(getUnknownCollectionError(name));
+	if (mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()].hasReference())
+		return TVResult<UInt32>(getIllegalInBatchError());
+
+	// Bring up to date
+	mInternals->collectionUpdate(*collection, mInternals->getUpdatesInfo((*collection)->getDocumentType(), 0));
+
+	return TVResult<UInt32>(mInternals->mDatabaseManager.collectionGetDocumentCount(name));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSSQLite::collectionIterate(const CString& name, const CString& documentType, CMDSDocument::Proc proc,
+		void* procUserData) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	OV<I<Collection> >	collection = mInternals->collectionGet(name);
+	if (!collection.hasValue())
+		return OV<SError>(getUnknownCollectionError(name));
+	if (mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()].hasReference())
+		return OV<SError>(getIllegalInBatchError());
+
+	// Bring up to date
+	mInternals->collectionUpdate(*collection, mInternals->getUpdatesInfo((*collection)->getDocumentType(), 0));
+
+	// Collect document IDs
+	TNArray<CString>	documentIDs;
+	mInternals->collectionIterate(name, documentType, 0, OV<UInt32>(),
+			(CMDSSQLiteDocumentBacking::KeyProc) Internals::addDocumentIDToArray, &documentIDs);
+
+	// Setup
+	const	CMDSDocument::Info&	documentInfo = documentCreateInfo(documentType);
+
+	// Iterate document IDs
+	for (TIteratorD<CString> iterator = documentIDs.getIterator(); iterator.hasValue(); iterator.advance())
+		// Call proc
+		proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
+
+	return OV<SError>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSSQLite::documentCreate(
+		const CMDSDocument::InfoForNew& documentInfoForNew, const TArray<CMDSDocument::CreateInfo>& documentCreateInfos)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	TNArray<CMDSDocument::CreateResultInfo>	documentCreateResultInfos;
+
+	// Check for batch
+	const	OR<I<Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+	if (batch.hasReference()) {
+		// In batch
+		UniversalTime	universalTime = SUniversalTime::getCurrent();
+		for (TIteratorD<CMDSDocument::CreateInfo> iterator = documentCreateInfos.getIterator(); iterator.hasValue();
+				iterator.advance()) {
+			// Setup
+			CString	documentID =
+							iterator->getDocumentID().hasValue() ?
+									*iterator->getDocumentID() : CUUID().getBase64String();
+
+			// Add document
+			(*batch)->documentAdd(documentInfoForNew.getDocumentType(), documentID,
+					iterator->getCreationUniversalTime().getValue(universalTime),
+					iterator->getModificationUniversalTime().getValue(universalTime),
+					OV<CDictionary>(iterator->getPropertyMap()));
+			documentCreateResultInfos += CMDSDocument::CreateResultInfo(documentInfoForNew.create(documentID, *this));
+		}
+	} else {
+		// Batch
+		Internals::DocumentCreateInfo	documentCreateInfo(*mInternals, documentInfoForNew, documentCreateInfos,
+												documentCreateResultInfos);
+		mInternals->mDatabaseManager.batch((CMDSSQLiteDatabaseManager::BatchProc) Internals::processDocumentCreate,
+				&documentCreateInfo);
+
+		// Call document changed procs
+		for (TIteratorD<CMDSDocument::CreateResultInfo> iterator = documentCreateResultInfos.getIterator();
+				iterator.hasValue(); iterator.advance())
+			// Call proc
+			notifyDocumentChanged(*iterator->getDocument(), CMDSDocument::kChangeKindCreated);
+	}
+
+	return TVResult<TArray<CMDSDocument::CreateResultInfo> >(documentCreateResultInfos);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<UInt32> CMDSSQLite::documentGetCount(const CString& documentType) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	if (!mInternals->mDatabaseManager.documentTypeIsKnown(documentType))
+		return TVResult<UInt32>(getUnknownDocumentTypeError(documentType));
+	if (mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()].hasReference())
+		return TVResult<UInt32>(getIllegalInBatchError());
+
+	return TVResult<UInt32>(mInternals->mDatabaseManager.documentCount(documentType));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSSQLite::documentIterate(const CMDSDocument::Info& documentInfo, const TArray<CString>& documentIDs,
+		CMDSDocument::Proc proc, void* procUserData) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	if (!mInternals->mDatabaseManager.documentTypeIsKnown(documentInfo.getDocumentType()))
+		return OV<SError>(getUnknownDocumentTypeError(documentInfo.getDocumentType()));
+
+	// Setup
+	const	OR<I<Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+
+	// Iterate initial document IDs
+	TNArray<CString>	documentIDsToCache;
+	for (TIteratorD<CString> iterator = documentIDs.getIterator(); iterator.hasValue(); iterator.advance()) {
+		// Check what we have currently
+		if (batch.hasReference() && (*batch)->documentInfoGet(*iterator).hasReference())
+			// Have document in batch
+			proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
+		else if (mInternals->mDocumentBackingByDocumentID.getDocumentBacking(*iterator).hasReference())
+			// Have documentBacking in cache
+			proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
+		else
+			// Will need to retrieve from database
+			documentIDsToCache += *iterator;
+	}
+
+	// Iterate document IDs not found in batch or cache
+	Internals::DocumentBackingDocumentIDsIterateInfo	documentBackingDocumentIDsIterateInfo(documentInfo,
+																(CMDSDocumentStorage&) *this, documentIDsToCache, proc,
+																procUserData);
+	mInternals->documentBackingsIterate(documentInfo.getDocumentType(), documentIDsToCache,
+			(CMDSSQLiteDocumentBacking::KeyProc) Internals::processDocumentBackingForDocumentIDs,
+			&documentBackingDocumentIDsIterateInfo);
+
+	// Check if have any that we didn't find
+	if (!documentIDsToCache.isEmpty())
+		return OV<SError>(getUnknownDocumentIDError(documentIDsToCache[0]));
+
+	return OV<SError>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSSQLite::documentIterate(const CMDSDocument::Info& documentInfo, bool activeOnly, CMDSDocument::Proc proc,
+		void* procUserData) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	if (!mInternals->mDatabaseManager.documentTypeIsKnown(documentInfo.getDocumentType()))
+		return OV<SError>(getUnknownDocumentTypeError(documentInfo.getDocumentType()));
+	if (mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()].hasReference())
+		return OV<SError>(getIllegalInBatchError());
+
+	// Iterate document backings
+	Internals::DocumentBackingSinceRevisionIterateInfo	documentBackingSinceRevisionIterateInfo(documentInfo,
+																(CMDSDocumentStorage&) *this, proc, procUserData);
+	mInternals->documentBackingsIterate(documentInfo.getDocumentType(), 0, OV<UInt32>(), activeOnly,
+			(CMDSSQLiteDocumentBacking::KeyProc) Internals::processDocumentBackingForSinceRevision,
+			&documentBackingSinceRevisionIterateInfo);
+
+	return OV<SError>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+UniversalTime CMDSSQLite::documentCreationUniversalTime(const CMDSDocument& document) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Check for batch
+	const	OR<I<Batch> >			batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+			OR<BatchDocumentInfo>	batchDocumentInfo =
+											batch.hasReference() ?
+													(*batch)->documentInfoGet(document.getID()) :
+													OR<BatchDocumentInfo>();
 	if (batchDocumentInfo.hasReference())
-		// Have document in batch
+		// In batch
 		return batchDocumentInfo->getCreationUniversalTime();
-	else if (mInternals->mDocumentsBeingCreatedPropertyMapMap.contains(document.getID()))
+	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(document.getID()))
 		// Being created
 		return SUniversalTime::getCurrent();
 	else
 		// "Idle"
-		return mInternals->getDocumentBacking(document.getDocumentType(), document.getID())->getCreationUniversalTime();
+		return (*mInternals->documentBackingGet(document.getDocumentType(), document.getID()))->
+				getCreationUniversalTime();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-UniversalTime CMDSSQLite::getModificationUniversalTime(const CMDSDocument& document) const
+UniversalTime CMDSSQLite::documentModificationUniversalTime(const CMDSDocument& document) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check for batch
-	const	OR<CMDSSQLiteBatchInfo>			batchInfo = mInternals->mBatchInfoMap[CThread::getCurrentRefAsString()];
-	const	OR<CMDSSQLiteBatchDocumentInfo>	batchDocumentInfo =
-													batchInfo.hasReference() ?
-															batchInfo->getDocumentInfo(document.getID()) :
-															OR<CMDSSQLiteBatchDocumentInfo>();
+	const	OR<I<Batch> >			batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+			OR<BatchDocumentInfo>	batchDocumentInfo =
+											batch.hasReference() ?
+													(*batch)->documentInfoGet(document.getID()) :
+													OR<BatchDocumentInfo>();
 	if (batchDocumentInfo.hasReference())
-		// Have document in batch
+		// In batch
 		return batchDocumentInfo->getModificationUniversalTime();
-	else if (mInternals->mDocumentsBeingCreatedPropertyMapMap.contains(document.getID()))
+	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(document.getID()))
 		// Being created
 		return SUniversalTime::getCurrent();
 	else
 		// "Idle"
-		return mInternals->getDocumentBacking(document.getDocumentType(), document.getID())->
+		return (*mInternals->documentBackingGet(document.getDocumentType(), document.getID()))->
 				getModificationUniversalTime();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OV<SValue> CMDSSQLite::getValue(const CString& property, const CMDSDocument& document) const
+OV<SValue> CMDSSQLite::documentValue(const CString& property, const CMDSDocument& document) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check for batch
-	const	OR<CMDSSQLiteBatchInfo>			batchInfo = mInternals->mBatchInfoMap[CThread::getCurrentRefAsString()];
-	const	OR<CMDSSQLiteBatchDocumentInfo>	batchDocumentInfo =
-													batchInfo.hasReference() ?
-															batchInfo->getDocumentInfo(document.getID()) :
-															OR<CMDSSQLiteBatchDocumentInfo>();
+	const	OR<I<Batch> >			batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+			OR<BatchDocumentInfo>	batchDocumentInfo =
+											batch.hasReference() ?
+													(*batch)->documentInfoGet(document.getID()) :
+													OR<BatchDocumentInfo>();
 	if (batchDocumentInfo.hasReference())
-		// Have document in batch
+		// In batch
 		return batchDocumentInfo->getValue(property);
-
-	// Check if being created
-	const	OR<CDictionary>	propertyMap = mInternals->mDocumentsBeingCreatedPropertyMapMap[document.getID()];
-	if (propertyMap.hasReference())
+	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(document.getID()))
 		// Being created
-		return propertyMap->contains(property) ? OV<SValue>(propertyMap->getValue(property)) : OV<SValue>();
+		return mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID[document.getID()]->getOValue(property);
 	else
 		// "Idle"
-		return mInternals->getDocumentBacking(document.getDocumentType(), document.getID())->getValue(property);
+		return (*mInternals->documentBackingGet(document.getDocumentType(), document.getID()))->
+				getPropertyMap().getOValue(property);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OV<CData> CMDSSQLite::getData(const CString& property, const CMDSDocument& document) const
+OV<CData> CMDSSQLite::documentData(const CString& property, const CMDSDocument& document) const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	// Get value
-	OV<SValue>	value = getValue(property, document);
+	// Retrieve Base64-encoded string
+	OV<SValue>	value = documentValue(property, document);
+	if (!value.hasValue())
+		return OV<CData>();
 
-	return value.hasValue() ? OV<CData>(CData(value->getString())) : OV<CData>();
+	return OV<CData>(CData::fromBase64String(value->getString()));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OV<UniversalTime> CMDSSQLite::getUniversalTime(const CString& property, const CMDSDocument& document) const
+OV<UniversalTime> CMDSSQLite::documentUniversalTime(const CString& property, const CMDSDocument& document) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
-	OV<SValue>	value = getValue(property, document);
+	OV<SValue>	value = documentValue(property, document);
 	if (!value.hasValue())
 		return OV<UniversalTime>();
 
-	OV<SGregorianDate>	gregorianDate =
-								SGregorianDate::getFrom(value->getString(), SGregorianDate::kStringStyleRFC339Extended);
+	OV<SGregorianDate>	gregorianDate = SGregorianDate::getFrom(value->getString());
 	if (!gregorianDate.hasValue())
 		return OV<UniversalTime>();
 
@@ -952,8 +1957,8 @@ OV<UniversalTime> CMDSSQLite::getUniversalTime(const CString& property, const CM
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::set(const CString& property, const OV<SValue>& value, const CMDSDocument& document,
-		SetValueInfo setValueInfo)
+void CMDSSQLite::documentSet(const CString& property, const OV<SValue>& value, const CMDSDocument& document,
+		SetValueKind setValueKind)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Setup
@@ -962,64 +1967,288 @@ void CMDSSQLite::set(const CString& property, const OV<SValue>& value, const CMD
 
 	// Transform
 	OV<SValue>	valueUse;
-	if (value.hasValue() && (value->getType() == SValue::kData))
+	if (value.hasValue() && (value->getType() == SValue::kTypeData))
 		// Data
 		valueUse = OV<SValue>(value->getData().getBase64String());
-	else if (value.hasValue() && (setValueInfo == kUniversalTime))
+	else if (value.hasValue() && (setValueKind == kSetValueKindUniversalTime))
 		// UniversalTime
-		valueUse =
-				OV<SValue>(
-						SValue(
-								SGregorianDate(value->getFloat64())
-										.getString(SGregorianDate::kStringStyleRFC339Extended)));
+		valueUse = OV<SValue>(SValue(SGregorianDate(value->getFloat64()).getString()));
 	else
 		// Everything else
 		valueUse = value;
 
 	// Check for batch
-	const	OR<CMDSSQLiteBatchInfo>	batchInfo = mInternals->mBatchInfoMap[CThread::getCurrentRefAsString()];
-	if (batchInfo.hasReference()) {
+	const	OR<I<Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+	if (batch.hasReference()) {
 		// In batch
-		const	OR<CMDSSQLiteBatchDocumentInfo>	batchDocumentInfo = batchInfo->getDocumentInfo(document.getID());
+		OR<BatchDocumentInfo>	batchDocumentInfo = (*batch)->documentInfoGet(documentID);
 		if (batchDocumentInfo.hasReference())
 			// Have document in batch
 			batchDocumentInfo->set(property, valueUse);
 		else {
 			// Don't have document in batch
-			OR<CMDSSQLiteDocumentBacking>	documentBacking = mInternals->getDocumentBacking(documentType, documentID);
-			UniversalTime					universalTime = SUniversalTime::getCurrent();
-			batchInfo->addDocument(documentType, documentID, OI<CMDSSQLiteDocumentBacking>(*documentBacking),
-						universalTime, universalTime,
-						(CMDSSQLiteBatchInfo::DocumentPropertyValueProc)
-								CMDSSQLiteInternals::getDocumentBackingPropertyValue,
-						&documentBacking.getReference())
-				.set(property, valueUse);
+			I<CMDSSQLiteDocumentBacking>	documentBacking =
+													mInternals->documentBackingGet(documentType, documentID).getValue();
+			(*batch)->documentAdd(documentType, R<I<CMDSSQLiteDocumentBacking> >(documentBacking))
+					.set(property, valueUse);
 		}
 	} else {
 		// Check if being created
-		const	OR<CDictionary>	propertyMap = mInternals->mDocumentsBeingCreatedPropertyMapMap[documentID];
+		const	OR<CDictionary>	propertyMap = mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID[documentID];
 		if (propertyMap.hasReference())
 			// Being created
 			propertyMap->set(property, value);
 		else {
 			// Update document
-			OR<CMDSSQLiteDocumentBacking>	documentBacking = mInternals->getDocumentBacking(documentType, documentID);
+			I<CMDSSQLiteDocumentBacking>	documentBacking =
+													mInternals->documentBackingGet(documentType, documentID).getValue();
 			documentBacking->set(property, valueUse, documentType, mInternals->mDatabaseManager);
 
-			// Update collections and indexes
-			CMDSSQLiteUpdateInfo	updateInfo(document, documentBacking->getRevision(), documentBacking->getID(),
-											TNSet<CString>(property));
-			mInternals->updateCollections(documentType, TSArray<CMDSSQLiteUpdateInfo>(updateInfo));
-			mInternals->updateIndexes(documentType, TSArray<CMDSSQLiteUpdateInfo>(updateInfo));
+			// Update stuffs
+			mInternals->update(documentType,
+					Internals::UpdatesInfo(
+							TSArray<UpdateInfo>(
+									UpdateInfo(document, documentBacking->getRevision(), documentBacking->getID(),
+											TNSet<CString>(property)))));
 
 			// Call document changed procs
-			mInternals->notifyDocumentChanged(documentType, document, CMDSDocument::kUpdated);
+			notifyDocumentChanged(document, CMDSDocument::kChangeKindUpdated);
 		}
 	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::remove(const CMDSDocument& document)
+TVResult<CMDSDocument::AttachmentInfo> CMDSSQLite::documentAttachmentAdd(const CString& documentType,
+		const CString& documentID, const CDictionary& info, const CData& content)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	if (!mInternals->mDatabaseManager.documentTypeIsKnown(documentType))
+		return TVResult<CMDSDocument::AttachmentInfo>(getUnknownDocumentTypeError(documentType));
+
+	// Check for batch
+	const	OR<I<Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+	if (batch.hasReference()) {
+		// In batch
+		OR<BatchDocumentInfo>	batchDocumentInfo = (*batch)->documentInfoGet(documentID);
+		if (batchDocumentInfo.hasReference())
+			// Have document in batch
+			return TVResult<CMDSDocument::AttachmentInfo>(batchDocumentInfo->attachmentAdd(info, content));
+		else {
+			// Don't have document in batch
+			I<CMDSSQLiteDocumentBacking>	documentBacking =
+													mInternals->documentBackingGet(documentType, documentID).getValue();
+			return TVResult<CMDSDocument::AttachmentInfo>(
+					(*batch)->documentAdd(documentType, R<I<CMDSSQLiteDocumentBacking> >(documentBacking))
+							.attachmentAdd(info, content));
+		}
+	} else {
+		// Not in batch
+		DocumentBackingResult	documentBacking = mInternals->documentBackingGet(documentType, documentID);
+
+		return documentBacking.hasValue() ?
+				TVResult<CMDSDocument::AttachmentInfo>(
+						(*documentBacking)->attachmentAdd(documentType, info, content, mInternals->mDatabaseManager)) :
+				TVResult<CMDSDocument::AttachmentInfo>(getUnknownDocumentIDError(documentID));
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<CMDSDocument::AttachmentInfoByID> CMDSSQLite::documentAttachmentInfoByID(const CString& documentType,
+		const CString& documentID)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	if (!mInternals->mDatabaseManager.documentTypeIsKnown(documentType))
+		return TVResult<CMDSDocument::AttachmentInfoByID>(getUnknownDocumentTypeError(documentType));
+
+	// Check for batch
+	const	OR<I<Batch> >			batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+			OR<BatchDocumentInfo>	batchDocumentInfo =
+											batch.hasReference() ?
+													(*batch)->documentInfoGet(documentID) : OR<BatchDocumentInfo>();
+	if (batchDocumentInfo.hasReference()) {
+		// Have document in batch
+		const	OR<I<CMDSSQLiteDocumentBacking> >	documentBacking = batchDocumentInfo->getDocumentBacking();
+
+		return TVResult<CMDSDocument::AttachmentInfoByID>(
+				batchDocumentInfo->getUpdatedDocumentAttachmentInfoByID(
+						documentBacking.hasReference() ?
+								(*documentBacking)->getDocumentAttachmentInfoByID() :
+								TNDictionary<CMDSDocument::AttachmentInfo>()));
+	} else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(documentID))
+		// Creating
+		return TVResult<CMDSDocument::AttachmentInfoByID>(TNDictionary<CMDSDocument::AttachmentInfo>());
+	else {
+		// Not in batch
+		DocumentBackingResult	documentBacking = mInternals->documentBackingGet(documentType, documentID);
+
+		return documentBacking.hasValue() ?
+				TVResult<CMDSDocument::AttachmentInfoByID>((*documentBacking)->getDocumentAttachmentInfoByID()) :
+				TVResult<CMDSDocument::AttachmentInfoByID>(getUnknownDocumentIDError(documentID));
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<CData> CMDSSQLite::documentAttachmentContent(const CString& documentType, const CString& documentID,
+		const CString& attachmentID)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	if (!mInternals->mDatabaseManager.documentTypeIsKnown(documentType))
+		return TVResult<CData>(getUnknownDocumentTypeError(documentType));
+
+	// Check for batch
+	const	OR<I<Batch> >			batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+			OR<BatchDocumentInfo>	batchDocumentInfo =
+											batch.hasReference() ?
+													(*batch)->documentInfoGet(documentID) : OR<BatchDocumentInfo>();
+			OV<CData>				data =
+											batchDocumentInfo.hasReference() ?
+													batchDocumentInfo->getAttachmentContent(attachmentID) : OV<CData>();
+	if (data.hasValue())
+		// Found
+		return TVResult<CData>(*data);
+	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(documentID))
+		// Creating
+		return TVResult<CData>(getUnknownAttachmentIDError(attachmentID));
+
+	// Get non-batch attachment content
+	DocumentBackingResult	documentBacking = mInternals->documentBackingGet(documentType, documentID);
+	if (!documentBacking.hasValue())
+		return TVResult<CData>(getUnknownDocumentIDError(documentID));
+	if (!(*documentBacking)->getDocumentAttachmentInfoByID().contains(attachmentID))
+		return TVResult<CData>(getUnknownAttachmentIDError(attachmentID));
+
+	return TVResult<CData>(
+			(*documentBacking)->attachmentContent(documentType, attachmentID, mInternals->mDatabaseManager));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<OV<UInt32> > CMDSSQLite::documentAttachmentUpdate(const CString& documentType, const CString& documentID,
+		const CString& attachmentID, const CDictionary& updatedInfo, const CData& updatedContent)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	if (!mInternals->mDatabaseManager.documentTypeIsKnown(documentType))
+		return TVResult<OV<UInt32> >(getUnknownDocumentTypeError(documentType));
+
+	// Check for batch
+	const	OR<I<Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+	if (batch.hasReference()) {
+		// In batch
+		OR<BatchDocumentInfo>	batchDocumentInfo = (*batch)->documentInfoGet(documentID);
+		if (batchDocumentInfo.hasReference()) {
+			// Have document in batch
+			const	OR<I<CMDSSQLiteDocumentBacking> >	documentBacking = batchDocumentInfo->getDocumentBacking();
+					CMDSDocument::AttachmentInfoByID	documentAttachmentInfoByID =
+																batchDocumentInfo->getUpdatedDocumentAttachmentInfoByID(
+																		documentBacking.hasReference() ?
+																				(*documentBacking)->
+																						getDocumentAttachmentInfoByID() :
+																				TNDictionary<
+																						CMDSDocument::AttachmentInfo>());
+			const	OR<CMDSDocument::AttachmentInfo>	documentAttachmentInfo =
+																documentAttachmentInfoByID[attachmentID];
+			if (!documentAttachmentInfo.hasReference())
+				return TVResult<OV<UInt32> >(getUnknownAttachmentIDError(attachmentID));
+
+			batchDocumentInfo->attachmentUpdate(attachmentID, documentAttachmentInfo->getRevision(), updatedInfo,
+					updatedContent);
+		} else {
+			// Don't have document in batch
+			DocumentBackingResult	documentBacking = mInternals->documentBackingGet(documentType, documentID);
+			if (!documentBacking.hasValue())
+				return TVResult<OV<UInt32> >(getUnknownDocumentIDError(documentID));
+
+			const	OR<CMDSDocument::AttachmentInfo>	documentAttachmentInfo =
+																(*documentBacking)->getDocumentAttachmentInfoByID()
+																		[attachmentID];
+			if (!documentAttachmentInfo.hasReference())
+				return TVResult<OV<UInt32> >(getUnknownAttachmentIDError(attachmentID));
+
+			(*batch)->documentAdd(documentType,
+							R<I<CMDSSQLiteDocumentBacking> >(*((I<CMDSSQLiteDocumentBacking>*) &*documentBacking)))
+					.attachmentUpdate(attachmentID, documentAttachmentInfo->getRevision(), updatedInfo, updatedContent);
+		}
+
+		return TVResult<OV<UInt32> >(OV<UInt32>());
+	} else {
+		// Not in batch
+		DocumentBackingResult	documentBacking = mInternals->documentBackingGet(documentType, documentID);
+		if (!documentBacking.hasValue())
+			return TVResult<OV<UInt32> >(getUnknownDocumentIDError(documentID));
+
+		const	OR<CMDSDocument::AttachmentInfo>	documentAttachmentInfo =
+															(*documentBacking)->getDocumentAttachmentInfoByID()
+																	[attachmentID];
+		if (!documentAttachmentInfo.hasReference())
+			return TVResult<OV<UInt32> >(getUnknownAttachmentIDError(attachmentID));
+
+		// Update attachment
+		return TVResult<OV<UInt32> >(
+				(*documentBacking)->attachmentUpdate(documentType, attachmentID, updatedInfo, updatedContent,
+						mInternals->mDatabaseManager));
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSSQLite::documentAttachmentRemove(const CString& documentType, const CString& documentID,
+		const CString& attachmentID)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	if (!mInternals->mDatabaseManager.documentTypeIsKnown(documentType))
+		return OV<SError>(getUnknownDocumentTypeError(documentType));
+
+	// Check for batch
+	const	OR<I<Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+	if (batch.hasReference()) {
+		// In batch
+		OR<BatchDocumentInfo>	batchDocumentInfo = (*batch)->documentInfoGet(documentID);
+		if (batchDocumentInfo.hasReference()) {
+			// Have document in batch
+			const	OR<I<CMDSSQLiteDocumentBacking> >	documentBacking = batchDocumentInfo->getDocumentBacking();
+					CMDSDocument::AttachmentInfoByID	documentAttachmentInfoByID =
+																batchDocumentInfo->getUpdatedDocumentAttachmentInfoByID(
+																		documentBacking.hasReference() ?
+																				(*documentBacking)->
+																						getDocumentAttachmentInfoByID() :
+																				TNDictionary<
+																						CMDSDocument::AttachmentInfo>());
+			if (!documentAttachmentInfoByID.contains(attachmentID))
+				return OV<SError>(getUnknownAttachmentIDError(attachmentID));
+
+			batchDocumentInfo->attachmentRemove(attachmentID);
+		} else {
+			// Don't have document in batch
+			DocumentBackingResult	documentBacking = mInternals->documentBackingGet(documentType, documentID);
+			if (!documentBacking.hasValue())
+				return OV<SError>(getUnknownDocumentIDError(documentID));
+			if (!(*documentBacking)->getDocumentAttachmentInfoByID().contains(attachmentID))
+				return OV<SError>(getUnknownAttachmentIDError(attachmentID));
+
+			(*batch)->documentAdd(documentType,
+							R<I<CMDSSQLiteDocumentBacking> >(*((I<CMDSSQLiteDocumentBacking>*) &*documentBacking)))
+					.attachmentRemove(attachmentID);
+		}
+	} else {
+		// Not in batch
+		DocumentBackingResult	documentBacking = mInternals->documentBackingGet(documentType, documentID);
+		if (!documentBacking.hasValue())
+			return OV<SError>(getUnknownDocumentIDError(documentID));
+		if (!(*documentBacking)->getDocumentAttachmentInfoByID().contains(attachmentID))
+			return OV<SError>(getUnknownAttachmentIDError(attachmentID));
+
+		// Remove attachment
+		(*documentBacking)->attachmentRemove(documentType, attachmentID, mInternals->mDatabaseManager);
+	}
+
+	return OV<SError>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSSQLite::documentRemove(const CMDSDocument& document)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Setup
@@ -1027,295 +2256,564 @@ void CMDSSQLite::remove(const CMDSDocument& document)
 	const	CString&	documentID = document.getID();
 
 	// Check for batch
-	const	OR<CMDSSQLiteBatchInfo>	batchInfo = mInternals->mBatchInfoMap[CThread::getCurrentRefAsString()];
-	if (batchInfo.hasReference()) {
+	const	OR<I<Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+	if (batch.hasReference()) {
 		// In batch
-		const	OR<CMDSSQLiteBatchDocumentInfo>	batchDocumentInfo = batchInfo->getDocumentInfo(documentID);
+		OR<BatchDocumentInfo>	batchDocumentInfo = (*batch)->documentInfoGet(documentID);
 		if (batchDocumentInfo.hasReference())
 			// Have document in batch
 			batchDocumentInfo->remove();
 		else {
 			// Don't have document in batch
-			UniversalTime	universalTime = SUniversalTime::getCurrent();
-			batchInfo->addDocument(documentType, documentID, universalTime, universalTime).remove();
+			DocumentBackingResult	documentBacking = mInternals->documentBackingGet(documentType, documentID);
+			(*batch)->documentAdd(documentType,
+							R<I<CMDSSQLiteDocumentBacking> >(*((I<CMDSSQLiteDocumentBacking>*) &*documentBacking)))
+					.remove();
 		}
 	} else {
 		// Not in batch
-		OR<CMDSSQLiteDocumentBacking>	documentBacking = mInternals->getDocumentBacking(documentType, documentID);
+		DocumentBackingResult	documentBacking = mInternals->documentBackingGet(documentType, documentID);
 
-		// Remove from collections and indexes
-		TNumberArray<SInt64>	ids(documentBacking->getID());
-		mInternals->removeFromCollections(documentType, ids);
-		mInternals->removeFromIndexes(documentType, ids);
+		// Remove from stuffs
+		mInternals->update(documentType,
+				Internals::UpdatesInfo(TNArray<UpdateInfo>(), DMIDArray((*documentBacking)->getID())));
 
 		// Remove
-		mInternals->mDatabaseManager.removeDocument(documentType, documentBacking->getID());
+		mInternals->mDatabaseManager.documentRemove(documentType, (*documentBacking)->getID());
 
 		// Remove from cache
-		mInternals->mDocumentBackingCache.remove(TSArray<CString>(documentID));
+		mInternals->mDocumentBackingByDocumentID.remove(TSArray<CString>(documentID));
 
 		// Call document changed procs
-		mInternals->notifyDocumentChanged(documentType, document, CMDSDocument::kRemoved);
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::iterate(const CMDSDocument::Info& documentInfo, CMDSDocument::Proc proc, void* userData) const
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Iterate document backing infos to collect document IDs
-	TNArray<CString>										documentIDs;
-	CMDSSQLiteInternals::ProcessExistingDocumentInfoInfo	processExistingDocumentInfoInfo(
-																	mInternals->mDocumentBackingCache,
-																	(CMDSSQLiteResultsRowDocumentBackingInfoProc)
-																			CMDSSQLiteInternals::
-																					addDocumentIDWithResultsRow,
-																	&documentIDs);
-	mInternals->mDatabaseManager.iterate(documentInfo.getDocumentType(),
-			mInternals->mDatabaseManager.getInnerJoin(documentInfo.getDocumentType()),
-			mInternals->mDatabaseManager.getWhere(true),
-			(CMDSSQLiteDatabaseManager::ExistingDocumentInfoProc) CMDSSQLiteInternals::processExistingDocumentInfo,
-			&processExistingDocumentInfoInfo);
-
-	// Iterate document IDs
-	for (TIteratorD<CString> iterator = documentIDs.getIterator(); iterator.hasValue(); iterator.advance()) {
-		// Create document
-		CMDSDocument*	document = documentInfo.create(*iterator, *((CMDSDocumentStorage*) this));
-
-		// Call proc
-		proc(*document, userData);
-
-		// Cleanup
-		Delete(document);
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::iterate(const CMDSDocument::Info& documentInfo, const TArray<CString>& documentIDs,
-		CMDSDocument::Proc proc, void* userData) const
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Iterate document backing infos to ensure they are in the cache
-	CMDSSQLiteInternals::ProcessExistingDocumentInfoInfo	processExistingDocumentInfoInfo(
-																	mInternals->mDocumentBackingCache,
-																	CMDSSQLiteInternals::noteReference, nil);
-	mInternals->mDatabaseManager.iterate(documentInfo.getDocumentType(),
-			mInternals->mDatabaseManager.getInnerJoin(documentInfo.getDocumentType()),
-			mInternals->mDatabaseManager.getWhereForDocumentIDs(documentIDs),
-			(CMDSSQLiteDatabaseManager::ExistingDocumentInfoProc) CMDSSQLiteInternals::processExistingDocumentInfo,
-			&processExistingDocumentInfoInfo);
-
-	// Iterate document IDs
-	for (TIteratorD<CString> iterator = documentIDs.getIterator(); iterator.hasValue(); iterator.advance()) {
-		// Create document
-		CMDSDocument*	document = documentInfo.create(*iterator, *((CMDSDocumentStorage*) this));
-
-		// Call proc
-		proc(*document, userData);
-
-		// Cleanup
-		Delete(document);
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::batch(BatchProc batchProc, void* userData)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Setup
-	CMDSSQLiteBatchInfo	sqliteBatchInfo;
-
-	// Store
-	mInternals->mBatchInfoMap.set(CThread::getCurrentRefAsString(), sqliteBatchInfo);
-
-	// Call proc
-	BatchResult	batchResult = batchProc(userData);
-
-	// Check result
-	if (batchResult == kCommit) {
-		// Batch changes
-		CMDSSQLiteInternals::BatchInfo	batchInfo(*mInternals, sqliteBatchInfo);
-		mInternals->mDatabaseManager.batch((CMDSSQLiteDatabaseManager::BatchProc) CMDSSQLiteInternals::batch,
-				&batchInfo);
+		notifyDocumentChanged(document, CMDSDocument::kChangeKindRemoved);
 	}
 
-	// Remove
-	mInternals->mBatchInfoMap.remove(CThread::getCurrentRefAsString());
-}
-
-////----------------------------------------------------------------------------------------------------------------------
-//void CMDSSQLite::registerAssociation(const CString& name, const CMDSDocument::Info& fromDocumentInfo,
-//		const CMDSDocument::Info& toDocumenInfo)
-////----------------------------------------------------------------------------------------------------------------------
-//{
-//	AssertFailUnimplemented();
-//}
-//
-////----------------------------------------------------------------------------------------------------------------------
-//void CMDSSQLite::updateAssociation(const CString& name, const TArray<AssociationUpdate>& updates)
-////----------------------------------------------------------------------------------------------------------------------
-//{
-//	AssertFailUnimplemented();
-//}
-//
-////----------------------------------------------------------------------------------------------------------------------
-//void CMDSSQLite::iterateAssociationFrom(const CString& name, const CMDSDocument& fromDocument, CMDSDocument::Proc proc,
-//		void* userData) const
-////----------------------------------------------------------------------------------------------------------------------
-//{
-//	AssertFailUnimplemented();
-//}
-//
-////----------------------------------------------------------------------------------------------------------------------
-//void CMDSSQLite::iterateAssociationTo(const CString& name, const CMDSDocument& toDocument, CMDSDocument::Proc proc,
-//		void* userData) const
-////----------------------------------------------------------------------------------------------------------------------
-//{
-//	AssertFailUnimplemented();
-//}
-//
-////----------------------------------------------------------------------------------------------------------------------
-//SValue CMDSSQLite::retrieveAssociationValue(const CString& name, const CString& fromDocumentType,
-//		const CMDSDocument& toDocument, const CString& summedCachedValueName)
-////----------------------------------------------------------------------------------------------------------------------
-//{
-//	AssertFailUnimplemented();
-//
-//	return SValue(false);
-//}
-//
-////----------------------------------------------------------------------------------------------------------------------
-//void CMDSSQLite::registerCache(const CString& name, const CMDSDocument::Info& documentInfo, UInt32 version,
-//		const TArray<CString>& relevantProperties, const TArray<CacheValueInfo>& cacheValueInfos)
-////----------------------------------------------------------------------------------------------------------------------
-//{
-//	AssertFailUnimplemented();
-//}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::registerCollection(const CString& name, const CMDSDocument::Info& documentInfo, UInt32 version,
-		const TArray<CString>& relevantProperties, bool isUpToDate, const CString& isIncludedSelector,
-		const CDictionary& isIncludedSelectorInfo, CMDSDocument::IsIncludedProc isIncludedProc, void* userData)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Ensure this collection has not already been registered
-	if (mInternals->mCollectionsByNameMap.get(name).hasReference())
-		// Already registered
-		return;
-
-	// Note this document type
-	mInternals->mDatabaseManager.note(documentInfo.getDocumentType());
-
-	// Register collection
-	UInt32	lastRevision =
-					mInternals->mDatabaseManager.registerCollection(documentInfo.getDocumentType(), name, version,
-							isUpToDate);
-
-	// Create collection
-	CMDSSQLiteCollection	collection(name, documentInfo.getDocumentType(), relevantProperties, lastRevision,
-									isIncludedProc, userData);
-
-	// Add to maps
-	mInternals->mCollectionsByNameMap.set(name, collection);
-	mInternals->mCollectionsByDocumentTypeMap.add(documentInfo.getDocumentType(), collection);
-
-	// Update document info map
-	mInternals->mDocumentInfoMap.set(documentInfo.getDocumentType(), documentInfo);
+	return OV<SError>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-UInt32 CMDSSQLite::getCollectionDocumentCount(const CString& name) const
+OV<SError> CMDSSQLite::indexRegister(const CString& name, const CString& documentType,
+		const TArray<CString>& relevantProperties, const CDictionary& keysInfo,
+		const CMDSDocument::KeysPerformer& documentKeysPerformer)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	// Bring up to date
-	mInternals->bringCollectionUpToDate(name);
-
-	return mInternals->mDatabaseManager.getCollectionDocumentCount(name);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::iterateCollection(const CString& name, const CMDSDocument::Info& documentInfo, CMDSDocument::Proc proc,
-		void* userData) const
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Collect documentIDs
-	TNArray<CString>	documentIDs;
-	mInternals->iterateCollection(name, (CMDSSQLiteDocumentBackingInfoProc) CMDSSQLiteInternals::addDocumentID,
-			&documentIDs);
-
-	// Iterate document IDs
-	for (TIteratorD<CString> iterator = documentIDs.getIterator(); iterator.hasValue(); iterator.advance()) {
-		// Create document
-		CMDSDocument*	document = documentInfo.create(*iterator, *((CMDSDocumentStorage*) this));
-
-		// Call proc
-		proc(*document, userData);
-
-		// Cleanup
-		Delete(document);
-	}
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::registerIndex(const CString& name, const CMDSDocument::Info& documentInfo, UInt32 version,
-		const TArray<CString>& relevantProperties, bool isUpToDate, const CString& keysSelector,
-		const CDictionary& keysSelectorInfo, CMDSDocument::KeysProc keysProc, void* userData)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	// Ensure this index has not already been registered
-	if (mInternals->mIndexesByNameMap.get(name).hasReference())
-		// Already registered
-		return;
-
-	// Note this document type
-	mInternals->mDatabaseManager.note(documentInfo.getDocumentType());
+	// Remove current index if found
+	if (mInternals->mIndexByName.contains(name))
+		// Remove
+		mInternals->mIndexByName.remove(name);
 
 	// Register index
 	UInt32	lastRevision =
-					mInternals->mDatabaseManager.registerIndex(documentInfo.getDocumentType(), name, version,
-							isUpToDate);
+					mInternals->mDatabaseManager.indexRegister(name, documentType, relevantProperties,
+							documentKeysPerformer.getSelector(), keysInfo);
 
-	// Create index
-	CMDSSQLiteIndex	index(name, documentInfo.getDocumentType(), relevantProperties, lastRevision, keysProc, userData);
+	// Create or re-create index
+	I<Index>	index(
+						new Index(name, documentType, relevantProperties, documentKeysPerformer, keysInfo,
+								lastRevision));
 
 	// Add to maps
-	mInternals->mIndexesByNameMap.set(name, index);
-	mInternals->mIndexesByDocumentTypeMap.add(documentInfo.getDocumentType(), index);
+	mInternals->mIndexByName.set(name, index);
+	mInternals->mIndexesByDocumentType.add(documentType, index);
 
-	// Update document info map
-	mInternals->mDocumentInfoMap.set(documentInfo.getDocumentType(), documentInfo);
+	// Bring up to date
+	mInternals->indexUpdate(index, mInternals->getUpdatesInfo(documentType, lastRevision));
+
+	return OV<SError>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::iterateIndex(const CString& name, const TArray<CString>& keys, const CMDSDocument::Info& documentInfo,
-		CMDSDocument::KeyProc keyProc, void* userData) const
+OV<SError> CMDSSQLite::indexIterate(const CString& name, const CString& documentType, const TArray<CString>& keys,
+		CMDSDocument::KeyProc documentKeyProc, void* documentKeyProcUserData) const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	// Collect documentIDs
-	TNDictionary<CString>	keyMap;
-	mInternals->iterateIndex(name, keys,
-			(CMDSSQLiteKeyDocumentBackingInfoProc) CMDSSQLiteInternals::addDocumentIDWithKey, &keyMap);
+	// Validate
+	OV<I<Index> >	index = mInternals->indexGet(name);
+	if (!index.hasValue())
+		return OV<SError>(getUnknownIndexError(name));
+	if (mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()].hasReference())
+		return OV<SError>(getIllegalInBatchError());
 
-	// Iterate keyMap
-	for (TIteratorS<CDictionary::Item> iterator = keyMap.getIterator(); iterator.hasValue(); iterator.advance()) {
-		// Create document
-		CMDSDocument*	document =
-								documentInfo.create(iterator.getValue().mValue.getString(),
-										*((CMDSDocumentStorage*) this));
+	// Bring up to date
+	mInternals->indexUpdate((*index), mInternals->getUpdatesInfo(documentType, 0));
 
+	// Compose map
+	CDictionary	documentIDByKey;
+	mInternals->indexIterate(name, documentType, keys,
+			(CMDSSQLiteDocumentBacking::KeyProc) Internals::addDocumentIDToDocumentIDDictionary, &documentIDByKey);
+
+	// Iterate map
+	const	CMDSDocument::Info&	documentInfo = documentCreateInfo(documentType);
+	for (TIteratorS<CDictionary::Item> iterator = documentIDByKey.getIterator(); iterator.hasValue();
+			iterator.advance())
 		// Call proc
-		keyProc(iterator.getValue().mKey, *document, userData);
+		documentKeyProc(iterator->mKey, documentInfo.create(iterator->mValue.getString(), (CMDSDocumentStorage&) *this),
+				documentKeyProcUserData);
 
-		// Cleanup
-		Delete(document);
-	}
+	return OV<SError>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::registerDocumentChangedProc(const CString& documentType, CMDSDocument::ChangedProc changedProc,
-		void* userData)
+TVResult<TDictionary<CString> > CMDSSQLite::infoGet(const TArray<CString>& keys) const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	// Add
-	mInternals->mDocumentChangedProcInfosMap.add(documentType, CMDSDocument::ChangedProcInfo(changedProc, userData));
+	// Collect info
+	TNDictionary<CString>	info;
+	for (TIteratorD<CString> iterator = keys.getIterator(); iterator.hasValue(); iterator.advance())
+		// Update info
+		info.set(*iterator, mInternals->mDatabaseManager.infoString(*iterator));
+
+	return TVResult<TDictionary<CString> >(info);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSSQLite::infoSet(const TDictionary<CString>& info)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Iterate
+	for (TIteratorS<CDictionary::Item> iterator = info.getIterator(); iterator.hasValue(); iterator.advance())
+		// Set
+		mInternals->mDatabaseManager.infoSet(iterator->mKey, OV<CString>(*info[iterator->mKey]));
+
+	return OV<SError>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSSQLite::infoRemove(const TArray<CString>& keys)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Iterate
+	for (TIteratorD<CString> iterator = keys.getIterator(); iterator.hasValue(); iterator.advance())
+		// Remove
+		mInternals->mDatabaseManager.infoSet(*iterator, OV<CString>());
+
+	return OV<SError>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<TDictionary<CString> > CMDSSQLite::internalGet(const TArray<CString>& keys) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Collect info
+	TNDictionary<CString>	info;
+	for (TIteratorD<CString> iterator = keys.getIterator(); iterator.hasValue(); iterator.advance())
+		// Update info
+		info.set(*iterator, mInternals->mDatabaseManager.internalString(*iterator));
+
+	return TVResult<TDictionary<CString> >(info);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSSQLite::internalSet(const TDictionary<CString>& info)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Iterate
+	for (TIteratorS<CDictionary::Item> iterator = info.getIterator(); iterator.hasValue(); iterator.advance())
+		// Set
+		mInternals->mDatabaseManager.internalSet(iterator->mKey, OV<CString>(*info[iterator->mKey]));
+
+	return OV<SError>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSSQLite::batch(BatchProc batchProc, void* userData)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	I<Batch>	batch(new Batch());
+
+	// Store
+	mInternals->mBatchByThreadRef.set(CThread::getCurrentRefAsString(), batch);
+
+	// Call proc
+	TVResult<EMDSBatchResult>	batchResult = batchProc(userData);
+	ReturnErrorIfResultError(batchResult);
+
+	// Check result
+	if (*batchResult == kMDSBatchResultCommit) {
+		// Batch changes
+		Internals::BatchInfo	batchInfo(*mInternals, *batch);
+		mInternals->mDatabaseManager.batch((CMDSSQLiteDatabaseManager::BatchProc) Internals::batch, &batchInfo);
+	}
+
+	// Remove
+	mInternals->mBatchByThreadRef.remove(CThread::getCurrentRefAsString());
+
+	return OV<SError>();
+}
+
+// MARK: CMDSDocumentStorageServer methods
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<CMDSDocumentStorageServer::DocumentRevisionInfosWithTotalCount>
+				CMDSSQLite::associationGetDocumentRevisionInfosFrom(
+		const CString& name, const CString& fromDocumentID, UInt32 startIndex, const OV<UInt32>& count) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	OV<I<CMDSAssociation> >	association = mInternals->associationGet(name);
+	if (!association.hasValue())
+		return TVResult<DocumentRevisionInfosWithTotalCount>(getUnknownAssociationError(name));
+
+	// Get count
+	OV<UInt32>	totalCount =
+						mInternals->mDatabaseManager.associationGetCountFrom(name, fromDocumentID,
+								(*association)->getFromDocumentType());
+	if (!totalCount.hasValue())
+		return TVResult<DocumentRevisionInfosWithTotalCount>(getUnknownDocumentIDError(fromDocumentID));
+
+	// Collect CMDSDocument RevisionInfos
+	TNArray<CMDSDocument::RevisionInfo>	documentRevisionInfos;
+	OV<SError>							error =
+												mInternals->mDatabaseManager.associationIterateDocumentInfosFrom(name,
+														fromDocumentID, (*association)->getFromDocumentType(),
+														(*association)->getToDocumentType(), startIndex, count,
+														DMDocumentInfo::ProcInfo(
+																(DMDocumentInfo::ProcInfo::Proc)
+																		Internals::
+																				addDocumentInfoToDocumentRevisionInfoArray,
+																&documentRevisionInfos));
+	ReturnValueIfError(error, TVResult<DocumentRevisionInfosWithTotalCount>(*error));
+
+	return TVResult<DocumentRevisionInfosWithTotalCount>(
+			DocumentRevisionInfosWithTotalCount(*totalCount, documentRevisionInfos));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<CMDSDocumentStorageServer::DocumentRevisionInfosWithTotalCount>
+				CMDSSQLite::associationGetDocumentRevisionInfosTo(
+		const CString& name, const CString& toDocumentID, UInt32 startIndex, const OV<UInt32>& count) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	OV<I<CMDSAssociation> >	association = mInternals->associationGet(name);
+	if (!association.hasValue())
+		return TVResult<DocumentRevisionInfosWithTotalCount>(getUnknownAssociationError(name));
+
+	// Get count
+	OV<UInt32>	totalCount =
+						mInternals->mDatabaseManager.associationGetCountTo(name, toDocumentID,
+								(*association)->getToDocumentType());
+	if (!totalCount.hasValue())
+		return TVResult<DocumentRevisionInfosWithTotalCount>(getUnknownDocumentIDError(toDocumentID));
+
+	// Collect CMDSDocument RevisionInfos
+	TNArray<CMDSDocument::RevisionInfo>	documentRevisionInfos;
+	OV<SError>							error =
+												mInternals->mDatabaseManager.associationIterateDocumentInfosTo(name,
+														toDocumentID, (*association)->getToDocumentType(),
+														(*association)->getFromDocumentType(), startIndex, count,
+														DMDocumentInfo::ProcInfo(
+																(DMDocumentInfo::ProcInfo::Proc)
+																		Internals::
+																				addDocumentInfoToDocumentRevisionInfoArray,
+																&documentRevisionInfos));
+	ReturnValueIfError(error, TVResult<DocumentRevisionInfosWithTotalCount>(*error));
+
+	return TVResult<DocumentRevisionInfosWithTotalCount>(
+			DocumentRevisionInfosWithTotalCount(*totalCount, documentRevisionInfos));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<CMDSDocumentStorageServer::DocumentFullInfosWithTotalCount>
+				CMDSSQLite::associationGetDocumentFullInfosFrom(
+		const CString& name, const CString& fromDocumentID, UInt32 startIndex, const OV<UInt32>& count) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	OV<I<CMDSAssociation> >	association = mInternals->associationGet(name);
+	if (!association.hasValue())
+		return TVResult<DocumentFullInfosWithTotalCount>(getUnknownAssociationError(name));
+
+	// Get count
+	OV<UInt32>	totalCount =
+						mInternals->mDatabaseManager.associationGetCountFrom(name, fromDocumentID,
+								(*association)->getFromDocumentType());
+	if (!totalCount.hasValue())
+		return TVResult<DocumentFullInfosWithTotalCount>(getUnknownDocumentIDError(fromDocumentID));
+
+	// Collect CMDSDocument FullInfos
+	TNArray<CMDSDocument::FullInfo>	documentFullInfos;
+	OV<SError>						error =
+											mInternals->associationIterateFrom(*association, fromDocumentID, startIndex,
+													count,
+													(CMDSSQLiteDocumentBacking::KeyProc)
+															Internals::addDocumentInfoToDocumentFullInfoArray,
+													&documentFullInfos);
+	ReturnValueIfError(error, TVResult<DocumentFullInfosWithTotalCount>(*error));
+
+	return TVResult<DocumentFullInfosWithTotalCount>(DocumentFullInfosWithTotalCount(*totalCount, documentFullInfos));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<CMDSDocumentStorageServer::DocumentFullInfosWithTotalCount> CMDSSQLite::associationGetDocumentFullInfosTo(
+		const CString& name, const CString& toDocumentID, UInt32 startIndex, const OV<UInt32>& count) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	OV<I<CMDSAssociation> >	association = mInternals->associationGet(name);
+	if (!association.hasValue())
+		return TVResult<DocumentFullInfosWithTotalCount>(getUnknownAssociationError(name));
+
+	// Get count
+	OV<UInt32>	totalCount =
+						mInternals->mDatabaseManager.associationGetCountTo(name, toDocumentID,
+								(*association)->getToDocumentType());
+	if (!totalCount.hasValue())
+		return TVResult<DocumentFullInfosWithTotalCount>(getUnknownDocumentIDError(toDocumentID));
+
+	// Collect CMDSDocument FullInfos
+	TNArray<CMDSDocument::FullInfo>	documentFullInfos;
+	OV<SError>						error =
+											mInternals->associationIterateTo(*association, toDocumentID, startIndex,
+													count,
+													(CMDSSQLiteDocumentBacking::KeyProc)
+															Internals::addDocumentInfoToDocumentFullInfoArray,
+													&documentFullInfos);
+	ReturnValueIfError(error, TVResult<DocumentFullInfosWithTotalCount>(*error));
+
+	return TVResult<DocumentFullInfosWithTotalCount>(DocumentFullInfosWithTotalCount(*totalCount, documentFullInfos));
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<TArray<CMDSDocument::RevisionInfo> > CMDSSQLite::collectionGetDocumentRevisionInfos(const CString& name,
+		UInt32 startIndex, const OV<UInt32>& count) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	OV<I<Collection> >	collection = mInternals->collectionGet(name);
+
+	// Collect CMDSDocument RevisionInfos
+	TNArray<CMDSDocument::RevisionInfo>	documentRevisionInfos;
+	mInternals->mDatabaseManager.collectionIterateDocumentInfos(name, (*collection)->getDocumentType(), startIndex,
+			count,
+			DMDocumentInfo::ProcInfo(
+					(DMDocumentInfo::ProcInfo::Proc) Internals::addDocumentInfoToDocumentRevisionInfoArray,
+					&documentRevisionInfos));
+
+	return TVResult<TArray<CMDSDocument::RevisionInfo> >(documentRevisionInfos);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<TArray<CMDSDocument::FullInfo> > CMDSSQLite::collectionGetDocumentFullInfos(const CString& name,
+		UInt32 startIndex, const OV<UInt32>& count) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	OV<I<Collection> >	collection = mInternals->collectionGet(name);
+
+	// Collect CMDSDocument FullInfos
+	TNArray<CMDSDocument::FullInfo>	documentFullInfos;
+	mInternals->collectionIterate(name, (*collection)->getDocumentType(), startIndex, count,
+			(CMDSSQLiteDocumentBacking::KeyProc) Internals::addDocumentInfoToDocumentFullInfoArray, &documentFullInfos);
+
+	return TVResult<TArray<CMDSDocument::FullInfo> >(documentFullInfos);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<TArray<CMDSDocument::RevisionInfo> > CMDSSQLite::documentRevisionInfos(const CString& documentType,
+		const TArray<CString>& documentIDs) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	if (!mInternals->mDatabaseManager.documentTypeIsKnown(documentType))
+		return TVResult<TArray<CMDSDocument::RevisionInfo> >(getUnknownDocumentTypeError(documentType));
+
+	// Iterate
+	TNArray<CMDSDocument::RevisionInfo>	documentRevisionInfos;
+	mInternals->mDatabaseManager.documentInfoIterate(documentType, documentIDs,
+			DMDocumentInfo::ProcInfo(
+					(DMDocumentInfo::ProcInfo::Proc) Internals::addDocumentInfoToDocumentRevisionInfoArray,
+					&documentRevisionInfos));
+
+	return TVResult<TArray<CMDSDocument::RevisionInfo> >(documentRevisionInfos);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<TArray<CMDSDocument::RevisionInfo> > CMDSSQLite::documentRevisionInfos(const CString& documentType,
+		UInt32 sinceRevision, const OV<UInt32>& count) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	if (!mInternals->mDatabaseManager.documentTypeIsKnown(documentType))
+		return TVResult<TArray<CMDSDocument::RevisionInfo> >(getUnknownDocumentTypeError(documentType));
+
+	// Iterate
+	TNArray<CMDSDocument::RevisionInfo>	documentRevisionInfos;
+	mInternals->mDatabaseManager.documentInfoIterate(documentType, sinceRevision, count, false,
+			DMDocumentInfo::ProcInfo(
+					(DMDocumentInfo::ProcInfo::Proc) Internals::addDocumentInfoToDocumentRevisionInfoArray,
+					&documentRevisionInfos));
+
+	return TVResult<TArray<CMDSDocument::RevisionInfo> >(documentRevisionInfos);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<TArray<CMDSDocument::FullInfo> > CMDSSQLite::documentFullInfos(const CString& documentType,
+		const TArray<CString>& documentIDs) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	if (!mInternals->mDatabaseManager.documentTypeIsKnown(documentType))
+		return TVResult<TArray<CMDSDocument::FullInfo> >(getUnknownDocumentTypeError(documentType));
+
+	// Iterate initial document IDs
+	TNArray<CMDSDocument::FullInfo>	documentFullInfos;
+	TNArray<CString>				documentIDsToCache;
+	for (TIteratorD<CString> iterator = documentIDs.getIterator(); iterator.hasValue(); iterator.advance()) {
+		// Check what we have currently
+		OR<I<CMDSSQLiteDocumentBacking> >	documentBacking =
+													mInternals->mDocumentBackingByDocumentID.getDocumentBacking(
+															*iterator);
+		if (documentBacking.hasReference())
+			// Have Document Backing in cache
+			documentFullInfos += (*documentBacking)->getDocumentFullInfo();
+		else
+			// Will need to retrieve from database
+			documentIDsToCache += (*iterator);
+	}
+
+	// Iterate documentIDs not found in cache
+	Internals::DocumentBackingDocumentIDsIterateInfo	documentBackingDocumentIDsIterateInfo(documentFullInfos,
+																documentIDsToCache);
+	mInternals->documentBackingsIterate(documentType, documentIDsToCache,
+			(CMDSSQLiteDocumentBacking::KeyProc) Internals::processDocumentBackingForDocumentIDs,
+			&documentBackingDocumentIDsIterateInfo);
+
+	// Check if have any that we didn't find
+	if (!documentIDsToCache.isEmpty())
+		return TVResult<TArray<CMDSDocument::FullInfo> >(getUnknownDocumentIDError(documentIDsToCache[0]));
+
+	return TVResult<TArray<CMDSDocument::FullInfo> >(documentFullInfos);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<TArray<CMDSDocument::FullInfo> > CMDSSQLite::documentFullInfos(const CString& documentType,
+		UInt32 sinceRevision, const OV<UInt32>& count) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	if (!mInternals->mDatabaseManager.documentTypeIsKnown(documentType))
+		return TVResult<TArray<CMDSDocument::FullInfo> >(getUnknownDocumentTypeError(documentType));
+
+	// Iterate document backings
+	TNArray<CMDSDocument::FullInfo>	documentFullInfos;
+	mInternals->documentBackingsIterate(documentType, sinceRevision, count, false,
+			(CMDSSQLiteDocumentBacking::KeyProc) Internals::addDocumentInfoToDocumentFullInfoArray, &documentFullInfos);
+
+	return TVResult<TArray<CMDSDocument::FullInfo> >(documentFullInfos);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<SInt64> CMDSSQLite::documentIntegerValue(const CString& documentType, const CMDSDocument& document,
+		const CString& property) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Check for batch
+	const	OR<I<Batch> >			batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+			OR<BatchDocumentInfo>	batchDocumentInfo =
+											batch.hasReference() ?
+													(*batch)->documentInfoGet(document.getID()) :
+													OR<BatchDocumentInfo>();
+
+	// Check for batch
+	OV<SValue>	value;
+	if (batchDocumentInfo.hasReference())
+		// In batch
+		value = batchDocumentInfo->getValue(property);
+	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(document.getID()))
+		// Being created
+		value = mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID[document.getID()]->getValue(property);
+	else
+		// "Idle"
+		value = (*mInternals->documentBackingGet(documentType, document.getID()))->getValue(property);
+
+	return (value.hasValue() && value->canCoerceToType(SValue::kTypeSInt64)) ?
+			OV<SInt64>(value->getSInt64()) : OV<SInt64>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<CString> CMDSSQLite::documentStringValue(const CString& documentType, const CMDSDocument& document,
+		const CString& property) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Check for batch
+	const	OR<I<Batch> >			batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
+			OR<BatchDocumentInfo>	batchDocumentInfo =
+											batch.hasReference() ?
+													(*batch)->documentInfoGet(document.getID()) :
+													OR<BatchDocumentInfo>();
+
+	// Check for batch
+	OV<SValue>	value;
+	if (batchDocumentInfo.hasReference())
+		// In batch
+		value = batchDocumentInfo->getValue(property);
+	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(document.getID()))
+		// Being created
+		value = mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID[document.getID()]->getValue(property);
+	else
+		// "Idle"
+		value = (*mInternals->documentBackingGet(documentType, document.getID()))->getValue(property);
+
+	return (value.hasValue() && (value->getType() == SValue::kTypeString)) ?
+			OV<CString>(value->getString()) : OV<CString>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<TArray<CMDSDocument::FullInfo> > CMDSSQLite::documentUpdate(const CString& documentType,
+		const TArray<CMDSDocument::UpdateInfo>& documentUpdateInfos)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	if (!mInternals->mDatabaseManager.documentTypeIsKnown(documentType))
+		return TVResult<TArray<CMDSDocument::FullInfo> >(getUnknownDocumentTypeError(documentType));
+
+	// Batch changes
+	TNArray<CMDSDocument::FullInfo>	documentFullInfos;
+	Internals::DocumentUpdateInfo	documentUpdateInfo(*mInternals, documentType, documentUpdateInfos,
+											documentFullInfos);
+	mInternals->mDatabaseManager.batch((CMDSSQLiteDatabaseManager::BatchProc) Internals::documentUpdate,
+			&documentUpdateInfo);
+
+	return TVResult<TArray<CMDSDocument::FullInfo> >(documentFullInfos);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<TDictionary<CMDSDocument::RevisionInfo> > CMDSSQLite::indexGetDocumentRevisionInfos(const CString& name,
+		const TArray<CString>& keys) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	OV<I<Index> >	index = mInternals->indexGet(name);
+	if (!index.hasValue())
+		return TVResult<TDictionary<CMDSDocument::RevisionInfo> >(getUnknownIndexError(name));
+
+	// Compose CMDSDocument RevisionInfo map
+	TNDictionary<CMDSDocument::RevisionInfo>	documentRevisionInfoByKey;
+	mInternals->mDatabaseManager.indexIterateDocumentInfos(name, (*index)->getDocumentType(), keys,
+			DMDocumentInfo::KeyProcInfo(
+					(DMDocumentInfo::KeyProcInfo::Proc) Internals::addDocumentInfoToDocumentRevisionInfoDictionary,
+					&documentRevisionInfoByKey));
+
+	return TVResult<TDictionary<CMDSDocument::RevisionInfo> >(documentRevisionInfoByKey);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<TDictionary<CMDSDocument::FullInfo> > CMDSSQLite::indexGetDocumentFullInfos(const CString& name,
+		const TArray<CString>& keys) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	OV<I<Index> >	index = mInternals->indexGet(name);
+	if (!index.hasValue())
+		return TVResult<TDictionary<CMDSDocument::FullInfo> >(getUnknownIndexError(name));
+
+	// Compose CMDSDocument FullInfo map
+	TNDictionary<CMDSDocument::FullInfo>	documentFullInfoByKey;
+	mInternals->indexIterate(name, (*index)->getDocumentType(), keys,
+			(CMDSSQLiteDocumentBacking::KeyProc) Internals::addDocumentInfoToDocumentFullInfoDictionary,
+			&documentFullInfoByKey);
+
+	return TVResult<TDictionary<CMDSDocument::FullInfo> >(documentFullInfoByKey);
 }

@@ -119,7 +119,7 @@ extension MDSDocument.FullInfo {
 					"creationDate": self.creationDate.rfc3339ExtendedString,
 					"modificationDate": self.modificationDate.rfc3339ExtendedString,
 					"json": self.propertyMap,
-					"attachments": self.attachmentInfoMap.mapValues({ $0.httpServicesInfo }),
+					"attachments": self.attachmentInfoByID.mapValues({ $0.httpServicesInfo }),
 				]
 			}
 
@@ -133,8 +133,8 @@ extension MDSDocument.FullInfo {
 				let creationDate = Date(fromRFC3339Extended: httpServicesInfo["creationDate"] as? String),
 				let modificationDate = Date(fromRFC3339Extended: httpServicesInfo["modificationDate"] as? String),
 				let propertyMap = httpServicesInfo["json"] as? [String : Any],
-				let	attachmentInfoMapInfo = httpServicesInfo["attachments"] as? [String : [String : Any]],
-				attachmentInfoMapInfo.values.first(
+				let	attachmentInfoByIDInfo = httpServicesInfo["attachments"] as? [String : [String : Any]],
+				attachmentInfoByIDInfo.values.first(
 						where: { (($0["revision"] as? Int) != nil) && (($0["info"] as? [String : Any]) != nil) }) ==
 								nil
 				else { return nil }
@@ -146,8 +146,8 @@ extension MDSDocument.FullInfo {
 		self.creationDate = creationDate
 		self.modificationDate = modificationDate
 		self.propertyMap = propertyMap
-		self.attachmentInfoMap =
-				attachmentInfoMapInfo
+		self.attachmentInfoByID =
+				attachmentInfoByIDInfo
 						.mapPairs({ ($0.key,
 								MDSDocument.AttachmentInfo(id: $0.key, revision: $0.value["revision"] as! Int,
 										info: $0.value["info"] as! [String : Any])) })

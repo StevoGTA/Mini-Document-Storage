@@ -135,10 +135,10 @@ public class MDSBatch<DB : MDSDocumentBacking> {
 		func remove() { self.removed = true; self.modificationDate = Date() }
 
 		//--------------------------------------------------------------------------------------------------------------
-		func documentAttachmentInfoMap(applyingChangesTo documentAttachmentInfoMap :MDSDocument.AttachmentInfoMap) ->
-				MDSDocument.AttachmentInfoMap {
+		func documentAttachmentInfoByID(applyingChangesTo documentAttachmentInfoByID :MDSDocument.AttachmentInfoByID) ->
+				MDSDocument.AttachmentInfoByID {
 			// Return updated map
-			return documentAttachmentInfoMap
+			return documentAttachmentInfoByID
 					.merging(self.addAttachmentInfosByID.mapValues({ $0.documentAttachmentInfo }),
 							uniquingKeysWith: { $1 })
 					.merging(self.updateAttachmentInfosByID.mapValues({ $0.documentAttachmentInfo }),

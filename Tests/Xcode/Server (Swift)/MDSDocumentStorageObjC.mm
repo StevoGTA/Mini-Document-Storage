@@ -104,9 +104,9 @@
 - (CMDSDocumentStorage::CacheValueInfo) documentStorageCacheValueInfo
 {
 	// Setup
-	EMDSValueType	valueType;
+	CString	valueType;
 	switch (self.valueInfo.valueType) {
-		case kObjCMDSValueTypeInteger:	valueType = kMDSValueTypeInteger;	break;
+		case kObjCMDSValueTypeInteger:	valueType = SMDSValueType::mInteger;	break;
 	}
 
 	return CMDSDocumentStorage::CacheValueInfo(
@@ -232,13 +232,13 @@
 				(NSDictionary*)
 						CFBridgingRelease(CCoreFoundation::createDictionaryRefFrom(documentFullInfo.getPropertyMap()));
 
-		const	TSet<CString>	keys = documentFullInfo.getAttachmentInfoMap().getKeys();
-		self.attachmentInfoMap = [[NSMutableDictionary alloc] init];
+		const	TSet<CString>	keys = documentFullInfo.getAttachmentInfoByID().getKeys();
+		self.attachmentInfoByID = [[NSMutableDictionary alloc] init];
 		for (TIteratorS<CString> iterator = keys.getIterator(); iterator.hasValue(); iterator.advance())
-			[(NSMutableDictionary*) self.attachmentInfoMap
+			[(NSMutableDictionary*) self.attachmentInfoByID
 					setObject:
 							[[MDSDocumentAttachmentInfo alloc]
-									initWithDocumentAttachmentInfo:*documentFullInfo.getAttachmentInfoMap()[*iterator]]
+									initWithDocumentAttachmentInfo:*documentFullInfo.getAttachmentInfoByID()[*iterator]]
 					forKey:(__bridge NSString*) iterator->getOSString()];
 	}
 
@@ -651,7 +651,7 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const CMDS
 	const	TSet<CString>	keys = valueByKey->getKeys();
 	*outValueByKey = [[NSMutableDictionary alloc] init];
 	for (TIteratorS<CString> iterator = keys.getIterator(); iterator.hasValue(); iterator.advance())
-		[(NSMutableDictionary*) *outValueByKey setObject: @(valueByKey->getSInt64(*iterator))
+		[(NSMutableDictionary*) *outValueByKey setObject:@(valueByKey->getSInt64(*iterator))
 				forKey:(__bridge NSString*) iterator->getOSString()];
 
 	return YES;
@@ -1066,13 +1066,13 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const CMDS
 		updatedContent:(NSData*) updatedContent outRevision:(NSInteger* _Nullable) outRevision error:(NSError**) error
 {
 	// Update Document Attachment
-	TVResult<UInt32>	revision =
-								self.documentStorageServer->documentAttachmentUpdate(
-										CString((__bridge CFStringRef) documentType),
-										CString((__bridge CFStringRef) documentID),
-										CString((__bridge CFStringRef) attachmentID),
-										CCoreFoundation::dictionaryFrom((__bridge CFDictionaryRef) updatedInfo),
-										CCoreFoundation::dataFrom((__bridge CFDataRef) updatedContent));
+	TVResult<OV<UInt32> >	revision =
+									self.documentStorageServer->documentAttachmentUpdate(
+											CString((__bridge CFStringRef) documentType),
+											CString((__bridge CFStringRef) documentID),
+											CString((__bridge CFStringRef) attachmentID),
+											CCoreFoundation::dictionaryFrom((__bridge CFDictionaryRef) updatedInfo),
+											CCoreFoundation::dataFrom((__bridge CFDataRef) updatedContent));
 	if (revision.hasError()) {
 		// Error
 		*error = [self errorFrom:revision.getError()];

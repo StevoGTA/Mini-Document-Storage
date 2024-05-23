@@ -6,3 +6,4 @@
 //
 
 #import "MDSEphemeralCpp.h"
+#import "MDSSQLiteCpp.h"

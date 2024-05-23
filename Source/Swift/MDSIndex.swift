@@ -57,6 +57,6 @@ class MDSIndex : Equatable {
 			lastRevision = self.lastRevision
 		}
 
-		return (keysInfos, lastRevision)
+		return (!keysInfos.isEmpty ? keysInfos : nil, lastRevision)
 	}
 }

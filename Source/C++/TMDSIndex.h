@@ -87,7 +87,8 @@ template <typename T> class TMDSIndex : public CEquatable {
 												iterator.hasValue(); iterator.advance()) {
 											// Check if there is something to do
 											if (!iterator->getChangedProperties().hasValue() ||
-													(mRelevantProperties.intersects(*iterator->getChangedProperties()))) {
+													(mRelevantProperties.intersects(
+															*iterator->getChangedProperties()))) {
 												// Update keys info
 												keysInfos +=
 														KeysInfo(

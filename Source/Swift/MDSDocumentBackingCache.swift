@@ -39,8 +39,7 @@ class MDSDocumentBackingCache<T : MDSDocumentBacking> {
 	private	let	limit :Int
 	private	let	lock = ReadPreferringReadWriteLock()
 
-	private	var	referenceMap = [/* Document ID */ String : Reference]()
-	private	var	timer :Timer?
+	private	var	referenceByDocumentID = [/* Document ID */ String : Reference]()
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -49,22 +48,13 @@ class MDSDocumentBackingCache<T : MDSDocumentBacking> {
 		self.limit = limit
 	}
 
-	//------------------------------------------------------------------------------------------------------------------
-	deinit {
-    	// Cleanup
-    	self.timer?.invalidate()
-	}
-
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
 	func add(_ documentBackings :[T]) {
 		// Update
 		self.lock.write() {
 			// Do all document backing infos
-			documentBackings.forEach() { self.referenceMap[$0.documentID] = Reference(documentBacking: $0) }
-
-			// Reset pruning timer if needed
-//			resetPruningTimerIfNeeded()
+			documentBackings.forEach() { self.referenceByDocumentID[$0.documentID] = Reference(documentBacking: $0) }
 		}
 	}
 
@@ -73,7 +63,7 @@ class MDSDocumentBackingCache<T : MDSDocumentBacking> {
 		// Return cached document, if available
 		return self.lock.read() {
 			// Retrieve
-			if let reference = self.referenceMap[documentID] {
+			if let reference = self.referenceByDocumentID[documentID] {
 				// Note was referenced
 				reference.noteWasReferenced()
 
@@ -94,7 +84,7 @@ class MDSDocumentBackingCache<T : MDSDocumentBacking> {
 		// Iterate document IDs
 		self.lock.read() { documentIDs.forEach() {
 			// Look up reference for this document ID
-			if let reference = self.referenceMap[$0] {
+			if let reference = self.referenceByDocumentID[$0] {
 				// Found
 				foundDocumentIDs.append($0)
 				reference.noteWasReferenced()
@@ -116,7 +106,7 @@ class MDSDocumentBackingCache<T : MDSDocumentBacking> {
 		// Iterate document IDs
 		self.lock.read() { documentIDs.forEach() {
 			// Look up reference for this document ID
-			if let reference = self.referenceMap[$0] {
+			if let reference = self.referenceByDocumentID[$0] {
 				// Found
 				foundDocumentBackings.append(reference.documentBacking)
 				reference.noteWasReferenced()
@@ -134,61 +124,7 @@ class MDSDocumentBackingCache<T : MDSDocumentBacking> {
 		// Remove from map
 		self.lock.write() {
 			// Remove from storage
-			documentIDs.forEach() { self.referenceMap[$0] = nil }
-
-			// Reset pruning timer if needed
-//			resetPruningTimerIfNeeded()
+			documentIDs.forEach() { self.referenceByDocumentID[$0] = nil }
 		}
 	}
-
-//	// MARK: Private methods
-//	//------------------------------------------------------------------------------------------------------------------
-//	private func resetPruningTimerIfNeeded() {
-//		// Invalidate existing timer
-//		self.timer?.invalidate()
-//		self.timer = nil
-//
-//		// Check if need to prune
-//		if self.referenceMap.count > self.limit {
-//			// Need to prune
-//			self.timer = Timer.scheduledTimer(timeInterval: 5.0, runLoop: RunLoop.main) { [weak self] _ in
-//				// Ensure we are still around
-//				guard let strongSelf = self else { return }
-//
-//				// Prune
-//				strongSelf.lock.write() {
-//					// Only need to consider things if we have moved past the document limit
-//					let	countToRemove = strongSelf.referenceMap.count - strongSelf.limit
-//					if countToRemove > 0 {
-//						// Iterate all references
-//						var	referencesToRemove = [Reference<T>]()
-//						var	earliestReferencedDate = Date.distantFuture
-//						strongSelf.referenceMap.values.forEach() {
-//							// Compare date
-//// This is broken.  It's possible to miss a reference that needs to be removed simply because the order of dates
-////	seen is random.
-////							if $0.lastReferencedDate < earliestReferencedDate {
-////								// Update references to remove
-////								referencesToRemove.append($0)
-////								referencesToRemove.sort() { $0.lastReferencedDate < $1.lastReferencedDate }
-////								if referencesToRemove.count > countToRemove {
-////									// Pop the last
-////									let	reference = referencesToRemove.popLast()!
-////									earliestReferencedDate = reference.lastReferencedDate
-////								}
-////							}
-//_ = $0
-//						}
-//
-//						// Remove
-//						referencesToRemove.forEach()
-//								{ strongSelf.referenceMap[$0.documentBackingInfo.documentID] = nil }
-//					}
-//				}
-//
-//				// Cleanup
-//				strongSelf.timer = nil
-//			}
-//		}
-//	}
 }

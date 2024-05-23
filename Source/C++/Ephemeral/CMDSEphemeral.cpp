@@ -316,7 +316,7 @@ class CMDSEphemeral::Internals {
 															updatedValues =
 																	currentValue->filtered(
 																			(TNArray<CString>::IsMatchProc)
-																					TSet<CString>::containsItem,
+																					TSet<CString>::doesNotContainItem,
 																			&notIncludedIDs);
 
 														if (collectionUpdateResults->getIncludedIDs().hasValue())
@@ -1087,9 +1087,11 @@ OV<SError> CMDSEphemeral::collectionRegister(const CString& name, const CString&
 		mInternals->mDocumentLastRevisionByDocumentTypeLock.lock();
 		lastRevision = mInternals->mDocumentLastRevisionByDocumentType.getUInt32(documentType, 0);
 		mInternals->mDocumentLastRevisionByDocumentTypeLock.unlock();
-	} else
+	} else {
 		// Start fresh
+		mInternals->mCollectionValuesByName.remove(name);
 		lastRevision = 0;
+	}
 
 	I<MDSCollection>	collection(
 								new MDSCollection(name, documentType, relevantProperties, documentIsIncludedPerformer,
