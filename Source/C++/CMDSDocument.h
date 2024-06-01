@@ -593,7 +593,7 @@ class CMDSDocument : public CHashable {
 																	const TArray<CDictionary>& updatedContent)
 																{ updateAttachment(attachmentInfo, CDictionary::mEmpty,
 																		updatedContent); }
-						void								remove(const AttachmentInfo& attachmentInfo);
+						void								removeAttachment(const AttachmentInfo& attachmentInfo);
 
 						void								remove() const;
 

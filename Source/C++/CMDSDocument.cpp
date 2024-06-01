@@ -587,7 +587,7 @@ void CMDSDocument::updateAttachment(const AttachmentInfo& attachmentInfo, const 
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSDocument::remove(const AttachmentInfo& attachmentInfo)
+void CMDSDocument::removeAttachment(const AttachmentInfo& attachmentInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Remove attachment

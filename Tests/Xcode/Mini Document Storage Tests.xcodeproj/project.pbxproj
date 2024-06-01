@@ -1802,7 +1802,6 @@
 			isa = PBXGroup;
 			children = (
 				0A9C63872A19EC6E00800DBA /* Ephemeral */,
-				0A9C638F2A19EC8100800DBA /* Remote Storage */,
 				0A9C63902A19EC9400800DBA /* Server */,
 				0A9C637D2A19EC6E00800DBA /* SQLite */,
 				0AB3D2452A70E19900347E86 /* CMDSAssociation.h */,
@@ -1840,13 +1839,6 @@
 				0A9C63892A19EC6E00800DBA /* CMDSEphemeral.cpp */,
 			);
 			path = Ephemeral;
-			sourceTree = "<group>";
-		};
-		0A9C638F2A19EC8100800DBA /* Remote Storage */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = "Remote Storage";
 			sourceTree = "<group>";
 		};
 		0A9C63902A19EC9400800DBA /* Server */ = {
