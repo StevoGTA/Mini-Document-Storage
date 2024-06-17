@@ -897,7 +897,7 @@ class MDSClient:
 
 		# Queue request
 		async with self.session.get(f'/v1/info/{document_storage_id}', headers = self.headers,
-				params = {'key': '&'.join(keys)}) as response:
+				params = {'key': keys}) as response:
 			# Process response
 			await self.process_response(response)
 
