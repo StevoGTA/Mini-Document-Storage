@@ -480,6 +480,7 @@ class CMDSDocument : public CHashable {
 
 															// Instance methods
 		virtual	const	Info&								getInfo() const = 0;
+		virtual			I<CMDSDocument>						makeI() const = 0;
 
 				const	CString&							getDocumentType() const
 																{ return getInfo().getDocumentType(); }
@@ -623,9 +624,6 @@ class CMDSDocument : public CHashable {
 															// Lifecycle methods
 															CMDSDocument(const CString& id,
 																	CMDSDocumentStorage& documentStorage);
-
-															// Instance methods
-		virtual			I<CMDSDocument>						makeI() const = 0;
 
 	// Properties
 	private:
