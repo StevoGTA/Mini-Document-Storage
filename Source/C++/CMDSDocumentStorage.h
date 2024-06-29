@@ -125,28 +125,28 @@ class CMDSDocumentStorage {
 																	CMDSDocument::Proc proc, void* procUserData) const
 																	= 0;
 
-		virtual			UniversalTime						documentCreationUniversalTime(const CMDSDocument& document)
-																	const = 0;
+		virtual			UniversalTime						documentCreationUniversalTime(
+																	const I<CMDSDocument>& document) const = 0;
 		virtual			UniversalTime						documentModificationUniversalTime(
-																	const CMDSDocument& document) const = 0;
+																	const I<CMDSDocument>& document) const = 0;
 
 		virtual			OV<SValue>							documentValue(const CString& property,
-																	const CMDSDocument& document) const = 0;
+																	const I<CMDSDocument>& document) const = 0;
 		virtual			OV<CData>							documentData(const CString& property,
-																	const CMDSDocument& document) const = 0;
+																	const I<CMDSDocument>& document) const = 0;
 		virtual			OV<UniversalTime>					documentUniversalTime(const CString& property,
-																	const CMDSDocument& document) const = 0;
-		virtual			void								documentSet(const CString& property, const OV<SValue>& value,
-																	const CMDSDocument& document,
+																	const I<CMDSDocument>& document) const = 0;
+		virtual			void								documentSet(const CString& property,
+																	const OV<SValue>& value,
+																	const I<CMDSDocument>& document,
  																	SetValueKind setValueKind =
- 																			kSetValueKindNothingSpecial)
- 																	= 0;
+ 																			kSetValueKindNothingSpecial) = 0;
 
 		virtual			DocumentAttachmentInfoResult		documentAttachmentAdd(const CString& documentType,
 																	const CString& documentID, const CDictionary& info,
 																	const CData& content) = 0;
 		virtual			DocumentAttachmentInfoByIDResult	documentAttachmentInfoByID(const CString& documentType,
-																const CString& documentID) = 0;
+																	const CString& documentID) = 0;
 		virtual			TVResult<CData>						documentAttachmentContent(const CString& documentType,
 																	const CString& documentID,
 																	const CString& attachmentID) = 0;
@@ -159,7 +159,7 @@ class CMDSDocumentStorage {
 																	const CString& documentID,
 																	const CString& attachmentID) = 0;
 
-		virtual			OV<SError>							documentRemove(const CMDSDocument& document) = 0;
+		virtual			OV<SError>							documentRemove(const I<CMDSDocument>& document) = 0;
 
 		virtual			OV<SError>							indexRegister(const CString& name,
 																	const CString& documentType,
@@ -194,30 +194,30 @@ class CMDSDocumentStorage {
 																{ return associationRegister(
 																		fromDocumentInfo.getDocumentType(),
 																		toDocumentInfo.getDocumentType()); }
-						OV<SError>							associationUpdateAdd(const CMDSDocument& fromDocument,
-																	const CMDSDocument& toDocument)
+						OV<SError>							associationUpdateAdd(const I<CMDSDocument>& fromDocument,
+																	const I<CMDSDocument>& toDocument)
 																{ return associationUpdate(
-																		associationName(fromDocument.getDocumentType(),
-																				toDocument.getDocumentType()),
+																		associationName(fromDocument->getDocumentType(),
+																				toDocument->getDocumentType()),
 																		TNArray<CMDSAssociation::Update>(
 																				CMDSAssociation::Update::add(
-																						fromDocument.getID(),
-																						toDocument.getID()))); }
-						OV<SError>							associationUpdateRemove(const CMDSDocument& fromDocument,
-																	const CMDSDocument& toDocument)
+																						fromDocument->getID(),
+																						toDocument->getID()))); }
+						OV<SError>							associationUpdateRemove(const I<CMDSDocument>& fromDocument,
+																	const I<CMDSDocument>& toDocument)
 																{ return associationUpdate(
-																		associationName(fromDocument.getDocumentType(),
-																				toDocument.getDocumentType()),
+																		associationName(fromDocument->getDocumentType(),
+																				toDocument->getDocumentType()),
 																		TNArray<CMDSAssociation::Update>(
 																				CMDSAssociation::Update::remove(
-																						fromDocument.getID(),
-																						toDocument.getID()))); }
+																						fromDocument->getID(),
+																						toDocument->getID()))); }
 						DocumentsResult						associationGetDocumentsFrom(
-																	const CMDSDocument& fromDocument,
+																	const I<CMDSDocument>& fromDocument,
 																	const CMDSDocument::Info& toDocumentInfo);
 						DocumentsResult						associationGetDocumentsTo(
 																	const CMDSDocument::Info& fromDocumentInfo,
-																	const CMDSDocument& toDocument);
+																	const I<CMDSDocument>& toDocument);
 
 						OV<SError>							collectionRegister(const CString& name,
 																	const CString& documentType,
@@ -305,7 +305,7 @@ class CMDSDocumentStorage {
 															CMDSDocumentStorage();
 
 															// Subclass methods
-						void								notifyDocumentChanged(const CMDSDocument& document,
+						void								notifyDocumentChanged(const I<CMDSDocument>& document,
 																	CMDSDocument::ChangeKind documentChangeKind) const;
 
 	private:

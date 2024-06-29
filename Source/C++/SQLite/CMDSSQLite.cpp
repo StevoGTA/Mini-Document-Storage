@@ -904,7 +904,7 @@ class CMDSSQLite::Internals {
 																	documentChangedInfos.getIterator();
 															iterator.hasValue(); iterator.advance())
 														// Call proc
-														iterator->notify(*document, documentChangeKind);
+														iterator->notify(document, documentChangeKind);
 												}
 
 		static	void						addDocumentInfoToDocumentFullInfoArray(const CString& key,
@@ -1114,7 +1114,7 @@ class CMDSSQLite::Internals {
 																					documentChangedInfos.getIterator();
 																			iterator.hasValue(); iterator.advance())
 																		// Call proc
-																		iterator->notify(*document,
+																		iterator->notify(document,
 																				CMDSDocument::kChangeKindRemoved);
 																}
 															}
@@ -1824,7 +1824,7 @@ TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSSQLite::documentCreate(
 		for (TIteratorD<CMDSDocument::CreateResultInfo> iterator = documentCreateResultInfos.getIterator();
 				iterator.hasValue(); iterator.advance())
 			// Call proc
-			notifyDocumentChanged(*iterator->getDocument(), CMDSDocument::kChangeKindCreated);
+			notifyDocumentChanged(iterator->getDocument(), CMDSDocument::kChangeKindCreated);
 	}
 
 	return TVResult<TArray<CMDSDocument::CreateResultInfo> >(documentCreateResultInfos);
@@ -1907,73 +1907,73 @@ OV<SError> CMDSSQLite::documentIterate(const CMDSDocument::Info& documentInfo, b
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-UniversalTime CMDSSQLite::documentCreationUniversalTime(const CMDSDocument& document) const
+UniversalTime CMDSSQLite::documentCreationUniversalTime(const I<CMDSDocument>& document) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check for batch
 	const	OR<I<MDSBatch> >			batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
 			OR<MDSBatchDocumentInfo>	batchDocumentInfo =
 												batch.hasReference() ?
-														(*batch)->documentInfoGet(document.getID()) :
+														(*batch)->documentInfoGet(document->getID()) :
 														OR<MDSBatchDocumentInfo>();
 	if (batchDocumentInfo.hasReference())
 		// In batch
 		return batchDocumentInfo->getCreationUniversalTime();
-	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(document.getID()))
+	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(document->getID()))
 		// Being created
 		return SUniversalTime::getCurrent();
 	else
 		// "Idle"
-		return (*mInternals->documentBackingGet(document.getDocumentType(), document.getID()))->
+		return (*mInternals->documentBackingGet(document->getDocumentType(), document->getID()))->
 				getCreationUniversalTime();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-UniversalTime CMDSSQLite::documentModificationUniversalTime(const CMDSDocument& document) const
+UniversalTime CMDSSQLite::documentModificationUniversalTime(const I<CMDSDocument>& document) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check for batch
 	const	OR<I<MDSBatch> >			batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
 			OR<MDSBatchDocumentInfo>	batchDocumentInfo =
 												batch.hasReference() ?
-														(*batch)->documentInfoGet(document.getID()) :
+														(*batch)->documentInfoGet(document->getID()) :
 														OR<MDSBatchDocumentInfo>();
 	if (batchDocumentInfo.hasReference())
 		// In batch
 		return batchDocumentInfo->getModificationUniversalTime();
-	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(document.getID()))
+	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(document->getID()))
 		// Being created
 		return SUniversalTime::getCurrent();
 	else
 		// "Idle"
-		return (*mInternals->documentBackingGet(document.getDocumentType(), document.getID()))->
+		return (*mInternals->documentBackingGet(document->getDocumentType(), document->getID()))->
 				getModificationUniversalTime();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OV<SValue> CMDSSQLite::documentValue(const CString& property, const CMDSDocument& document) const
+OV<SValue> CMDSSQLite::documentValue(const CString& property, const I<CMDSDocument>& document) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Check for batch
 	const	OR<I<MDSBatch> >			batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
 			OR<MDSBatchDocumentInfo>	batchDocumentInfo =
 												batch.hasReference() ?
-														(*batch)->documentInfoGet(document.getID()) :
+														(*batch)->documentInfoGet(document->getID()) :
 														OR<MDSBatchDocumentInfo>();
 	if (batchDocumentInfo.hasReference())
 		// In batch
 		return batchDocumentInfo->getValue(property);
-	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(document.getID()))
+	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(document->getID()))
 		// Being created
-		return mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID[document.getID()]->getOValue(property);
+		return mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID[document->getID()]->getOValue(property);
 	else
 		// "Idle"
-		return (*mInternals->documentBackingGet(document.getDocumentType(), document.getID()))->
+		return (*mInternals->documentBackingGet(document->getDocumentType(), document->getID()))->
 				getPropertyMap().getOValue(property);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OV<CData> CMDSSQLite::documentData(const CString& property, const CMDSDocument& document) const
+OV<CData> CMDSSQLite::documentData(const CString& property, const I<CMDSDocument>& document) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Retrieve Base64-encoded string
@@ -1985,7 +1985,7 @@ OV<CData> CMDSSQLite::documentData(const CString& property, const CMDSDocument& 
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OV<UniversalTime> CMDSSQLite::documentUniversalTime(const CString& property, const CMDSDocument& document) const
+OV<UniversalTime> CMDSSQLite::documentUniversalTime(const CString& property, const I<CMDSDocument>& document) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get value
@@ -2001,13 +2001,13 @@ OV<UniversalTime> CMDSSQLite::documentUniversalTime(const CString& property, con
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSSQLite::documentSet(const CString& property, const OV<SValue>& value, const CMDSDocument& document,
+void CMDSSQLite::documentSet(const CString& property, const OV<SValue>& value, const I<CMDSDocument>& document,
 		SetValueKind setValueKind)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Setup
-	const	CString&	documentType = document.getDocumentType();
-	const	CString&	documentID = document.getID();
+	const	CString&	documentType = document->getDocumentType();
+	const	CString&	documentID = document->getID();
 
 	// Transform
 	OV<SValue>	valueUse;
@@ -2295,12 +2295,12 @@ OV<SError> CMDSSQLite::documentAttachmentRemove(const CString& documentType, con
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OV<SError> CMDSSQLite::documentRemove(const CMDSDocument& document)
+OV<SError> CMDSSQLite::documentRemove(const I<CMDSDocument>& document)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Setup
-	const	CString&	documentType = document.getDocumentType();
-	const	CString&	documentID = document.getID();
+	const	CString&	documentType = document->getDocumentType();
+	const	CString&	documentID = document->getID();
 
 	// Check for batch
 	const	OR<I<MDSBatch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
@@ -2752,7 +2752,7 @@ TVResult<TArray<CMDSDocument::FullInfo> > CMDSSQLite::documentFullInfos(const CS
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OV<SInt64> CMDSSQLite::documentIntegerValue(const CString& documentType, const CMDSDocument& document,
+OV<SInt64> CMDSSQLite::documentIntegerValue(const CString& documentType, const I<CMDSDocument>& document,
 		const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -2760,7 +2760,7 @@ OV<SInt64> CMDSSQLite::documentIntegerValue(const CString& documentType, const C
 	const	OR<I<MDSBatch> >			batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
 			OR<MDSBatchDocumentInfo>	batchDocumentInfo =
 												batch.hasReference() ?
-														(*batch)->documentInfoGet(document.getID()) :
+														(*batch)->documentInfoGet(document->getID()) :
 														OR<MDSBatchDocumentInfo>();
 
 	// Check for batch
@@ -2768,19 +2768,19 @@ OV<SInt64> CMDSSQLite::documentIntegerValue(const CString& documentType, const C
 	if (batchDocumentInfo.hasReference())
 		// In batch
 		value = batchDocumentInfo->getValue(property);
-	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(document.getID()))
+	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(document->getID()))
 		// Being created
-		value = mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID[document.getID()]->getValue(property);
+		value = mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID[document->getID()]->getValue(property);
 	else
 		// "Idle"
-		value = (*mInternals->documentBackingGet(documentType, document.getID()))->getValue(property);
+		value = (*mInternals->documentBackingGet(documentType, document->getID()))->getValue(property);
 
 	return (value.hasValue() && value->canCoerceToType(SValue::kTypeSInt64)) ?
 			OV<SInt64>(value->getSInt64()) : OV<SInt64>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-OV<CString> CMDSSQLite::documentStringValue(const CString& documentType, const CMDSDocument& document,
+OV<CString> CMDSSQLite::documentStringValue(const CString& documentType, const I<CMDSDocument>& document,
 		const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -2788,7 +2788,7 @@ OV<CString> CMDSSQLite::documentStringValue(const CString& documentType, const C
 	const	OR<I<MDSBatch> >			batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
 			OR<MDSBatchDocumentInfo>	batchDocumentInfo =
 												batch.hasReference() ?
-														(*batch)->documentInfoGet(document.getID()) :
+														(*batch)->documentInfoGet(document->getID()) :
 														OR<MDSBatchDocumentInfo>();
 
 	// Check for batch
@@ -2796,12 +2796,12 @@ OV<CString> CMDSSQLite::documentStringValue(const CString& documentType, const C
 	if (batchDocumentInfo.hasReference())
 		// In batch
 		value = batchDocumentInfo->getValue(property);
-	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(document.getID()))
+	else if (mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID.contains(document->getID()))
 		// Being created
-		value = mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID[document.getID()]->getValue(property);
+		value = mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID[document->getID()]->getValue(property);
 	else
 		// "Idle"
-		value = (*mInternals->documentBackingGet(documentType, document.getID()))->getValue(property);
+		value = (*mInternals->documentBackingGet(documentType, document->getID()))->getValue(property);
 
 	return (value.hasValue() && (value->getType() == SValue::kTypeString)) ?
 			OV<CString>(value->getString()) : OV<CString>();

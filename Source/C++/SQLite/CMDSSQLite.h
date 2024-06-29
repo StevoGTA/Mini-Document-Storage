@@ -69,18 +69,19 @@ class CMDSSQLite : public CMDSDocumentStorageServer {
 															bool activeOnly, CMDSDocument::Proc proc,
 															void* procUserData) const;
 
-		UniversalTime								documentCreationUniversalTime(const CMDSDocument& document) const;
-		UniversalTime								documentModificationUniversalTime(const CMDSDocument& document)
+		UniversalTime								documentCreationUniversalTime(const I<CMDSDocument>& document)
+															const;
+		UniversalTime								documentModificationUniversalTime(const I<CMDSDocument>& document)
 															const;
 
-		OV<SValue>									documentValue(const CString& property, const CMDSDocument& document)
-															const;
-		OV<CData>									documentData(const CString& property, const CMDSDocument& document)
-															const;
+		OV<SValue>									documentValue(const CString& property,
+															const I<CMDSDocument>& document) const;
+		OV<CData>									documentData(const CString& property,
+															const I<CMDSDocument>& document) const;
 		OV<UniversalTime>							documentUniversalTime(const CString& property,
-															const CMDSDocument& document) const;
+															const I<CMDSDocument>& document) const;
 		void										documentSet(const CString& property, const OV<SValue>& value,
-															const CMDSDocument& document,
+															const I<CMDSDocument>& document,
 															SetValueKind setValueKind = kSetValueKindNothingSpecial);
 
 		DocumentAttachmentInfoResult				documentAttachmentAdd(const CString& documentType,
@@ -97,7 +98,7 @@ class CMDSSQLite : public CMDSDocumentStorageServer {
 		OV<SError>									documentAttachmentRemove(const CString& documentType,
 															const CString& documentID, const CString& attachmentID);
 
-		OV<SError>									documentRemove(const CMDSDocument& document);
+		OV<SError>									documentRemove(const I<CMDSDocument>& document);
 
 		OV<SError>									indexRegister(const CString& name, const CString& documentType,
 															const TArray<CString>& relevantProperties,
@@ -146,10 +147,10 @@ class CMDSSQLite : public CMDSDocumentStorageServer {
 															const OV<UInt32>& count) const;
 
 		OV<SInt64>									documentIntegerValue(const CString& documentType,
-															const CMDSDocument& document, const CString& property)
+															const I<CMDSDocument>& document, const CString& property)
 															const;
 		OV<CString>									documentStringValue(const CString& documentType,
-															const CMDSDocument& document, const CString& property)
+															const I<CMDSDocument>& document, const CString& property)
 															const;
 		DocumentFullInfosResult						documentUpdate(const CString& documentType,
 															const TArray<CMDSDocument::UpdateInfo>&

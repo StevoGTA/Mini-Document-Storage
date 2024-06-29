@@ -19,9 +19,14 @@ class CMDSDocumentStorage::Internals {
 						const	Info&			getInfo() const
 													{ return mInfo; }
 
+								I<CMDSDocument>	makeI() const
+													{ return I<CMDSDocument>(
+															new GenericDocument(getID(), getDocumentStorage())); }
+
 				static			I<CMDSDocument>	create(const CString& id, CMDSDocumentStorage& documentStorage)
 													{ return I<CMDSDocument>(
 															new GenericDocument(id, documentStorage)); }
+
 
 			public:
 				static	Info	mInfo;
@@ -85,8 +90,8 @@ CMDSDocumentStorage::~CMDSDocumentStorage()
 // MARK: Instance methods
 
 //----------------------------------------------------------------------------------------------------------------------
-TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocumentsFrom(const CMDSDocument& fromDocument,
-		const CMDSDocument::Info& toDocumentInfo)
+TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocumentsFrom(
+		const I<CMDSDocument>& fromDocument, const CMDSDocument::Info& toDocumentInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Register
@@ -98,8 +103,8 @@ TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocuments
 	// Iterate documents
 	OV<SError>	error =
 						associationIterateFrom(
-								associationName(fromDocument.getDocumentType(), toDocumentInfo.getDocumentType()),
-								fromDocument.getID(), toDocumentInfo.getDocumentType(),
+								associationName(fromDocument->getDocumentType(), toDocumentInfo.getDocumentType()),
+								fromDocument->getID(), toDocumentInfo.getDocumentType(),
 								(CMDSDocument::Proc) CMDSDocument::Collector::addDocument, &documentCollector);
 
 	return error.hasValue() ?
@@ -109,7 +114,7 @@ TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocuments
 
 //----------------------------------------------------------------------------------------------------------------------
 TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocumentsTo(
-		const CMDSDocument::Info& fromDocumentInfo, const CMDSDocument& toDocument)
+		const CMDSDocument::Info& fromDocumentInfo, const I<CMDSDocument>& toDocument)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Register
@@ -121,8 +126,8 @@ TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocuments
 	// Iterate documents
 	OV<SError>	error =
 						associationIterateTo(
-								associationName(fromDocumentInfo.getDocumentType(), toDocument.getDocumentType()),
-								fromDocumentInfo.getDocumentType(), toDocument.getID(),
+								associationName(fromDocumentInfo.getDocumentType(), toDocument->getDocumentType()),
+								fromDocumentInfo.getDocumentType(), toDocument->getID(),
 								(CMDSDocument::Proc) CMDSDocument::Collector::addDocument, &documentCollector);
 
 	return error.hasValue() ?
@@ -285,12 +290,12 @@ const CMDSDocument::ValueInfo& CMDSDocumentStorage::documentValueInfo(const CStr
 // MARK: Subclass methods
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSDocumentStorage::notifyDocumentChanged(const CMDSDocument& document,
+void CMDSDocumentStorage::notifyDocumentChanged(const I<CMDSDocument>& document,
 		CMDSDocument::ChangeKind documentChangeKind) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Setup
-	DocumentChangedInfos	documentChangedInfos = this->documentChangedInfos(document.getDocumentType());
+	DocumentChangedInfos	documentChangedInfos = this->documentChangedInfos(document->getDocumentType());
 
 	// Call document changed procs
 	for (TIteratorD<CMDSDocument::ChangedInfo> iterator = documentChangedInfos.getIterator();

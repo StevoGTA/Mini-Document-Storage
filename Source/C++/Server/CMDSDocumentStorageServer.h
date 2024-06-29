@@ -113,10 +113,10 @@ class CMDSDocumentStorageServer : public CMDSDocumentStorage {
 																	= 0;
 
 		virtual	OV<SInt64>									documentIntegerValue(const CString& documentType,
-																	const CMDSDocument& document,
+																	const I<CMDSDocument>& document,
 																	const CString& property) const = 0;
 		virtual	OV<CString>									documentStringValue(const CString& documentType,
-																	const CMDSDocument& document,
+																	const I<CMDSDocument>& document,
 																	const CString& property) const = 0;
 		virtual	DocumentFullInfosResult						documentUpdate(const CString& documentType,
 																	const TArray<CMDSDocument::UpdateInfo>&

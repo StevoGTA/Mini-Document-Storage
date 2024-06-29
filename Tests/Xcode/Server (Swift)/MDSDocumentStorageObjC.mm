@@ -387,11 +387,11 @@
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Local proc declarations
 
-static	bool			sDocumentPropertyIsValue(const CString& documentType, const CMDSDocument& document,
+static	bool			sDocumentPropertyIsValue(const CString& documentType, const I<CMDSDocument>& document,
 								const CDictionary& info, CMDSDocumentStorageServer* documentStorageServer);
-static	TArray<CString>	sKeysForDocumentProperty(const CString& documentType, const CMDSDocument& document,
+static	TArray<CString>	sKeysForDocumentProperty(const CString& documentType, const I<CMDSDocument>& document,
 								const CDictionary& info, CMDSDocumentStorageServer* documentStorageServer);
-static	SValue			sIntegerValueForProperty(const CString& documentType, const CMDSDocument& document,
+static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CMDSDocument>& document,
 								const CString& property, CMDSDocumentStorageServer* documentStorageServer);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1278,7 +1278,7 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const CMDS
 // MARK: Local proc definitions
 
 //----------------------------------------------------------------------------------------------------------------------
-bool sDocumentPropertyIsValue(const CString& documentType, const CMDSDocument& document, const CDictionary& info,
+bool sDocumentPropertyIsValue(const CString& documentType, const I<CMDSDocument>& document, const CDictionary& info,
 		CMDSDocumentStorageServer* documentStorageServer)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -1299,7 +1299,7 @@ bool sDocumentPropertyIsValue(const CString& documentType, const CMDSDocument& d
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TArray<CString> sKeysForDocumentProperty(const CString& documentType, const CMDSDocument& document,
+TArray<CString> sKeysForDocumentProperty(const CString& documentType, const I<CMDSDocument>& document,
 		const CDictionary& info, CMDSDocumentStorageServer* documentStorageServer)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -1319,7 +1319,7 @@ TArray<CString> sKeysForDocumentProperty(const CString& documentType, const CMDS
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-SValue sIntegerValueForProperty(const CString& documentType, const CMDSDocument& document, const CString& property,
+SValue sIntegerValueForProperty(const CString& documentType, const I<CMDSDocument>& document, const CString& property,
 		CMDSDocumentStorageServer* documentStorageServer)
 //----------------------------------------------------------------------------------------------------------------------
 {
