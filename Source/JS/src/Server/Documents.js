@@ -586,7 +586,7 @@ module.exports = class Documents {
 										attachmentID));
 			if (results.length > 0)
 				// Success
-				return [results[0].content.toString(), null];
+				return [results[0].content, null];
 			else
 				// Error
 				return [null, 'Unknown attachmentID: ' + attachmentID];
