@@ -787,7 +787,13 @@ class MDSClient:
 			return await response.json()
 
 	#-------------------------------------------------------------------------------------------------------------------
-	async def document_attachment_get(self, document_type, document_id, attachment_id, document_storage_id = None):
+	document_attachment_get_type_binary = 'application/octet-stream'
+	document_attachment_get_type_html = 'text/html'
+	document_attachment_get_type_json = 'application/json'
+	document_attachment_get_type_text = 'text/plain'
+	document_attachment_get_type_xml = 'text/xml'
+	async def document_attachment_get(self, document_type, document_id, attachment_id, type,
+			document_storage_id = None):
 		# Setup
 		document_storage_id = document_storage_id or self.document_storage_id
 
@@ -798,7 +804,15 @@ class MDSClient:
 			# Process response
 			await self.process_response(response)
 
-			return await response.read()
+			if type == MDSClient.document_attachment_get_type_binary:
+				# Binary
+				return await response.read()
+			elif type == MDSClient.document_attachment_get_type_json:
+				# JSON
+				return await response.json()
+			else:
+				# Text
+				return await response.text()
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def document_attachment_update(self, document_type, document_id, attachment_id, info, content,
