@@ -59,24 +59,24 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async queuePATCH(subPath, bodyObject, headers = {}) {
+	async queuePATCH(subPath, body, headers = {}) {
 		// Setup
 		let	url = this.urlBase + subPath;
 
 		let	headersUse = {...this.headers, ...headers};
 		let	options = {method: 'PATCH', headers: headersUse};
-		if ((bodyObject instanceof File) || (bodyObject instanceof ArrayBuffer)) {
+		if ((body instanceof File) || (body instanceof ArrayBuffer)) {
 			// Pass through
 			headersUse['Content-Type'] = 'application/octet-stream';
-			options.body = bodyObject;
-		} else if (typeof bodyObject == 'object') {
+			options.body = body;
+		} else if (typeof body == 'object') {
 			// Object
 			headersUse['Content-Type'] = 'application/json';
-			options.body = JSON.stringify(bodyObject);
+			options.body = JSON.stringify(body);
 		} else {
 			// Pass through
 			headersUse['Content-Type'] = 'application/octet-stream';
-			options.body = bodyObject;
+			options.body = body;
 		}
 
 		// Queue the call
@@ -87,25 +87,25 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async queuePOST(subPath, bodyObject, headers = {}) {
+	async queuePOST(subPath, body, headers = {}) {
 		// Setup
 		let	url = this.urlBase + subPath;
 
 		let	headersUse = {...this.headers, ...headers};
 
 		let	options = {method: 'POST', headers: headersUse};
-		if ((bodyObject instanceof File) || (bodyObject instanceof ArrayBuffer)) {
+		if ((body instanceof File) || (body instanceof ArrayBuffer)) {
 			// Pass through
 			headersUse['Content-Type'] = 'application/octet-stream';
-			options.body = bodyObject;
-		} else if (typeof bodyObject == 'object') {
+			options.body = body;
+		} else if (typeof body == 'object') {
 			// Object
 			headersUse['Content-Type'] = 'application/json';
-			options.body = JSON.stringify(bodyObject);
+			options.body = JSON.stringify(body);
 		} else {
 			// Pass through
 			headersUse['Content-Type'] = 'application/octet-stream';
-			options.body = bodyObject;
+			options.body = body;
 		}
 
 		// Queue the call
@@ -116,24 +116,24 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async queuePUT(subPath, bodyObject, headers = {}) {
+	async queuePUT(subPath, body, headers = {}) {
 		// Setup
 		let	url = this.urlBase + subPath;
 
 		let	headersUse = {...this.headers, ...headers};
 		let	options = {method: 'PUT', headers: headersUse};
-		if ((bodyObject instanceof File) || (bodyObject instanceof ArrayBuffer)) {
+		if ((body instanceof File) || (body instanceof ArrayBuffer)) {
 			// Pass through
 			headersUse['Content-Type'] = 'application/octet-stream';
-			options.body = bodyObject;
-		} else if (typeof bodyObject == 'object') {
+			options.body = body;
+		} else if (typeof body == 'object') {
 			// Object
 			headersUse['Content-Type'] = 'application/json';
-			options.body = JSON.stringify(bodyObject);
+			options.body = JSON.stringify(body);
 		} else {
 			// Pass through
 			headersUse['Content-Type'] = 'application/octet-stream';
-			options.body = bodyObject;
+			options.body = body;
 		}
 
 		// Queue the call
@@ -815,6 +815,19 @@ class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
+		if (content instanceof File)
+			// Convert File => ArrayBuffer
+			content = await content.arrayBuffer();
+		if (content instanceof ArrayBuffer)
+			// Convert ArrayBuffer => Buffer
+			content = Buffer.from(content);
+		if (content instanceof Buffer)
+			// Base64-encode Buffer
+			content = content.toString('base64');
+		if (typeof content == 'object')
+			// Stringify JSON
+			content = JSON.stringify(content);
+
 		let	options = 
 					{
 						method: 'POST',
@@ -835,7 +848,12 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentGetAttachment(documentType, documentID, attachmentID, documentStorageID) {
+	static	documentGetAttachmentTypeBinary = 'application/octet-stream';
+	static	documentGetAttachmentTypeHTML = 'text/html';
+	static	documentGetAttachmentTypeJSON = 'application/json';
+	static	documentGetAttachmentTypeText = 'text/plain';
+	static	documentGetAttachmentTypeXML = 'text/xml';
+	async documentGetAttachment(documentType, documentID, attachmentID, documentStorageID, type) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -843,13 +861,17 @@ class MDSClient {
 					this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
 							encodeURIComponent(documentType) + '/' + encodeURIComponent(documentID) + '/attachment/' +
 							encodeURIComponent(attachmentID);
-		let	options = {headers: this.headers};
+		let	options = {headers: {...this.headers, Accept: type}};
 
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
 		await processResponse(response);
 
-		return await response.blob();
+		switch (type) {
+			case MDSClient.documentGetAttachmentTypeBinary:	return await response.blob();
+			case MDSClient.documentGetAttachmentTypeJSON:	return await response.json();
+			default:										return await response.text();
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -864,6 +886,19 @@ class MDSClient {
 
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
+
+		if (content instanceof File)
+			// Convert File => ArrayBuffer
+			content = await content.arrayBuffer();
+		if (content instanceof ArrayBuffer)
+			// Convert ArrayBuffer => Buffer
+			content = Buffer.from(content);
+		if (content instanceof Buffer)
+			// Base64-encode Buffer
+			content = content.toString('base64');
+		if (typeof content == 'object')
+			// Stringify JSON
+			content = JSON.stringify(content);
 
 		let	options =
 					{
