@@ -144,7 +144,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async associationRegister(name, fromDocumentType, toDocumentType, documentStorageID) {
+	async associationRegister(name, fromDocumentType, toDocumentType, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -172,7 +172,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async associationUpdate(name, updates, documentStorageID) {
+	async associationUpdate(name, updates, documentStorageID = null) {
 		// Check if have updates
 		if (updates.length == 0)
 			// No updates
@@ -196,7 +196,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async associationGetDocumentInfos(name, startIndex, count, documentStorageID) {
+	async associationGetDocumentInfos(name, startIndex, count, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		
@@ -221,7 +221,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async associationGetDocumentInfosFrom(name, document, startIndex, count, documentStorageID) {
+	async associationGetDocumentInfosFrom(name, document, startIndex, count, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		
@@ -242,7 +242,8 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async associationGetDocumentsFrom(name, document, startIndex, count, documentCreationProc, documentStorageID) {
+	async associationGetDocumentsFrom(name, document, startIndex, count, documentCreationProc,
+			documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		
@@ -266,7 +267,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async associationGetDocumentMapFrom(name, documents, documentType, documentCreationProc, documentStorageID,
+	async associationGetDocumentMapFrom(name, documents, documentType, documentCreationProc, documentStorageID = null,
 			individualRetrievalThreshold = 5) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
@@ -329,7 +330,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async associationGetDocumentInfosTo(name, document, startIndex, count, documentStorageID) {
+	async associationGetDocumentInfosTo(name, document, startIndex, count, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		
@@ -350,7 +351,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async associationGetDocumentsTo(name, document, startIndex, count, documentCreationProc, documentStorageID) {
+	async associationGetDocumentsTo(name, document, startIndex, count, documentCreationProc, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		
@@ -374,7 +375,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async associationGetValue(name, action, fromDocuments, cacheName, cachedValueNames, documentStorageID) {
+	async associationGetValue(name, action, fromDocuments, cacheName, cachedValueNames, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		let	fromDocumentIDs = fromDocuments.map(document => encodeURIComponent(document.documentID));
@@ -424,7 +425,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async cacheRegister(name, documentType, relevantProperties, valueInfos, documentStorageID) {
+	async cacheRegister(name, documentType, relevantProperties, valueInfos, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -454,7 +455,7 @@ class MDSClient {
 
 	//------------------------------------------------------------------------------------------------------------------
 	async collectionRegister(name, documentType, relevantProperties, isUpToDate, isIncludedSelector,
-			isIncludedSelectorInfo, documentStorageID) {
+			isIncludedSelectorInfo, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -485,7 +486,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async collectionGetDocumentCount(name, documentStorageID) {
+	async collectionGetDocumentCount(name, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -520,7 +521,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async collectionGetDocumentInfos(name, startIndex, count, documentStorageID) {
+	async collectionGetDocumentInfos(name, startIndex, count, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -548,7 +549,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async collectionGetDocuments(name, startIndex, count, documentCreationProc, documentStorageID) {
+	async collectionGetDocuments(name, startIndex, count, documentCreationProc, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -579,7 +580,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentCreate(documentType, documents, documentStorageID) {
+	async documentCreate(documentType, documents, documentStorageID = null) {
 		// Collect documents to create
 		let	documentsToCreate = documents.filter(document => document.hasCreateInfo());
 		if (documentsToCreate.length == 0)
@@ -621,7 +622,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentGetCount(documentType, documentStorageID) {
+	async documentGetCount(documentType, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -648,7 +649,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentGetSinceRevision(documentType, sinceRevision, count, documentCreationProc, documentStorageID,
+	async documentGetSinceRevision(documentType, sinceRevision, count, documentCreationProc, documentStorageID = null,
 			fullInfo = true) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
@@ -672,8 +673,8 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentGetAllSinceRevision(documentType, sinceRevision, batchCount, documentCreationProc, documentStorageID,
-			fullInfo, proc) {
+	async documentGetAllSinceRevision(documentType, sinceRevision, batchCount, documentCreationProc,
+			documentStorageID = null, fullInfo = 0, proc = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		let	urlBase =
@@ -722,7 +723,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentGet(documentType, documentIDs, documentCreationProc, documentStorageID) {
+	async documentGet(documentType, documentIDs, documentCreationProc, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		let	documentIDsUse = documentIDs.map(documentID => encodeURIComponent(documentID));
@@ -755,7 +756,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentUpdate(documentType, documents, documentStorageID) {
+	async documentUpdate(documentType, documents, documentStorageID = null) {
 		// Collect documents to update
 		let	documentsToUpdate = documents.filter(document => document.hasUpdateInfo());
 		if (documentsToUpdate.length == 0)
@@ -804,7 +805,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentAddAttachment(documentType, documentID, info, content, documentStorageID) {
+	async documentAddAttachment(documentType, documentID, info, content, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -853,7 +854,7 @@ class MDSClient {
 	static	documentGetAttachmentTypeJSON = 'application/json';
 	static	documentGetAttachmentTypeText = 'text/plain';
 	static	documentGetAttachmentTypeXML = 'text/xml';
-	async documentGetAttachment(documentType, documentID, attachmentID, documentStorageID, type) {
+	async documentGetAttachment(documentType, documentID, attachmentID, type, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -875,7 +876,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentUpdateAttachment(documentType, documentID, attachmentID, info, content, documentStorageID) {
+	async documentUpdateAttachment(documentType, documentID, attachmentID, info, content, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -918,7 +919,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentRemoveAttachment(documentType, documentID, attachmentID, documentStorageID) {
+	async documentRemoveAttachment(documentType, documentID, attachmentID, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -934,7 +935,8 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async indexRegister(name, documentType, relevantProperties, keysSelector, keysSelectorInfo, documentStorageID) {
+	async indexRegister(name, documentType, relevantProperties, keysSelector, keysSelectorInfo,
+			documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -964,7 +966,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async indexGetDocumentInfos(name, keys, documentStorageID) {
+	async indexGetDocumentInfos(name, keys, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		let	keysUse = keys.map(key => encodeURIComponent(key));
@@ -990,7 +992,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async indexGetDocuments(name, keys, documentCreationProc, documentStorageID) {
+	async indexGetDocuments(name, keys, documentCreationProc, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		let	keysUse = keys.map(key => encodeURIComponent(key));
@@ -1019,7 +1021,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async infoGet(keys, documentStorageID) {
+	async infoGet(keys, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		let	keysUse = keys.map(key => encodeURIComponent(key));
@@ -1037,7 +1039,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async infoSet(info, documentStorageID) {
+	async infoSet(info, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -1054,7 +1056,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async internalSet(info, documentStorageID) {
+	async internalSet(info, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
