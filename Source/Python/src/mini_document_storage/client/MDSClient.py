@@ -17,13 +17,13 @@ class MDSClient:
     
 	# Lifecycle methods
 	#-------------------------------------------------------------------------------------------------------------------
-	def __init__(self, url_base, document_storage_id = None, headers = {}):
+	def __init__(self, url_base, loop, document_storage_id = None, headers = {}):
 		# Store
 		self.document_storage_id = document_storage_id
 		self.headers = headers
 
 		# Setup
-		self.session = aiohttp.ClientSession(url_base)
+		self.session = aiohttp.ClientSession(url_base, loop = loop)
 	
 	#-------------------------------------------------------------------------------------------------------------------
 	async def close(self):
