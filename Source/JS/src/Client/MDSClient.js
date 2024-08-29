@@ -816,9 +816,12 @@ class MDSClient {
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
 
-		if (content instanceof File)
-			// Convert File => ArrayBuffer
-			content = await content.arrayBuffer();
+		if (typeof File == 'function') {
+			// Have File in this context
+			if (content instanceof File)
+				// Convert File => ArrayBuffer
+				content = await content.arrayBuffer();
+		}
 		if (content instanceof ArrayBuffer)
 			// Convert ArrayBuffer => Buffer
 			content = Buffer.from(content);
