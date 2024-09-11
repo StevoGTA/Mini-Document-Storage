@@ -1,6 +1,6 @@
 {
   "name": "mini-document-storage",
-  "version": "3.7.1",
+  "version": "3.7.2",
   "description": "Fast, inexpensive document storage backed by a standard database connector.",
   "main": "src/package.js",
   "exports": {

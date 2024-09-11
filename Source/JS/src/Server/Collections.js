@@ -229,9 +229,7 @@ module.exports = class Collections {
 									null, statementPerformer.limit(startIndex, count));
 				if (documentsByID)
 					// Success
-					return [true,
-							(totalCount >= startIndex) ? totalCount - startIndex : 0, Object.values(documentsByID),
-							null];
+					return [true, totalCount, Object.values(documentsByID), null];
 				else
 					// Error
 					return [null, null, null, resultsError];

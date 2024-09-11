@@ -10,6 +10,7 @@ import aiohttp
 import asyncio
 import base64
 import json
+import re
 
 #-----------------------------------------------------------------------------------------------------------------------
 # MDSClient
@@ -519,14 +520,9 @@ class MDSClient:
 						raise Exception(f'HTTP response: {response.status}')
 					
 					# Decode header
-					content_range = response.headers.get('content-range', '')
-					content_range_parts = content_range.split('/')
-					if len(content_range_parts) == 2:
-						# Have count
-						return int(content_range_parts[1])
-					else:
-						# Don't have count
-						raise Exception('Unable to get count from response')
+					content_range = self.decode_content_range(response)
+
+					return content_range['size']
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def collection_get_document_infos(self, name, start_index = 0, count = None, document_storage_id = None):
@@ -548,6 +544,35 @@ class MDSClient:
 					await self.process_response(response)
 
 					return await response.json()
+
+	#-------------------------------------------------------------------------------------------------------------------
+	async def collection_get_all_document_infos(self, name, document_storage_id = None):
+		# Setup
+		document_storage_id = document_storage_id or self.document_storage_id
+
+		# Loop until up-to-date and have all infos
+		document_infos = []
+		params = {'startIndex': 0, 'fullInfo': 0}
+		while True:
+			# Queue request
+			async with self.session.get(f'/v1/collection/{document_storage_id}/{name}', headers = self.headers,
+					params = params) as response:
+				# Handle results
+				if response.status != 409:
+					# Process response
+					await self.process_response(response)
+					infos = await response.json()
+					document_infos.extend(infos)
+					
+					# Decode content range
+					content_range = self.decode_content_range(response)
+					next_start_index = content_range['range_end'] + 1
+					if next_start_index == content_range['size']:
+						# All done
+						return document_infos
+					else:
+						# Prepare next request
+						params['startIndex'] = next_start_index
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def collection_get_documents(self, name, start_index, count, document_creation_function,
@@ -573,6 +598,35 @@ class MDSClient:
 					infos = await response.json()
 
 					return list(map(document_creation_function, infos))
+
+	#-------------------------------------------------------------------------------------------------------------------
+	async def collection_get_all_documents(self, name, document_creation_function, document_storage_id = None):
+		# Setup
+		document_storage_id = document_storage_id or self.document_storage_id
+
+		# Loop until up-to-date and have all documents
+		documents = []
+		params = {'startIndex': 0, 'fullInfo': 1}
+		while True:
+			# Queue request
+			async with self.session.get(f'/v1/collection/{document_storage_id}/{name}', headers = self.headers,
+					params = params) as response:
+				# Handle results
+				if response.status != 409:
+					# Process response
+					await self.process_response(response)
+					infos = await response.json()
+					documents.extend(map(document_creation_function, infos))
+					
+					# Decode content range
+					content_range = self.decode_content_range(response)
+					next_start_index = content_range['range_end'] + 1
+					if next_start_index == content_range['size']:
+						# All done
+						return documents
+					else:
+						# Prepare next request
+						params['startIndex'] = next_start_index
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def document_create(self, document_type, documents, document_storage_id = None):
@@ -615,14 +669,9 @@ class MDSClient:
 				raise Exception(f'HTTP response: {response.status}')
 			
 			# Decode header
-			content_range = response.headers.get('content-range', '')
-			content_range_parts = content_range.split('/')
-			if len(content_range_parts) == 2:
-				# Have count
-				return int(content_range_parts[1])
-			else:
-				# Don't have count
-				raise Exception('Unable to get count from response')
+			content_range = self.decode_content_range(response)
+
+			return content_range['size']
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def document_get_since_revision(self, document_type, since_revision, count, document_creation_function,
@@ -677,9 +726,8 @@ class MDSClient:
 					# More Documents
 					if not total_document_count:
 						# Retrieve total count from header
-						content_range = response.headers.get('content-range', '')
-						content_range_parts = content_range.split('/')
-						total_document_count = int(content_range_parts[1]) if len(content_range_parts) == 2 else None
+						content_range = self.decode_content_range(response)
+						total_document_count = content_range['size']
 
 					# Check if have proc
 					if proc:
@@ -963,3 +1011,24 @@ class MDSClient:
 			else:
 				# Other
 				raise Exception(f'HTTP response: {response.status}')
+
+	#-------------------------------------------------------------------------------------------------------------------
+	def decode_content_range(self, response):
+		# Decode header
+		groups = re.split('(\w+)[ ](.+)\/(.+)', response.headers.get('content-range', ''))
+		if len(groups) == 5:
+			# Compose info
+			range = groups[2]
+			size = groups[3]
+
+			info = {'unit': groups[1], 'range': range, 'size': size if size == '*' else int(size)}
+			if range != '*':
+				# Decode range components
+				range_parts = range.split('-')
+				info['range_start'] = int(range_parts[0])
+				info['range_end'] = int(range_parts[1])
+			
+			return info
+		else:
+			# Don't have count
+			raise Exception('Unable to decode content range from response')
