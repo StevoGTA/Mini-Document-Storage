@@ -566,6 +566,12 @@ class MDSClient:
 					
 					# Decode content range
 					content_range = self.decode_content_range(response)
+
+					range = content_range['range']
+					if range == '*':
+						# No range
+						return document_infos
+					
 					next_start_index = content_range['range_end'] + 1
 					if next_start_index == content_range['size']:
 						# All done
@@ -620,6 +626,12 @@ class MDSClient:
 					
 					# Decode content range
 					content_range = self.decode_content_range(response)
+
+					range = content_range['range']
+					if range == '*':
+						# No range
+						return documents
+					
 					next_start_index = content_range['range_end'] + 1
 					if next_start_index == content_range['size']:
 						# All done
