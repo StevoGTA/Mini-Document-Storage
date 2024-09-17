@@ -27,13 +27,13 @@ class MDSDocument:
 		return self.info['active'] == 1
 	def set_active(self, active):
 		# Update
-		self.info.active = 1 if active else 0
+		self.info['active'] = 1 if active else 0
 	
 		# Note updated
 		self.active_changed = True
 	def toggle_is_active(self):
 		# Update
-		self.info.active = 1 - self.info.active
+		self.info['active'] = 1 - self.info['active']
 
 		# Note updated
 		self.active_changed = True
@@ -90,7 +90,7 @@ class MDSDocument:
 	# Instance methods
 	#-------------------------------------------------------------------------------------------------------------------
 	def attachments(self, type):
-		return {id: info for (id, info) in self.info.attachments.items() if info['info']['type'] == type}
+		return {id: info for (id, info) in self.info['attachments'].items() if info['info']['type'] == type}
 	
 	# Subclass methods
 	#-------------------------------------------------------------------------------------------------------------------
@@ -131,7 +131,7 @@ class MDSDocument:
 	#-------------------------------------------------------------------------------------------------------------------
 	def create_info(self):
 		# Return info
-		return {'documentID': self.info['documentID'], 'json': self.updated}
+		return {'documentID': self.document_id, 'json': self.updated}
 
 	#-------------------------------------------------------------------------------------------------------------------
 	def update_from_create(self, info):
@@ -150,7 +150,7 @@ class MDSDocument:
 	#-------------------------------------------------------------------------------------------------------------------
 	def update_info(self):
 		# Setup
-		update_info = {'documentID': self.info['documentID']}
+		update_info = {'documentID': self.document_id}
 
 		# Check if have updated properties
 		if self.updated:
