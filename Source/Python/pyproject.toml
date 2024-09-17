@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mini-document-storage"
-version = "1.5.9"
+version = "1.5.10"
 description = "Fast, inexpensive document storage backed by a standard database connector."
 readme = "README.md"
 authors = [{ name = "Stevo Brock", email = "StevoGTA@aol.com" }]

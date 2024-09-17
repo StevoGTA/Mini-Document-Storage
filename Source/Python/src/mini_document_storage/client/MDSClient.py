@@ -828,7 +828,7 @@ class MDSClient:
 		# Setup
 		document_storage_id = document_storage_id or self.document_storage_id
 
-		if type(content) is dict:
+		if (type(content) is dict) or (type(content) is list):
 			# Convert to string
 			content = json.dumps(content)
 		if type(content) is str:
@@ -880,7 +880,7 @@ class MDSClient:
 		# Setup
 		document_storage_id = document_storage_id or self.document_storage_id
 
-		if type(content) is dict:
+		if (type(content) is dict) or (type(content) is list):
 			# Convert to string
 			content = json.dumps(content)
 		if type(content) is str:
