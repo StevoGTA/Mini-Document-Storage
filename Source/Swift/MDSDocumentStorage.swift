@@ -292,6 +292,22 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func documentIterate<T :MDSDocument>(documentIDs :[String],
+			proc :(_ document :T) -> Void) throws {
+		// Iterate documents
+		try documentIterate(for: T.documentType, documentIDs: documentIDs,
+				documentCreateProc: { T(id: $0, documentStorage: $1) }, proc: { proc($0 as! T) })
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func documentIterate<T :MDSDocument>(activeOnly: Bool,
+			proc :(_ document :T) -> Void) throws {
+		// Iterate documents
+		try documentIterate(for: T.documentType, activeOnly: activeOnly,
+				documentCreateProc: { T(id: $0, documentStorage: $1) }, proc: { proc($0 as! T) })
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func documents<T :MDSDocument>(activeOnly :Bool = true) throws -> [T] {
 		// Setup
 		var	documents = [T]()
