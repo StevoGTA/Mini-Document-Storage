@@ -1585,10 +1585,11 @@ class MDSSQLiteDatabaseManager {
 		// Setup
 		let	fromDocumentTables = documentTables(for: documentType)
 		let	fromIDs =
-					try fromDocumentIDs.map({
+					try fromDocumentIDs.map({ documentID -> Int64 in
 						// Get fromID
-						guard let fromID = DocumentTypeInfoTable.id(for: $0, in: fromDocumentTables.infoTable) else {
-							throw MDSDocumentStorageError.unknownDocumentID(documentID: $0)
+						guard let fromID = DocumentTypeInfoTable.id(for: documentID, in: fromDocumentTables.infoTable)
+                                else {
+							throw MDSDocumentStorageError.unknownDocumentID(documentID: documentID)
 						}
 
 						return fromID
