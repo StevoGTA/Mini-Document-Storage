@@ -356,15 +356,15 @@ class CMDSSQLite::Internals {
 																							name);
 													if (associationInfo.hasValue()) {
 														// Have stored
-														I<CMDSAssociation>	association(
+														I<CMDSAssociation>	association_(
 																					new CMDSAssociation(name,
 																							associationInfo->
 																									getFromDocumentType(),
 																							associationInfo->
 																									getToDocumentType()));
-														mAssociationByName.set(name, association);
+														mAssociationByName.set(name, association_);
 
-														return OV<I<CMDSAssociation> >(association);
+														return OV<I<CMDSAssociation> >(association_);
 													}
 
 													return OV<I<CMDSAssociation> >();
@@ -454,15 +454,15 @@ class CMDSSQLite::Internals {
 																			mDocumentStorage.documentValueInfo(
 																					iterator->getSelector()));
 
-														I<MDSCache>	cache(
+														I<MDSCache>	cache_(
 																			new MDSCache(name,
 																					cacheInfo->getDocumentType(),
 																					cacheInfo->getRelevantProperties(),
 																					cacheValueInfos,
 																					cacheInfo->getLastRevision()));
-														mCacheByName.set(name, cache);
+														mCacheByName.set(name, cache_);
 
-														return OV<I<MDSCache> >(cache);
+														return OV<I<MDSCache> >(cache_);
 													}
 
 													return OV<I<MDSCache> >();
@@ -500,7 +500,7 @@ class CMDSSQLite::Internals {
 																							name);
 													if (collectionInfo.hasValue()) {
 														// Have stored
-														I<MDSCollection>	collection(
+														I<MDSCollection>	collection_(
 																					new MDSCollection(name,
 																							collectionInfo->
 																									getDocumentType(),
@@ -514,9 +514,9 @@ class CMDSSQLite::Internals {
 																									getIsIncludedSelectorInfo(),
 																							collectionInfo->
 																									getLastRevision()));
-														mCollectionByName.set(name, collection);
+														mCollectionByName.set(name, collection_);
 
-														return OV<I<MDSCollection> >(collection);
+														return OV<I<MDSCollection> >(collection_);
 													}
 
 													return OV<I<MDSCollection> >();
@@ -724,7 +724,7 @@ class CMDSSQLite::Internals {
 													OV<DMIndexInfo>	indexInfo = mDatabaseManager.indexInfo(name);
 													if (indexInfo.hasValue()) {
 														// Have stored
-														I<MDSIndex>	index(
+														I<MDSIndex>	index_(
 																			new MDSIndex(name,
 																					indexInfo->getDocumentType(),
 																					indexInfo->getRelevantProperties(),
@@ -734,9 +734,9 @@ class CMDSSQLite::Internals {
 																									getKeysSelector()),
 																					indexInfo->getKeysSelectorInfo(),
 																					indexInfo->getLastRevision()));
-														mIndexByName.set(name, index);
+														mIndexByName.set(name, index_);
 
-														return OV<I<MDSIndex> >(index);
+														return OV<I<MDSIndex> >(index_);
 													}
 
 													return OV<I<MDSIndex> >();
