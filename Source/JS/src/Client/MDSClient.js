@@ -400,7 +400,9 @@ class MDSClient {
 			// Loop until up-to-date
 			while (true) {
 				// Queue the call
+console.log("Queuing call.  Queue queue: ", this.queue._queue._queue);
 				let	response = await this.queue.add(() => fetch(url, options));
+console.log("    Done.  Queue queue: ", this.queue._queue._queue);
 
 				// Handle results
 				if (response.status != 409) {
