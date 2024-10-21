@@ -394,13 +394,9 @@ class MDSClient {
 
 		let	options = {headers};
 
-		// Max each call at 10 documentIDs
-		var	results = {};
-		for (let i = 0, length = fromDocumentIDs.length; i < length; i += 10) {
-			// Setup
-			let	documentIDsSlice = fromDocumentIDs.slice(i, i + 10);
-			let	url = urlBase + '&fromID=' + documentIDsSlice.join('&fromID=');
-
+		// Setup processing function
+		let	results = {};
+		async function processURL(url) {
 			// Loop until up-to-date
 			while (true) {
 				// Queue the call
@@ -420,6 +416,15 @@ class MDSClient {
 				}
 			}
 		}
+
+		// Max each call at 10 documentIDs
+		let	promises = [];
+		for (let i = 0, length = fromDocumentIDs.length; i < length; i += 10) {
+			// Setup
+			let	documentIDsSlice = fromDocumentIDs.slice(i, i + 10);
+			promises.push(processURL(urlBase + '&fromID=' + documentIDsSlice.join('&fromID=')));
+		}
+		await Promise.all(promises);
 
 		return results;
 	}
