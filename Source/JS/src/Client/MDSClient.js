@@ -396,13 +396,11 @@ class MDSClient {
 
 		// Setup processing function
 		let	results = {};
-		async function processURL(url) {
+		async function processURL(url, queue) {
 			// Loop until up-to-date
 			while (true) {
 				// Queue the call
-console.log("Queuing call.  Queue queue: ", this.queue._queue._queue);
-				let	response = await this.queue.add(() => fetch(url, options));
-console.log("    Done.  Queue queue: ", this.queue._queue._queue);
+				let	response = await queue.add(() => fetch(url, options));
 
 				// Handle results
 				if (response.status != 409) {
@@ -424,7 +422,7 @@ console.log("    Done.  Queue queue: ", this.queue._queue._queue);
 		for (let i = 0, length = fromDocumentIDs.length; i < length; i += 10) {
 			// Setup
 			let	documentIDsSlice = fromDocumentIDs.slice(i, i + 10);
-			promises.push(processURL(urlBase + '&fromID=' + documentIDsSlice.join('&fromID=')));
+			promises.push(processURL(urlBase + '&fromID=' + documentIDsSlice.join('&fromID='), queue));
 		}
 		await Promise.all(promises);
 
