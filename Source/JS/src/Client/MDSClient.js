@@ -422,7 +422,7 @@ class MDSClient {
 		for (let i = 0, length = fromDocumentIDs.length; i < length; i += 10) {
 			// Setup
 			let	documentIDsSlice = fromDocumentIDs.slice(i, i + 10);
-			promises.push(processURL(urlBase + '&fromID=' + documentIDsSlice.join('&fromID='), queue));
+			promises.push(processURL(urlBase + '&fromID=' + documentIDsSlice.join('&fromID='), this.queue));
 		}
 		await Promise.all(promises);
 
