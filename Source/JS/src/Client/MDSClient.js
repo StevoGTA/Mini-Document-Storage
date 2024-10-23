@@ -395,7 +395,7 @@ class MDSClient {
 		let	options = {headers};
 
 		// Setup processing function
-		let	results = {};
+		var	results = null;
 		let	processURL =
 					async(url) => {
 						// Loop until up-to-date
@@ -410,9 +410,17 @@ class MDSClient {
 
 								// Merge results
 								let	sliceResults = await response.json();
-								for (let key of Object.keys(sliceResults))
-									// Merge entry
-									results[key] = (results[key] || 0) + sliceResults[key];
+								if (Array.isArray(sliceResults))
+									// Have array
+									results = results ? results.concat(sliceResults) : sliceResults;
+								else
+									// Have object
+									results =
+											results ?
+													sliceResults.reduce(
+															(keys, values) => { return {...keys, ...values}; },
+															results) :
+													sliceResults;
 								break;
 							}
 						}
@@ -427,7 +435,7 @@ class MDSClient {
 		}
 		await Promise.all(promises);
 
-		return results;
+		return results || {};
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

@@ -733,7 +733,7 @@ module.exports = class Documents {
 
 		// Catch errors
 		try {
-			// Retrieve document ids
+			// Retrieve info
 			let	results =
 						await statementPerformer.select(true, tablesInfo.infoTable,
 								[tablesInfo.infoTable.idTableColumn, tablesInfo.infoTable.documentIDTableColumn],
@@ -754,6 +754,43 @@ module.exports = class Documents {
 			}
 
 			return [info, null];
+		} catch (error) {
+			// Check error
+			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
+				// No such table
+				return [null, 'No Documents'];
+			else
+				// Other error
+				throw error;
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async getDocumentIDsForIDs(statementPerformer, documentType, ids) {
+		// Setup
+		let	tablesInfo = this.tablesInfo(statementPerformer, documentType);
+
+		// Catch errors
+		try {
+			// Retrieve info
+			let	results =
+						await statementPerformer.select(true, tablesInfo.infoTable,
+								[tablesInfo.infoTable.idTableColumn, tablesInfo.infoTable.documentIDTableColumn],
+								statementPerformer.where(tablesInfo.infoTable.documentIDTableColumn, documentIDs));
+			
+			// Compose results
+			var	info = {};
+			for (let result of results)
+				// Update info
+				info[result.id] = result.documentID;
+			
+			// Validate results
+			for (let id of ids) {
+				// Check this id
+				if (!info[id])
+					// Not found
+					return [null, 'Unknown id: ' + id];
+			}
 		} catch (error) {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))

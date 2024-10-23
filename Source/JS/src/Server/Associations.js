@@ -263,7 +263,7 @@ module.exports = class Associations {
 
 		if (!action)
 			return [null, null, 'Missing action'];
-		if (action != 'sum')
+		if ((action != 'detail') && (action != 'sum'))
 			return [null, null, 'Invalid action'];
 
 		if (!fromDocumentIDs)
@@ -317,40 +317,76 @@ module.exports = class Associations {
 		// Check if up to date
 		if (cache.lastDocumentRevision == documentTypeLastRevision) {
 			// Get from document info
-			let	[ids, idsError] =
+			let	[fromIDByDocumentID, fromIDByDocumentIDError] =
 						await internals.documents.getIDsForDocumentIDs(statementPerformer, association.fromType,
 								fromDocumentIDs);
-			if (idsError)
-				return [null, null, idsError];
+			if (fromIDByDocumentIDError)
+				return [null, null, fromIDByDocumentIDError];
 
 			var	fromIDs = [];
+			var	fromDocumentIDByID = {};
 			for (let fromDocumentID of fromDocumentIDs) {
 				// Get id
-				let	id = ids[fromDocumentID];
-				if (id)
+				let	fromID = fromIDByDocumentID[fromDocumentID];
+				if (fromID) {
 					// Have id
-					fromIDs.push(id);
-				else
+					fromIDs.push(fromID);
+					fromDocumentIDByID[fromID] = fromDocumentID;
+				} else
 					// fromDocumentID not found
 					return [null, null, 'Document ' + fromDocumentID + ' not found.'];
 			}
 
 			// Perform
-			var	mySQLResults =
+			var	mySQLResults;
+			if (action == 'detail') {
+				// Detail
+				tableColumns.push(association.tableColumn('fromID'));
+				tableColumns.push(association.tableColumn('toID'));
+
+				mySQLResults =
+						await statementPerformer.select(association.table, tableColumns,
+								statementPerformer.innerJoin(cache.table, association.table.toIDTableColumn,
+										cache.table.idTableColumn),
+								statementPerformer.where(association.table.fromIDTableColumn, fromIDs));
+				
+				// Process results
+				let	toIDs = [];
+				for (let result of mySQLResults) {
+					// Update
+					result.fromID = fromDocumentIDByID[result.fromID];
+					toIDs.push(result.toID);
+				}
+
+				// Get document IDs for to IDs
+				let	[toDocumentIDByID, toDocumentIDByIDError] =
+							await internals.documents.getDocumentIDsForIDs(statementPerformer, association.toType,
+									toIDs);
+				if (toDocumentIDByIDError)
+					return [null, null, toDocumentIDByIDError];
+				
+				// Process results
+				for (let result of mySQLResults)
+					// Update
+					result.toID = toDocumentIDByID[result.toID];
+			} else {
+				// Sum
+				mySQLResults =
 						await statementPerformer.sum(association.table, tableColumns,
 								statementPerformer.innerJoin(cache.table, association.table.toIDTableColumn,
 										cache.table.idTableColumn),
 								statementPerformer.where(association.table.fromIDTableColumn, fromIDs));
 
-			// Process results
-			for (let cachedValueName of cachedValueNames)
-				// Update if necessary
-				mySQLResults[cachedValueName] = mySQLResults[cachedValueName] || 0;
-			
-			// Get count
-			mySQLResults.count =
-					await statementPerformer.count(association.table,
-							statementPerformer.where(association.table.fromIDTableColumn, fromIDs));
+				// Process results
+				for (let cachedValueName of cachedValueNames)
+					// Update if necessary
+					mySQLResults[cachedValueName] = mySQLResults[cachedValueName] || 0;
+				
+				// Get count
+				mySQLResults.count =
+						await statementPerformer.count(association.table,
+								statementPerformer.where(association.table.fromIDTableColumn, fromIDs));
+			}
 
 			return [true, mySQLResults, null];
 		} else if (documentTypeLastRevision) {
