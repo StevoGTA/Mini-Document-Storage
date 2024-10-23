@@ -776,7 +776,7 @@ module.exports = class Documents {
 			let	results =
 						await statementPerformer.select(true, tablesInfo.infoTable,
 								[tablesInfo.infoTable.idTableColumn, tablesInfo.infoTable.documentIDTableColumn],
-								statementPerformer.where(tablesInfo.infoTable.documentIDTableColumn, documentIDs));
+								statementPerformer.where(tablesInfo.infoTable.idTableColumn, ids));
 			
 			// Compose results
 			var	info = {};
