@@ -410,6 +410,7 @@ class MDSClient {
 
 								// Merge results
 								let	sliceResults = await response.json();
+console.log("sliceResults (isArray: " + Array.isArray(sliceResults) + "): ", sliceResults);
 								if (Array.isArray(sliceResults))
 									// Have array
 									results = results ? results.concat(sliceResults) : sliceResults;
