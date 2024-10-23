@@ -28,11 +28,15 @@ module.exports = class Cache {
 							tableName)]
 							.concat(
 									valueInfos.map(valueInfo => {
-											// // Check value type
-											// if (valueInfo.valueType == 'integer')
+											// Check value type
+											if (valueInfo.valueType == 'integer')
 												// Integer
 												return new TableColumn.BIGINT(valueInfo.name,
 														TableColumn.options.nonNull | TableColumn.options.unsigned);
+											else if (valueInfo.valueType == 'string')
+												// String
+												return new TableColumn.VARCHAR(valueInfo.name,
+														TableColumn.options.nonNull, 100);
 											}));
 		this.table = statementPerformer.table(tableName, tableColumns);
 	}

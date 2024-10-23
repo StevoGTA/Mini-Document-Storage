@@ -32,6 +32,7 @@ module.exports = class DocumentStorage {
 				Object.assign(
 						{
 							'integerValueForProperty()': integerValueForProperty,
+							'stringValueForProperty()': stringValueForProperty,
 						},
 						cacheValueSelectorInfo || {});
 		this.collectionIsIncludedSelectorInfo =
@@ -770,6 +771,9 @@ module.exports = class DocumentStorage {
 // Built-in Cache functions
 //----------------------------------------------------------------------------------------------------------------------
 function integerValueForProperty(propertyMap, property) { return propertyMap[property] || 0; }
+
+//----------------------------------------------------------------------------------------------------------------------
+function stringValueForProperty(propertyMap, property) { return propertyMap[property] || ""; }
 
 // Built-in Collection functions
 //----------------------------------------------------------------------------------------------------------------------
