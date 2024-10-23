@@ -345,7 +345,7 @@ module.exports = class Associations {
 				tableColumns.push(association.tableColumn('toID'));
 
 				mySQLResults =
-						await statementPerformer.select(association.table, tableColumns,
+						await statementPerformer.select(true, association.table, tableColumns,
 								statementPerformer.innerJoin(cache.table, association.table.toIDTableColumn,
 										cache.table.idTableColumn),
 								statementPerformer.where(association.table.fromIDTableColumn, fromIDs));
