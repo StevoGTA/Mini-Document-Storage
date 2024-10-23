@@ -791,6 +791,8 @@ module.exports = class Documents {
 					// Not found
 					return [null, 'Unknown id: ' + id];
 			}
+
+			return [info, null];
 		} catch (error) {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
