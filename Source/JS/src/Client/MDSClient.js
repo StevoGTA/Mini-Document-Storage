@@ -396,33 +396,34 @@ class MDSClient {
 
 		// Setup processing function
 		let	results = {};
-		async function processURL(url, queue) {
-			// Loop until up-to-date
-			while (true) {
-				// Queue the call
-				let	response = await queue.add(() => fetch(url, options));
+		let	processURL =
+					async(url) => {
+						// Loop until up-to-date
+						while (true) {
+							// Queue the call
+							let	response = await this.queue.add(() => fetch(url, options));
 
-				// Handle results
-				if (response.status != 409) {
-					// Process response
-					await processResponse(response);
+							// Handle results
+							if (response.status != 409) {
+								// Process response
+								await processResponse(response);
 
-					// Merge results
-					let	sliceResults = await response.json();
-					for (let key of Object.keys(sliceResults))
-						// Merge entry
-						results[key] = (results[key] || 0) + sliceResults[key];
-					break;
-				}
-			}
-		}
+								// Merge results
+								let	sliceResults = await response.json();
+								for (let key of Object.keys(sliceResults))
+									// Merge entry
+									results[key] = (results[key] || 0) + sliceResults[key];
+								break;
+							}
+						}
+					};
 
 		// Max each call at 10 documentIDs
 		let	promises = [];
 		for (let i = 0, length = fromDocumentIDs.length; i < length; i += 10) {
 			// Setup
 			let	documentIDsSlice = fromDocumentIDs.slice(i, i + 10);
-			promises.push(processURL(urlBase + '&fromID=' + documentIDsSlice.join('&fromID='), this.queue));
+			promises.push(processURL(urlBase + '&fromID=' + documentIDsSlice.join('&fromID=')));
 		}
 		await Promise.all(promises);
 

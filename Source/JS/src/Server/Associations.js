@@ -346,6 +346,11 @@ module.exports = class Associations {
 			for (let cachedValueName of cachedValueNames)
 				// Update if necessary
 				mySQLResults[cachedValueName] = mySQLResults[cachedValueName] || 0;
+			
+			// Get count
+			mySQLResults.count =
+					await statementPerformer.count(association.table,
+							statementPerformer.where(association.table.fromIDTableColumn, fromIDs));
 
 			return [true, mySQLResults, null];
 		} else if (documentTypeLastRevision) {
