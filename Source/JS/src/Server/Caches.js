@@ -69,7 +69,7 @@ module.exports = class Caches {
 			let	valueType = valueInfo.valueType;
 			if (!valueType)
 				return 'Missing value valueType';
-			if (valueType != 'integer')
+			if ((valueType != 'integer') && (valueType != 'string'))
 				return 'Invalid value valueType: ' + valueType;
 
 			let	selector = valueInfo.selector;
