@@ -119,7 +119,8 @@ module.exports = class Caches {
 							{tableColumn: this.cachesTable.infoTableColumn, value: JSON.stringify(valueInfos)},
 							{tableColumn: this.cachesTable.lastDocumentRevisionTableColumn, value: 0},
 						]);
-				cache.queueTruncate(statementPerformer);
+				cache.queueDrop(statementPerformer);
+				cache.queueCreate(statementPerformer);
 			}
 		}
 	}

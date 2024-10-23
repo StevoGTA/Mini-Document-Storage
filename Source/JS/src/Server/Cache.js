@@ -49,7 +49,7 @@ module.exports = class Cache {
 	queueCreate(statementPerformer) { statementPerformer.queueCreateTable(this.table); }
 
 	//------------------------------------------------------------------------------------------------------------------
-	queueTruncate(statementPerformer) { statementPerformer.queueTruncateTable(this.table); }
+	queueDrop(statementPerformer) { statementPerformer.queueDropTable(this.table); }
 
 	//------------------------------------------------------------------------------------------------------------------
 	queueUpdates(statementPerformer, initialLastRevision, updateDocumentInfos) {
