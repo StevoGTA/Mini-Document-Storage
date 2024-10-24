@@ -57,36 +57,33 @@ module.exports = class Cache {
 		if (initialLastRevision == this.lastDocumentRevision) {
 			// Iterate update document infos
 			for (let updateDocumentInfo of updateDocumentInfos) {
-				// Check if json overlaps with the relevant properties
-				if (Object.keys(updateDocumentInfo.json).find(property => this.relevantProperties.includes(property))) {
-					// Check active
-					if (updateDocumentInfo.active) {
-						// Active
-						var	tableColumns = [];
-						if (updateDocumentInfo.id)
-							// Use id
-							tableColumns.push({tableColumn: this.table.idTableColumn, value: updateDocumentInfo.id});
-						else
-							// Use idVariable
-							tableColumns.push(
-									{tableColumn: this.table.idTableColumn, variable: updateDocumentInfo.idVariable});
+				// Check active
+				if (updateDocumentInfo.active) {
+					// Active
+					var	tableColumns = [];
+					if (updateDocumentInfo.id)
+						// Use id
+						tableColumns.push({tableColumn: this.table.idTableColumn, value: updateDocumentInfo.id});
+					else
+						// Use idVariable
+						tableColumns.push(
+								{tableColumn: this.table.idTableColumn, variable: updateDocumentInfo.idVariable});
 
-						// Iterate infos
-						for (let valueInfo of this.valueInfos) {
-							// Query value
-							let	value = valueInfo.selector(updateDocumentInfo.json, valueInfo.name);
+					// Iterate infos
+					for (let valueInfo of this.valueInfos) {
+						// Query value
+						let	value = valueInfo.selector(updateDocumentInfo.json, valueInfo.name);
 
-							// Add info
-							tableColumns.push({tableColumn: this.table.tableColumn(valueInfo.name), value: value});
-						}
+						// Add info
+						tableColumns.push({tableColumn: this.table.tableColumn(valueInfo.name), value: value});
+					}
 
-						// Queue
-						statementPerformer.queueReplace(this.table, tableColumns);
-					} else
-						// Not active
-						statementPerformer.queueDelete(this.table,
-								statementPerformer.where(this.table.idTableColumn, updateDocumentInfo.id));
-				}
+					// Queue
+					statementPerformer.queueReplace(this.table, tableColumns);
+				} else
+					// Not active
+					statementPerformer.queueDelete(this.table,
+							statementPerformer.where(this.table.idTableColumn, updateDocumentInfo.id));
 
 				// Update
 				this.lastDocumentRevision = updateDocumentInfo.revision;
