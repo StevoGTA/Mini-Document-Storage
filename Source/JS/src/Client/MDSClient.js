@@ -413,9 +413,13 @@ class MDSClient {
 								if (Array.isArray(sliceResults))
 									// Have array
 									results = results ? results.concat(sliceResults) : sliceResults;
-								else
+								else {
 									// Have object
-									results = results ? {...results, ...sliceResults} : sliceResults;
+									results = results || {};
+									for (let key of Object.keys(sliceResults))
+										// Merge entry
+										results[key] = (results[key] || 0) + sliceResults[key];
+								}
 								break;
 							}
 						}
