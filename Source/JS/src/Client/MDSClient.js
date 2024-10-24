@@ -415,12 +415,7 @@ class MDSClient {
 									results = results ? results.concat(sliceResults) : sliceResults;
 								else
 									// Have object
-									results =
-											results ?
-													sliceResults.reduce(
-															(keys, values) => { return {...keys, ...values}; },
-															results) :
-													sliceResults;
+									results = results ? {...results, ...sliceResults} : sliceResults;
 								break;
 							}
 						}
