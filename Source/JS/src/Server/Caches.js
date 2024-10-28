@@ -104,24 +104,21 @@ module.exports = class Caches {
 						{tableColumn: this.cachesTable.lastDocumentRevisionTableColumn, value: 0},
 					]);
 			cache.queueCreate(statementPerformer);
-		} else {
-			// Have existing
-			if (!util.isDeepStrictEqual(valueInfos, JSON.parse(results[0].info.toString()))) {
-				// Update
-				let	cache = this.createCache(statementPerformer, name, documentType, relevantProperties, valueInfos, 0);
+		} else if (!util.isDeepStrictEqual(valueInfos, JSON.parse(results[0].info.toString()))) {
+			// Update existing
+			let	cache = this.createCache(statementPerformer, name, documentType, relevantProperties, valueInfos, 0);
 
-				statementPerformer.queueReplace(this.cachesTable,
-						[
-							{tableColumn: this.cachesTable.nameTableColumn, value: name},
-							{tableColumn: this.cachesTable.typeTableColumn, value: documentType},
-							{tableColumn: this.cachesTable.relevantPropertiesTableColumn,
-									value: relevantProperties.toString()},
-							{tableColumn: this.cachesTable.infoTableColumn, value: JSON.stringify(valueInfos)},
-							{tableColumn: this.cachesTable.lastDocumentRevisionTableColumn, value: 0},
-						]);
-				cache.queueDrop(statementPerformer);
-				cache.queueCreate(statementPerformer);
-			}
+			statementPerformer.queueReplace(this.cachesTable,
+					[
+						{tableColumn: this.cachesTable.nameTableColumn, value: name},
+						{tableColumn: this.cachesTable.typeTableColumn, value: documentType},
+						{tableColumn: this.cachesTable.relevantPropertiesTableColumn,
+								value: relevantProperties.toString()},
+						{tableColumn: this.cachesTable.infoTableColumn, value: JSON.stringify(valueInfos)},
+						{tableColumn: this.cachesTable.lastDocumentRevisionTableColumn, value: 0},
+					]);
+			cache.queueDrop(statementPerformer);
+			cache.queueCreate(statementPerformer);
 		}
 	}
 
