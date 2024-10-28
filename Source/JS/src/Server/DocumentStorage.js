@@ -90,7 +90,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() => { return internals.associations.register(statementPerformer, info); });
 			
@@ -117,7 +117,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() => { return internals.associations.update(statementPerformer, name, infos); });
 			
@@ -144,7 +144,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() =>
 										{ return internals.associations.getDocuments(statementPerformer, name,
@@ -173,7 +173,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() =>
 										{ return internals.associations.getValue(statementPerformer, name, action,
@@ -202,9 +202,37 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() => { return internals.caches.register(statementPerformer, info); });
+			
+			return results;
+		} catch (error) {
+			// Error
+			if (statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return 'Invalid documentStorageID: ' + documentStorageID;
+			else
+				// Other
+				throw error;
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async cacheGetContent(documentStorageID, name, documentIDs = null, cachedValueNames = null) {
+		// Setup
+		let	statementPerformer = this.statementPerformerProc();
+		statementPerformer.use(documentStorageID);
+
+		let	internals = this.internals(statementPerformer, documentStorageID);
+
+		// Catch errors
+		try {
+			// Do it
+			let	{results} =
+						await statementPerformer.batch(true,
+								() => { return internals.caches.getContent(statementPerformer, name, documentIDs,
+										cachedValueNames); });
 			
 			return results;
 		} catch (error) {
@@ -229,7 +257,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() => { return internals.collections.register(statementPerformer, info); });
 			
@@ -256,7 +284,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() =>
 										{ return internals.collections.getDocumentCount(statementPerformer,
@@ -285,7 +313,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() =>
 										{ return internals.collections.getDocuments(statementPerformer, name,
@@ -314,7 +342,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() => { return internals.documents.create(statementPerformer, documentType, infos); });
 			
@@ -341,7 +369,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() => { return internals.documents.getCount(statementPerformer, documentType); });
 			
@@ -368,7 +396,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() =>
 										{ return internals.documents.getSinceRevision(statementPerformer, documentType,
@@ -398,7 +426,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() =>
 										{ return internals.documents.getForDocumentIDs(statementPerformer, documentType,
@@ -469,7 +497,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() =>
 										{ return internals.documents.attachmentAdd(statementPerformer, documentType,
@@ -498,7 +526,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() =>
 										{ return internals.documents.attachmentGet(statementPerformer, documentType,
@@ -527,7 +555,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() =>
 										{ return internals.documents.attachmentUpdate(statementPerformer, documentType,
@@ -556,7 +584,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() =>
 										{ return internals.documents.attachmentRemove(statementPerformer, documentType,
@@ -585,7 +613,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() => { return internals.indexes.register(statementPerformer, info); });
 			
@@ -612,7 +640,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() =>
 										{ return internals.indexes.getDocuments(statementPerformer, name, keys,
@@ -641,7 +669,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() => { return internals.info.get(statementPerformer, keys); });
 
@@ -668,7 +696,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() => internals.info.set(statementPerformer, keysAndValues));
 			
@@ -695,7 +723,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() => { return internals.internal.get(statementPerformer, keys); });
 
@@ -722,7 +750,7 @@ module.exports = class DocumentStorage {
 		// Catch errors
 		try {
 			// Do it
-			let	{mySQLResults, results} =
+			let	{results} =
 						await statementPerformer.batch(true,
 								() => internals.internal.set(statementPerformer, keysAndValues));
 			

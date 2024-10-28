@@ -156,7 +156,7 @@ module.exports = class Caches {
 	async getForName(statementPerformer, name) {
 		// Catch errors
 		try {
-			// Select all Caches for this document type
+			// Retrieve Cache
 			let	results =
 						await statementPerformer.select(true, this.cachesTable,
 								statementPerformer.where(this.cachesTable.nameTableColumn, name));
@@ -182,6 +182,73 @@ module.exports = class Caches {
 				// Other error
 				throw error;
 		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async getContent(statementPerformer, name, documentIDs = null, valueNames = null) {
+		// Validate
+		if (!name)
+			return [null, null, 'Missing name'];
+
+		if (!valueNames)
+			return [null, null, 'Missing valueNames'];
+		if (!Array.isArray(valueNames))
+			return [null, null, 'valueNames is not an array.'];
+		if (valueNames.length == 0)
+			return [null, null, "Missing valueNames"];
+
+		// Setup
+		let	internals = this.internals;
+		
+		// Get cache
+		let	[cache, cacheError] = await internals.caches.getForName(statementPerformer, name);
+		if (cacheError)
+			// Error
+			return [null, null, cacheError];
+		
+		// Get document type last revision
+		let	documentTypeLastRevision = await internals.documents.getLastRevision(statementPerformer, cache.type);
+
+		// Check if up to date
+		if (cache.lastDocumentRevision == documentTypeLastRevision) {
+			// Get TableColumns
+			var	tableColumns = [internals.documents.documentIDTableColumn];
+			for (let valueName of valueNames) {
+				// Get TableColumn
+				let	tableColumn = cache.tableColumn(valueName);
+				if (!tableColumn)
+					// Unknown cache valueName
+					return [null, null, 'Unknown cache valueName: ' + valueName];
+				
+				// Add to array
+				tableColumns.push(tableColumn);
+			}
+			
+			// Check if have documentIDs
+			var	mySQLResults;
+			if (documentIDs != null)
+				// Have documentIDs
+				mySQLResults =
+						await statementPerformer.select(true, cache.table, tableColumns,
+								internals.documents.getInnerJoinForDocument(statementPerformer, cache.type,
+										cache.table.idTableColumn),
+								statementPerformer.where(internals.documents.documentIDTableColumn, documentIDs));
+			else
+				// Don't have documentIDs
+				mySQLResults =
+						await statementPerformer.select(true, cache.table, tableColumns,
+								internals.documents.getInnerJoinForDocument(statementPerformer, cache.type,
+										cache.table.idTableColumn));
+
+			return [true, mySQLResults, null];
+		} else if (documentTypeLastRevision) {
+			// Update
+			await internals.caches.updateCache(statementPerformer, cache);
+
+			return [false, null, null];
+		} else 
+			// No document of this type yet
+			return [false, null, null];
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

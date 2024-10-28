@@ -43,3 +43,51 @@ exports.registerV1 = async (event) => {
 		};
 	}
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: Get Content
+exports.getContentV1 = async (event) => {
+	// Setup
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
+	let	name = decodeURIComponent(event.pathParameters.name);
+
+	let	multiValueQueryStringParameters = event.multiValueQueryStringParameters || {};
+	let	documentIDs = (multiValueQueryStringParameters.id || []).map(id => decodeURIComponent(id));
+	let	valueNames = (multiValueQueryStringParameters.valueName || []).map(valueName => decodeURIComponent(valueName));
+
+	// Catch errors
+	try {
+		// Get Cache content
+		let	[upToDate, results, error] =
+					await documentStorage.cacheGetContent(documentStorageID, name, documentIDs, valueNames);
+		if (upToDate)
+			// Success
+			return {
+					statusCode: 200,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify(results),
+			};
+		else if (!error)
+			// Not up to date
+			return {
+					statusCode: 409,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+			};
+		else
+			// Error
+			return {
+					statusCode: 400,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+					body: JSON.stringify({error: error.toString()})
+			};
+	} catch (error) {
+		// Error
+		console.error(error.stack);
+
+		return {
+				statusCode: 500,
+				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+				body: '{"error": "Internal error"}',
+		};
+	}
+}

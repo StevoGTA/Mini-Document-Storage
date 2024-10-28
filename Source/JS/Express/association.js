@@ -140,7 +140,7 @@ export async function getValueV1(request, response) {
 	let	cachedValueNames = request.query.cachedValueName || [];
 	if (typeof cachedValueNames == 'string')
 		cachedValueNames = [cachedValueNames];
-	cachedValueNames = cachedValueNames.map(documentID => decodeURIComponent(documentID));
+	cachedValueNames = cachedValueNames.map(cachedValueName => decodeURIComponent(cachedValueName));
 
 	// Catch errors
 	try {
