@@ -212,7 +212,7 @@ module.exports = class Caches {
 		// Check if up to date
 		if (cache.lastDocumentRevision == documentTypeLastRevision) {
 			// Get TableColumns
-			var	tableColumns = [internals.documents.documentIDTableColumn];
+			var	tableColumns = [internals.documents.getDocumentIDTableColumnString(statementPerformer, cache.type)];
 			for (let valueName of valueNames) {
 				// Get TableColumn
 				let	tableColumn = cache.tableColumn(valueName);

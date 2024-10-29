@@ -805,11 +805,11 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	getDocumentIDTableColumnString(statementPerformer, documentType, asName) {
+	getDocumentIDTableColumnString(statementPerformer, documentType, asName = null) {
 		// Setup
 		let	documentIDTableColumn = this.tablesInfo(statementPerformer, documentType).infoTable.documentIDTableColumn;
 
-		return documentIDTableColumn.getNameWithTableAs(asName);
+		return asName ? documentIDTableColumn.getNameWithTableAs(asName) : documentIDTableColumn.mySQLNameWithTable;
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
