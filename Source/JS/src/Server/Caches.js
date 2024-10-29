@@ -212,7 +212,9 @@ module.exports = class Caches {
 		// Check if up to date
 		if (cache.lastDocumentRevision == documentTypeLastRevision) {
 			// Get TableColumns
-			var	tableColumns = [internals.documents.getDocumentIDTableColumnString(statementPerformer, cache.type)];
+			let	documentIDTableColumn =
+						internals.documents.getDocumentIDTableColumnString(statementPerformer, cache.type);
+			var	tableColumns = [documentIDTableColumn];
 			for (let valueName of valueNames) {
 				// Get TableColumn
 				let	tableColumn = cache.tableColumn(valueName);
@@ -232,7 +234,7 @@ module.exports = class Caches {
 						await statementPerformer.select(true, cache.table, tableColumns,
 								internals.documents.getInnerJoinForDocument(statementPerformer, cache.type,
 										cache.table.idTableColumn),
-								statementPerformer.where(internals.documents.documentIDTableColumn, documentIDs));
+								statementPerformer.where(documentIDTableColumn, documentIDs));
 			else
 				// Don't have documentIDs
 				mySQLResults =
