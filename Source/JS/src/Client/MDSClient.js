@@ -471,7 +471,7 @@ class MDSClient {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		let	valueNameQuery = valueNames.map(valueName => 'valueName=' + encodeURIComponent(valueName)).join('&');
-		let	documentIDs = documentIDs?.map(documentID => encodeURIComponent(documentID));
+		documentIDs = documentIDs?.map(documentID => encodeURIComponent(documentID));
 		
 		let	urlBase =
 					this.urlBase + '/v1/cache/' + encodeURIComponent(documentStorageIDUse) + '/' +
