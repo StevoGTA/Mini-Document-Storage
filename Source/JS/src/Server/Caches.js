@@ -185,7 +185,7 @@ module.exports = class Caches {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getContent(statementPerformer, name, documentIDs = null, valueNames = null) {
+	async getContent(statementPerformer, name, valueNames, documentIDs = null) {
 		// Validate
 		if (!name)
 			return [null, null, 'Missing name'];

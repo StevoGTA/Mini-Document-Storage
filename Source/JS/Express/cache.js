@@ -46,22 +46,22 @@ export async function getContentV1(request, response) {
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	name = decodeURIComponent(request.params.name);
 
-	var	documentIDs = request.query.id || [];
-	if (typeof documentIDs == 'string')
-		documentIDs = [documentIDs];
-	documentIDs = documentIDs.map(documentID => decodeURIComponent(documentID));
-
 	let	valueNames = request.query.valueName || [];
 	if (typeof valueNames == 'string')
 		valueNames = [valueNames];
 	valueNames = valueNames.map(valueName => decodeURIComponent(valueName));
 
+	var	documentIDs = request.query.id;
+	if (typeof documentIDs == 'string')
+		documentIDs = [documentIDs];
+	documentIDs = documentIDs?.map(documentID => decodeURIComponent(documentID));
+
 	// Catch errors
 	try {
 		// Get Cache content
 		let	[upToDate, results, error] =
-					await request.app.locals.documentStorage.cacheGetContent(documentStorageID, name, documentIDs,
-							cachedValueNames);
+					await request.app.locals.documentStorage.cacheGetContent(documentStorageID, name, valueNames,
+							documentIDs);
 		if (upToDate)
 			// Success
 			response

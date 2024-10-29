@@ -52,14 +52,14 @@ exports.getContentV1 = async (event) => {
 	let	name = decodeURIComponent(event.pathParameters.name);
 
 	let	multiValueQueryStringParameters = event.multiValueQueryStringParameters || {};
-	let	documentIDs = (multiValueQueryStringParameters.id || []).map(id => decodeURIComponent(id));
 	let	valueNames = (multiValueQueryStringParameters.valueName || []).map(valueName => decodeURIComponent(valueName));
+	let	documentIDs = multiValueQueryStringParameters.id?.map(id => decodeURIComponent(id));
 
 	// Catch errors
 	try {
 		// Get Cache content
 		let	[upToDate, results, error] =
-					await documentStorage.cacheGetContent(documentStorageID, name, documentIDs, valueNames);
+					await documentStorage.cacheGetContent(documentStorageID, name, valueNames, documentIDs);
 		if (upToDate)
 			// Success
 			return {

@@ -467,6 +467,61 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	async cacheGetContent(name, valueNames, documentIDs = null, documentStorageID = null) {
+		// Setup
+		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
+		let	valueNameQuery = valueNames.map(valueName => 'valueName=' + encodeURIComponent(valueName)).join('&');
+		let	documentIDs = documentIDs?.map(documentID => encodeURIComponent(documentID));
+		
+		let	urlBase =
+					this.urlBase + '/v1/cache/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name) + '?' + valueNameQuery;
+
+		let	headers = {...this.headers};
+		headers['Content-Type'] = 'application/json';
+
+		let	options = {headers};
+
+		// Setup processing function
+		var	results = null;
+		let	processURL =
+					async(url) => {
+						// Loop until up-to-date
+						while (true) {
+							// Queue the call
+							let	response = await this.queue.add(() => fetch(url, options));
+
+							// Handle results
+							if (response.status != 409) {
+								// Process response
+								await processResponse(response);
+
+								// Merge results
+								let	sliceResults = await response.json();
+								results = results ? results.concat(sliceResults) : sliceResults;
+								break;
+							}
+						}
+					};
+
+		// Check if have documentIDs
+		if (documentIDs?.length > 0) {
+			// Max each call at 10 documentIDs
+			let	promises = [];
+			for (let i = 0, length = documentIDs.length; i < length; i += 10) {
+				// Setup
+				let	documentIDsSlice = documentIDs.slice(i, i + 10);
+				promises.push(processURL(urlBase + '&fromID=' + documentIDsSlice.join('&fromID=')));
+			}
+			await Promise.all(promises);
+		} else
+			// No documentIDs
+			await processURL(urlBase);
+
+		return results || {};
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	async collectionRegister(name, documentType, relevantProperties, isUpToDate, isIncludedSelector,
 			isIncludedSelectorInfo, documentStorageID = null) {
 		// Setup
