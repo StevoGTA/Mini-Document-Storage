@@ -219,7 +219,7 @@ module.exports = class DocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async cacheGetContent(documentStorageID, name, documentIDs = null, cachedValueNames = null) {
+	async cacheGetContent(documentStorageID, name, documentIDs = null, valueNames = null) {
 		// Setup
 		let	statementPerformer = this.statementPerformerProc();
 		statementPerformer.use(documentStorageID);
@@ -232,7 +232,7 @@ module.exports = class DocumentStorage {
 			let	{results} =
 						await statementPerformer.batch(true,
 								() => { return internals.caches.getContent(statementPerformer, name, documentIDs,
-										cachedValueNames); });
+										valueNames); });
 			
 			return results;
 		} catch (error) {

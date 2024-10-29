@@ -805,6 +805,12 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	getDocumentIDTableColumn(statementPerformer, documentType) {
+		// Return table column
+		return this.tablesInfo(statementPerformer, documentType).infoTable.documentIDTableColumn;
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	getDocumentIDTableColumnString(statementPerformer, documentType, asName = null) {
 		// Setup
 		let	documentIDTableColumn = this.tablesInfo(statementPerformer, documentType).infoTable.documentIDTableColumn;
