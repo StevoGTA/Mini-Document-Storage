@@ -490,7 +490,7 @@ TVResult<CString> CMDSDocument::getAttachmentContentAsString(const AttachmentInf
 									attachmentInfo.getID());
 	ReturnValueIfResultError(data, TVResult<CString>(data.getError()));
 
-	return CString(*data);
+	return CString(*data, CString::kEncodingUTF8);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

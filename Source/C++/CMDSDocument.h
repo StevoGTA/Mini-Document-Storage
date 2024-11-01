@@ -561,10 +561,10 @@ class CMDSDocument : public CHashable {
 						AttachmentInfo						addAttachment(const CString& type, const CDictionary& info,
 																	const CString& content)
 																{ return addAttachment(type, info,
-																		content.getData(CString::kEncodingUTF8)); }
+																		*content.getData(CString::kEncodingUTF8)); }
 						AttachmentInfo						addAttachment(const CString& type, const CString& content)
 																{ return addAttachment(type, CDictionary::mEmpty,
-																		content.getData(CString::kEncodingUTF8)); }
+																		*content.getData(CString::kEncodingUTF8)); }
 						AttachmentInfo						addAttachment(const CString& type, const CDictionary& info,
 																	const CDictionary& content);
 						AttachmentInfo						addAttachment(const CString& type,
@@ -588,7 +588,7 @@ class CMDSDocument : public CHashable {
 																	const CDictionary& updatedInfo,
 																	const CString& updatedContent)
 																{ updateAttachment(attachmentInfo, updatedInfo,
-																		updatedContent.getData(
+																		*updatedContent.getData(
 																				CString::kEncodingUTF8)); }
 						void								updateAttachment(const AttachmentInfo& attachmentInfo,
 																	const CString& updatedContent)
