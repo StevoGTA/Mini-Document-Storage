@@ -63,6 +63,7 @@ class CMDSDocumentStorage::Internals {
 		TNDictionary<CMDSDocument::IsIncludedPerformer>	mDocumentIsIncludedPerformerBySelector;
 		TNDictionary<CMDSDocument::KeysPerformer>		mDocumentKeysPerformerBySelector;
 		TNDictionary<CMDSDocument::ValueInfo>			mDocumentValueInfoBySelector;
+		TNDictionary<SValue>							mEphemeralValueByKey;
 };
 
 CMDSDocument::Info	CMDSDocumentStorage::Internals::GenericDocument::mInfo(CString(OSSTR("generic")), create);
@@ -285,6 +286,22 @@ const CMDSDocument::ValueInfo& CMDSDocumentStorage::documentValueInfo(const CStr
 //----------------------------------------------------------------------------------------------------------------------
 {
 	return *mInternals->mDocumentValueInfoBySelector[selector];
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<SValue> CMDSDocumentStorage::ephemeralValue(const CString& key) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return mInternals->mEphemeralValueByKey.getOValue(key);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocumentStorage::storeEphemeral(const CString& key, const OV<SValue>& value)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Store
+	mInternals->mEphemeralValueByKey.set(key, value);
 }
 
 // MARK: Subclass methods

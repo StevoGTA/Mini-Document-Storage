@@ -488,9 +488,7 @@
 		0A16F3452A0E133B00E4F149 /* CCoreAudioAudioConverter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CCoreAudioAudioConverter.cpp; sourceTree = "<group>"; };
 		0A16F3462A0E133B00E4F149 /* CBitmap-Apple.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "CBitmap-Apple.cpp"; sourceTree = "<group>"; };
 		0A16F3472A0E133B00E4F149 /* CCoreGraphicsRenderer.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CCoreGraphicsRenderer.cpp; sourceTree = "<group>"; };
-		0A16F3482A0E133B00E4F149 /* CCoreAudioAudioCodec.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CCoreAudioAudioCodec.h; sourceTree = "<group>"; };
 		0A16F3492A0E133B00E4F149 /* CCoreMediaVideoCodec.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CCoreMediaVideoCodec.cpp; sourceTree = "<group>"; };
-		0A16F34A2A0E133B00E4F149 /* CCoreAudioAudioCodec.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CCoreAudioAudioCodec.cpp; sourceTree = "<group>"; };
 		0A16F34B2A0E133B00E4F149 /* SError-Apple.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SError-Apple.h"; sourceTree = "<group>"; };
 		0A16F34C2A0E133B00E4F149 /* CppToolboxAssert-Apple.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "CppToolboxAssert-Apple.cpp"; sourceTree = "<group>"; };
 		0A16F34D2A0E133B00E4F149 /* TimeAndDate-Apple.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "TimeAndDate-Apple.cpp"; sourceTree = "<group>"; };
@@ -1205,8 +1203,6 @@
 				0A16F3502A0E133B00E4F149 /* CAudioPlayer-Apple.cpp */,
 				0A16F34F2A0E133B00E4F149 /* CAudioSession-Apple.mm */,
 				0A16F3462A0E133B00E4F149 /* CBitmap-Apple.cpp */,
-				0A16F3482A0E133B00E4F149 /* CCoreAudioAudioCodec.h */,
-				0A16F34A2A0E133B00E4F149 /* CCoreAudioAudioCodec.cpp */,
 				0A16F33A2A0E133B00E4F149 /* CCoreAudioAudioConverter.h */,
 				0A16F3452A0E133B00E4F149 /* CCoreAudioAudioConverter.cpp */,
 				0A16F3512A0E133B00E4F149 /* CCoreFoundation.h */,

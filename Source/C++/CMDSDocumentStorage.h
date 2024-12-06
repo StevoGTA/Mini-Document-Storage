@@ -276,6 +276,9 @@ class CMDSDocumentStorage {
 																			documentValueInfos);
 				const	DocumentValueInfo&					documentValueInfo(const CString& selector) const;
 
+						OV<SValue>							ephemeralValue(const CString& key) const;
+						void								storeEphemeral(const CString& key, const OV<SValue>& value);
+
 															// Class methods
 		static			SError								getInvalidCountError(UInt32 count);
 		static			SError								getInvalidDocumentTypeError(const CString& documentType);

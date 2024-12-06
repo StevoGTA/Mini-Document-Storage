@@ -446,7 +446,7 @@ open class MDSDocumentStorageCore {
 	private	let	documentKeysProcsBySelector = LockingDictionary<String, MDSDocument.KeysProc>()
 	private	let	documentValueProcsBySelector = LockingDictionary<String, MDSDocument.ValueProc>()
 
-	private	var	ephemeralValues :[/* Key */ String : Any]?
+	private	var	ephemeralValueByKey :[/* Key */ String : Any]?
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -482,22 +482,22 @@ open class MDSDocumentStorageCore {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func ephemeralValue<T>(for key :String) -> T? { self.ephemeralValues?[key] as? T }
+	public func ephemeralValue<T>(for key :String) -> T? { self.ephemeralValueByKey?[key] as? T }
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func store<T>(ephemeralValue value :T?, for key :String) {
 		// Store
-		if (self.ephemeralValues == nil) && (value != nil) {
+		if (self.ephemeralValueByKey == nil) && (value != nil) {
 			// First one
-			self.ephemeralValues = [key : value!]
+			self.ephemeralValueByKey = [key : value!]
 		} else {
 			// Update
-			self.ephemeralValues?[key] = value
+			self.ephemeralValueByKey?[key] = value
 
 			// Check for empty
-			if self.ephemeralValues?.isEmpty ?? false {
+			if self.ephemeralValueByKey?.isEmpty ?? false {
 				// No more values
-				self.ephemeralValues = nil
+				self.ephemeralValueByKey = nil
 			}
 		}
 	}
