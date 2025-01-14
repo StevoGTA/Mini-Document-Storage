@@ -136,6 +136,8 @@ module.exports = class Indexes {
 					statementPerformer.where(this.indexesTable.nameTableColumn, name));
 			index.queueTruncate(statementPerformer);
 		}
+
+		return null;
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

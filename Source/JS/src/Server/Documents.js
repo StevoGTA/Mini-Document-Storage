@@ -237,7 +237,7 @@ module.exports = class Documents {
 			// Check error
 			if (error.message.startsWith('ER_NO_SUCH_TABLE'))
 				// No such table
-				return [0, []];
+				return [0, [], null];
 			else
 				// Other error
 				throw error;
@@ -271,7 +271,7 @@ module.exports = class Documents {
 			}
 		}
 
-		return [totalCount, Object.values(documentsByID)];
+		return [totalCount, Object.values(documentsByID), null];
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
