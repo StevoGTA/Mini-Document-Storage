@@ -77,17 +77,20 @@ module.exports = class MDSDocument {
 
 	// Subclass methods
 	//------------------------------------------------------------------------------------------------------------------
-	value(property) {
+	value(property, defaultValue = null) {
 		// Check situation
 		if (property in this.updated)
 			// Have updated value
 			return this.updated[property];
 		else if (this.removed.has(property))
 			// Was removed
-			return null;
-		else
+			return defaultValue;
+		else if (property in this.info.json)
 			// Not updated
 			return this.info.json[property];
+		else
+			// Use default
+			return defaultValue;
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

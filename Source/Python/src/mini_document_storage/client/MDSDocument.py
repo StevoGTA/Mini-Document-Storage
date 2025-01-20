@@ -94,20 +94,17 @@ class MDSDocument:
 	
 	# Subclass methods
 	#-------------------------------------------------------------------------------------------------------------------
-	def value(self, property):
+	def value(self, property, defaultValue = None):
 		# Check situation
 		if property in self.updated:
 			# Have updated value
 			return self.updated[property]
 		elif property in self.removed:
 			# Was removed
-			return None
-		elif property in self.info['json']:
-			# Not updated
-			return self.info['json'][property]
+			return defaultValue
 		else:
-			# Not present
-			return None
+			# Not updated
+			return self.info['json'].get(property, defaultValue)
 
 	#-------------------------------------------------------------------------------------------------------------------
 	def set(self, property, value = None):
