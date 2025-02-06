@@ -253,7 +253,7 @@ extension HTTPEndpointClient {
 				DispatchQueue.global().async() {
 					// Process in chunks to control memory usage
 					var	documentFullInfos = [MDSDocument.FullInfo]()
-					infos.chunk(by: 1000).forEach() { infos in
+					infos.chunked(by: 1000).forEach() { infos in
 						// Run lean
 						autoreleasepool() {
 							// Call partial results proc
@@ -370,7 +370,7 @@ extension HTTPEndpointClient {
 			return
 		}
 
-		let	updatesChunks = updates.chunk(by: 100)
+		let	updatesChunks = updates.chunked(by: 100)
 		let	pendingCount = LockingNumeric<Int>(updatesChunks.count)
 		let	errors = LockingArray<Error>()
 
@@ -403,7 +403,7 @@ extension HTTPEndpointClient {
 			partialResultsProc :@escaping (_ documentCreateReturnInfos :[MDSDocument.CreateReturnInfo]) -> Void,
 			completionProc :@escaping(_ errors :[Error]) -> Void) {
 		// Setup
-		let	documentCreateInfosChunks = documentCreateInfos.chunk(by: 100)
+		let	documentCreateInfosChunks = documentCreateInfos.chunked(by: 100)
 		let	pendingCount = LockingNumeric<Int>(documentCreateInfosChunks.count)
 		let	errors = LockingArray<Error>()
 
@@ -441,7 +441,7 @@ extension HTTPEndpointClient {
 			partialResultsProc :@escaping (_ documentUpdateReturnInfo :[MDSDocument.UpdateReturnInfo]) -> Void,
 			completionProc :@escaping(_ errors :[Error]) -> Void) {
 		// Setup
-		let	documentUpdateInfosChunks = documentUpdateInfos.chunk(by: 10)
+		let	documentUpdateInfosChunks = documentUpdateInfos.chunked(by: 10)
 		let	pendingCount = LockingNumeric<Int>(documentUpdateInfosChunks.count)
 		let	errors = LockingArray<Error>()
 
