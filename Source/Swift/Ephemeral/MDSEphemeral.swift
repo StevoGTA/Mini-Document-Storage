@@ -359,7 +359,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
-			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
+			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc, checkRelevantProperties :Bool) throws {
 		// Remove current collection if found
 		if let collection = self.collectionByName.value(for: name) {
 			// Remove
@@ -373,7 +373,8 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 									{ self.documentLastRevisionByDocumentType[documentType] ?? 0 } : 0
 		let	collection =
 					MDSCollection(name: name, documentType: documentType, relevantProperties: relevantProperties,
-							documentIsIncludedProc: documentIsIncludedProc, isIncludedInfo: isIncludedInfo,
+							documentIsIncludedProc: documentIsIncludedProc,
+							checkRelevantProperties: checkRelevantProperties, isIncludedInfo: isIncludedInfo,
 							lastRevision: lastRevision)
 
 		// Add to maps
@@ -1300,30 +1301,21 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> Int64? {
+	func documentValue(for documentType :String, documentID :String, property :String) -> Any? {
 		// Check for batch
-		let	value :Any?
 		if let batch = self.batchByThread.value(for: .current),
-				let batchDocumentInfo = batch.documentInfoGet(for: document.id) {
+				let batchDocumentInfo = batch.documentInfoGet(for: documentID) {
 			// In batch
-			value = batchDocumentInfo.value(for: property)
-		} else if let propertyMap = self.documentsBeingCreatedPropertyMapByDocumentID.value(for: document.id) {
+			return batchDocumentInfo.value(for: property)
+		} else if let propertyMap = self.documentsBeingCreatedPropertyMapByDocumentID.value(for: documentID) {
 			// Being created
-			value = propertyMap[property]
+			return propertyMap[property]
 		} else {
 			// "Idle"
-			value =
+			return
 					self.documentMapsLock.read(
-						{ self.documentBackingByDocumentID[document.id]?.propertyMap[property] })
+						{ self.documentBackingByDocumentID[documentID]?.propertyMap[property] })
 		}
-
-		return value as? Int64
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func documentStringValue(for documentType :String, document :MDSDocument, property :String) -> String? {
-		// Return value as String
-		return documentValue(for: property, of: document) as? String
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

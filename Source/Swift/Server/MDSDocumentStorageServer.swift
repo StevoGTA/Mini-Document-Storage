@@ -33,8 +33,7 @@ protocol MDSDocumentStorageServer : MDSDocumentStorageCore, MDSDocumentStorage {
 	func documentFullInfos(for documentType :String, sinceRevision :Int, count :Int?) throws ->
 			[MDSDocument.FullInfo]
 
-	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> Int64?
-	func documentStringValue(for documentType :String, document :MDSDocument, property :String) -> String?
+	func documentValue(for documentType :String, documentID :String, property :String) -> Any?
 	func documentUpdate(for documentType :String, documentUpdateInfos :[MDSDocument.UpdateInfo]) throws ->
 			[MDSDocument.FullInfo]
 

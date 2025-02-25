@@ -269,7 +269,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
-			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
+			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc, checkRelevantProperties :Bool) throws {
 		// Remove current collection if found
 		if let collection = self.collectionByName.value(for: name) {
 			// Remove
@@ -285,7 +285,8 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Create or re-create collection
 		let	collection =
 					MDSCollection(name: name, documentType: documentType, relevantProperties: relevantProperties,
-							documentIsIncludedProc: documentIsIncludedProc, isIncludedInfo: isIncludedInfo,
+							documentIsIncludedProc: documentIsIncludedProc,
+							checkRelevantProperties: checkRelevantProperties, isIncludedInfo: isIncludedInfo,
 							lastRevision: lastRevision)
 
 		// Add to maps
@@ -756,7 +757,8 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 				// Have document in batch
 				let	documentAttachmentInfoByID =
 							batchDocumentInfo.documentAttachmentInfoByID(
-									applyingChangesTo: batchDocumentInfo.documentBacking?.documentAttachmentInfoByID ?? [:])
+									applyingChangesTo:
+											batchDocumentInfo.documentBacking?.documentAttachmentInfoByID ?? [:])
 				guard documentAttachmentInfoByID[attachmentID] != nil else {
 					throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
 				}
@@ -1257,41 +1259,19 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> Int64? {
+	func documentValue(for documentType :String, documentID :String, property :String) -> Any? {
 		// Check for batch
-		let	value :Any?
 		if let batch = self.batchByThread.value(for: .current),
-				let batchDocumentInfo = batch.documentInfoGet(for: document.id) {
+				let batchDocumentInfo = batch.documentInfoGet(for: documentID) {
 			// In batch
-			value = batchDocumentInfo.value(for: property)
-		} else if let propertyMap = self.documentsBeingCreatedPropertyMapByDocumentID.value(for: document.id) {
+			return batchDocumentInfo.value(for: property)
+		} else if let propertyMap = self.documentsBeingCreatedPropertyMapByDocumentID.value(for: documentID) {
 			// Being created
-			value = propertyMap[property]
+			return propertyMap[property]
 		} else {
 			// "Idle"
-			value = try! documentBacking(documentType: documentType, documentID: document.id).value(for: property)
+			return try! documentBacking(documentType: documentType, documentID: documentID).value(for: property)
 		}
-
-		return value as? Int64
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func documentStringValue(for documentType :String, document :MDSDocument, property :String) -> String? {
-		// Check for batch
-		let	value :Any?
-		if let batch = self.batchByThread.value(for: .current),
-				let batchDocumentInfo = batch.documentInfoGet(for: document.id) {
-			// In batch
-			value = batchDocumentInfo.value(for: property)
-		} else if let propertyMap = self.documentsBeingCreatedPropertyMapByDocumentID.value(for: document.id) {
-			// Being created
-			value = propertyMap[property]
-		} else {
-			// "Idle"
-			value = try! documentBacking(documentType: documentType, documentID: document.id).value(for: property)
-		}
-
-		return value as? String
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1493,10 +1473,12 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			return collection
 		} else if let info = self.databaseManager.collectionInfo(for: name) {
 			// Have stored
+			let	isIncludedSelectorInfo = self.documentIsIncludedProc(for: info.isIncludedSelector)!
 			let	collection =
 						MDSCollection(name: name, documentType: info.documentType,
 								relevantProperties: info.relevantProperties,
-								documentIsIncludedProc: self.documentIsIncludedProc(for: info.isIncludedSelector)!,
+								documentIsIncludedProc: isIncludedSelectorInfo.isIncludedProc,
+								checkRelevantProperties: isIncludedSelectorInfo.checkRelevantProperties,
 								isIncludedInfo: info.isIncludedSelectorInfo, lastRevision: info.lastRevision)
 			self.collectionByName.set(collection, for: name)
 

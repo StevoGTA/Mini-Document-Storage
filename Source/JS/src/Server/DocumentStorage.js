@@ -68,7 +68,7 @@ module.exports = class DocumentStorage {
 									selector: documentPropertyIsNotValue,
 									checkRelevantProperties: true,
 								},
-					},
+						},
 						collectionIsIncludedSelectorInfo || {});
 		this.indexKeysSelectorInfo =
 				Object.assign(

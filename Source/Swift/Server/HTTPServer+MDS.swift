@@ -23,7 +23,9 @@ extension MDSHTTPServices {
 	// Class methods
 	//------------------------------------------------------------------------------------------------------------------
 	static func register(documentStorage :MDSDocumentStorageServer, for documentStorageID :String = "default",
-			isIncludedProcs :[(selector :String, isIncludedProc :MDSDocument.IsIncludedProc)] = [],
+			isIncludedProcs
+					:[(selector :String, isIncludedProc :MDSDocument.IsIncludedProc, checkRelevantProperties :Bool)] =
+							[],
 			keysProcs :[(selector :String, keysProc :MDSDocument.KeysProc)] = [],
 			valueProcs :[(selector :String, valueProc :MDSDocument.ValueProc)] = [],
 			authorizationValidationProc :@escaping AuthorizationValidationProc = { _ in true }) {
@@ -34,28 +36,72 @@ extension MDSHTTPServices {
 		documentStorage.register(
 				isIncludedProcs:
 						[
+							("documentHasProperty()",
+									{ [unowned documentStorage] documentType, document, info in
+										// Setup
+										guard let property = info["property"] as? String else { return false }
+
+										return documentStorage.documentValue(for: documentType, documentID: document.id,
+												property: property) != nil
+									},
+									true),
+							("documentDoesNotHaveProperty()",
+									{ [unowned documentStorage] documentType, document, info in
+										// Setup
+										guard let property = info["property"] as? String else { return false }
+
+										return documentStorage.documentValue(for: documentType, documentID: document.id,
+												property: property) == nil
+									},
+									false),
 							("documentPropertyIsValue()",
 									{ [unowned documentStorage] documentType, document, info in
 										// Setup
 										guard let property = info["property"] as? String else { return false }
-										guard let value = info["value"] as? String else { return false }
-										guard let documentPropertyValue =
-												documentStorage.documentStringValue(for: documentType,
-														document: document, property: property) else { return false }
+										guard let value = info["value"] else { return false }
 
-										return documentPropertyValue == value
-									}),
+										return documentStorage.documentValue(for: documentType, documentID: document.id,
+												property: property) == value
+									},
+									true),
+							("documentPropertiesMatch()",
+									{ [unowned documentStorage] documentType, document, info in
+										// Setup
+										for (property, value) in info {
+											// Check this property and value
+											if documentStorage.documentValue(for: documentType, documentID: document.id,
+													property: property) != value {
+												// Not a match
+												return false
+											}
+										}
+
+										return true
+									},
+									true),
 							("documentPropertyIsOneOfValues()",
 									{ [unowned documentStorage] documentType, document, info in
 										// Setup
 										guard let property = info["property"] as? String else { return false }
-										guard let values = info["values"] as? [String] else { return false }
+										guard let values = info["values"] as? [Any] else { return false }
 										guard let documentPropertyValue =
-												documentStorage.documentStringValue(for: documentType,
-														document: document, property: property) else { return false }
+												documentStorage.documentValue(for: documentType,
+														documentID: document.id, property: property) else
+												{ return false }
 
-										return values.contains(documentPropertyValue)
-									}),
+										return values.contains(where: { $0 == documentPropertyValue })
+									},
+									true),
+							("documentPropertyIsNotValue()",
+									{ [unowned documentStorage] documentType, document, info in
+										// Setup
+										guard let property = info["property"] as? String else { return false }
+										guard let value = info["value"] else { return false }
+
+										return documentStorage.documentValue(for: documentType, documentID: document.id,
+												property: property) != value
+									},
+									true),
 						] +
 						isIncludedProcs)
 		documentStorage.register(
@@ -65,11 +111,12 @@ extension MDSHTTPServices {
 									{ [unowned documentStorage] documentType, document, info in
 										// Setup
 										guard let property = info["property"] as? String else { return [] }
-										guard let documentPropertyValue =
-												documentStorage.documentStringValue(for: documentType,
-														document: document, property: property) else { return [] }
+										guard let string =
+												documentStorage.documentValue(for: documentType,
+														documentID: document.id, property: property) as? String else
+												{ return [] }
 
-										return [documentPropertyValue]
+										return [string]
 									}),
 						] +
 						keysProcs)
@@ -79,8 +126,14 @@ extension MDSHTTPServices {
 							("integerValueForProperty()",
 									{ [unowned documentStorage] documentType, document, property in
 										// Return integer value
-										return documentStorage.documentIntegerValue(for: documentType,
-												document: document, property: property) ?? 0
+										return (documentStorage.documentValue(for: documentType,
+												documentID: document.id, property: property) as? Int64) ?? 0
+									}),
+							("stringValueForProperty()",
+									{ [unowned documentStorage] documentType, document, property in
+										// Return string value
+										return (documentStorage.documentValue(for: documentType,
+												documentID: document.id, property: property) as? String) ?? ""
 									}),
 						] +
 						valueProcs)
@@ -412,7 +465,7 @@ extension HTTPServer {
 				// isIncludedSelectorInfo missing
 				return (.badRequest, nil, .json(["error": "Missing isIncludedSelectorInfo"]))
 			}
-			guard let isIncludedProc = documentStorage!.documentIsIncludedProc(for: isIncludedSelector) else {
+			guard let isIncludedProcInfo = documentStorage!.documentIsIncludedProc(for: isIncludedSelector) else {
 				// isIncludedSelector not found
 				return (.badRequest, nil, .json(["error": "Invalid isIncludedSelector"]))
 			}
@@ -423,7 +476,8 @@ extension HTTPServer {
 				try documentStorage!.collectionRegister(name: name, documentType: documentType,
 						relevantProperties: relevantProperties, isUpToDate: info.isUpToDate,
 						isIncludedInfo: isIncludedSelectorInfo, isIncludedSelector: isIncludedSelector,
-						documentIsIncludedProc: isIncludedProc)
+						documentIsIncludedProc: isIncludedProcInfo.isIncludedProc,
+						checkRelevantProperties: isIncludedProcInfo.checkRelevantProperties)
 
 				return (.ok, nil, nil)
 			} catch {

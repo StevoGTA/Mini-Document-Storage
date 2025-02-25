@@ -152,11 +152,11 @@ class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageS
 	//------------------------------------------------------------------------------------------------------------------
 	func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
-			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
+			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc, checkRelevantProperties :Bool) throws {
 		// Register collection
 		try self.documentStorageObjC.collectionRegisterNamed(name, documentType: documentType,
 				relevantProperties: relevantProperties, isUpToDate: isUpToDate, isIncludedInfo: isIncludedInfo,
-				isIncludedSelector: isIncludedSelector)
+				isIncludedSelector: isIncludedSelector, checkRelevantProperties: checkRelevantProperties)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -473,13 +473,7 @@ class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageS
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentIntegerValue(for documentType :String, document :MDSDocument, property :String) -> Int64? {
-// TODO
-fatalError("Unimplemented")
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
-	func documentStringValue(for documentType :String, document :MDSDocument, property :String) -> String? {
+	func documentValue(for documentType :String, documentID :String, property :String) -> Any? {
 // TODO
 fatalError("Unimplemented")
 	}

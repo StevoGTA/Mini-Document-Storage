@@ -90,7 +90,7 @@ public protocol MDSDocumentStorage {
 
 	func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
-			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc) throws
+			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc, checkRelevantProperties :Bool) throws
 	func collectionGetDocumentCount(for name :String) throws -> Int
 	func collectionIterate(name :String, documentType :String, proc :(_ document :MDSDocument) -> Void) throws
 
@@ -230,24 +230,26 @@ extension MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func collectionRegister(name :String, documentType :String, relevantProperties :[String],
 			isUpToDate :Bool = false, isIncludedSelector :String,
-			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
+			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc, checkRelevantProperties :Bool) throws {
 		// Register collection
 		try collectionRegister(name: name, documentType: documentType, relevantProperties: relevantProperties,
 				isUpToDate: isUpToDate, isIncludedInfo: [:], isIncludedSelector: isIncludedSelector,
-				documentIsIncludedProc: documentIsIncludedProc)
+				documentIsIncludedProc: documentIsIncludedProc, checkRelevantProperties: checkRelevantProperties)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func collectionRegister<T : MDSDocument>(name :String, relevantProperties :[String],
 			isUpToDate :Bool = false, isIncludedInfo :[String : Any] = [:], isIncludedSelector :String,
-			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool) throws {
+			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool,
+			checkRelevantProperties :Bool = true) throws {
 		// Register creation proc
 		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
 
 		// Register collection
 		try collectionRegister(name: name, documentType: T.documentType, relevantProperties: relevantProperties,
 				isUpToDate: isUpToDate, isIncludedInfo: isIncludedInfo, isIncludedSelector: isIncludedSelector,
-				documentIsIncludedProc: { isIncludedProc($1 as! T, $2) })
+				documentIsIncludedProc: { isIncludedProc($1 as! T, $2) },
+				checkRelevantProperties: checkRelevantProperties)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -442,7 +444,9 @@ open class MDSDocumentStorageCore {
 
 	private	let	documentCreateProcByDocumentType = LockingDictionary<String, MDSDocument.CreateProc>()
 	private	let	documentChangedProcsByDocumentType = LockingArrayDictionary<String, MDSDocument.ChangedProc>()
-	private	let	documentIsIncludedProcsBySelector = LockingDictionary<String, MDSDocument.IsIncludedProc>()
+	private	let	documentIsIncludedProcsBySelector =
+						LockingDictionary<String,
+								(isIncludedProc :MDSDocument.IsIncludedProc, checkRelevantProperties :Bool)>()
 	private	let	documentKeysProcsBySelector = LockingDictionary<String, MDSDocument.KeysProc>()
 	private	let	documentValueProcsBySelector = LockingDictionary<String, MDSDocument.ValueProc>()
 
@@ -464,9 +468,13 @@ open class MDSDocumentStorageCore {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func register(isIncludedProcs :[(selector :String, isIncludedProc :MDSDocument.IsIncludedProc)]) {
+	public func register(
+			isIncludedProcs
+					:[(selector :String, isIncludedProc :MDSDocument.IsIncludedProc, checkRelevantProperties :Bool)]) {
 		// Register all
-		isIncludedProcs.forEach() { self.documentIsIncludedProcsBySelector.set($0.isIncludedProc, for: $0.selector) }
+		isIncludedProcs.forEach()
+			{ self.documentIsIncludedProcsBySelector.set(
+					($0.isIncludedProc, $0.checkRelevantProperties), for: $0.selector) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -522,7 +530,8 @@ open class MDSDocumentStorageCore {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentIsIncludedProc(for selector :String) -> MDSDocument.IsIncludedProc? {
+	func documentIsIncludedProc(for selector :String) ->
+			(isIncludedProc :MDSDocument.IsIncludedProc, checkRelevantProperties :Bool)? {
 		// Return proc
 		return self.documentIsIncludedProcsBySelector.value(for: selector)
 	}

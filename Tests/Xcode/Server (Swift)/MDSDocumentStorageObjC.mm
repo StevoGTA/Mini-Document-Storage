@@ -700,7 +700,7 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 - (BOOL) collectionRegisterNamed:(NSString*) name documentType:(NSString*) documentType
 		relevantProperties:(NSArray<NSString*>*) relevantProperties isUpToDate:(BOOL) isUpToDate
 		isIncludedInfo:(NSDictionary<NSString*, id>*) isIncludedInfo isIncludedSelector:(NSString*) isIncludedSelector
-		error:(NSError**) error
+		checkRelevantProperties:(BOOL) checkRelevantProperties error:(NSError**) error
 {
 	// Register collection
 	OV<SError>	sError =
@@ -708,7 +708,7 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 								CString((__bridge CFStringRef) documentType),
 								CCoreFoundation::arrayOfStringsFrom((__bridge CFArrayRef) relevantProperties),
 								isUpToDate, CCoreFoundation::dictionaryFrom((__bridge CFDictionaryRef) isIncludedInfo),
-								CString((__bridge CFStringRef) isIncludedSelector));
+								CString((__bridge CFStringRef) isIncludedSelector, checkRelevantProperties));
 
 	return [self composeResultsFrom:sError error:error];
 }

@@ -270,7 +270,7 @@ typedef NS_ENUM(NSInteger) {
 - (BOOL) collectionRegisterNamed:(NSString*) name documentType:(NSString*) documentType
 		relevantProperties:(NSArray<NSString*>*) relevantProperties isUpToDate:(BOOL) isUpToDate
 		isIncludedInfo:(NSDictionary<NSString*, id>*) isIncludedInfo isIncludedSelector:(NSString*) isIncludedSelector
-		error:(NSError**) error;
+		checkRelevantProperties:(BOOL) checkRelevantProperties error:(NSError**) error;
 - (BOOL) collectionGetDocumentCountNamed:(NSString*) name outDocumentCount:(NSUInteger*) outDocumentCount
 		error:(NSError**) error;
 - (BOOL) collectionGetDocumentRevisionInfosNamed:(NSString*) name startIndex:(NSInteger) startIndex
