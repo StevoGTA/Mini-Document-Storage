@@ -212,6 +212,7 @@
 		0A9C63792A19EB9200800DBA /* CFile.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F31E2A0E133B00E4F149 /* CFile.cpp */; };
 		0A9C637A2A19EBB500800DBA /* CFile-POSIX.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F3162A0E133A00E4F149 /* CFile-POSIX.cpp */; };
 		0A9FA1282D6814D200AFB37B /* Equatable+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9FA1262D6814CC00AFB37B /* Equatable+Extensions.swift */; };
+		0A9FA1452D6EAD5D00AFB37B /* TimeAndDate+Default.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A9FA1442D6EAD5D00AFB37B /* TimeAndDate+Default.cpp */; };
 		0AAC273228B6EEEF006ADEF9 /* InternalUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AAC273128B6EEEF006ADEF9 /* InternalUnitTests.swift */; };
 		0AAC273428B6F2C4006ADEF9 /* InternalTransactionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AAC273328B6F2C4006ADEF9 /* InternalTransactionTests.swift */; };
 		0AAF04962A70DE34000AF19F /* MDSBatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AAF04952A70DE34000AF19F /* MDSBatch.swift */; };
@@ -223,11 +224,12 @@
 		0AAF049C2A70DEB0000AF19F /* MDSBatch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AAF04952A70DE34000AF19F /* MDSBatch.swift */; };
 		0AB3D2462A70EA4A00347E86 /* CMDSDocument.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A9C637C2A19EC6E00800DBA /* CMDSDocument.cpp */; };
 		0AC76DF12A79D3A600C656A9 /* MDSDocumentStorageServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC76DF02A79D3A600C656A9 /* MDSDocumentStorageServer.swift */; };
+		0AC798C52D76D99F00AF505F /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 0AC798C42D76D99F00AF505F /* ArgumentParser */; };
+		0AC798C82D76D9ED00AF505F /* Vapor in Frameworks */ = {isa = PBXBuildFile; productRef = 0AC798C72D76D9ED00AF505F /* Vapor */; };
 		0ACCD91428137C6B001D52CB /* IndexUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACCD91328137C6B001D52CB /* IndexUnitTests.swift */; };
 		0ACCD9162814EBBC001D52CB /* CollectionUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACCD9152814EBBC001D52CB /* CollectionUnitTests.swift */; };
 		0AD596002B33D1B7005E3ADC /* CJSON.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F2CB2A0E133900E4F149 /* CJSON.cpp */; };
 		0ADC8E8928BED43600632551 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ADC8E8828BED43600632551 /* main.swift */; };
-		0ADC8E8F28BED7A800632551 /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 0ADC8E8E28BED7A800632551 /* ArgumentParser */; };
 		0ADC8E9028BED80200632551 /* MDSDocumentStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551EA27C5D8E7003E497B /* MDSDocumentStorage.swift */; };
 		0ADC8E9128BED81400632551 /* MDSIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551EB27C5D8E7003E497B /* MDSIndex.swift */; };
 		0ADC8E9328BED81400632551 /* MDSDocumentBackingCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5551FD27C5D8E7003E497B /* MDSDocumentBackingCache.swift */; };
@@ -268,7 +270,6 @@
 		0ADC8EB728BED94100632551 /* URL+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55521627C5DA60003E497B /* URL+Extensions.swift */; };
 		0ADC8EB828BED94D00632551 /* RangeReplaceableCollection+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55520C27C5DA60003E497B /* RangeReplaceableCollection+Extensions.swift */; };
 		0ADC8EB928BED96100632551 /* HTTPURLResponse+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55521B27C5DA60003E497B /* HTTPURLResponse+Extensions.swift */; };
-		0ADC8EBE28BEDC5300632551 /* Vapor in Frameworks */ = {isa = PBXBuildFile; productRef = 0ADC8EBD28BEDC5300632551 /* Vapor */; };
 		0AE25CCF2B20018F00EB2BDE /* CMDSSQLite.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A9C63802A19EC6E00800DBA /* CMDSSQLite.cpp */; };
 		0AE25CD02B20019400EB2BDE /* CMDSSQLiteDocumentBacking.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A9C63832A19EC6E00800DBA /* CMDSSQLiteDocumentBacking.cpp */; };
 		0AE25CD12B20019700EB2BDE /* CMDSSQLiteDatabaseManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A9C63822A19EC6E00800DBA /* CMDSSQLiteDatabaseManager.cpp */; };
@@ -795,6 +796,7 @@
 		0A9C638C2A19EC6F00800DBA /* CMDSDocumentStorage.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CMDSDocumentStorage.cpp; sourceTree = "<group>"; };
 		0A9C638D2A19EC6F00800DBA /* CMDSDocument.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CMDSDocument.h; sourceTree = "<group>"; };
 		0A9FA1262D6814CC00AFB37B /* Equatable+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Equatable+Extensions.swift"; sourceTree = "<group>"; };
+		0A9FA1442D6EAD5D00AFB37B /* TimeAndDate+Default.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "TimeAndDate+Default.cpp"; sourceTree = "<group>"; };
 		0AAC273128B6EEEF006ADEF9 /* InternalUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InternalUnitTests.swift; sourceTree = "<group>"; };
 		0AAC273328B6F2C4006ADEF9 /* InternalTransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InternalTransactionTests.swift; sourceTree = "<group>"; };
 		0AAF04952A70DE34000AF19F /* MDSBatch.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MDSBatch.swift; sourceTree = "<group>"; };
@@ -837,8 +839,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0ADC8E8F28BED7A800632551 /* ArgumentParser in Frameworks */,
-				0ADC8EBE28BEDC5300632551 /* Vapor in Frameworks */,
+				0AC798C52D76D99F00AF505F /* ArgumentParser in Frameworks */,
+				0AC798C82D76D9ED00AF505F /* Vapor in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1356,6 +1358,7 @@
 				0A16F3812A0E133C00E4F149 /* TBuffer.h */,
 				0A16F38A2A0E133C00E4F149 /* TimeAndDate.h */,
 				0A16F37F2A0E133C00E4F149 /* TimeAndDate.cpp */,
+				0A9FA1442D6EAD5D00AFB37B /* TimeAndDate+Default.cpp */,
 				0A16F3992A0E133C00E4F149 /* TIndexes.h */,
 				0A16F3872A0E133C00E4F149 /* TResult.h */,
 				0A16F3932A0E133C00E4F149 /* TWrappers.h */,
@@ -1932,8 +1935,8 @@
 			);
 			name = "Server (Swift)";
 			packageProductDependencies = (
-				0ADC8E8E28BED7A800632551 /* ArgumentParser */,
-				0ADC8EBD28BEDC5300632551 /* Vapor */,
+				0AC798C42D76D99F00AF505F /* ArgumentParser */,
+				0AC798C72D76D9ED00AF505F /* Vapor */,
 			);
 			productName = "Server (Swift)";
 			productReference = 0ADC8E8628BED43600632551 /* Server (Swift) */;
@@ -1973,8 +1976,8 @@
 			);
 			mainGroup = 0A5551D327C5CC55003E497B;
 			packageReferences = (
-				0ADC8E8D28BED7A800632551 /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
-				0ADC8EBC28BEDC5200632551 /* XCRemoteSwiftPackageReference "vapor" */,
+				0AC798C32D76D99F00AF505F /* XCRemoteSwiftPackageReference "swift-argument-parser" */,
+				0AC798C62D76D9ED00AF505F /* XCRemoteSwiftPackageReference "vapor" */,
 			);
 			productRefGroup = 0A5551E027C5CD13003E497B /* Products */;
 			projectDirPath = "";
@@ -2246,6 +2249,7 @@
 				0A9C63752A19EAC300800DBA /* CSQLiteOrderBy.cpp in Sources */,
 				0A1DFB352B892C9E00C9FA6F /* DateFormatter+Extensions.swift in Sources */,
 				0ADC8E9328BED81400632551 /* MDSDocumentBackingCache.swift in Sources */,
+				0A9FA1452D6EAD5D00AFB37B /* TimeAndDate+Default.cpp in Sources */,
 				0ADC8E9B28BED82200632551 /* MDSEphemeral.swift in Sources */,
 				0A9C63722A19EAC300800DBA /* CSQLiteTable.cpp in Sources */,
 				0A9C63792A19EB9200800DBA /* CFile.cpp in Sources */,
@@ -2864,33 +2868,33 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		0ADC8E8D28BED7A800632551 /* XCRemoteSwiftPackageReference "swift-argument-parser" */ = {
+		0AC798C32D76D99F00AF505F /* XCRemoteSwiftPackageReference "swift-argument-parser" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/apple/swift-argument-parser.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 1.0.0;
+				minimumVersion = 1.5.0;
 			};
 		};
-		0ADC8EBC28BEDC5200632551 /* XCRemoteSwiftPackageReference "vapor" */ = {
+		0AC798C62D76D9ED00AF505F /* XCRemoteSwiftPackageReference "vapor" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/vapor/vapor.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 4.0.0;
+				minimumVersion = 4.113.2;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		0ADC8E8E28BED7A800632551 /* ArgumentParser */ = {
+		0AC798C42D76D99F00AF505F /* ArgumentParser */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 0ADC8E8D28BED7A800632551 /* XCRemoteSwiftPackageReference "swift-argument-parser" */;
+			package = 0AC798C32D76D99F00AF505F /* XCRemoteSwiftPackageReference "swift-argument-parser" */;
 			productName = ArgumentParser;
 		};
-		0ADC8EBD28BEDC5300632551 /* Vapor */ = {
+		0AC798C72D76D9ED00AF505F /* Vapor */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 0ADC8EBC28BEDC5200632551 /* XCRemoteSwiftPackageReference "vapor" */;
+			package = 0AC798C62D76D9ED00AF505F /* XCRemoteSwiftPackageReference "vapor" */;
 			productName = Vapor;
 		};
 /* End XCSwiftPackageProductDependency section */

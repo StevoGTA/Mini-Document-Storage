@@ -45,10 +45,12 @@ template <typename T, typename AT> class TMDSCollection : public CEquatable {
 								TMDSCollection(const CString& name, const CString& documentType,
 										const TArray<CString>& relevantProperties,
 										const CMDSDocument::IsIncludedPerformer& documentIsIncludedPerformer,
-										const CDictionary& isIncludedInfo, UInt32 lastRevision) :
+										bool checkRelevantProperties, const CDictionary& isIncludedInfo,
+										UInt32 lastRevision) :
 									mName(name), mDocumentType(documentType),
 											mRelevantProperties(relevantProperties),
 											mDocumentIsIncludedPerformer(documentIsIncludedPerformer),
+											mCheckRelevantProperties(checkRelevantProperties),
 											mIsIncludedInfo(isIncludedInfo),
 											mLastRevision(lastRevision)
 									{}
@@ -72,7 +74,8 @@ template <typename T, typename AT> class TMDSCollection : public CEquatable {
 											for (TIteratorD<TMDSUpdateInfo<T> > iterator = updateInfos.getIterator();
 													iterator.hasValue(); iterator.advance()) {
 												// Check if there is something to do
-												if (!iterator->getChangedProperties().hasValue() ||
+												if (!mCheckRelevantProperties ||
+														!iterator->getChangedProperties().hasValue() ||
 														(mRelevantProperties.intersects(
 																*iterator->getChangedProperties()))) {
 													// Query
@@ -104,6 +107,7 @@ template <typename T, typename AT> class TMDSCollection : public CEquatable {
 
 		TNSet<CString>						mRelevantProperties;
 		CMDSDocument::IsIncludedPerformer	mDocumentIsIncludedPerformer;
+		bool								mCheckRelevantProperties;
 		CDictionary							mIsIncludedInfo;
 
 		UInt32								mLastRevision;

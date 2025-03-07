@@ -421,11 +421,13 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 - (void) completeSetup
 {
 	// Complete setup
-	self.documentStorageServer->registerDocumentIsIncludedPerformers(
-			TSArray<CMDSDocument::IsIncludedPerformer>(
-					CMDSDocument::IsIncludedPerformer(CString(OSSTR("documentPropertyIsValue()")),
-							(CMDSDocument::IsIncludedPerformer::Proc) sDocumentPropertyIsValue,
-							self.documentStorageServer)));
+	self.documentStorageServer->registerDocumentIsIncludedPerformerInfos(
+			TSArray<CMDSDocumentStorage::DocumentIsIncludedPerformerInfo>(
+					CMDSDocumentStorage::DocumentIsIncludedPerformerInfo(
+							CMDSDocument::IsIncludedPerformer(CString(OSSTR("documentPropertyIsValue()")),
+									(CMDSDocument::IsIncludedPerformer::Proc) sDocumentPropertyIsValue,
+									self.documentStorageServer),
+							true)));
 	self.documentStorageServer->registerDocumentKeysPerformers(
 			TSArray<CMDSDocument::KeysPerformer>(
 					CMDSDocument::KeysPerformer(CString(OSSTR("keysForDocumentProperty()")),
@@ -708,7 +710,7 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 								CString((__bridge CFStringRef) documentType),
 								CCoreFoundation::arrayOfStringsFrom((__bridge CFArrayRef) relevantProperties),
 								isUpToDate, CCoreFoundation::dictionaryFrom((__bridge CFDictionaryRef) isIncludedInfo),
-								CString((__bridge CFStringRef) isIncludedSelector, checkRelevantProperties));
+								CString((__bridge CFStringRef) isIncludedSelector), checkRelevantProperties);
 
 	return [self composeResultsFrom:sError error:error];
 }

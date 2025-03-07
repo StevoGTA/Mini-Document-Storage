@@ -60,7 +60,7 @@ class CMDSDocumentStorage::Internals {
 
 		TNDictionary<CMDSDocument::Info>				mDocumentCreateInfoByDocumentType;
 		TNArrayDictionary<CMDSDocument::ChangedInfo>	mDocumentChangedInfoByDocumentType;
-		TNDictionary<CMDSDocument::IsIncludedPerformer>	mDocumentIsIncludedPerformerBySelector;
+		TNDictionary<DocumentIsIncludedPerformerInfo>	mDocumentIsIncludedPerformerInfoBySelector;
 		TNDictionary<CMDSDocument::KeysPerformer>		mDocumentKeysPerformerBySelector;
 		TNDictionary<CMDSDocument::ValueInfo>			mDocumentValueInfoBySelector;
 		TNDictionary<SValue>							mEphemeralValueByKey;
@@ -134,6 +134,21 @@ TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocuments
 	return error.hasValue() ?
 			TVResult<TArray<I<CMDSDocument> > >(*error) :
 			TVResult<TArray<I<CMDSDocument> > >(documentCollector.getDocuments());
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSDocumentStorage::collectionRegister(const CString& name, const CString& documentType,
+		const TArray<CString>& relevantProperties, bool isUpToDate, const CDictionary& isIncludedInfo,
+		const CString& isIncludedSelector, bool checkRelevantProperties)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	const	DocumentIsIncludedPerformerInfo&	documentIsIncludedPerformerInfo =
+														this->documentIsIncludedPerformerInfo(isIncludedSelector);
+
+	return collectionRegister(name, documentType, relevantProperties, isUpToDate, isIncludedInfo,
+			documentIsIncludedPerformerInfo.getDocumentIsIncludedPerformer(),
+			documentIsIncludedPerformerInfo.getCheckRelevantProperties());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -233,22 +248,24 @@ CMDSDocumentStorage::DocumentChangedInfos CMDSDocumentStorage::documentChangedIn
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSDocumentStorage::registerDocumentIsIncludedPerformers(
-		const TArray<CMDSDocument::IsIncludedPerformer>& documentIsIncludedPerformers)
+void CMDSDocumentStorage::registerDocumentIsIncludedPerformerInfos(
+		const TArray<DocumentIsIncludedPerformerInfo>& documentIsIncludedPerformerInfos)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Iterate
-	for (TIteratorD<CMDSDocument::IsIncludedPerformer> iterator = documentIsIncludedPerformers.getIterator();
+	for (TIteratorD<DocumentIsIncludedPerformerInfo> iterator = documentIsIncludedPerformerInfos.getIterator();
 			iterator.hasValue(); iterator.advance())
 		// Add
-		mInternals->mDocumentIsIncludedPerformerBySelector.set(iterator->getSelector(), *iterator);
+		mInternals->mDocumentIsIncludedPerformerInfoBySelector.set(
+				iterator->getDocumentIsIncludedPerformer().getSelector(), *iterator);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-const CMDSDocument::IsIncludedPerformer& CMDSDocumentStorage::documentIsIncludedPerformer(const CString& selector) const
+const CMDSDocumentStorage::DocumentIsIncludedPerformerInfo& CMDSDocumentStorage::documentIsIncludedPerformerInfo(
+		const CString& selector) const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return *mInternals->mDocumentIsIncludedPerformerBySelector[selector];
+	return *mInternals->mDocumentIsIncludedPerformerInfoBySelector[selector];
 }
 
 //----------------------------------------------------------------------------------------------------------------------

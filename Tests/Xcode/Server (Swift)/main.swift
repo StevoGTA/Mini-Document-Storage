@@ -18,17 +18,17 @@ struct Server : ParsableCommand {
 								abstract: "Server for Mini Document Storage.  Copyright © 2022, Stevo Brock",
 								version: "1.0")
 
-	// MARK: Arguments
-	// Document Storage
+	// MARK: DocumentStorage
 	enum DocumentStorage :String, ExpressibleByArgument {
 		case swiftEphemeral
 		case swiftSQLite
 		case cppEphemeral
 		case cppSQLite
 	}
-	
-    @Option
-    var	documentStorage :DocumentStorage
+
+	// MARK: Arguments
+	@Option(name: .long, help: "The document storage backing to use.")
+	var	documentStorage :DocumentStorage
 
 	// MARK: Instance Methods
 	//--------------------------------------------------------------------------------------------------------------
@@ -68,9 +68,6 @@ struct Server : ParsableCommand {
 								documentStorageObjC: MDSSQLiteCpp(folderPath: applicationFolder.path))
 		}
 		MDSHTTPServices.register(documentStorage: documentStorage, for: "Sandbox")
-
-		// Log
-		print("Server listening on port 34343")
 
 		// Loop forever
 		dispatchMain()

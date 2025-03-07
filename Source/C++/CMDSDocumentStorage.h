@@ -37,6 +37,38 @@ class CMDSDocumentStorage {
 				CString			mSelector;
 		};
 
+	// DocumentIsIncludedPerformerInfo
+	public:
+		class DocumentIsIncludedPerformerInfo {
+			// Methods
+			public:
+													// Lifecycle methods
+													DocumentIsIncludedPerformerInfo(
+															CMDSDocument::IsIncludedPerformer
+																	documentIsIncludedPerformer,
+															bool checkRelevantProperties) :
+														mDocumentIsIncludedPerformer(documentIsIncludedPerformer),
+																mCheckRelevantProperties(checkRelevantProperties)
+														{}
+													DocumentIsIncludedPerformerInfo(
+															const DocumentIsIncludedPerformerInfo& other) :
+														mDocumentIsIncludedPerformer(
+																		other.mDocumentIsIncludedPerformer),
+																mCheckRelevantProperties(other.mCheckRelevantProperties)
+														{}
+
+													// Instance methods
+				CMDSDocument::IsIncludedPerformer	getDocumentIsIncludedPerformer() const
+														{ return mDocumentIsIncludedPerformer; }
+				bool								getCheckRelevantProperties() const
+														{ return mCheckRelevantProperties; }
+
+			// Properties
+			private:
+				CMDSDocument::IsIncludedPerformer	mDocumentIsIncludedPerformer;
+				bool								mCheckRelevantProperties;
+		};
+
 	// SetValueKind
 	public:
 		enum SetValueKind {
@@ -104,7 +136,8 @@ class CMDSDocumentStorage {
 																	const TArray<CString>& relevantProperties,
 																	bool isUpToDate, const CDictionary& isIncludedInfo,
 																	const DocumentIsIncludedPerformer&
-																			documentIsIncludedPerformer) = 0;
+																			documentIsIncludedPerformer,
+																	bool checkRelevantProperties) = 0;
 		virtual			TVResult<UInt32>					collectionGetDocumentCount(const CString& name) const = 0;
 		virtual			OV<SError>							collectionIterate(const CString& name,
 																	const CString& documentType,
@@ -223,11 +256,8 @@ class CMDSDocumentStorage {
 																	const CString& documentType,
 																	const TArray<CString>& relevantProperties,
 																	bool isUpToDate, const CDictionary& isIncludedInfo,
-																	const CString& isIncludedSelector)
-																{ return collectionRegister(name, documentType,
-																		relevantProperties, isUpToDate, isIncludedInfo,
-																		documentIsIncludedPerformer(
-																				isIncludedSelector)); }
+																	const CString& isIncludedSelector,
+																	bool checkRelevantProperties);
 
 						DocumentCreateResultInfosResult		documentCreate(const CString& documentType,
 																	const TArray<CMDSDocument::CreateInfo>&
@@ -261,10 +291,11 @@ class CMDSDocumentStorage {
 																			documentChangedInfo);
 						DocumentChangedInfos				documentChangedInfos(const CString& documentType) const;
 
-						void								registerDocumentIsIncludedPerformers(
-																	const TArray<DocumentIsIncludedPerformer>&
-																			documentIsIncludedPerformers);
-				const	DocumentIsIncludedPerformer&		documentIsIncludedPerformer(const CString& selector) const;
+						void								registerDocumentIsIncludedPerformerInfos(
+																	const TArray<DocumentIsIncludedPerformerInfo>&
+																			documentIsIncludedPerformerInfos);
+				const	DocumentIsIncludedPerformerInfo&	documentIsIncludedPerformerInfo(const CString& selector)
+																	const;
 
 						void								registerDocumentKeysPerformers(
 																	const TArray<DocumentKeysPerformer>&

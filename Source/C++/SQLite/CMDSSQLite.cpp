@@ -500,16 +500,22 @@ class CMDSSQLite::Internals {
 																							name);
 													if (collectionInfo.hasValue()) {
 														// Have stored
+														const	DocumentIsIncludedPerformerInfo&
+																		documentIsIncludedPerformerInfo =
+																				mDocumentStorage
+																						.documentIsIncludedPerformerInfo(
+																								collectionInfo->
+																										getIsIncludedSelector());
 														I<MDSCollection>	collection_(
 																					new MDSCollection(name,
 																							collectionInfo->
 																									getDocumentType(),
 																							collectionInfo->
 																									getRelevantProperties(),
-																							mDocumentStorage
-																									.documentIsIncludedPerformer(
-																											collectionInfo->
-																													getIsIncludedSelector()),
+																							documentIsIncludedPerformerInfo
+																									.getDocumentIsIncludedPerformer(),
+																							documentIsIncludedPerformerInfo
+																									.getCheckRelevantProperties(),
 																							collectionInfo->
 																									getIsIncludedSelectorInfo(),
 																							collectionInfo->
@@ -1708,7 +1714,7 @@ OV<SError> CMDSSQLite::cacheRegister(const CString& name, const CString& documen
 //----------------------------------------------------------------------------------------------------------------------
 OV<SError> CMDSSQLite::collectionRegister(const CString& name, const CString& documentType,
 		const TArray<CString>& relevantProperties, bool isUpToDate, const CDictionary& isIncludedInfo,
-		const CMDSDocument::IsIncludedPerformer& documentIsIncludedPerformer)
+		const CMDSDocument::IsIncludedPerformer& documentIsIncludedPerformer, bool checkRelevantProperties)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Remove current collection if found
@@ -1724,7 +1730,7 @@ OV<SError> CMDSSQLite::collectionRegister(const CString& name, const CString& do
 	// Create or re-create collection
 	I<MDSCollection>	collection(
 								new MDSCollection(name, documentType, relevantProperties, documentIsIncludedPerformer,
-										isIncludedInfo, lastRevision));
+										checkRelevantProperties, isIncludedInfo, lastRevision));
 
 	// Add to maps
 	mInternals->mCollectionByName.set(name, collection);

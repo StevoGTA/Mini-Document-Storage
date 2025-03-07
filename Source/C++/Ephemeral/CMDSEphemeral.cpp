@@ -1071,7 +1071,7 @@ OV<SError> CMDSEphemeral::cacheRegister(const CString& name, const CString& docu
 //----------------------------------------------------------------------------------------------------------------------
 OV<SError> CMDSEphemeral::collectionRegister(const CString& name, const CString& documentType,
 		const TArray<CString>& relevantProperties, bool isUpToDate, const CDictionary& isIncludedInfo,
-		const CMDSDocument::IsIncludedPerformer& documentIsIncludedPerformer)
+		const CMDSDocument::IsIncludedPerformer& documentIsIncludedPerformer, bool checkRelevantProperties)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Remove current collection if found
@@ -1095,7 +1095,7 @@ OV<SError> CMDSEphemeral::collectionRegister(const CString& name, const CString&
 
 	I<MDSCollection>	collection(
 								new MDSCollection(name, documentType, relevantProperties, documentIsIncludedPerformer,
-										isIncludedInfo, lastRevision));
+										checkRelevantProperties, isIncludedInfo, lastRevision));
 
 	// Add to maps
 	mInternals->mCollectionByName.set(name, collection);

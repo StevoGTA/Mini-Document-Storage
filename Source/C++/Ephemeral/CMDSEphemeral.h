@@ -49,7 +49,8 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 															const TArray<CString>& relevantProperties, bool isUpToDate,
 															const CDictionary& isIncludedInfo,
 															const CMDSDocument::IsIncludedPerformer&
-																	documentIsIncludedPerformer);
+																	documentIsIncludedPerformer,
+															bool checkRelevantProperties);
 		TVResult<UInt32>							collectionGetDocumentCount(const CString& name) const;
 		OV<SError>									collectionIterate(const CString& name, const CString& documentType,
 															CMDSDocument::Proc proc, void* procUserData) const;
