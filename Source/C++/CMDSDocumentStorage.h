@@ -118,8 +118,8 @@ class CMDSDocumentStorage {
 																	const CString& toDocumentID,
 																	CMDSDocument::Proc proc, void* procUserData) const
 																	= 0;
-		virtual			TVResult<CDictionary>				associationGetIntegerValues(const CString& name,
-																	CMDSAssociation::GetIntegerValueAction action,
+		virtual			TVResult<SValue>					associationGetValues(const CString& name,
+																	CMDSAssociation::GetValueAction action,
 																	const TArray<CString>& fromDocumentIDs,
 																	const CString& cacheName,
 																	const TArray<CString>& cachedValueNames) const = 0;
@@ -251,6 +251,14 @@ class CMDSDocumentStorage {
 						DocumentsResult						associationGetDocumentsTo(
 																	const CMDSDocument::Info& fromDocumentInfo,
 																	const I<CMDSDocument>& toDocument);
+						TVResult<TArray<CDictionary> >		associationGetDetailValues(const CString& name,
+																	const TArray<CString>& fromDocumentIDs,
+																	const CString& cacheName,
+																	const TArray<CString>& cachedValueNames) const;
+						TVResult<CDictionary>				associationGetSumValues(const CString& name,
+																	const TArray<CString>& fromDocumentIDs,
+																	const CString& cacheName,
+																	const TArray<CString>& cachedValueNames) const;
 
 						OV<SError>							collectionRegister(const CString& name,
 																	const CString& documentType,

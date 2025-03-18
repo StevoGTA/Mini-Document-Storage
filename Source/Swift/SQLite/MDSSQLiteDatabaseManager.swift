@@ -748,6 +748,24 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
+		static func documentIDByID(for documentIDs :[String], in table :SQLiteTable) -> [Int64 : String] {
+			// Retrieve documentID map
+			var	documentIDsByID = [Int64 : String]()
+			try! table.select(tableColumns: [self.idTableColumn, self.documentIDTableColumn],
+					where: SQLiteWhere(tableColumn: self.documentIDTableColumn, values: documentIDs))
+					{
+						// Process values
+						let	id = $0.integer(for: self.idTableColumn)!
+						let	documentID = $0.text(for: self.documentIDTableColumn)!
+
+						// Update map
+						documentIDsByID[id] = documentID
+					}
+
+			return documentIDsByID
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
 		static func documentRevisionInfoByID(for ids :[Int64], in table :SQLiteTable) ->
 				[Int64 : (documentID :String, revision :Int)] {
 			// Retrieve document revision map
@@ -1580,30 +1598,107 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func associationSum(name :String, fromDocumentIDs :[String], documentType :String, cacheName :String,
-			cachedValueNames :[String]) throws -> [String : Int64] {
+	func associationDetail(association :MDSAssociation, fromDocumentIDs :[String], cache :MDSCache,
+			cachedValueNames :[String]) throws -> [[String : Any]] {
+		// Preflight
+		let	fromDocumentTables = documentTables(for: association.fromDocumentType)
+		let	fromDocumentIDByID =
+					DocumentTypeInfoTable.documentIDByID(for: fromDocumentIDs, in: fromDocumentTables.infoTable)
+		if fromDocumentIDByID.count < fromDocumentIDs.count {
+			// Did not resolve all documentIDs
+			let	documentID = Set(fromDocumentIDs).symmetricDifference(fromDocumentIDByID.values).first!
+
+			throw MDSDocumentStorageError.unknownDocumentID(documentID: documentID)
+		}
+
 		// Setup
-		let	fromDocumentTables = documentTables(for: documentType)
-		let	fromIDs =
-					try fromDocumentIDs.map({ documentID -> Int64 in
-						// Get fromID
-						guard let fromID = DocumentTypeInfoTable.id(for: documentID, in: fromDocumentTables.infoTable)
-                                else {
-							throw MDSDocumentStorageError.unknownDocumentID(documentID: documentID)
-						}
+		let	associationContentsTable = self.associationTablesByName.value(for: association.name)!
 
-						return fromID
-					})
-		let	associationContentsTable = self.associationTablesByName.value(for: name)!
-		let	cacheContentsTable = self.cacheTablesByName.value(for: cacheName)!
+		let	cacheContentsTable = self.cacheTablesByName.value(for: cache.name)!
 		let	cacheContentsTableColumns = cachedValueNames.map({ cacheContentsTable.tableColumn(for: $0) })
+		let	cacheContentsTableColumnByName = Dictionary(cacheContentsTableColumns.map({ ($0.name, $0) }))
 
-		return try! associationContentsTable.sum(tableColumns: cacheContentsTableColumns,
+		let	toDocumentTables = documentTables(for: association.toDocumentType)
+
+		let	tableColumns =
+					[AssociationContentsTable.fromIDTableColumn, AssociationContentsTable.toIDTableColumn] +
+							cacheContentsTableColumns
+
+		var	results = [[String : Any]]()
+		var	toIDs = Set<Int64>()
+		try! associationContentsTable.select(tableColumns: tableColumns,
 				innerJoin:
 						SQLiteInnerJoin(associationContentsTable,
-								tableColumn: AssociationContentsTable.toIDTableColumn, to: cacheContentsTable,
+								tableColumn: AssociationContentsTable.toIDTableColumn,
+								to: cacheContentsTable,
 								otherTableColumn: CacheContentsTable.idTableColumn),
-				where: SQLiteWhere(tableColumn: AssociationContentsTable.fromIDTableColumn, values: fromIDs))
+				where:
+						SQLiteWhere(tableColumn: AssociationContentsTable.fromIDTableColumn,
+								values: Array(fromDocumentIDByID.keys)))
+				{
+					// Setup
+					let	toID = $0.integer(for: AssociationContentsTable.toIDTableColumn)!
+					var	info :[String : Any] =
+							[
+								"fromID": $0.integer(for: AssociationContentsTable.fromIDTableColumn)!,
+								"toID": toID,
+							]
+					for cachedValueName in cachedValueNames {
+						// Get SQLiteTableColumn
+						let	tableColumn = cacheContentsTableColumnByName[cachedValueName]!
+						switch tableColumn.kind {
+							case .integer:	info[cachedValueName] = $0.integer(for: tableColumn)
+							case .real:		info[cachedValueName] = $0.real(for: tableColumn)
+							case .text:		info[cachedValueName] = $0.text(for: tableColumn)
+							case .blob:		info[cachedValueName] = $0.blob(for: tableColumn)
+							default:		break
+						}
+					}
+
+					results.append(info)
+					toIDs.insert(toID)
+				}
+
+		let	toDocumentIDByID = DocumentTypeInfoTable.documentIDByID(for: Array(toIDs), in: toDocumentTables.infoTable)
+
+		return results.map({
+			// Update info
+			var	info = $0
+			info["fromID"] = fromDocumentIDByID[info["fromID"] as! Int64]!
+			info["toID"] = toDocumentIDByID[info["toID"] as! Int64]!
+
+			return info
+		})
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func associationSum(association :MDSAssociation, fromDocumentIDs :[String], cache :MDSCache,
+			cachedValueNames :[String]) throws -> [String : Int64] {
+		// Preflight
+		let	fromDocumentTables = documentTables(for: association.fromDocumentType)
+		let	fromDocumentIDByID =
+					DocumentTypeInfoTable.documentIDByID(for: fromDocumentIDs, in: fromDocumentTables.infoTable)
+		if fromDocumentIDByID.count < fromDocumentIDs.count {
+			// Did not resolve all documentIDs
+			let	documentID = Set(fromDocumentIDs).symmetricDifference(fromDocumentIDByID.values).first!
+
+			throw MDSDocumentStorageError.unknownDocumentID(documentID: documentID)
+		}
+
+		// Setup
+		let	associationContentsTable = self.associationTablesByName.value(for: association.name)!
+
+		let	cacheContentsTable = self.cacheTablesByName.value(for: cache.name)!
+		let	cacheContentsTableColumns = cachedValueNames.map({ cacheContentsTable.tableColumn(for: $0) })
+
+		return try associationContentsTable.sum(tableColumns: cacheContentsTableColumns,
+				innerJoin:
+						SQLiteInnerJoin(associationContentsTable, tableColumn: AssociationContentsTable.toIDTableColumn,
+								to: cacheContentsTable, otherTableColumn: CacheContentsTable.idTableColumn),
+				where:
+						SQLiteWhere(tableColumn: AssociationContentsTable.fromIDTableColumn,
+								values: Array(fromDocumentIDByID.keys)),
+				includeCount: true)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

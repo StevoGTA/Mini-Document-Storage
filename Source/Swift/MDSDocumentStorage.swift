@@ -81,8 +81,8 @@ public protocol MDSDocumentStorage {
 			proc :(_ document :MDSDocument) -> Void) throws
 	func associationIterate(for name :String, fromDocumentType :String, to toDocumentID :String,
 			proc :(_ document :MDSDocument) -> Void) throws
-	func associationGetIntegerValues(for name :String, action :MDSAssociation.GetIntegerValueAction,
-			fromDocumentIDs :[String], cacheName :String, cachedValueNames :[String]) throws -> [String : Int64]
+	func associationGetValues(for name :String, action :MDSAssociation.GetValueAction,
+			fromDocumentIDs :[String], cacheName :String, cachedValueNames :[String]) throws -> Any
 	func associationUpdate(for name :String, updates :[MDSAssociation.Update]) throws
 
 	func cacheRegister(name :String, documentType :String, relevantProperties :[String],
@@ -216,6 +216,22 @@ extension MDSDocumentStorage {
 				fromDocumentType: T.documentType, to: document.id, proc: { documents.append($0 as! T) })
 
 		return documents
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func associationGetDetailValues(for name :String, fromDocumentIDs :[String], cacheName :String,
+			cachedValueNames :[String]) throws -> [[String : Any]] {
+		// Get detail values
+		return try associationGetValues(for: name, action: .detail, fromDocumentIDs: fromDocumentIDs,
+				cacheName: cacheName, cachedValueNames: cachedValueNames) as! [[String : Any]]
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func associationGetSumValues(for name :String, fromDocumentIDs :[String], cacheName :String,
+			cachedValueNames :[String]) throws -> [String : Int64] {
+		// Get sum values
+		return try associationGetValues(for: name, action: .sum, fromDocumentIDs: fromDocumentIDs, cacheName: cacheName,
+				cachedValueNames: cachedValueNames) as! [String : Int64]
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

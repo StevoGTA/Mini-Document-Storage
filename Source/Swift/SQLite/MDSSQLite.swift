@@ -135,8 +135,8 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func associationGetIntegerValues(for name :String, action :MDSAssociation.GetIntegerValueAction,
-			fromDocumentIDs :[String], cacheName :String, cachedValueNames :[String]) throws -> [String : Int64] {
+	public func associationGetValues(for name :String, action :MDSAssociation.GetValueAction, fromDocumentIDs :[String],
+			cacheName :String, cachedValueNames :[String]) throws -> Any {
 		// Validate
 		guard let association = association(for: name) else {
 			throw MDSDocumentStorageError.unknownAssociation(name: name)
@@ -170,11 +170,15 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Check action
 		switch action {
+			case .detail:
+				// Detail
+				return try self.databaseManager.associationDetail(association: association,
+						fromDocumentIDs: fromDocumentIDsUse, cache: cache, cachedValueNames: cachedValueNames)
+
 			case .sum:
 				// Sum
-				return try self.databaseManager.associationSum(name: name, fromDocumentIDs: fromDocumentIDsUse,
-						documentType: association.fromDocumentType, cacheName: cacheName,
-						cachedValueNames: cachedValueNames)
+				return try self.databaseManager.associationSum(association: association,
+						fromDocumentIDs: fromDocumentIDsUse, cache: cache, cachedValueNames: cachedValueNames)
 		}
 	}
 

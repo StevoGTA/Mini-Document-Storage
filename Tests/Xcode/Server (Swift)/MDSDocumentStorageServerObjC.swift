@@ -100,21 +100,22 @@ class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageS
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func associationGetIntegerValues(for name :String, action :MDSAssociation.GetIntegerValueAction,
-			fromDocumentIDs :[String], cacheName :String, cachedValueNames :[String]) throws -> [String : Int64] {
+	func associationGetValues(for name :String, action :MDSAssociation.GetValueAction, fromDocumentIDs :[String],
+			cacheName :String, cachedValueNames :[String]) throws -> Any {
 		// Setup
-		let	associationGetIntegerValueAction :MDSAssociationGetIntegerValueAction
+		let	associationGetValueAction :MDSAssociationGetValueAction
 		switch action {
-			case .sum:	associationGetIntegerValueAction = .sum
+			case .detail:	associationGetValueAction = .detail
+			case .sum:		associationGetValueAction = .sum
 		}
 
-		// Get integer values
-		var	valueByKey :NSDictionary?
-		try self.documentStorageObjC.associationGetIntegerValuesNamed(name,
-				associationGetIntegerValueAction: associationGetIntegerValueAction, fromDocumentIDs: fromDocumentIDs,
-				cacheName: cacheName, cachedValueNames: cachedValueNames, outValueByKey: &valueByKey)
+		// Get values
+		var	outInfo :AnyObject?
+		try self.documentStorageObjC.associationGetValuesNamed(name,
+				associationGetValueAction: associationGetValueAction, fromDocumentIDs: fromDocumentIDs,
+				cacheName: cacheName, cachedValueNames: cachedValueNames, outInfo: &outInfo)
 
-		return valueByKey as! [String : Int64]
+		return outInfo!
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

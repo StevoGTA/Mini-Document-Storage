@@ -346,16 +346,12 @@ extension HTTPServer {
 			// Catch errors
 			do {
 				// Check action
-				switch action {
-					case .sum:
-						// Sum
-						let	results :[String : Int64] =
-								try documentStorage!.associationGetIntegerValues(for: info.name, action: action,
-										fromDocumentIDs: fromDocumentIDs, cacheName: cacheName,
-										cachedValueNames: cachedValueNames)
+				let	results =
+						try documentStorage!.associationGetValues(for: info.name, action: action,
+								fromDocumentIDs: fromDocumentIDs, cacheName: cacheName,
+								cachedValueNames: cachedValueNames)
 
-						return (.ok, nil, .json(results))
-				}
+				return (.ok, nil, .json(results))
 			} catch {
 				// Error
 				return (.badRequest, nil, .json(["error": error.localizedDescription]))

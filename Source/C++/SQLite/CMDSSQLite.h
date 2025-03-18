@@ -35,8 +35,8 @@ class CMDSSQLite : public CMDSDocumentStorageServer {
 															const CString& fromDocumentType,
 															const CString& toDocumentID, CMDSDocument::Proc proc,
 															void* procUserData) const;
-		TVResult<CDictionary>						associationGetIntegerValues(const CString& name,
-															CMDSAssociation::GetIntegerValueAction action,
+		TVResult<SValue>							associationGetValues(const CString& name,
+															CMDSAssociation::GetValueAction action,
 															const TArray<CString>& fromDocumentIDs,
 															const CString& cacheName,
 															const TArray<CString>& cachedValueNames) const;

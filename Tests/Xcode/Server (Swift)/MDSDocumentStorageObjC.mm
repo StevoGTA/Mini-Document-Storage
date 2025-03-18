@@ -620,41 +620,47 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-- (BOOL) associationGetIntegerValuesNamed:(NSString*) name
-		associationGetIntegerValueAction:(MDSAssociationGetIntegerValueAction) associationGetIntegerValueAction
+- (BOOL) associationGetValuesNamed:(NSString*) name
+		associationGetValueAction:(MDSAssociationGetValueAction) associationGetValueAction
 		fromDocumentIDs:(NSArray<NSString*>*) fromDocumentIDs cacheName:(NSString*) cacheName
-		cachedValueNames:(NSArray<NSString*>*) cachedValueNames
-		outValueByKey:(NSDictionary<NSString*, NSNumber*>* _Nullable * _Nullable) outValueByKey error:(NSError**) error
+		cachedValueNames:(NSArray<NSString*>*) cachedValueNames outInfo:(id _Nullable * _Nullable) outInfo
+		error:(NSError**) error
 {
 	// Setup
-	CMDSAssociation::GetIntegerValueAction	cppAssociationGetIntegerValueAction;
-	switch (associationGetIntegerValueAction) {
-		case kMDSAssociationGetIntegerValueActionSum:
-			// Sum
-			cppAssociationGetIntegerValueAction = CMDSAssociation::kGetIntegerValueActionSum;	break;
+	CMDSAssociation::GetValueAction	cppAssociationGetValueAction;
+	switch (associationGetValueAction) {
+		case kMDSAssociationGetValueActionDetail:	cppAssociationGetValueAction = CMDSAssociation::kGetValueActionDetail;	break;
+		case kMDSAssociationGetValueActionSum:		cppAssociationGetValueAction = CMDSAssociation::kGetValueActionSum;		break;
 	}
 
-	// Get integer values
-	TVResult<CDictionary>	valueByKey =
-									self.documentStorageServer->associationGetIntegerValues(
-											CString((__bridge CFStringRef) name), cppAssociationGetIntegerValueAction,
-											CCoreFoundation::arrayOfStringsFrom((__bridge CFArrayRef) fromDocumentIDs),
-											CString((__bridge CFStringRef) cacheName),
-											CCoreFoundation::arrayOfStringsFrom(
-													(__bridge CFArrayRef) cachedValueNames));
-	if (valueByKey.hasError()) {
+	// Get values
+	TVResult<SValue>	value =
+								self.documentStorageServer->associationGetValues(CString((__bridge CFStringRef) name),
+										cppAssociationGetValueAction,
+										CCoreFoundation::arrayOfStringsFrom((__bridge CFArrayRef) fromDocumentIDs),
+										CString((__bridge CFStringRef) cacheName),
+										CCoreFoundation::arrayOfStringsFrom((__bridge CFArrayRef) cachedValueNames));
+	if (value.hasError()) {
 		// Error
-		*error = [self errorFrom:valueByKey.getError()];
+		*error = [self errorFrom:value.getError()];
 
 		return NO;
 	}
 
 	// Prepare results
-	const	TSet<CString>	keys = valueByKey->getKeys();
-	*outValueByKey = [[NSMutableDictionary alloc] init];
-	for (TIteratorS<CString> iterator = keys.getIterator(); iterator.hasValue(); iterator.advance())
-		[(NSMutableDictionary*) *outValueByKey setObject:@(valueByKey->getSInt64(*iterator))
-				forKey:(__bridge NSString*) iterator->getOSString()];
+	switch (associationGetValueAction) {
+		case kMDSAssociationGetValueActionDetail:
+			// Detail
+			*outInfo =
+					(NSArray*) CFBridgingRelease(CCoreFoundation::createArrayRefFrom(value->getArrayOfDictionaries()));
+			break;
+
+		case kMDSAssociationGetValueActionSum:
+			// Sum
+			*outInfo =
+					(NSArray*) CFBridgingRelease(CCoreFoundation::createDictionaryRefFrom(value->getDictionary()));
+			break;
+	}
 
 	return YES;
 }

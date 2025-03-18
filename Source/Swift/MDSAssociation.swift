@@ -9,9 +9,10 @@
 // MARK: MDSAssociation
 public class MDSAssociation : Equatable {
 
-	// MARK: GetIntegerValueAction
-	public enum GetIntegerValueAction : String {
-		case sum = "sum"
+	// MARK: GetValueAction
+	public enum GetValueAction : String {
+		case detail
+		case sum
 	}
 
 	// MARK: Item

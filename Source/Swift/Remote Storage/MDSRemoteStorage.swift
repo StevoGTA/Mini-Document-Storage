@@ -264,8 +264,8 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func associationGetIntegerValues(for name :String, action :MDSAssociation.GetIntegerValueAction,
-			fromDocumentIDs :[String], cacheName :String, cachedValueNames :[String]) throws -> [String : Int64] {
+	public func associationGetValues(for name :String, action :MDSAssociation.GetValueAction, fromDocumentIDs :[String],
+			cacheName :String, cachedValueNames :[String]) throws -> Any {
 		// Process batch updates
 		let	(associationAdds, associationRemoves) =
 					self.batchMap.value(for: .current)?.associationUpdates(for: name) ?? ([], [])
@@ -287,10 +287,10 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 		while true {
 			// Query collection document count
 			let	(info, error) =
-						self.httpEndpointClient.associationGetIntegerValues(
-								documentStorageID: self.documentStorageID, name: name, action: action,
-										fromDocumentIDs: Array(fromDocumentIDsUse), cacheName: cacheName,
-										cachedValueNames: cachedValueNames, authorization: self.authorization)
+						self.httpEndpointClient.associationGetValues(documentStorageID: self.documentStorageID,
+								name: name, action: action, fromDocumentIDs: Array(fromDocumentIDsUse),
+								cacheName: cacheName, cachedValueNames: cachedValueNames,
+								authorization: self.authorization)
 
 			// Handle results
 			if info != nil {
@@ -300,7 +300,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 					continue
 				} else {
 					// Success
-					return info!.cachedValues ?? [:]
+					return info!.info!
 				}
 			} else {
 				// Error
@@ -344,7 +344,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	public func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
-			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
+			documentIsIncludedProc: @escaping MDSDocument.IsIncludedProc, checkRelevantProperties: Bool) throws {
 		// Register collection
 		let	error =
 					self.httpEndpointClient.collectionRegister(documentStorageID: self.documentStorageID, name: name,

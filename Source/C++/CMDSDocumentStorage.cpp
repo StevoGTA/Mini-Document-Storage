@@ -137,6 +137,34 @@ TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocuments
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+TVResult<TArray<CDictionary> > CMDSDocumentStorage::associationGetDetailValues(const CString& name,
+		const TArray<CString>& fromDocumentIDs, const CString& cacheName, const TArray<CString>& cachedValueNames) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Get detail values
+	TVResult<SValue>	value =
+								associationGetValues(name, CMDSAssociation::kGetValueActionDetail, fromDocumentIDs,
+										cacheName, cachedValueNames);
+	ReturnValueIfResultError(value, TVResult<TArray<CDictionary> >(value.getError()));
+
+	return TVResult<TArray<CDictionary> >(value->getArrayOfDictionaries());
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<CDictionary> CMDSDocumentStorage::associationGetSumValues(const CString& name,
+		const TArray<CString>& fromDocumentIDs, const CString& cacheName, const TArray<CString>& cachedValueNames) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Get sum values
+	TVResult<SValue>	value =
+								associationGetValues(name, CMDSAssociation::kGetValueActionDetail, fromDocumentIDs,
+										cacheName, cachedValueNames);
+	ReturnValueIfResultError(value, TVResult<CDictionary>(value.getError()));
+
+	return TVResult<CDictionary>(value->getDictionary());
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 OV<SError> CMDSDocumentStorage::collectionRegister(const CString& name, const CString& documentType,
 		const TArray<CString>& relevantProperties, bool isUpToDate, const CDictionary& isIncludedInfo,
 		const CString& isIncludedSelector, bool checkRelevantProperties)

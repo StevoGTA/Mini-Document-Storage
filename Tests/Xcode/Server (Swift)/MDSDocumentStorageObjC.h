@@ -13,8 +13,9 @@ NS_ASSUME_NONNULL_BEGIN
 // MARK: MDSAssociationGetIntegerValueAction
 
 typedef NS_ENUM(NSInteger) {
-	kMDSAssociationGetIntegerValueActionSum,
-} MDSAssociationGetIntegerValueAction;
+	kMDSAssociationGetValueActionDetail,
+	kMDSAssociationGetValueActionSum,
+} MDSAssociationGetValueAction;
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSAssociationItem
@@ -255,11 +256,11 @@ typedef NS_ENUM(NSInteger) {
 		totalCount:(NSInteger*) outTotalCount
 		outDocumentFullInfos:(MDSDocumentFullInfoArray* _Nullable * _Nullable) outDocumentFullInfos
 		error:(NSError**) error;
-- (BOOL) associationGetIntegerValuesNamed:(NSString*) name
-		associationGetIntegerValueAction:(MDSAssociationGetIntegerValueAction) associationGetIntegerValueAction
+- (BOOL) associationGetValuesNamed:(NSString*) name
+		associationGetValueAction:(MDSAssociationGetValueAction) associationGetValueAction
 		fromDocumentIDs:(NSArray<NSString*>*) fromDocumentIDs cacheName:(NSString*) cacheName
-		cachedValueNames:(NSArray<NSString*>*) cachedValueNames
-		outValueByKey:(NSDictionary<NSString*, NSNumber*>* _Nullable * _Nullable) outValueByKey error:(NSError**) error;
+		cachedValueNames:(NSArray<NSString*>*) cachedValueNames outInfo:(id _Nullable * _Nullable) outInfo
+		error:(NSError**) error;
 - (BOOL) associationUpdateNamed:(NSString*) name associationUpdates:(MDSAssociationUpdateArray*) associationUpdates
 		error:(NSError**) error;
 

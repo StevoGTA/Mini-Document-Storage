@@ -898,14 +898,13 @@ OV<SError> CMDSEphemeral::associationIterateTo(const CString& name, const CStrin
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TVResult<CDictionary> CMDSEphemeral::associationGetIntegerValues(const CString& name,
-		CMDSAssociation::GetIntegerValueAction action, const TArray<CString>& fromDocumentIDs, const CString& cacheName,
-		const TArray<CString>& cachedValueNames) const
+TVResult<SValue> CMDSEphemeral::associationGetValues(const CString& name, CMDSAssociation::GetValueAction action,
+		const TArray<CString>& fromDocumentIDs, const CString& cacheName, const TArray<CString>& cachedValueNames) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Validate
 	if (!mInternals->mAssociationByName.contains(name))
-		return TVResult<CDictionary>(getUnknownAssociationError(name));
+		return TVResult<SValue>(getUnknownAssociationError(name));
 
 	OV<SError>	error;
 	mInternals->mDocumentMapsLock.lockForReading();
@@ -919,44 +918,78 @@ TVResult<CDictionary> CMDSEphemeral::associationGetIntegerValues(const CString& 
 	}
 	mInternals->mDocumentMapsLock.unlockForReading();
 	if (error.hasValue())
-		return TVResult<CDictionary>(*error);
+		return TVResult<SValue>(*error);
 
 	OR<I<MDSCache> >	cache = mInternals->mCacheByName.get(cacheName);
 	if (!cache.hasReference())
-		return TVResult<CDictionary>(getUnknownCacheError(cacheName));
+		return TVResult<SValue>(getUnknownCacheError(cacheName));
 
 	for (TIteratorD<CString> iterator = cachedValueNames.getIterator(); iterator.hasValue(); iterator.advance()) {
 		// Check if have info for this cachedValueName
 		if (!(*cache)->hasValueInfo(*iterator))
-			return TVResult<CDictionary>(getUnknownCacheValueName(*iterator));
+			return TVResult<SValue>(getUnknownCacheValueName(*iterator));
 	}
 
 	// Setup
-	TNSet<CString>	fromDocumentIDsUse(fromDocumentIDs);
-
-	// Get association items
+	TNSet<CString>					fromDocumentIDsUse(fromDocumentIDs);
 	TArray<CMDSAssociation::Item>	associationItems = mInternals->associationGetItems(name);
+	TDictionary<CDictionary>&		cacheValueInfos = *mInternals->mCacheValuesByName.get(cacheName);
 
 	// Process association items
-	TDictionary<CDictionary>&	cacheValueInfos = *mInternals->mCacheValuesByName.get(cacheName);
-	CDictionary					results;
-	for (TIteratorD<CMDSAssociation::Item> associationItemIterator = associationItems.getIterator();
-			associationItemIterator.hasValue(); associationItemIterator.advance()) {
-		// Check fromDocumentID
-		if (fromDocumentIDsUse.contains(associationItemIterator->getFromDocumentID())) {
-			// Get value and sum
-			CDictionary&	valueInfos = *cacheValueInfos.get(associationItemIterator->getToDocumentID());
+	switch (action) {
+		case CMDSAssociation::kGetValueActionDetail: {
+			// Detail
+			TNArray<CDictionary>	results;
+			for (TIteratorD<CMDSAssociation::Item> associationItemIterator = associationItems.getIterator();
+					associationItemIterator.hasValue(); associationItemIterator.advance()) {
+				// Check fromDocumentID
+				if (fromDocumentIDsUse.contains(associationItemIterator->getFromDocumentID())) {
+					// Setup
+					CDictionary	result;
+					result.set(CString(OSSTR("fromID")), associationItemIterator->getFromDocumentID());
+					result.set(CString(OSSTR("toID")), associationItemIterator->getToDocumentID());
 
-			// Iterate cachedValueNames
-			for (TIteratorD<CString> cacheValueNameIterator = cachedValueNames.getIterator();
-					cacheValueNameIterator.hasValue(); cacheValueNameIterator.advance())
-				// Update results
-				results.set(*cacheValueNameIterator,
-						results.getSInt64(*cacheValueNameIterator) + valueInfos.getSInt64(*cacheValueNameIterator));
-		}
+					// Iterate cachedValueNames
+					CDictionary&	valueInfos = *cacheValueInfos.get(associationItemIterator->getToDocumentID());
+					for (TIteratorD<CString> cacheValueNameIterator = cachedValueNames.getIterator();
+							cacheValueNameIterator.hasValue(); cacheValueNameIterator.advance())
+						// Update result
+						result.set(*cacheValueNameIterator, valueInfos[*cacheValueNameIterator]);
+
+					// Add result
+					results += result;
+				}
+			}
+
+			return SValue(results); }
+
+		case CMDSAssociation::kGetValueActionSum: {
+			// Sum
+			CDictionary	results;
+			UInt64		count = 0;
+			for (TIteratorD<CMDSAssociation::Item> associationItemIterator = associationItems.getIterator();
+					associationItemIterator.hasValue(); associationItemIterator.advance()) {
+				// Check fromDocumentID
+				if (fromDocumentIDsUse.contains(associationItemIterator->getFromDocumentID())) {
+					// Included
+					count++;
+
+					// Get value and sum
+					CDictionary&	valueInfos = *cacheValueInfos.get(associationItemIterator->getToDocumentID());
+
+					// Iterate cachedValueNames
+					for (TIteratorD<CString> cacheValueNameIterator = cachedValueNames.getIterator();
+							cacheValueNameIterator.hasValue(); cacheValueNameIterator.advance())
+						// Update results
+						results.set(*cacheValueNameIterator,
+								results.getSInt64(*cacheValueNameIterator) +
+										valueInfos.getSInt64(*cacheValueNameIterator));
+				}
+			}
+			results.set(CString(OSSTR("count")), count);
+
+			return SValue(results); }
 	}
-
-	return TVResult<CDictionary>(results);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

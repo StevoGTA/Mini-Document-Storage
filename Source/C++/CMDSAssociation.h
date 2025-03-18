@@ -10,10 +10,11 @@
 // MARK: CMDSAssociation
 
 class CMDSAssociation : public CEquatable {
-	// GetIntegerValueAction
+	// GetValueAction
 	public:
-		enum GetIntegerValueAction {
-			kGetIntegerValueActionSum,
+		enum GetValueAction {
+			kGetValueActionDetail,
+			kGetValueActionSum,
 		};
 
 	// Item

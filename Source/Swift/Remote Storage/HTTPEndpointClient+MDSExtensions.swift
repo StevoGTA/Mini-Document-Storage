@@ -654,32 +654,54 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func associationGetIntegerValues(documentStorageID :String, name :String,
-			action :MDSAssociation.GetIntegerValueAction, fromDocumentIDs :[String], cacheName :String,
-			cachedValueNames :[String], authorization :String? = nil) ->
-			(info :(cachedValues :[String : Int64]?, isUpToDate :Bool)?, error :Error?) {
+	func associationGetValues(documentStorageID :String, name :String, action :MDSAssociation.GetValueAction,
+			fromDocumentIDs :[String], cacheName :String, cachedValueNames :[String], authorization :String? = nil) ->
+			(info :(info :Any?, isUpToDate :Bool)?, error :Error?) {
 		// Perform
 		return DispatchQueue.performBlocking() { completionProc in
 			// Setup
-			let	cachedValues = LockingDictionary<String, Int64>()
+			var	info :Any
+			switch action {
+				case .detail:	info = LockingArray<[String : Any]>()
+				case .sum:		info = LockingDictionary<String, Int64>()
+			}
 
 			// Queue
 			self.queue(
-					MDSHTTPServices.httpEndpointRequestForAssociationGetIntegerValues(
+					MDSHTTPServices.httpEndpointRequestForAssociationGetValues(
 							documentStorageID: documentStorageID, name: name, action: action,
 							fromDocumentIDs: fromDocumentIDs, cacheName: cacheName, cachedValueNames: cachedValueNames,
 							authorization: authorization),
-					partialResultsProc: { info, _ in
-						// Iterate info
-						info?.forEach() { cachedValueName, cachedValue in
-							// Update return info
-							cachedValues.update(for: cachedValueName, with: { ($0 ?? 0) + cachedValue })
+					partialResultsProc: { partialResults, _ in
+						// Check action
+						switch action {
+							case .detail:
+								// Detail
+								(info as! LockingArray<[String : Any]>).append(
+										(partialResults as? [[String : Any]]) ?? [])
+
+							case .sum:
+								// Sum
+								(partialResults as? [String : Int64])?.forEach() { cachedValueName, cachedValue in
+									// Update return info
+									(info as! LockingDictionary<String, Int64>)
+											.update(for: cachedValueName, with: { ($0 ?? 0) + cachedValue })
+								}
 						}
 					}, completionProc: {
 						// Handle results
 						if $0.isEmpty {
 							// All good
-							completionProc(((cachedValues.dictionary, true), nil))
+							switch action {
+								case .detail:
+									// Detail
+									completionProc((((info as! LockingArray<[String : Any]>).values, true), nil))
+
+								case .sum:
+									// Sum
+									completionProc((((info as! LockingDictionary<String, Int64>).dictionary, true),
+											nil))
+							}
 						} else {
 							// Error
 							let	error = $0.first!

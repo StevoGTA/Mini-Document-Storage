@@ -216,8 +216,8 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func associationGetIntegerValues(for name :String, action :MDSAssociation.GetIntegerValueAction,
-			fromDocumentIDs :[String], cacheName :String, cachedValueNames :[String]) throws -> [String : Int64] {
+	public func associationGetValues(for name :String, action :MDSAssociation.GetValueAction, fromDocumentIDs :[String],
+			cacheName :String, cachedValueNames :[String]) throws -> Any {
 		// Validate
 		guard self.associationByName.value(for: name) != nil else {
 			throw MDSDocumentStorageError.unknownAssociation(name: name)
@@ -243,24 +243,39 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Setup
 		let	fromDocumentIDsUse = Set<String>(fromDocumentIDs)
-
-		// Get association items
-		let	associationItems = self.associationItems(for: name)
-
-		// Process associationItems
+		let	associationItems =
+					self.associationItems(for: name).filter({ fromDocumentIDsUse.contains($0.fromDocumentID) })
 		let	cacheValueInfos = self.cacheValuesByName.value(for: cacheName)!
-		var	results = [String : Int64]()
-		associationItems
-				.filter({ fromDocumentIDsUse.contains($0.fromDocumentID) })
-				.forEach() {
-					// Get value and sum
+
+		// Process association items
+		switch action {
+			case .detail:
+				// Detail
+				return associationItems.map({
+					// Setup
+					let	toDocumentID = $0.toDocumentID
+					var	info :[String : Any] = ["fromID": $0.fromDocumentID, "toID": toDocumentID]
+
+					// Add cached values
+					cachedValueNames.forEach() { info[$0] = cacheValueInfos[toDocumentID]?[$0] }
+
+					return info
+				})
+
+			case .sum:
+				// Sum
+				var	results = ["count": Int64(associationItems.count)]
+				associationItems.forEach() {
+					// Setup
 					let	valueInfos = cacheValueInfos[$0.toDocumentID]!
 
 					// Iterate cachedValueNames
-					cachedValueNames.forEach() { results[$0] = (results[$0] ?? 0) + ((valueInfos[$0] as? Int64) ?? 0) }
+					cachedValueNames.forEach()
+						{ results[$0] = (results[$0] ?? 0) + ((valueInfos[$0] as? Int64) ?? 0) }
 				}
 
-		return results
+				return results
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

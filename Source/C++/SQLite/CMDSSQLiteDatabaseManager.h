@@ -7,6 +7,7 @@
 #include "CMDSAssociation.h"
 #include "CMDSSQLiteDocumentBacking.h"
 #include "CSQLiteDatabase.h"
+#include "TMDSCache.h"
 #include "TMDSIndex.h"
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -541,9 +542,13 @@ class CMDSSQLiteDatabaseManager {
 															const TArray<CMDSAssociation::Update>& updates,
 															const CString& fromDocumentType,
 															const CString& toDocumentType);
-				TVResult<CDictionary>				associationSum(const CString& name,
+				TVResult<SValue>					associationDetail(const I<CMDSAssociation>& association,
 															const TArray<CString>& fromDocumentIDs,
-															const CString& documentType, const CString& cacheName,
+															const I<TMDSCache<SInt64, ValueInfoByID>>& cache,
+															const TArray<CString>& cachedValueNames);
+				TVResult<SValue>					associationSum(const I<CMDSAssociation>& association,
+															const TArray<CString>& fromDocumentIDs,
+															const I<TMDSCache<SInt64, ValueInfoByID>>& cache,
 															const TArray<CString>& cachedValueNames);
 
 				UInt32								cacheRegister(const CString& name, const CString& documentType,

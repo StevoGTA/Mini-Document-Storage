@@ -809,7 +809,7 @@ class MDSHTTPServices {
 
 	// MARK: - Association Get Values
 	typealias AssociationGetValuesEndpointInfo =
-				(documentStorageID :String, name :String, action :MDSAssociation.GetIntegerValueAction?,
+				(documentStorageID :String, name :String, action :MDSAssociation.GetValueAction?,
 						fromDocumentIDs :[String]?, cacheName :String?, cachedValueNames :[String]?,
 						authorization :String?)
 	static	let	associationGetValuesEndpoint =
@@ -823,21 +823,21 @@ class MDSHTTPServices {
 									let	queryItemsMap = performInfo.queryItemsMap
 
 									return (documentStorageID, name,
-											MDSAssociation.GetIntegerValueAction(rawValue: action),
+											MDSAssociation.GetValueAction(rawValue: action),
 											queryItemsMap.stringArray(for: "fromID") ?? [],
 											queryItemsMap["cacheName"] as? String,
 											queryItemsMap.stringArray(for: "cachedValueName") ?? [],
 											performInfo.headers["Authorization"])
 								}
-	static func httpEndpointRequestForAssociationGetIntegerValues(documentStorageID :String, name :String,
-			action :MDSAssociation.GetIntegerValueAction, fromDocumentIDs :[String], cacheName :String,
-			cachedValueNames :[String], authorization :String? = nil) -> MDSJSONHTTPEndpointRequest<[String : Int64]> {
+	static func httpEndpointRequestForAssociationGetValues(documentStorageID :String, name :String,
+			action :MDSAssociation.GetValueAction, fromDocumentIDs :[String], cacheName :String,
+			cachedValueNames :[String], authorization :String? = nil) -> MDSJSONHTTPEndpointRequest<Any> {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.transformedForPath
 		let	nameUse = name.transformedForPath
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : [:]
 
-		return MDSJSONHTTPEndpointRequest<[String : Int64]>(method: .get,
+		return MDSJSONHTTPEndpointRequest<Any>(method: .get,
 				path: "/v1/association/\(documentStorageIDUse)/\(nameUse)/\(action.rawValue)",
 				queryComponents: [
 									"cacheName": cacheName,

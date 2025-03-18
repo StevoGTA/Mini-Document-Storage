@@ -10,10 +10,8 @@
 #include "TBatchQueue.h"
 #include "TLockingDictionary.h"
 #include "TMDSBatch.h"
-#include "TMDSCache.h"
 #include "TMDSCollection.h"
 #include "TMDSDocumentBackingCache.h"
-#include "TMDSIndex.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: Types
@@ -1567,22 +1565,21 @@ OV<SError> CMDSSQLite::associationIterateTo(const CString& name, const CString& 
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TVResult<CDictionary> CMDSSQLite::associationGetIntegerValues(const CString& name,
-		CMDSAssociation::GetIntegerValueAction action, const TArray<CString>& fromDocumentIDs, const CString& cacheName,
-		const TArray<CString>& cachedValueNames) const
+TVResult<SValue> CMDSSQLite::associationGetValues(const CString& name, CMDSAssociation::GetValueAction action,
+		const TArray<CString>& fromDocumentIDs, const CString& cacheName, const TArray<CString>& cachedValueNames) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Validate
 	OV<I<CMDSAssociation> >	association = mInternals->associationGet(name);
 	if (!association.hasValue())
-		return TVResult<CDictionary>(getUnknownAssociationError(name));
+		return TVResult<SValue>(getUnknownAssociationError(name));
 	OV<I<MDSCache> >	cache = mInternals->cacheGet(cacheName);
 	if (!cache.hasValue())
-		return TVResult<CDictionary>(getUnknownCacheError(cacheName));
+		return TVResult<SValue>(getUnknownCacheError(cacheName));
 	for (TIteratorD<CString> iterator = cachedValueNames.getIterator(); iterator.hasValue(); iterator.advance()) {
 		// Check if have info for this cachedValueName
 		if (!(*cache)->hasValueInfo(*iterator))
-			return TVResult<CDictionary>(getUnknownCacheValueName(*iterator));
+			return TVResult<SValue>(getUnknownCacheValueName(*iterator));
 	}
 
 	// Setup
@@ -1607,10 +1604,15 @@ TVResult<CDictionary> CMDSSQLite::associationGetIntegerValues(const CString& nam
 
 	// Check action
 	switch (action) {
-		case CMDSAssociation::kGetIntegerValueActionSum:
+		case CMDSAssociation::kGetValueActionDetail:
+			// Detail
+			return mInternals->mDatabaseManager.associationDetail(*association, fromDocumentIDs, *cache,
+					cachedValueNames);
+
+		case CMDSAssociation::kGetValueActionSum:
 			// Sum
-			return mInternals->mDatabaseManager.associationSum(name, fromDocumentIDsUse,
-					(*association)->getFromDocumentType(), cacheName, cachedValueNames);
+			return mInternals->mDatabaseManager.associationSum(*association, fromDocumentIDsUse, *cache,
+					cachedValueNames);
 	}
 }
 

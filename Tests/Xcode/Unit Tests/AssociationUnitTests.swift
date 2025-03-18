@@ -735,7 +735,19 @@ class AssociationUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testGetValueInvalidDocumentStorageID() throws {
+	func testDetailGetValueInvalidDocumentStorageID() throws {
+		// Test Detail
+		try getValueInvalidDocumentStorageID(action: .detail)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testSumGetValueInvalidDocumentStorageID() throws {
+		// Test Sum
+		try getValueInvalidDocumentStorageID(action: .sum)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func getValueInvalidDocumentStorageID(action :MDSAssociation.GetValueAction) throws {
 		// Setup
 		let	config = Config.current
 
@@ -744,8 +756,8 @@ class AssociationUnitTests : XCTestCase {
 		let	parent = Parent(id: "ABC", documentStorage: documentStorage)
 
 		let	(info, error) =
-					config.httpEndpointClient.associationGetIntegerValues(documentStorageID: "ABC", name: "ABC",
-							action: .sum, fromDocumentIDs: [parent.id], cacheName: "ABC", cachedValueNames: ["ABC"])
+					config.httpEndpointClient.associationGetValues(documentStorageID: "ABC", name: "ABC",
+							action: action, fromDocumentIDs: [parent.id], cacheName: "ABC", cachedValueNames: ["ABC"])
 
 		// Evaluate results
 		XCTAssertNil(info, "did receive info")
@@ -765,7 +777,19 @@ class AssociationUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testGetValueInvalidAssociationName() throws {
+	func testDetailGetValueInvalidAssociationName() throws {
+		// Test Detail
+		try getValueInvalidAssociationName(action: .detail)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testSumGetValueInvalidAssociationName() throws {
+		// Test Sum
+		try getValueInvalidAssociationName(action: .sum)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func getValueInvalidAssociationName(action :MDSAssociation.GetValueAction) throws {
 		// Setup
 		let	config = Config.current
 		let	associationName = UUID().uuidString
@@ -775,8 +799,8 @@ class AssociationUnitTests : XCTestCase {
 		let	parent = Parent(id: "ABC", documentStorage: documentStorage)
 
 		let	(info, error) =
-					config.httpEndpointClient.associationGetIntegerValues(documentStorageID: config.documentStorageID,
-							name: associationName, action: .sum, fromDocumentIDs: [parent.id], cacheName: "ABC",
+					config.httpEndpointClient.associationGetValues(documentStorageID: config.documentStorageID,
+							name: associationName, action: action, fromDocumentIDs: [parent.id], cacheName: "ABC",
 							cachedValueNames: ["ABC"])
 
 		// Evaluate results
@@ -857,14 +881,26 @@ class AssociationUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testGetValueMissingFromID() throws {
+	func testDetailGetValueMissingFromID() throws {
+		// Test Detail
+		try getValueMissingFromID(action: .detail)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testSumGetValueMissingFromID() throws {
+		// Test Sum
+		try getValueMissingFromID(action: .sum)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func getValueMissingFromID(action :MDSAssociation.GetValueAction) throws {
 		// Setup
 		let	config = Config.current
 
 		// Perform
 		let	(_, error) =
-					config.httpEndpointClient.associationGetIntegerValues(documentStorageID: config.documentStorageID,
-							name: "ABC", action: .sum, fromDocumentIDs: [], cacheName: "ABC", cachedValueNames: ["ABC"])
+					config.httpEndpointClient.associationGetValues(documentStorageID: config.documentStorageID,
+							name: "ABC", action: action, fromDocumentIDs: [], cacheName: "ABC", cachedValueNames: ["ABC"])
 
 		// Evaluate results
 		XCTAssertNotNil(error, "did not receive error")
@@ -883,7 +919,19 @@ class AssociationUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testGetValueInvalidFromID() throws {
+	func testDetailGetValueInvalidFromID() throws {
+		// Test Detail
+		try getValueInvalidFromID(action: .detail)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testSumGetValueInvalidFromID() throws {
+		// Test Sum
+		try getValueInvalidFromID(action: .sum)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func getValueInvalidFromID(action :MDSAssociation.GetValueAction) throws {
 		// Setup
 		let	associationName = "\(Parent.documentType)To\(Child.documentType.capitalizingFirstLetter)"
 		let	cacheName = UUID().uuidString
@@ -908,14 +956,14 @@ class AssociationUnitTests : XCTestCase {
 		// Perform - based on other tests and stale data, this may return not up to date
 		let	documentID = UUID().base64EncodedString
 		var	(info, error) =
-					config.httpEndpointClient.associationGetIntegerValues(documentStorageID: config.documentStorageID,
-							name: associationName, action: .sum, fromDocumentIDs: [documentID],
+					config.httpEndpointClient.associationGetValues(documentStorageID: config.documentStorageID,
+							name: associationName, action: action, fromDocumentIDs: [documentID],
 							cacheName: cacheName, cachedValueNames: ["size"])
 		while (info != nil) && !info!.isUpToDate {
 			// Try again
 			(info, error) =
-					config.httpEndpointClient.associationGetIntegerValues(documentStorageID: config.documentStorageID,
-							name: associationName, action: .sum, fromDocumentIDs: [documentID],
+					config.httpEndpointClient.associationGetValues(documentStorageID: config.documentStorageID,
+							name: associationName, action: action, fromDocumentIDs: [documentID],
 							cacheName: cacheName, cachedValueNames: ["size"])
 		}
 
@@ -971,7 +1019,19 @@ class AssociationUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testGetValueInvalidCacheName() throws {
+	func testDetailGetValueInvalidCacheName() throws {
+		// Test Detail
+		try getValueInvalidCacheName(action: .detail)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testSumGetValueInvalidCacheName() throws {
+		// Test Sum
+		try getValueInvalidCacheName(action: .sum)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func getValueInvalidCacheName(action :MDSAssociation.GetValueAction) throws {
 		// Setup
 		let	associationName = "\(Parent.documentType)To\(Child.documentType.capitalizingFirstLetter)"
 		let	config = Config.current
@@ -1024,8 +1084,8 @@ class AssociationUnitTests : XCTestCase {
 
 		// Get Association Value
 		let	(getValueInfo, getValueError) =
-					config.httpEndpointClient.associationGetIntegerValues(documentStorageID: config.documentStorageID,
-							name: associationName, action: .sum, fromDocumentIDs: [parent.id], cacheName: cacheName,
+					config.httpEndpointClient.associationGetValues(documentStorageID: config.documentStorageID,
+							name: associationName, action: action, fromDocumentIDs: [parent.id], cacheName: cacheName,
 							cachedValueNames: ["ABC"])
 
 		// Evaluate results
@@ -1046,14 +1106,27 @@ class AssociationUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testGetValueMissingCachedValueName() throws {
+	func testDetailGetValueMissingCachedValueName() throws {
+		// Test Detail
+		try getValueMissingCachedValueName(action: .detail)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testSumGetValueMissingCachedValueName() throws {
+		// Test Sum
+		try getValueMissingCachedValueName(action: .sum)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func getValueMissingCachedValueName(action :MDSAssociation.GetValueAction) throws {
 		// Setup
 		let	config = Config.current
 
 		// Perform
 		let	(_, error) =
-					config.httpEndpointClient.associationGetIntegerValues(documentStorageID: config.documentStorageID,
-							name: "ABC", action: .sum, fromDocumentIDs: ["ABC"], cacheName: "ABC", cachedValueNames: [])
+					config.httpEndpointClient.associationGetValues(documentStorageID: config.documentStorageID,
+							name: "ABC", action: action, fromDocumentIDs: ["ABC"], cacheName: "ABC",
+							cachedValueNames: [])
 
 		// Evaluate results
 		XCTAssertNotNil(error, "did not receive error")
@@ -1072,7 +1145,19 @@ class AssociationUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testGetValueInvalidCachedValueName() throws {
+	func testDetailGetValueInvalidCachedValueName() throws {
+		// Test Detail
+		try getValueInvalidCachedValueName(action: .detail)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testSumGetValueInvalidCachedValueName() throws {
+		// Test Sum
+		try getValueInvalidCachedValueName(action: .sum)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func getValueInvalidCachedValueName(action :MDSAssociation.GetValueAction) throws {
 		// Setup
 		let	associationName = "\(Parent.documentType)To\(Child.documentType.capitalizingFirstLetter)"
 		let	cacheName = UUID().uuidString
@@ -1134,8 +1219,8 @@ class AssociationUnitTests : XCTestCase {
 
 		// Get Association Value
 		let	(getValueInfo, getValueError) =
-					config.httpEndpointClient.associationGetIntegerValues(documentStorageID: config.documentStorageID,
-							name: associationName, action: .sum, fromDocumentIDs: [parent.id], cacheName: cacheName,
+					config.httpEndpointClient.associationGetValues(documentStorageID: config.documentStorageID,
+							name: associationName, action: action, fromDocumentIDs: [parent.id], cacheName: cacheName,
 							cachedValueNames: [cachedValueName])
 
 		// Evaluate results
