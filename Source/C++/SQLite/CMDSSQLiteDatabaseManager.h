@@ -544,11 +544,11 @@ class CMDSSQLiteDatabaseManager {
 															const CString& toDocumentType);
 				TVResult<SValue>					associationDetail(const I<CMDSAssociation>& association,
 															const TArray<CString>& fromDocumentIDs,
-															const I<TMDSCache<SInt64, ValueInfoByID>>& cache,
+															const I<TMDSCache<SInt64, ValueInfoByID> >& cache,
 															const TArray<CString>& cachedValueNames);
 				TVResult<SValue>					associationSum(const I<CMDSAssociation>& association,
 															const TArray<CString>& fromDocumentIDs,
-															const I<TMDSCache<SInt64, ValueInfoByID>>& cache,
+															const I<TMDSCache<SInt64, ValueInfoByID> >& cache,
 															const TArray<CString>& cachedValueNames);
 
 				UInt32								cacheRegister(const CString& name, const CString& documentType,

@@ -2638,7 +2638,7 @@ void CMDSSQLiteDatabaseManager::associationUpdate(const CString& name, const TAr
 
 //----------------------------------------------------------------------------------------------------------------------
 TVResult<SValue> CMDSSQLiteDatabaseManager::associationDetail(const I<CMDSAssociation>& association,
-		const TArray<CString>& fromDocumentIDs, const I<TMDSCache<SInt64, ValueInfoByID>>& cache,
+		const TArray<CString>& fromDocumentIDs, const I<TMDSCache<SInt64, ValueInfoByID> >& cache,
 		const TArray<CString>& cachedValueNames)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -2705,7 +2705,7 @@ TVResult<SValue> CMDSSQLiteDatabaseManager::associationDetail(const I<CMDSAssoci
 
 //----------------------------------------------------------------------------------------------------------------------
 TVResult<SValue> CMDSSQLiteDatabaseManager::associationSum(const I<CMDSAssociation>& association,
-		const TArray<CString>& fromDocumentIDs, const I<TMDSCache<SInt64, ValueInfoByID>>& cache,
+		const TArray<CString>& fromDocumentIDs, const I<TMDSCache<SInt64, ValueInfoByID> >& cache,
 		const TArray<CString>& cachedValueNames)
 //----------------------------------------------------------------------------------------------------------------------
 {
