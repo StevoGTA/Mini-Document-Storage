@@ -83,6 +83,9 @@ template <typename T, typename U> class TMDSCache : public CEquatable {
 								// Instance methods
 		const	CString&		getName() const
 									{ return mName; }
+		const	CString&		getDocumentType() const
+									{ return mDocumentType; }
+
 				bool			hasValueInfo(const CString& valueName) const
 									{ return mValueInfos.getFirst(
 											(TArray<SMDSCacheValueInfo>::IsMatchProc) SMDSCacheValueInfo::compareName,

@@ -372,6 +372,64 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func cacheGetValues(for name :String, valueNames :[String], documentIDs :[String]?) throws ->
+			[[String : Any]] {
+		// Validate
+		guard let cache = self.cacheByName.value(for: name) else {
+			throw MDSDocumentStorageError.unknownCache(name: name)
+		}
+
+		if valueNames.isEmpty {
+			throw MDSDocumentStorageError.missingValueNames
+		}
+		try valueNames.forEach() {
+			// Ensure we have this value name
+			if !cache.hasValueInfo(for: $0) {
+				throw MDSDocumentStorageError.unknownCacheValueName(valueName: $0)
+			}
+		}
+
+		// Setup
+		let	cacheValuesByDocumentID = self.cacheValuesByName.value(for: cache.name) ?? [:]
+
+		// Check if have documentIDs
+		var	infos = [[String : Any]]()
+		if documentIDs != nil {
+			// Iteratoe documentIDs
+			try documentIDs!.forEach() {
+				// Get cached values
+				if let cacheValues = cacheValuesByDocumentID[$0] {
+					// Have documentID
+					var	info :[String : Any] = ["documentID": $0]
+
+					// Iterate valueNames
+					valueNames.forEach() { info[$0] = cacheValues[$0] }
+
+					// Add to array
+					infos.append(info)
+				} else {
+					// Don't have documentID
+					throw MDSDocumentStorageError.unknownDocumentID(documentID: $0)
+				}
+			}
+		} else {
+			// All documentIDs
+			cacheValuesByDocumentID.forEach() { documentID, cacheValues in
+				// Setup
+				var	info :[String : Any] = ["documentID": documentID]
+
+				// Iterate valueNames
+				valueNames.forEach() { info[$0] = cacheValues[$0] }
+
+				// Add to array
+				infos.append(info)
+			}
+		}
+
+		return infos
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
 			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc, checkRelevantProperties :Bool) throws {
@@ -1591,7 +1649,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Collect update infos
 		let	documentCreateProc = self.documentCreateProc(for: documentType)
 		var	updateInfos = [MDSUpdateInfo<String>]()
-		try! documentBackingsIterate(for: documentType, sinceRevision: sinceRevision, count: nil, activeOnly: false,
+		try? documentBackingsIterate(for: documentType, sinceRevision: sinceRevision, count: nil, activeOnly: false,
 				proc: {
 					// Append MDSUpdateInfo
 					updateInfos.append(

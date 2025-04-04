@@ -445,12 +445,12 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 		toDocumentType:(NSString*) toDocumentType error:(NSError**) error
 {
 	// Register association
-	OV<SError>	sError =
+	OV<SError>	cppError =
 						self.documentStorageServer->associationRegister(CString((__bridge CFStringRef) name),
 								CString((__bridge CFStringRef) fromDocumentType),
 								CString((__bridge CFStringRef) toDocumentType));
 
-	return [self composeResultsFrom:sError error:error];
+	return [self composeResultsFrom:cppError error:error];
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -676,11 +676,11 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 		cppAssociationUpdates += associationUpdate.associationUpdate;
 
 	// Update association
-	OV<SError>	sError =
+	OV<SError>	cppError =
 						self.documentStorageServer->associationUpdate(CString((__bridge CFStringRef) name),
 								cppAssociationUpdates);
 
-	return [self composeResultsFrom:sError error:error];
+	return [self composeResultsFrom:cppError error:error];
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -695,13 +695,58 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 		cppCacheValueInfos += cacheValueInfo.documentStorageCacheValueInfo;
 
 	// Register cache
-	OV<SError>	sError =
+	OV<SError>	cppError =
 						self.documentStorageServer->cacheRegister(CString((__bridge CFStringRef) name),
 								CString((__bridge CFStringRef) documentType),
 								CCoreFoundation::arrayOfStringsFrom((__bridge CFArrayRef) relevantProperties),
 								cppCacheValueInfos);
 
-	return [self composeResultsFrom:sError error:error];
+	return [self composeResultsFrom:cppError error:error];
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+- (BOOL) cacheGetValuesNamed:(NSString*) name valueNames:(NSArray<NSString*>*) valueNames
+		documentIDs:(nullable NSArray<NSString*>*) documentIDs
+		outInfos:(NSArray<NSDictionary*>* _Nullable * _Nullable) outInfos error:(NSError**) error
+{
+	// Setup
+	TNArray<CString>	cppValueNames;
+	for (NSString* valueName in valueNames)
+		// Add
+		cppValueNames += CString((__bridge CFStringRef) valueName);
+
+	OV<TArray<CString> >	cppDocumentIDs;
+	if (documentIDs != nil) {
+		// Iterate documentIDs
+		TNArray<CString>	cppDocumentIDs_;
+		for (NSString* documentID in documentIDs)
+			// Add
+			cppDocumentIDs_ += CString((__bridge CFStringRef) documentID);
+
+		// Update
+		cppDocumentIDs.setValue(cppDocumentIDs_);
+	}
+
+	// Get values
+	TVResult<TArray<CDictionary> >	infos =
+											self.documentStorageServer->cacheGetValues(
+													CString((__bridge CFStringRef) name), cppValueNames,
+													cppDocumentIDs);
+	if (infos.hasError()) {
+		// Error
+		*error = [self errorFrom:infos.getError()];
+
+		return NO;
+	}
+
+	// Compose results
+	*outInfos = [[NSMutableArray alloc] init];
+	for (TIteratorD<CDictionary> iterator = infos->getIterator(); iterator.hasValue(); iterator.advance())
+		// Add result
+		[(NSMutableArray*) *outInfos
+				addObject:(NSDictionary*) CFBridgingRelease(CCoreFoundation::createDictionaryRefFrom(*iterator))];
+
+	return YES;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -711,14 +756,14 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 		checkRelevantProperties:(BOOL) checkRelevantProperties error:(NSError**) error
 {
 	// Register collection
-	OV<SError>	sError =
+	OV<SError>	cppError =
 						self.documentStorageServer->collectionRegister(CString((__bridge CFStringRef) name),
 								CString((__bridge CFStringRef) documentType),
 								CCoreFoundation::arrayOfStringsFrom((__bridge CFArrayRef) relevantProperties),
 								isUpToDate, CCoreFoundation::dictionaryFrom((__bridge CFDictionaryRef) isIncludedInfo),
 								CString((__bridge CFStringRef) isIncludedSelector), checkRelevantProperties);
 
-	return [self composeResultsFrom:sError error:error];
+	return [self composeResultsFrom:cppError error:error];
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1096,14 +1141,14 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 		attachmentID:(NSString*) attachmentID error:(NSError**) error
 {
 	// Remove Document Attachment
-	OV<SError>	sError =
+	OV<SError>	cppError =
 						self.documentStorageServer->documentAttachmentRemove(
 								CString((__bridge CFStringRef) documentType),
 								CString((__bridge CFStringRef) documentID),
 								CString((__bridge CFStringRef) attachmentID));
-	if (sError.hasValue()) {
+	if (cppError.hasValue()) {
 		// Error
-		*error = [self errorFrom:*sError];
+		*error = [self errorFrom:*cppError];
 
 		return NO;
 	}
@@ -1117,14 +1162,14 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 		keysSelector:(NSString*) keysSelector error:(NSError**) error
 {
 	// Register index
-	OV<SError>	sError =
+	OV<SError>	cppError =
 						self.documentStorageServer->indexRegister(CString((__bridge CFStringRef) name),
 								CString((__bridge CFStringRef) documentType),
 								CCoreFoundation::arrayOfStringsFrom((__bridge CFArrayRef) relevantProperties),
 								CCoreFoundation::dictionaryFrom((__bridge CFDictionaryRef) keysInfo),
 								CString((__bridge CFStringRef) keysSelector));
 
-	return [self composeResultsFrom:sError error:error];
+	return [self composeResultsFrom:cppError error:error];
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1221,12 +1266,12 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 - (BOOL) infoSet:(NSDictionary<NSString*, id>*) info error:(NSError**) error
 {
 	// Set info
-	OV<SError>	sError =
+	OV<SError>	cppError =
 						self.documentStorageServer->infoSet(
 								CCoreFoundation::dictionaryOfStringsFrom((__bridge CFDictionaryRef) info));
-	if (sError.hasValue()) {
+	if (cppError.hasValue()) {
 		// Error
-		*error = [self errorFrom:*sError];
+		*error = [self errorFrom:*cppError];
 
 		return NO;
 	}
@@ -1238,12 +1283,12 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 - (BOOL) internalSet:(NSDictionary<NSString*, id>*) info error:(NSError**) error
 {
 	// Set info
-	OV<SError>	sError =
+	OV<SError>	cppError =
 						self.documentStorageServer->internalSet(
 								CCoreFoundation::dictionaryOfStringsFrom((__bridge CFDictionaryRef) info));
-	if (sError.hasValue()) {
+	if (cppError.hasValue()) {
 		// Error
-		*error = [self errorFrom:*sError];
+		*error = [self errorFrom:*cppError];
 
 		return NO;
 	}
@@ -1254,15 +1299,15 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 // MARK: Private methods
 
 //----------------------------------------------------------------------------------------------------------------------
-- (BOOL) composeResultsFrom:(const OV<SError>&) sError error:(NSError**) error
+- (BOOL) composeResultsFrom:(const OV<SError>&) cppError error:(NSError**) error
 {
 	// Check error
-	if (!sError.hasValue())
+	if (!cppError.hasValue())
 		// Success
 		return YES;
 	else {
 		// Error
-		*error = [self errorFrom:*sError];
+		*error = [self errorFrom:*cppError];
 
 		return NO;
 	}

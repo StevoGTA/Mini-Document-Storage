@@ -897,6 +897,48 @@ class MDSHTTPServices {
 		return (CacheRegisterEndpointValueInfo(MDSValueInfo(name: name, type: valueType), selector), nil)
 	}
 
+	// MARK: - Cache Get Values
+	typealias CacheGetValuesEndpointInfo =
+				(documentStorageID :String, name :String, valueNames :[String]?, documentIDs :[String]?,
+						authorization :String?)
+	static	let	cacheGetValuesEndpoint =
+						BasicHTTPEndpoint(method: .get, path: "/v1/cache/:documentStorageID/:name")
+								{ performInfo -> CacheGetValuesEndpointInfo in
+									// Retrieve and validate
+									let	documentStorageID = performInfo.pathComponents[2]
+									let	name = performInfo.pathComponents[3]
+
+									let	queryItemsMap = performInfo.queryItemsMap
+
+									return (documentStorageID, name,
+											queryItemsMap.stringArray(for: "valueName"),
+											queryItemsMap.stringArray(for: "id"),
+											performInfo.headers["Authorization"])
+								}
+	static func httpEndpointRequestForCacheGetValues(documentStorageID :String, name :String, valueNames :[String],
+			documentIDs :[String]? = nil, authorization :String? = nil) ->
+			MDSJSONHTTPEndpointRequest<[[String : Any]]> {
+		// Setup
+		let	documentStorageIDUse = documentStorageID.transformedForPath
+		let	nameUse = name.transformedForPath
+		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : [:]
+
+		var	queryComponents = ["valueName": valueNames]
+		queryComponents["id"] = documentIDs
+
+		if documentIDs != nil {
+			// Have documentIDs
+			return MDSJSONHTTPEndpointRequest<[[String : Any]]>(method: .get,
+					path: "/v1/cache/\(documentStorageIDUse)/\(nameUse)", queryComponents: ["valueName": valueNames],
+					multiValueQueryComponent: (key: "id", values: documentIDs ?? []), headers: headers)
+		} else {
+			// All documents
+			return MDSJSONHTTPEndpointRequest<[[String : Any]]>(method: .get,
+					path: "/v1/cache/\(documentStorageIDUse)/\(nameUse)", queryComponents: ["valueName": valueNames],
+					headers: headers)
+		}
+	}
+
 	// MARK: - Collection Register
 	typealias CollectionRegisterEndpointInfo =
 				(documentStorageID :String, name :String?, documentType :String?, relevantProperties :[String]?,

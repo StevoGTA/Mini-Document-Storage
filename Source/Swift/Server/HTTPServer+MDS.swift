@@ -429,6 +429,38 @@ extension HTTPServer {
 			}
 		}
 		register(cacheRegisterEndpoint)
+
+		// Cache get values
+		var	cacheGetValuesEndpoint = MDSHTTPServices.cacheGetValuesEndpoint
+		cacheGetValuesEndpoint.performProc = { info in
+			// Validate info
+			let	(documentStorage, performResult) =
+						self.preflight(documentStorageID: info.documentStorageID, authorization: info.authorization)
+			guard performResult == nil else { return performResult! }
+
+			guard let valueNames = info.valueNames else {
+				// valueNames missing
+				return (.badRequest, nil, .json(["error": "Missing valueNames"]))
+			}
+			guard !valueNames.isEmpty else {
+				// valueNames missing
+				return (.badRequest, nil, .json(["error": "Missing valueNames"]))
+			}
+
+			// Catch errors
+			do {
+				// Check action
+				let	results =
+						try documentStorage!.cacheGetValues(for: info.name, valueNames: valueNames,
+								documentIDs: info.documentIDs)
+
+				return (.ok, nil, .json(results))
+			} catch {
+				// Error
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+			}
+		}
+		register(cacheGetValuesEndpoint)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

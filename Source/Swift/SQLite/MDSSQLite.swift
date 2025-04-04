@@ -271,6 +271,27 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func cacheGetValues(for name :String, valueNames :[String], documentIDs :[String]?) throws ->
+			[[String : Any]] {
+		// Validate
+		guard let cache = self.cacheByName.value(for: name) else {
+			throw MDSDocumentStorageError.unknownCache(name: name)
+		}
+
+		if valueNames.isEmpty {
+			throw MDSDocumentStorageError.missingValueNames
+		}
+		try valueNames.forEach() {
+			// Ensure we have this value name
+			if !cache.hasValueInfo(for: $0) {
+				throw MDSDocumentStorageError.unknownCacheValueName(valueName: $0)
+			}
+		}
+
+		return try self.databaseManager.cacheGetValues(cache: cache, valueNames: valueNames, documentIDs: documentIDs)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
 			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc, checkRelevantProperties :Bool) throws {

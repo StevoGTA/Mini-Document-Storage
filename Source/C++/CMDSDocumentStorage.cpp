@@ -394,75 +394,82 @@ SError CMDSDocumentStorage::getInvalidStartIndexError(UInt32 startIndex)
 SError CMDSDocumentStorage::getMissingFromIndexError(const CString& key)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return SError(CString(OSSTR("MDSDocumentStorage")), 4, CString(OSSTR("Missing from index: ")) + key);
+	return SError(CString(OSSTR("MDSDocumentStorage")), 11, CString(OSSTR("Missing from index: ")) + key);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+SError CMDSDocumentStorage::getMissingValueNamesError()
+//----------------------------------------------------------------------------------------------------------------------
+{
+	return SError(CString(OSSTR("MDSDocumentStorage")), 12, CString(OSSTR("Missing valueNames")));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 SError CMDSDocumentStorage::getUnknownAssociationError(const CString& name)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return SError(CString(OSSTR("MDSDocumentStorage")), 5, CString(OSSTR("Unknown association: ")) + name);
+	return SError(CString(OSSTR("MDSDocumentStorage")), 21, CString(OSSTR("Unknown association: ")) + name);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 SError CMDSDocumentStorage::getUnknownAttachmentIDError(const CString& attachmentID)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return SError(CString(OSSTR("MDSDocumentStorage")), 6, CString(OSSTR("Unknown attachmentID: ")) + attachmentID);
+	return SError(CString(OSSTR("MDSDocumentStorage")), 31, CString(OSSTR("Unknown attachmentID: ")) + attachmentID);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 SError CMDSDocumentStorage::getUnknownCacheError(const CString& name)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return SError(CString(OSSTR("MDSDocumentStorage")), 7, CString(OSSTR("Unknown cache: ")) + name);
+	return SError(CString(OSSTR("MDSDocumentStorage")), 41, CString(OSSTR("Unknown cache: ")) + name);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 SError CMDSDocumentStorage::getUnknownCacheValueName(const CString& valueName)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return SError(CString(OSSTR("MDSDocumentStorage")), 8, CString(OSSTR("Unknown cache valueName: ")) + valueName);
+	return SError(CString(OSSTR("MDSDocumentStorage")), 42, CString(OSSTR("Unknown cache valueName: ")) + valueName);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 SError CMDSDocumentStorage::getUnknownCacheValueSelector(const CString& selector)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return SError(CString(OSSTR("MDSDocumentStorage")), 9, CString(OSSTR("Invalid value selector: ")) + selector);
+	return SError(CString(OSSTR("MDSDocumentStorage")), 43, CString(OSSTR("Invalid value selector: ")) + selector);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 SError CMDSDocumentStorage::getUnknownCollectionError(const CString& name)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return SError(CString(OSSTR("MDSDocumentStorage")), 10, CString(OSSTR("Unknown collection: ")) + name);
+	return SError(CString(OSSTR("MDSDocumentStorage")), 51, CString(OSSTR("Unknown collection: ")) + name);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 SError CMDSDocumentStorage::getUnknownDocumentIDError(const CString& documentID)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return SError(CString(OSSTR("MDSDocumentStorage")), 11, CString(OSSTR("Unknown documentID: ")) + documentID);
+	return SError(CString(OSSTR("MDSDocumentStorage")), 61, CString(OSSTR("Unknown documentID: ")) + documentID);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 SError CMDSDocumentStorage::getUnknownDocumentTypeError(const CString& documentType)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return SError(CString(OSSTR("MDSDocumentStorage")), 12, CString(OSSTR("Unknown documentType: ")) + documentType);
+	return SError(CString(OSSTR("MDSDocumentStorage")), 62, CString(OSSTR("Unknown documentType: ")) + documentType);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 SError CMDSDocumentStorage::getUnknownIndexError(const CString& name)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return SError(CString(OSSTR("MDSDocumentStorage")), 13, CString(OSSTR("Unknown index: ")) + name);
+	return SError(CString(OSSTR("MDSDocumentStorage")), 71, CString(OSSTR("Unknown index: ")) + name);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 SError CMDSDocumentStorage::getIllegalInBatchError()
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return SError(CString(OSSTR("MDSDocumentStorage")), 14, CString(OSSTR("Illegal in batch")));
+	return SError(CString(OSSTR("MDSDocumentStorage")), 81, CString(OSSTR("Illegal in batch")));
 }

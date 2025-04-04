@@ -730,6 +730,23 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
+		static func documentIDByID(in table :SQLiteTable) -> [Int64 : String] {
+			// Retrieve documentID map
+			var	documentIDsByID = [Int64 : String]()
+			try! table.select(tableColumns: [self.idTableColumn, self.documentIDTableColumn])
+					{
+						// Process values
+						let	id = $0.integer(for: self.idTableColumn)!
+						let	documentID = $0.text(for: self.documentIDTableColumn)!
+
+						// Update map
+						documentIDsByID[id] = documentID
+					}
+
+			return documentIDsByID
+		}
+
+		//--------------------------------------------------------------------------------------------------------------
 		static func documentIDByID(for ids :[Int64], in table :SQLiteTable) -> [Int64 : String] {
 			// Retrieve documentID map
 			var	documentIDsByID = [Int64 : String]()
@@ -1616,7 +1633,6 @@ class MDSSQLiteDatabaseManager {
 
 		let	cacheContentsTable = self.cacheTablesByName.value(for: cache.name)!
 		let	cacheContentsTableColumns = cachedValueNames.map({ cacheContentsTable.tableColumn(for: $0) })
-		let	cacheContentsTableColumnByName = Dictionary(cacheContentsTableColumns.map({ ($0.name, $0) }))
 
 		let	toDocumentTables = documentTables(for: association.toDocumentType)
 
@@ -1624,7 +1640,7 @@ class MDSSQLiteDatabaseManager {
 					[AssociationContentsTable.fromIDTableColumn, AssociationContentsTable.toIDTableColumn] +
 							cacheContentsTableColumns
 
-		var	results = [[String : Any]]()
+		var	infos = [[String : Any]]()
 		var	toIDs = Set<Int64>()
 		try! associationContentsTable.select(tableColumns: tableColumns,
 				innerJoin:
@@ -1643,25 +1659,27 @@ class MDSSQLiteDatabaseManager {
 								"fromID": $0.integer(for: AssociationContentsTable.fromIDTableColumn)!,
 								"toID": toID,
 							]
-					for cachedValueName in cachedValueNames {
+
+					// Iterate cached value names
+					for tableColumn in cacheContentsTableColumns {
 						// Get SQLiteTableColumn
-						let	tableColumn = cacheContentsTableColumnByName[cachedValueName]!
 						switch tableColumn.kind {
-							case .integer:	info[cachedValueName] = $0.integer(for: tableColumn)
-							case .real:		info[cachedValueName] = $0.real(for: tableColumn)
-							case .text:		info[cachedValueName] = $0.text(for: tableColumn)
-							case .blob:		info[cachedValueName] = $0.blob(for: tableColumn)
+							case .integer:	info[tableColumn.name] = $0.integer(for: tableColumn)
+							case .real:		info[tableColumn.name] = $0.real(for: tableColumn)
+							case .text:		info[tableColumn.name] = $0.text(for: tableColumn)
+							case .blob:		info[tableColumn.name] = $0.blob(for: tableColumn)
 							default:		break
 						}
 					}
 
-					results.append(info)
+					// Update
+					infos.append(info)
 					toIDs.insert(toID)
 				}
 
 		let	toDocumentIDByID = DocumentTypeInfoTable.documentIDByID(for: Array(toIDs), in: toDocumentTables.infoTable)
 
-		return results.map({
+		return infos.map({
 			// Update info
 			var	info = $0
 			info["fromID"] = fromDocumentIDByID[info["fromID"] as! Int64]!
@@ -1761,6 +1779,87 @@ class MDSSQLiteDatabaseManager {
 			// Not found
 			return nil
 		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func cacheGetValues(cache :MDSCache, valueNames :[String], documentIDs :[String]?) throws ->
+			[[String : Any]] {
+		// Setup
+		let	cacheContentsTable = self.cacheTablesByName.value(for: cache.name)!
+		let	cacheContentsTableColumns = valueNames.map({ cacheContentsTable.tableColumn(for: $0) })
+
+		let	documentTables = documentTables(for: cache.documentType)
+
+		let	documentIDByID :[Int64 : String]
+		if documentIDs != nil {
+			// Setup
+			documentIDByID = DocumentTypeInfoTable.documentIDByID(for: documentIDs!, in: documentTables.infoTable)
+
+			if documentIDByID.count < documentIDs!.count {
+				// Did not resolve all documentIDs
+				let	documentID = Set(documentIDs!).symmetricDifference(documentIDByID.values).first!
+
+				throw MDSDocumentStorageError.unknownDocumentID(documentID: documentID)
+			}
+		} else {
+			// Setup
+			documentIDByID = DocumentTypeInfoTable.documentIDByID(in: documentTables.infoTable)
+		}
+
+		let	tableColumns = [CacheContentsTable.idTableColumn] + cacheContentsTableColumns
+
+		// Check if have documentIDs
+		var	infos = [[String : Any]]()
+		if documentIDs != nil {
+			// Iterate documentIDs
+			try cacheContentsTable.select(tableColumns: tableColumns,
+					where:
+							SQLiteWhere(tableColumn: CacheContentsTable.idTableColumn,
+									values: Array(documentIDByID.keys))) {
+				// Setup
+				let	documentID = documentIDByID[$0.integer(for: CacheContentsTable.idTableColumn)!]!
+				var	info :[String : Any] = ["documentID": documentID]
+
+				// Iterate cached value names
+				for tableColumn in cacheContentsTableColumns {
+					// Get SQLiteTableColumn
+					switch tableColumn.kind {
+						case .integer:	info[tableColumn.name] = $0.integer(for: tableColumn)
+						case .real:		info[tableColumn.name] = $0.real(for: tableColumn)
+						case .text:		info[tableColumn.name] = $0.text(for: tableColumn)
+						case .blob:		info[tableColumn.name] = $0.blob(for: tableColumn)
+						default:		break
+					}
+				}
+
+				// Add to array
+				infos.append(info)
+			}
+		} else {
+			// All documentIDs
+			try cacheContentsTable.select(tableColumns: tableColumns) {
+				// Setup
+				let	documentID = documentIDByID[$0.integer(for: CacheContentsTable.idTableColumn)!]!
+				var	info :[String : Any] = ["documentID": documentID]
+
+				// Iterate cached value names
+				for tableColumn in cacheContentsTableColumns {
+					// Get SQLiteTableColumn
+					switch tableColumn.kind {
+						case .integer:	info[tableColumn.name] = $0.integer(for: tableColumn)
+						case .real:		info[tableColumn.name] = $0.real(for: tableColumn)
+						case .text:		info[tableColumn.name] = $0.text(for: tableColumn)
+						case .blob:		info[tableColumn.name] = $0.blob(for: tableColumn)
+						default:		break
+					}
+				}
+
+				// Add to array
+				infos.append(info)
+			}
+		}
+
+		return infos
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
