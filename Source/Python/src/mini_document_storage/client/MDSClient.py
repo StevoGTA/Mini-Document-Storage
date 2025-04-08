@@ -492,6 +492,63 @@ class MDSClient:
 			await self.process_response(response)
 
 	#-------------------------------------------------------------------------------------------------------------------
+	async def cache_get_value(self, name, value_names, documents = None, document_storage_id = None):
+		# Setup
+		document_storage_id = urllib.parse.quote(document_storage_id or self.document_storage_id, safe='')
+		name = urllib.parse.quote(name, safe='')
+
+		params = {'valueName': value_names}
+
+		async def worker(documents):
+			# Setup
+			params['id'] = document_ids
+
+			# Queue request
+			async with self.session.get(f'/v1/association/{document_storage_id}/{name}',
+					headers = self.headers, params = params) as response:
+				# Handle results
+				if response.status != 409:
+					# Process response
+					await self.process_response(response)
+
+					return await response.json()
+				else:
+					return None
+
+		# Check if have document_ids
+		if documents:
+			# Max each call at 10 documentIDs
+			results = []
+			for i in range(0, len(documents), 10):
+				# Setup
+				documents_slice = documents[i:i+10]
+
+				# Loop until up-to-date
+				while True:
+					# Process request
+					slice_results = await worker(documents_slice)
+					if slice_results:
+						# Merge results
+						results.extend(slice_results or [])
+						break
+
+			return results
+		else:
+			# No document_ids
+			while True:
+				async with self.session.get(f'/v1/cache/{document_storage_id}/{name}', headers = self.headers,
+						params = params) as response:
+					# Handle results
+					if response.status != 409:
+						# Process response
+						await self.process_response(response)
+
+						return await response.json()
+					else:
+						return None
+
+
+	#-------------------------------------------------------------------------------------------------------------------
 	async def collection_register(self, name, document_type, relevant_properties, is_up_to_date, is_included_selector,
 			is_included_selector_info, document_storage_id = None):
 		# Setup
@@ -844,11 +901,11 @@ class MDSClient:
 		await asyncio.gather(*tasks, return_exceptions = True)
 
 	#-------------------------------------------------------------------------------------------------------------------
-	async def document_attachment_add(self, document_type, document_id, info, content, document_storage_id = None):
+	async def document_attachment_add(self, document_type, document, info, content, document_storage_id = None):
 		# Setup
 		document_storage_id = urllib.parse.quote(document_storage_id or self.document_storage_id, safe='')
 		document_type = urllib.parse.quote(document_type, safe='')
-		document_id = urllib.parse.quote(document_id, safe='')
+		document_id = urllib.parse.quote(document.document_id, safe='')
 
 		if (type(content) is dict) or (type(content) is list):
 			# Convert to string
@@ -874,12 +931,12 @@ class MDSClient:
 	document_attachment_get_type_json = 'application/json'
 	document_attachment_get_type_text = 'text/plain'
 	document_attachment_get_type_xml = 'text/xml'
-	async def document_attachment_get(self, document_type, document_id, attachment_id, type,
+	async def document_attachment_get(self, document_type, document, attachment_id, type,
 			document_storage_id = None):
 		# Setup
 		document_storage_id = urllib.parse.quote(document_storage_id or self.document_storage_id, safe='')
 		document_type = urllib.parse.quote(document_type, safe='')
-		document_id = urllib.parse.quote(document_id, safe='')
+		document_id = urllib.parse.quote(document.document_id, safe='')
 		attachment_id = urllib.parse.quote(attachment_id, safe='')
 
 		# Queue request
@@ -900,12 +957,12 @@ class MDSClient:
 				return await response.text()
 
 	#-------------------------------------------------------------------------------------------------------------------
-	async def document_attachment_update(self, document_type, document_id, attachment_id, info, content,
+	async def document_attachment_update(self, document_type, document, attachment_id, info, content,
 			document_storage_id = None):
 		# Setup
 		document_storage_id = urllib.parse.quote(document_storage_id or self.document_storage_id, safe='')
 		document_type = urllib.parse.quote(document_type, safe='')
-		document_id = urllib.parse.quote(document_id, safe='')
+		document_id = urllib.parse.quote(document.document_id, safe='')
 		attachment_id = urllib.parse.quote(attachment_id, safe='')
 
 		if (type(content) is dict) or (type(content) is list):
@@ -926,11 +983,11 @@ class MDSClient:
 			await self.process_response(response)
 
 	#-------------------------------------------------------------------------------------------------------------------
-	async def document_attachment_remove(self, document_type, document_id, attachment_id, document_storage_id = None):
+	async def document_attachment_remove(self, document_type, document, attachment_id, document_storage_id = None):
 		# Setup
 		document_storage_id = urllib.parse.quote(document_storage_id or self.document_storage_id, safe='')
 		document_type = urllib.parse.quote(document_type, safe='')
-		document_id = urllib.parse.quote(document_id, safe='')
+		document_id = urllib.parse.quote(document.document_id, safe='')
 		attachment_id = urllib.parse.quote(attachment_id, safe='')
 
 		# Queue request
