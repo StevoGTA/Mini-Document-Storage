@@ -375,9 +375,9 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Register collection
 		let	error =
 					self.httpEndpointClient.collectionRegister(documentStorageID: self.documentStorageID, name: name,
-							documentType: documentType, relevantProperties: relevantProperties,
-							isUpToDate: isUpToDate, isIncludedSelector: isIncludedSelector,
-							isIncludedSelectorInfo: isIncludedInfo, authorization: self.authorization)
+							documentType: documentType, relevantProperties: relevantProperties, isUpToDate: isUpToDate,
+							isIncludedSelector: isIncludedSelector, isIncludedSelectorInfo: isIncludedInfo,
+							authorization: self.authorization)
 		guard error == nil else {
 			// Error
 			throw error!
@@ -395,8 +395,8 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 		while true {
 			// Query collection document count
 			let	(info, error) =
-						self.httpEndpointClient.collectionGetDocumentCount(
-								documentStorageID: self.documentStorageID, name: name,authorization: self.authorization)
+						self.httpEndpointClient.collectionGetDocumentCount(documentStorageID: self.documentStorageID,
+								name: name, authorization: self.authorization)
 
 			// Handle results
 			if let (isUpToDate, count) = info {
@@ -1137,6 +1137,28 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
+	public func cacheGetStatus(for name :String) throws -> Bool {
+		// Validate
+		guard self.batchMap.value(for: .current) == nil else {
+			throw MDSDocumentStorageError.illegalInBatch
+		}
+
+		// Query collection document count
+		let	(isUpToDate, error) =
+					self.httpEndpointClient.cacheGetStatus(documentStorageID: self.documentStorageID, name: name,
+							authorization: self.authorization)
+
+		// Handle results
+		if isUpToDate != nil {
+			// Have result
+			return isUpToDate!
+		} else {
+			// Error
+			throw error!
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func cachedData(for key :String) -> Data? { self.remoteStorageCache.data(for: key) }
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1153,6 +1175,28 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func cache(_ value :Any?, for key :String) { self.remoteStorageCache.set(value, for: key) }
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func indexGetStatus(for name :String) throws -> Bool {
+		// Validate
+		guard self.batchMap.value(for: .current) == nil else {
+			throw MDSDocumentStorageError.illegalInBatch
+		}
+
+		// Query collection document count
+		let	(isUpToDate, error) =
+					self.httpEndpointClient.indexGetStatus(documentStorageID: self.documentStorageID, name: name,
+							authorization: self.authorization)
+
+		// Handle results
+		if isUpToDate != nil {
+			// Have result
+			return isUpToDate!
+		} else {
+			// Error
+			throw error!
+		}
+	}
 
 	// MARK: Private methods
 	//------------------------------------------------------------------------------------------------------------------

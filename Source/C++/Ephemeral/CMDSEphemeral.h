@@ -134,6 +134,8 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 															const CString& toDocumentID, UInt32 startIndex,
 															const OV<UInt32>& count) const;
 
+		OV<SError>									cacheGetStatus(const CString& name) const;
+
 		DocumentRevisionInfosResult					collectionGetDocumentRevisionInfos(const CString& name,
 															UInt32 startIndex, const OV<UInt32>& count) const;
 		DocumentFullInfosResult						collectionGetDocumentFullInfos(const CString& name,
@@ -158,6 +160,7 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 															const TArray<CMDSDocument::UpdateInfo>&
 																	documentUpdateInfos);
 
+		OV<SError>									indexGetStatus(const CString& name) const;
 		DocumentRevisionInfoDictionaryResult		indexGetDocumentRevisionInfos(const CString& name,
 															const TArray<CString>& keys) const;
 		DocumentFullInfoDictionaryResult			indexGetDocumentFullInfos(const CString& name,

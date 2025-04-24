@@ -1303,6 +1303,14 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func cacheGetStatus(for name :String) throws {
+		// Validate
+		guard self.cacheByName.value(for: name) != nil else {
+			throw MDSDocumentStorageError.unknownCache(name: name)
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func collectionGetDocumentRevisionInfos(name :String, startIndex :Int, count :Int?) throws ->
 			[MDSDocument.RevisionInfo] {
 		// Validate
@@ -1470,6 +1478,14 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		update(for: documentType, updateInfos: updateInfos)
 
 		return documentFullInfos
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func indexGetStatus(for name :String) throws {
+		// Validate
+		guard self.indexByName.value(for: name) != nil else {
+			throw MDSDocumentStorageError.unknownIndex(name: name)
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

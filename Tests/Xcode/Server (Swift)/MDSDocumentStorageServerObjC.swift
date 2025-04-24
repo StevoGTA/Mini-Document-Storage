@@ -151,6 +151,12 @@ class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageS
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func cacheGetStatus(for name :String) throws {
+		// Get status
+		try self.documentStorageObjC.cacheGetStatusNamed(name)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func cacheGetValues(for name :String, valueNames :[String], documentIDs :[String]?) throws -> [[String : Any]] {
 		// Get values
 		var	outInfos :NSArray?
@@ -318,6 +324,11 @@ class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageS
 		// Register collection
 		try self.documentStorageObjC.indexRegisterNamed(name, documentType: documentType,
 				relevantProperties: relevantProperties, keysInfo: keysInfo, keysSelector: keysSelector)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func indexGetStatus(for name :String) throws {
+		try self.documentStorageObjC.indexGetStatusNamed(name)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

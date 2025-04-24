@@ -94,6 +94,8 @@ class CMDSDocumentStorageServer : public CMDSDocumentStorage {
 																	const CString& toDocumentID, UInt32 startIndex,
 																	const OV<UInt32>& count) const = 0;
 
+		virtual	OV<SError>									cacheGetStatus(const CString& name) const = 0;
+
 		virtual	DocumentRevisionInfosResult					collectionGetDocumentRevisionInfos(const CString& name,
 																	UInt32 startIndex, const OV<UInt32>& count) const
 																	= 0;
@@ -122,6 +124,7 @@ class CMDSDocumentStorageServer : public CMDSDocumentStorage {
 																	const TArray<CMDSDocument::UpdateInfo>&
 																			documentUpdateInfos) = 0;
 
+		virtual	OV<SError>									indexGetStatus(const CString& name) const = 0;
 		virtual	DocumentRevisionInfoDictionaryResult		indexGetDocumentRevisionInfos(const CString& name,
 																	const TArray<CString>& keys) const = 0;
 		virtual	DocumentFullInfoDictionaryResult			indexGetDocumentFullInfos(const CString& name,

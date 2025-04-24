@@ -467,7 +467,32 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async cacheGetValue(name, valueNames, documents = null, documentStorageID = null) {
+	async cacheGetStatus(name, documentStorageID = null) {
+		// Setup
+		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
+
+		let	url =
+					this.urlBase + '/v1/cache/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name);
+		let	options = {method: 'HEAD', headers: this.headers};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
+
+		// Handle results
+		if (response.ok)
+			// Up-to-date
+			return true;
+		else if (response.status == 409)
+			// Not up-to-date
+			return false;
+		else
+			// Error
+			throw new Error('HTTP response: ' + response.status);
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async cacheGetValues(name, valueNames, documents = null, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		let	valueNameQuery = valueNames.map(valueName => 'valueName=' + encodeURIComponent(valueName)).join('&');
@@ -1035,6 +1060,31 @@ class MDSClient {
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
 		await processResponse(response);
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async indexGetStatus(name, documentStorageID = null) {
+		// Setup
+		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
+
+		let	url =
+					this.urlBase + '/v1/index/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name);
+		let	options = {method: 'HEAD', headers: this.headers};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
+
+		// Handle results
+		if (response.ok)
+			// Up-to-date
+			return true;
+		else if (response.status == 409)
+			// Not up-to-date
+			return false;
+		else
+			// Error
+			throw new Error('HTTP response: ' + response.status);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

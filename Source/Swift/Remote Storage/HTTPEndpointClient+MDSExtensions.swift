@@ -83,6 +83,18 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func queue(_ headWithCountHTTPEndpointRequest :MDSHTTPServices.MDSHeadWithCountHTTPEndpointRequest,
+			identifier :String = "", priority :Priority = .normal,
+			completionWithCountProc
+					:@escaping MDSHTTPServices.MDSHeadWithCountHTTPEndpointRequest.CompletionWithCountProc) {
+		// Setup
+		headWithCountHTTPEndpointRequest.completionWithCountProc = completionWithCountProc
+
+		// Queue
+		queue(headWithCountHTTPEndpointRequest, identifier: identifier, priority: priority)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func queue(_ headWithUpToDateHTTPEndpointRequest :MDSHTTPServices.MDSHeadWithUpToDateHTTPEndpointRequest,
 			identifier :String = "", priority :Priority = .normal,
 			completionWithUpToDateProc
@@ -731,6 +743,19 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func cacheGetStatus(documentStorageID :String, name :String, authorization :String? = nil) ->
+			(isUpToDate :Bool?, error :Error?) {
+		// Perform
+		return DispatchQueue.performBlocking() { completionProc in
+			// Queue
+			self.queue(
+					MDSHTTPServices.httpEndpointRequestForCacheGetStatus(documentStorageID: documentStorageID,
+							name: name, authorization: authorization))
+					{ completionProc(($0, $1)) }
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func cacheGetValues(documentStorageID :String, name :String, valueNames :[String], documentIDs :[String]? = nil,
 			authorization :String? = nil) -> (info :(info :[[String : Any]]?, isUpToDate :Bool)?, error :Error?) {
 		// Perform
@@ -994,6 +1019,19 @@ extension HTTPEndpointClient {
 							keysSelector: keysSelector, keysSelectorInfo: keysSelectorInfo,
 							authorization: authorization))
 					{ completionProc($0) }
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func indexGetStatus(documentStorageID :String, name :String, authorization :String? = nil) ->
+			(isUpToDate :Bool?, error :Error?) {
+		// Perform
+		return DispatchQueue.performBlocking() { completionProc in
+			// Queue
+			self.queue(
+					MDSHTTPServices.httpEndpointRequestForIndexGetStatus(documentStorageID: documentStorageID,
+							name: name, authorization: authorization))
+					{ completionProc(($0, $1)) }
 		}
 	}
 

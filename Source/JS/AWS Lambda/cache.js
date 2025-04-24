@@ -45,8 +45,47 @@ exports.registerV1 = async (event) => {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: Get Content
-exports.getContentV1 = async (event) => {
+// MARK: Get Status
+exports.getStatusV1 = async (event) => {
+	// Setup
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
+	let	name = decodeURIComponent(event.pathParameters.name);
+
+	// Catch errors
+	try {
+		// Get Document count
+		let	[upToDate, error] = await documentStorage.cacheGetStatus(documentStorageID, name);
+		if (upToDate)
+			// Success
+			return {
+					statusCode: 200,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+			};
+		else if (!error)
+			// Not up to date
+			return {
+					statusCode: 409,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+			};
+		else
+			// Error
+			return {
+					statusCode: 400,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+			};
+	} catch (error) {
+		// Error
+		return {
+				statusCode: 500,
+				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+				body: 'Error: ' + error,
+		};
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: Get Values
+exports.getValuesV1 = async (event) => {
 	// Setup
 	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
 	let	name = decodeURIComponent(event.pathParameters.name);
@@ -59,7 +98,7 @@ exports.getContentV1 = async (event) => {
 	try {
 		// Get Cache content
 		let	[upToDate, results, error] =
-					await documentStorage.cacheGetContent(documentStorageID, name, valueNames, documentIDs);
+					await documentStorage.cacheGetValues(documentStorageID, name, valueNames, documentIDs);
 		if (upToDate)
 			// Success
 			return {

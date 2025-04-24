@@ -430,6 +430,27 @@ extension HTTPServer {
 		}
 		register(cacheRegisterEndpoint)
 
+		// Cache Get Status
+		var	cacheGetStatustEndpoint = MDSHTTPServices.cacheGetStatustEndpoint
+		cacheGetStatustEndpoint.performProc = { info in
+			// Validate info
+			let	(documentStorage, performResult) =
+						self.preflight(documentStorageID: info.documentStorageID, authorization: info.authorization)
+			guard performResult == nil else { return performResult! }
+
+			// Catch errors
+			do {
+				// Query count
+				try documentStorage!.cacheGetStatus(for: info.name)
+
+				return (.ok, nil, nil)
+			} catch {
+				// Error
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+			}
+		}
+		register(cacheGetStatustEndpoint)
+
 		// Cache get values
 		var	cacheGetValuesEndpoint = MDSHTTPServices.cacheGetValuesEndpoint
 		cacheGetValuesEndpoint.performProc = { info in
@@ -903,6 +924,27 @@ extension HTTPServer {
 			}
 		}
 		register(indexRegisterEndpoint)
+
+		// Index Get Status
+		var	indexGetStatustEndpoint = MDSHTTPServices.indexGetStatustEndpoint
+		indexGetStatustEndpoint.performProc = { info in
+			// Validate info
+			let	(documentStorage, performResult) =
+						self.preflight(documentStorageID: info.documentStorageID, authorization: info.authorization)
+			guard performResult == nil else { return performResult! }
+
+			// Catch errors
+			do {
+				// Query count
+				try documentStorage!.indexGetStatus(for: info.name)
+
+				return (.ok, nil, nil)
+			} catch {
+				// Error
+				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+			}
+		}
+		register(indexGetStatustEndpoint)
 
 		// Index Get Document Info
 		var	indexGetDocumentInfoEndpoint = MDSHTTPServices.indexGetDocumentInfoEndpoint

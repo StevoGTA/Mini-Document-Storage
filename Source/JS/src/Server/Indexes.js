@@ -141,6 +141,34 @@ module.exports = class Indexes {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	async getStatus(statementPerformer, name) {
+		// Setup
+		let	internals = this.internals;
+
+		// Get index
+		let	[index, indexError] = await this.getForName(statementPerformer, name);
+		if (indexError)
+			// Error
+			return [null, indexError];
+		
+		// Get document type last revision
+		let	documentTypeLastRevision = await internals.documents.getLastRevision(statementPerformer, index.type);
+
+		// Check if up to date
+		if (index.lastDocumentRevision == documentTypeLastRevision)
+			// Up-to-date
+			return [true, null];
+		else if (documentTypeLastRevision) {
+			// Update
+			await this.updateIndex(statementPerformer, index);
+
+			return [false, null];
+		} else
+			// No document of this type yet
+			return [true, null];
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	async getDocuments(statementPerformer, name, keys, fullInfo) {
 		// Setup
 		let	internals = this.internals;

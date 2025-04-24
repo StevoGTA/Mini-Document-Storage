@@ -25,6 +25,8 @@ router.get('/v1/association/:documentStorageID/:name/:action', association.getVa
 
 // Setup Cache routes
 router.put('/v1/cache/:documentStorageID', cache.registerV1);
+router.head('/v1/cache/:documentStorageID/:name', cache.getStatusV1);
+router.get('/v1/cache/:documentStorageID/:name', cache.getValuesV1);
 
 // Setup Collection routes
 router.put('/v1/collection/:documentStorageID', collection.registerV1);
@@ -46,6 +48,7 @@ router.delete('/v1/document/:documentStorageID/:documentType/:documentID/attachm
 
 // Setup Index routes
 router.put('/v1/index/:documentStorageID', index.registerV1);
+router.head('/v1/index/:documentStorageID/:name', index.getStatusV1);
 router.get('/v1/index/:documentStorageID/:name', index.getDocumentsV1);
 
 // Setup Info routes

@@ -370,11 +370,61 @@ class MDSHTTPServices {
 		}
 	}
 
+	// MARK: - MDSHeadWithCountHTTPEndpointRequest
+	class MDSHeadWithCountHTTPEndpointRequest : MDSHTTPEndpointRequest, HTTPEndpointRequestProcessResults {
+
+		// MARK: Types
+		typealias	CompletionWithCountProc = (_ info :(isUpToDate :Bool, count :Int?)?, _ error :Error?) -> Void
+
+		// MARK: Properties
+		var	completionWithCountProc :CompletionWithCountProc = { _,_ in }
+
+		// MARK: HTTPEndpointRequestProcessResults methods
+		//--------------------------------------------------------------------------------------------------------------
+		func processResults(response :HTTPURLResponse?, data :Data?, error :Error?) {
+			// Check cancelled
+			if !self.isCancelled {
+				// Handle results
+				if response != nil {
+					// Have response
+					let	statusCode = response!.statusCode
+					if (statusCode >= 200) && (statusCode < 300) {
+						// Success
+						if let contentRange = response?.contentRange, let size = contentRange.size {
+							// Success
+							completionWithCountProc((true, Int(size)), nil)
+						} else {
+							// Bad server
+							completionWithCountProc(nil, MDSError.didNotReceiveSizeInHeader)
+						}
+					} else if statusCode == 409 {
+						// Not up to date
+						completionWithCountProc((false, nil), nil)
+					} else if (statusCode >= 400) && (statusCode < 500) {
+						// Error
+						self.completionWithCountProc(nil,
+								MDSError.failed(status: HTTPEndpointStatus(rawValue: statusCode)!))
+					} else if statusCode >= 500 {
+						// Internal error
+						self.completionWithCountProc(nil, MDSError.internalError)
+					} else {
+						// Unknown response status
+						self.completionWithCountProc(nil,
+								MDSError.unknownResponseStatus(status: HTTPEndpointStatus(rawValue: statusCode)!))
+					}
+				} else {
+					// Error
+					completionWithCountProc(nil, error)
+				}
+			}
+		}
+	}
+
 	// MARK: - MDSHeadWithUpToDateHTTPEndpointRequest
 	class MDSHeadWithUpToDateHTTPEndpointRequest : MDSHTTPEndpointRequest, HTTPEndpointRequestProcessResults {
 
 		// MARK: Types
-		typealias	CompletionWithUpToDateProc = (_ info :(isUpToDate :Bool, count :Int?)?, _ error :Error?) -> Void
+		typealias	CompletionWithUpToDateProc = (_ isUpToDate :Bool?, _ error :Error?) -> Void
 
 		// MARK: Properties
 		var	completionWithUpToDateProc :CompletionWithUpToDateProc = { _,_ in }
@@ -390,16 +440,10 @@ class MDSHTTPServices {
 					let	statusCode = response!.statusCode
 					if (statusCode >= 200) && (statusCode < 300) {
 						// Success
-						if let contentRange = response?.contentRange, let size = contentRange.size {
-							// Success
-							completionWithUpToDateProc((true, Int(size)), nil)
-						} else {
-							// Bad server
-							completionWithUpToDateProc(nil, MDSError.didNotReceiveSizeInHeader)
-						}
+						completionWithUpToDateProc(true, nil)
 					} else if statusCode == 409 {
 						// Not up to date
-						completionWithUpToDateProc((false, nil), nil)
+						completionWithUpToDateProc(false, nil)
 					} else if (statusCode >= 400) && (statusCode < 500) {
 						// Error
 						self.completionWithUpToDateProc(nil,
@@ -897,6 +941,28 @@ class MDSHTTPServices {
 		return (CacheRegisterEndpointValueInfo(MDSValueInfo(name: name, type: valueType), selector), nil)
 	}
 
+	// MARK: - Cache Get Status
+	typealias CacheGetStatusEndpointInfo = (documentStorageID :String, name :String, authorization :String?)
+	static	let	cacheGetStatustEndpoint =
+						BasicHTTPEndpoint(method: .head, path: "/v1/cache/:documentStorageID/:name")
+								{ performInfo -> CacheGetStatusEndpointInfo in
+									// Retrieve and validate
+									let	documentStorageID = performInfo.pathComponents[2]
+									let	name = performInfo.pathComponents[3]
+
+									return (documentStorageID, name, performInfo.headers["Authorization"])
+								}
+	static func httpEndpointRequestForCacheGetStatus(documentStorageID :String, name :String,
+			authorization :String? = nil) -> MDSHeadWithUpToDateHTTPEndpointRequest {
+		// Setup
+		let	documentStorageIDUse = documentStorageID.transformedForPath
+		let	nameUse = name.transformedForPath
+		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : [:]
+
+		return MDSHeadWithUpToDateHTTPEndpointRequest(method: .head,
+				path: "/v1/cache/\(documentStorageIDUse)/\(nameUse)", headers: headers)
+	}
+
 	// MARK: - Cache Get Values
 	typealias CacheGetValuesEndpointInfo =
 				(documentStorageID :String, name :String, valueNames :[String]?, documentIDs :[String]?,
@@ -990,13 +1056,13 @@ class MDSHTTPServices {
 									return (documentStorageID, name, performInfo.headers["Authorization"])
 								}
 	static func httpEndpointRequestForCollectionGetDocumentCount(documentStorageID :String, name :String,
-			authorization :String? = nil) -> MDSHeadWithUpToDateHTTPEndpointRequest {
+			authorization :String? = nil) -> MDSHeadWithCountHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.transformedForPath
 		let	nameUse = name.transformedForPath
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : [:]
 
-		return MDSHeadWithUpToDateHTTPEndpointRequest(method: .head,
+		return MDSHeadWithCountHTTPEndpointRequest(method: .head,
 				path: "/v1/collection/\(documentStorageIDUse)/\(nameUse)", headers: headers)
 	}
 
@@ -1375,6 +1441,28 @@ class MDSHTTPServices {
 							"keysSelector": keysSelector,
 							"keysSelectorInfo": keysSelectorInfo,
 						  ] as [String : Any])
+	}
+
+	// MARK: - Index Get Status
+	typealias IndexGetStatusEndpointInfo = (documentStorageID :String, name :String, authorization :String?)
+	static	let	indexGetStatustEndpoint =
+						BasicHTTPEndpoint(method: .head, path: "/v1/index/:documentStorageID/:name")
+								{ performInfo -> IndexGetStatusEndpointInfo in
+									// Retrieve and validate
+									let	documentStorageID = performInfo.pathComponents[2]
+									let	name = performInfo.pathComponents[3]
+
+									return (documentStorageID, name, performInfo.headers["Authorization"])
+								}
+	static func httpEndpointRequestForIndexGetStatus(documentStorageID :String, name :String,
+			authorization :String? = nil) -> MDSHeadWithUpToDateHTTPEndpointRequest {
+		// Setup
+		let	documentStorageIDUse = documentStorageID.transformedForPath
+		let	nameUse = name.transformedForPath
+		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : [:]
+
+		return MDSHeadWithUpToDateHTTPEndpointRequest(method: .head,
+				path: "/v1/index/\(documentStorageIDUse)/\(nameUse)", headers: headers)
 	}
 
 	// MARK: - Index Get

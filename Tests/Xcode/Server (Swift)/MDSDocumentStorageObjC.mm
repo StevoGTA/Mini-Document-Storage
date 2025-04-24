@@ -750,6 +750,15 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+- (BOOL) cacheGetStatusNamed:(NSString*) name error:(NSError**) error
+{
+	// Get status
+	OV<SError>	cppError = self.documentStorageServer->cacheGetStatus(CString((__bridge CFStringRef) name));
+
+	return [self composeResultsFrom:cppError error:error];
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 - (BOOL) collectionRegisterNamed:(NSString*) name documentType:(NSString*) documentType
 		relevantProperties:(NSArray<NSString*>*) relevantProperties isUpToDate:(BOOL) isUpToDate
 		isIncludedInfo:(NSDictionary<NSString*, id>*) isIncludedInfo isIncludedSelector:(NSString*) isIncludedSelector
@@ -1239,6 +1248,15 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 				forKey:(__bridge NSString*) iterator->getOSString()];
 
 	return YES;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+- (BOOL) indexGetStatusNamed:(NSString*) name error:(NSError**) error
+{
+	// Get status
+	OV<SError>	cppError = self.documentStorageServer->indexGetStatus(CString((__bridge CFStringRef) name));
+
+	return [self composeResultsFrom:cppError error:error];
 }
 
 //----------------------------------------------------------------------------------------------------------------------

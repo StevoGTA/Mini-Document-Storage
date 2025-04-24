@@ -2332,6 +2332,18 @@ TVResult<CMDSDocumentStorageServer::DocumentFullInfosWithTotalCount> CMDSEphemer
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSEphemeral::cacheGetStatus(const CString& name) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	OR<I<MDSCache> >	cache = mInternals->mCacheByName.get(name);
+	if (!cache.hasReference())
+		return OV<SError>(getUnknownCacheError(name));
+
+	return OV<SError>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 TVResult<TArray<CMDSDocument::RevisionInfo> > CMDSEphemeral::collectionGetDocumentRevisionInfos(const CString& name,
 		UInt32 startIndex, const OV<UInt32>& count) const
 //----------------------------------------------------------------------------------------------------------------------
@@ -2625,6 +2637,18 @@ TVResult<TArray<CMDSDocument::FullInfo> > CMDSEphemeral::documentUpdate(const CS
 	mInternals->update(documentType, updateInfos);
 
 	return TVResult<TArray<CMDSDocument::FullInfo> >(documentFullInfos);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSEphemeral::indexGetStatus(const CString& name) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	OR<I<MDSIndex> >	index = mInternals->mIndexByName.get(name);
+	if (!index.hasReference())
+		return OV<SError>(getUnknownIndexError(name));
+
+	return OV<SError>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
