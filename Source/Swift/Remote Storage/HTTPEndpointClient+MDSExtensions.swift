@@ -668,10 +668,9 @@ extension HTTPEndpointClient {
 
 			// Queue
 			self.queue(
-					MDSHTTPServices.httpEndpointRequestForAssociationGetValues(
-							documentStorageID: documentStorageID, name: name, action: action,
-							fromDocumentIDs: fromDocumentIDs, cacheName: cacheName, cachedValueNames: cachedValueNames,
-							authorization: authorization),
+					MDSHTTPServices.httpEndpointRequestForAssociationGetValues(documentStorageID: documentStorageID,
+							name: name, action: action, fromDocumentIDs: fromDocumentIDs, cacheName: cacheName,
+							cachedValueNames: cachedValueNames, authorization: authorization),
 					partialResultsProc: { partialResults, _ in
 						// Check action
 						switch action {
@@ -728,6 +727,39 @@ extension HTTPEndpointClient {
 							name: name, documentType: documentType, relevantProperties: relevantProperties,
 							valueInfos: valueInfos, authorization: authorization))
 					{ completionProc($0) }
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func cacheGetValues(documentStorageID :String, name :String, valueNames :[String], documentIDs :[String]? = nil,
+			authorization :String? = nil) -> (info :(info :[[String : Any]]?, isUpToDate :Bool)?, error :Error?) {
+		// Perform
+		return DispatchQueue.performBlocking() { completionProc in
+			// Queue
+			let	infos = LockingArray<[String : Any]>()
+			self.queue(
+					MDSHTTPServices.httpEndpointRequestForCacheGetValues(documentStorageID: documentStorageID,
+							name: name, valueNames: valueNames, documentIDs: documentIDs, authorization: authorization),
+					partialResultsProc: { partialResults, _ in
+						// Check action
+						infos.append(partialResults ?? [])
+					}, completionProc: {
+						// Handle results
+						if $0.isEmpty {
+							// All good
+							completionProc(((infos.values, true), nil))
+						} else {
+							// Error
+							let	error = $0.first!
+							if (error as? HTTPEndpointStatusError)?.status == HTTPEndpointStatus.conflict {
+								// Not up to date
+								completionProc(((nil, false), nil))
+							} else {
+								// Other error
+								completionProc((nil, error))
+							}
+						}
+					})
 		}
 	}
 

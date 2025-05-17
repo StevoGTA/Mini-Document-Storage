@@ -44,6 +44,9 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 		OV<SError>									cacheRegister(const CString& name, const CString& documentType,
 															const TArray<CString>& relevantProperties,
 															const TArray<CacheValueInfo>& cacheValueInfos);
+		TVResult<TArray<CDictionary> >				cacheGetValues(const CString& name,
+															const TArray<CString>& valueNames,
+															const OV<TArray<CString> >& documentIDs);
 
 		OV<SError>									collectionRegister(const CString& name, const CString& documentType,
 															const TArray<CString>& relevantProperties, bool isUpToDate,

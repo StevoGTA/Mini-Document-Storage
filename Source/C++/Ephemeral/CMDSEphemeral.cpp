@@ -1107,6 +1107,81 @@ OV<SError> CMDSEphemeral::cacheRegister(const CString& name, const CString& docu
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+TVResult<TArray<CDictionary> > CMDSEphemeral::cacheGetValues(const CString& name, const TArray<CString>& valueNames,
+		const OV<TArray<CString> >& documentIDs)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	OR<I<MDSCache> >	cache = mInternals->mCacheByName.get(name);
+	if (!cache.hasReference())
+		return TVResult<TArray<CDictionary> >(getUnknownCacheError(name));
+
+	if (valueNames.isEmpty())
+		return TVResult<TArray<CDictionary> >(getMissingValueNamesError());
+
+	for (TIteratorD<CString> iterator = valueNames.getIterator(); iterator.hasValue(); iterator.advance()) {
+		// Ensure we have this value name
+		if (!(*cache)->hasValueInfo(*iterator))
+			return TVResult<TArray<CDictionary> >(getUnknownCacheValueName(*iterator));
+	}
+
+	// Setup
+	TDictionary<CDictionary>	cacheValuesByDocumentID =
+										mInternals->mCacheValuesByName.get((*cache)->getName(),
+												TNDictionary<CDictionary>());
+
+	// Check if have documentIDs
+	TNArray<CDictionary>	infos;
+	if (documentIDs.hasValue()) {
+		// Iterate documentIDs
+		for (TIteratorD<CString> documentIDIterator = documentIDs->getIterator(); documentIDIterator.hasValue();
+				documentIDIterator.advance()) {
+			// Get cached values
+			const	OR<CDictionary>&	cacheValues = cacheValuesByDocumentID[*documentIDIterator];
+			if (cacheValues.hasReference()) {
+				// Have documentID
+				CDictionary	info;
+				info.set(CString(OSSTR("documentID")), *documentIDIterator);
+
+				// Iterate valueNames
+				for (TIteratorD<CString> valueNameIterator = valueNames.getIterator(); valueNameIterator.hasValue();
+						valueNameIterator.advance())
+					// Add value
+					info.set(*valueNameIterator, (*cacheValues).getOValue(*valueNameIterator));
+
+				// Add to array
+				infos += info;
+			} else
+				// Don't have documentID
+				return TVResult<TArray<CDictionary> >(getUnknownDocumentIDError(*documentIDIterator));
+		}
+	} else {
+		// All documentIDs
+		TSet<CString>	documentIDs = cacheValuesByDocumentID.getKeys();
+		for (TIteratorS<CString> documentIDIterator = documentIDs.getIterator(); documentIDIterator.hasValue();
+				documentIDIterator.advance()) {
+			// Get cached values
+			const	OR<CDictionary>&	cacheValues = cacheValuesByDocumentID[*documentIDIterator];
+
+			// Have documentID
+			CDictionary	info;
+			info.set(CString(OSSTR("documentID")), *documentIDIterator);
+
+			// Iterate valueNames
+			for (TIteratorD<CString> valueNameIterator = valueNames.getIterator(); valueNameIterator.hasValue();
+					valueNameIterator.advance())
+				// Add value
+				info.set(*valueNameIterator, (*cacheValues).getOValue(*valueNameIterator));
+
+			// Add to array
+			infos += info;
+		}
+	}
+
+	return TVResult<TArray<CDictionary> >(infos);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 OV<SError> CMDSEphemeral::collectionRegister(const CString& name, const CString& documentType,
 		const TArray<CString>& relevantProperties, bool isUpToDate, const CDictionary& isIncludedInfo,
 		const CMDSDocument::IsIncludedPerformer& documentIsIncludedPerformer, bool checkRelevantProperties)
