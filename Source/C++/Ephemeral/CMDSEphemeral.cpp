@@ -989,6 +989,11 @@ TVResult<SValue> CMDSEphemeral::associationGetValues(const CString& name, CMDSAs
 			results.set(CString(OSSTR("count")), count);
 
 			return SValue(results); }
+
+#if defined(TARGET_OS_WINDOWS)
+		default:
+			break;
+#endif
 	}
 }
 
