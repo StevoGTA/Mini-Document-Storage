@@ -19,14 +19,15 @@ class MDSClient:
     
 	# Lifecycle methods
 	#-------------------------------------------------------------------------------------------------------------------
-	def __init__(self, url_base, loop, document_storage_id=None, headers={}):
+	def __init__(self, url_base, loop, document_storage_id=None, headers={}, max_concurrency=5):
 		# Store
 		self.document_storage_id = document_storage_id
 		self.headers = headers
 
 		# Setup
 		self.session = aiohttp.ClientSession(url_base, loop=loop)
-	
+		self.semaphore = asyncio.Semaphore(max_concurrency)
+
 	#-------------------------------------------------------------------------------------------------------------------
 	async def close(self):
 		# Close session
@@ -854,13 +855,15 @@ class MDSClient:
 
 		# Define worker function
 		async def worker(document_ids):
-			# Queue request
-			async with self.session.get(f'/v1/document/{document_storage_id}/{document_type}', headers=self.headers,
-					params={'id': document_ids, 'fullInfo': 1}) as response:
-				# Process response
-				await self.process_response(response)
+			# Acquire semaphore
+			async with self.semaphore:
+				# Queue request
+				async with self.session.get(f'/v1/document/{document_storage_id}/{document_type}', headers=self.headers,
+						params={'id': document_ids, 'fullInfo': 1}) as response:
+					# Process response
+					await self.process_response(response)
 
-				return await response.json()
+					return await response.json()
 
 		# Max each call at 10 documentIDs
 		tasks = []
@@ -893,24 +896,26 @@ class MDSClient:
 			# Setup
 			json = [document.update_info() for document in documents]
 
-			# Queue request
-			async with self.session.patch(f'/v1/document/{document_storage_id}/{document_type}', headers=self.headers,
-					json=json) as response:
-				# Process response
-				await self.process_response(response)
+			# Acquire semaphore
+			async with self.semaphore:
+				# Queue request
+				async with self.session.patch(f'/v1/document/{document_storage_id}/{document_type}',
+						headers=self.headers, json=json) as response:
+					# Process response
+					await self.process_response(response)
 
-				# Decode info and add Documents
-				results = await response.json()
+					# Decode info and add Documents
+					results = await response.json()
 
-				# Update documents
-				documents_by_id = {}
-				for document in documents:
-					# Update
-					documents_by_id[document.document_id] = document
-				
-				for result in results:
-					# Update document
-					documents_by_id[result['documentID']].update_from_update(result)
+					# Update documents
+					documents_by_id = {}
+					for document in documents:
+						# Update
+						documents_by_id[document.document_id] = document
+					
+					for result in results:
+						# Update document
+						documents_by_id[result['documentID']].update_from_update(result)
 
 		# Max each call at 50 updates
 		tasks = []
