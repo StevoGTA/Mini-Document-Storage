@@ -664,9 +664,9 @@ class MDSClient:
 					if next_start_index == content_range['size']:
 						# All done
 						return document_infos
-					else:
-						# Prepare next request
-						params['startIndex'] = next_start_index
+
+					# Prepare next request
+					params['startIndex'] = next_start_index
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def collection_get_documents(self, name, start_index, count, document_creation_function,
@@ -726,9 +726,9 @@ class MDSClient:
 					if next_start_index == content_range['size']:
 						# All done
 						return documents
-					else:
-						# Prepare next request
-						params['startIndex'] = next_start_index
+
+					# Prepare next request
+					params['startIndex'] = next_start_index
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def document_create(self, document_type, documents, document_storage_id=None):
@@ -867,7 +867,7 @@ class MDSClient:
 		for i in range(0, len(document_ids), 10):
 			# Add task
 			tasks.append(asyncio.ensure_future(worker(document_ids[i:i+10])))
-		resultss = await asyncio.gather(*tasks, return_exceptions=True)
+		resultss = await asyncio.gather(*tasks)
 
 		# Compose documents list
 		documents = []
@@ -1152,21 +1152,27 @@ class MDSClient:
 
 	#-------------------------------------------------------------------------------------------------------------------
 	def decode_content_range(self, response):
+		# Get content range
+		content_range = response.headers.get('content-range', None)
+		if not content_range:
+			# No content range
+			raise Exception('No content-range in response headers')
+
 		# Decode header
 		groups = re.split('(\w+)[ ](.+)\/(.+)', response.headers.get('content-range', ''))
-		if len(groups) == 5:
-			# Compose info
-			range = groups[2]
-			size = groups[3]
+		if len(groups) != 5:
+			# Unable to decode
+			raise Exception(f'Unable to decode content range from response: {content_range}')
 
-			info = {'unit': groups[1], 'range': range, 'size': size if size == '*' else int(size)}
-			if range != '*':
-				# Decode range components
-				range_parts = range.split('-')
-				info['range_start'] = int(range_parts[0])
-				info['range_end'] = int(range_parts[1])
-			
-			return info
-		else:
-			# Don't have count
-			raise Exception('Unable to decode content range from response')
+		# Compose info
+		range = groups[2]
+		size = groups[3]
+
+		info = {'unit': groups[1], 'range': range, 'size': size if size == '*' else int(size)}
+		if range != '*':
+			# Decode range components
+			range_parts = range.split('-')
+			info['range_start'] = int(range_parts[0])
+			info['range_end'] = int(range_parts[1])
+		
+		return info
