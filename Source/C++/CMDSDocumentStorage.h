@@ -131,6 +131,9 @@ class CMDSDocumentStorage {
 																	const CString& documentType,
 																	const TArray<CString>& relevantProperties,
 																	const TArray<CacheValueInfo>& cacheValueInfos) = 0;
+		virtual			TVResult<TArray<CDictionary> >		cacheGetValues(const CString& name,
+																	const TArray<CString>& valueNames,
+																	const OV<TArray<CString> >& documentIDs) = 0;
 
 		virtual			OV<SError>							collectionRegister(const CString& name,
 																	const CString& documentType,
@@ -261,6 +264,16 @@ class CMDSDocumentStorage {
 																	const CString& cacheName,
 																	const TArray<CString>& cachedValueNames) const;
 
+						TVResult<TArray<CDictionary> >		cacheGetValues(const CString& name,
+																	const TArray<CString>& valueNames,
+																	const TArray<CString>& documentIDs)
+																{ return cacheGetValues(name, valueNames,
+																		OV<TArray<CString> >(documentIDs)); }
+						TVResult<TArray<CDictionary> >		cacheGetValues(const CString& name,
+																	const TArray<CString>& valueNames)
+																{ return cacheGetValues(name, valueNames,
+																		OV<TArray<CString> >()); }
+
 						OV<SError>							collectionRegister(const CString& name,
 																	const CString& documentType,
 																	const TArray<CString>& relevantProperties,
@@ -325,6 +338,7 @@ class CMDSDocumentStorage {
 		static			SError								getInvalidStartIndexError(UInt32 startIndex);
 
 		static			SError								getMissingFromIndexError(const CString& key);
+		static			SError								getMissingValueNamesError();
 
 		static			SError								getUnknownAssociationError(const CString& name);
 

@@ -397,7 +397,7 @@ class MDSClient {
 		// Setup processing function
 		var	results = null;
 		let	processURL =
-					async(url) => {
+					async (url) => {
 						// Loop until up-to-date
 						while (true) {
 							// Queue the call
@@ -434,7 +434,7 @@ class MDSClient {
 		}
 		await Promise.all(promises);
 
-		return results || {};
+		return results || ((action == 'detail') ? [] : {});
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -467,11 +467,11 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async cacheGetContent(name, valueNames, documentIDs = null, documentStorageID = null) {
+	async cacheGetValue(name, valueNames, documents = null, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		let	valueNameQuery = valueNames.map(valueName => 'valueName=' + encodeURIComponent(valueName)).join('&');
-		documentIDs = documentIDs?.map(documentID => encodeURIComponent(documentID));
+		let	documentIDs = documents?.map(document => encodeURIComponent(document.documentID));
 		
 		let	urlBase =
 					this.urlBase + '/v1/cache/' + encodeURIComponent(documentStorageIDUse) + '/' +
@@ -483,9 +483,9 @@ class MDSClient {
 		let	options = {headers};
 
 		// Setup processing function
-		var	results = null;
+		var	results = [];
 		let	processURL =
-					async(url) => {
+					async (url) => {
 						// Loop until up-to-date
 						while (true) {
 							// Queue the call
@@ -498,7 +498,7 @@ class MDSClient {
 
 								// Merge results
 								let	sliceResults = await response.json();
-								results = results ? results.concat(sliceResults) : sliceResults;
+								results = results.concat(sliceResults);
 								break;
 							}
 						}
@@ -511,14 +511,14 @@ class MDSClient {
 			for (let i = 0, length = documentIDs.length; i < length; i += 10) {
 				// Setup
 				let	documentIDsSlice = documentIDs.slice(i, i + 10);
-				promises.push(processURL(urlBase + '&fromID=' + documentIDsSlice.join('&fromID=')));
+				promises.push(processURL(urlBase + '&id=' + documentIDsSlice.join('&id=')));
 			}
 			await Promise.all(promises);
 		} else
 			// No documentIDs
 			await processURL(urlBase);
 
-		return results || {};
+		return results;
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -717,6 +717,39 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	async documentGet(documentType, documentIDs, documentCreationProc, documentStorageID = null) {
+		// Setup
+		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
+		let	documentIDsUse = documentIDs.map(documentID => encodeURIComponent(documentID));
+
+		let	options = {headers: this.headers};
+		
+		// Max each call at 10 documentIDs
+		var	documents = [];
+		for (let i = 0, length = documentIDsUse.length; i < length; i += 10) {
+			// Setup
+			let	documentIDsSlice = documentIDsUse.slice(i, i + 10);
+			let	url = 
+						this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
+								encodeURIComponent(documentType) +
+								'?id=' + documentIDsSlice.join('&id=') +
+								'&fullInfo=1';
+
+			// Queue the call
+			let	response = await this.queue.add(() => fetch(url, options));
+			await processResponse(response);
+
+			// Decode
+			let	infos = await response.json();
+
+			// Add documents
+			documents = documents.concat(infos.map(info => documentCreationProc(info)));
+		}
+
+		return documents;
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	async documentGetSinceRevision(documentType, sinceRevision, count, documentCreationProc, documentStorageID = null,
 			fullInfo = true) {
 		// Setup
@@ -791,39 +824,6 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentGet(documentType, documentIDs, documentCreationProc, documentStorageID = null) {
-		// Setup
-		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
-		let	documentIDsUse = documentIDs.map(documentID => encodeURIComponent(documentID));
-
-		let	options = {headers: this.headers};
-		
-		// Max each call at 10 documentIDs
-		var	documents = [];
-		for (let i = 0, length = documentIDsUse.length; i < length; i += 10) {
-			// Setup
-			let	documentIDsSlice = documentIDsUse.slice(i, i + 10);
-			let	url = 
-						this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
-								encodeURIComponent(documentType) +
-								'?id=' + documentIDsSlice.join('&id=') +
-								'&fullInfo=1';
-
-			// Queue the call
-			let	response = await this.queue.add(() => fetch(url, options));
-			await processResponse(response);
-
-			// Decode
-			let	infos = await response.json();
-
-			// Add documents
-			documents = documents.concat(infos.map(info => documentCreationProc(info)));
-		}
-
-		return documents;
-	}
-
-	//------------------------------------------------------------------------------------------------------------------
 	async documentUpdate(documentType, documents, documentStorageID = null) {
 		// Collect documents to update
 		let	documentsToUpdate = documents.filter(document => document.hasUpdateInfo());
@@ -873,13 +873,14 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentAddAttachment(documentType, documentID, info, content, documentStorageID = null) {
+	async documentAddAttachment(documentType, document, info, content, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
 		let	url =
 					this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
-							encodeURIComponent(documentType) + '/' + encodeURIComponent(documentID) + '/attachment';
+							encodeURIComponent(documentType) + '/' + encodeURIComponent(document.documentID) +
+							'/attachment';
 
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
@@ -925,14 +926,14 @@ class MDSClient {
 	static	documentGetAttachmentTypeJSON = 'application/json';
 	static	documentGetAttachmentTypeText = 'text/plain';
 	static	documentGetAttachmentTypeXML = 'text/xml';
-	async documentGetAttachment(documentType, documentID, attachmentID, type, documentStorageID = null) {
+	async documentGetAttachment(documentType, document, attachmentID, type, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
 		let	url =
 					this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
-							encodeURIComponent(documentType) + '/' + encodeURIComponent(documentID) + '/attachment/' +
-							encodeURIComponent(attachmentID);
+							encodeURIComponent(documentType) + '/' + encodeURIComponent(document.documentID) +
+							'/attachment/' + encodeURIComponent(attachmentID);
 		let	options = {headers: {...this.headers, Accept: type}};
 
 		// Queue the call
@@ -947,14 +948,14 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentUpdateAttachment(documentType, documentID, attachmentID, info, content, documentStorageID = null) {
+	async documentUpdateAttachment(documentType, document, attachmentID, info, content, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
 		let	url =
 					this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
-							encodeURIComponent(documentType) + '/' + encodeURIComponent(documentID) + '/attachment/' +
-							encodeURIComponent(attachmentID);
+							encodeURIComponent(documentType) + '/' + encodeURIComponent(document.documentID) +
+							'/attachment/' + encodeURIComponent(attachmentID);
 
 		let	headers = {...this.headers};
 		headers['Content-Type'] = 'application/json';
@@ -990,14 +991,14 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentRemoveAttachment(documentType, documentID, attachmentID, documentStorageID = null) {
+	async documentRemoveAttachment(documentType, document, attachmentID, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
 		let	url =
 					this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
-							encodeURIComponent(documentType) + '/' + encodeURIComponent(documentID) + '/attachment/' +
-							encodeURIComponent(attachmentID);
+							encodeURIComponent(documentType) + '/' + encodeURIComponent(document.documentID) +
+							'/attachment/' + encodeURIComponent(attachmentID);
 		let	options = {method: 'DELETE', headers: this.headers};
 
 		// Queue the call

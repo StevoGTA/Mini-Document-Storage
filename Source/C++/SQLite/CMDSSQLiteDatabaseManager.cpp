@@ -1094,6 +1094,19 @@ class CDocumentTypeInfoTable {
 
 														return idByDocumentIDResult.getValue();
 													}
+		static	DocumentIDByID					getDocumentIDByID(const CSQLiteTable& table)
+													{
+														// Retrieve documentID map
+														SDocumentIDByIDResult	documentIDByIDResult;
+														table.select(
+																TSArray<CSQLiteTableColumn>(mIDDocumentIDTableColumns,
+																		2),
+																(CSQLiteResultsRow::Proc)
+																		SDocumentIDByIDResult::process,
+																&documentIDByIDResult);
+
+														return documentIDByIDResult.getValue();
+													}
 		static	DocumentIDByID					getDocumentIDByID(const IDArray& ids, const CSQLiteTable& table)
 													{
 														// Retrieve documentID map
@@ -1851,13 +1864,90 @@ CSQLiteTableColumn	CInternalTable::mTableColumns[] = {mKeyTableColumn, mValueTab
 
 class CMDSSQLiteDatabaseManager::Internals {
 	public:
+		// AssociationDetailInfo
+		struct AssociationDetailInfo {
+			public:
+												AssociationDetailInfo(const TArray<CSQLiteTableColumn>& tableColumns) :
+													mTableColumns(tableColumns)
+													{}
+
+				const	TArray<CDictionary>&	getInfos() const
+													{ return mInfos; }
+				const	TNumberSet<SInt64>&		getToIDs() const
+													{ return mToIDs; }
+
+				static	OV<SError>				processResultsRow(const CSQLiteResultsRow& resultsRow,
+														AssociationDetailInfo* associationDetailInfo)
+													{
+														// Setup
+														SInt64	toID =
+																		*resultsRow.getInteger(
+																				CAssociationContentsTable::
+																						mToIDTableColumn);
+
+														// Compose info
+														CDictionary	info;
+														info.set(CString(OSSTR("fromID")),
+																*resultsRow.getInteger(
+																		CAssociationContentsTable::mFromIDTableColumn));
+														info.set(CString(OSSTR("toID")), toID);
+
+														for (TIteratorD<CSQLiteTableColumn> iterator =
+																		associationDetailInfo->mTableColumns
+																				.getIterator();
+																iterator.hasValue(); iterator.advance()) {
+															// Check kind
+															switch (iterator->getKind()) {
+																case CSQLiteTableColumn::kKindInteger:
+																	// Integer
+																	info.set(iterator->getName(),
+																			*resultsRow.getInteger(*iterator));
+																	break;
+
+																case CSQLiteTableColumn::kKindReal:
+																	// Real
+																	info.set(iterator->getName(),
+																			*resultsRow.getReal(*iterator));
+																	break;
+
+																case CSQLiteTableColumn::kKindText:
+																	// Text
+																	info.set(iterator->getName(),
+																			*resultsRow.getText(*iterator));
+																	break;
+
+																case CSQLiteTableColumn::kKindBlob:
+																	// Blob
+																	info.set(iterator->getName(),
+																			*resultsRow.getBlob(*iterator));
+																	break;
+
+																default:
+																	// Invalid
+																	break;
+															}
+														}
+
+														// Update
+														associationDetailInfo->mInfos += info;
+														associationDetailInfo->mToIDs.insert(toID);
+
+														return OV<SError>();
+													}
+
+			private:
+				const	TArray<CSQLiteTableColumn>&	mTableColumns;
+						TNArray<CDictionary>		mInfos;
+						TNumberSet<SInt64>			mToIDs;
+		};
+
 		// CacheUpdateInfo
 		struct CacheUpdateInfo {
+			public:
 										CacheUpdateInfo(const OV<ValueInfoByID>& valueInfoByID,
 												const IDArray& removedIDs, const OV<UInt32>& lastRevision) :
 											mValueInfoByID(valueInfoByID.hasValue() ? *valueInfoByID : ValueInfoByID()),
-													mRemovedIDs(removedIDs),
-													mLastRevision(lastRevision)
+													mRemovedIDs(removedIDs), mLastRevision(lastRevision)
 											{}
 										CacheUpdateInfo(const CacheUpdateInfo& other) :
 											mValueInfoByID(other.mValueInfoByID), mRemovedIDs(other.mRemovedIDs),
@@ -1888,8 +1978,77 @@ class CMDSSQLiteDatabaseManager::Internals {
 				OV<UInt32>		mLastRevision;
 		};
 
+		// CacheGetValuesInfo
+		struct CacheGetValuesInfo {
+			public:
+									CacheGetValuesInfo(const CDocumentTypeInfoTable::DocumentIDByID& documentIDByID,
+											const TArray<CSQLiteTableColumn>& tableColumns,
+											TNArray<CDictionary>& infos) :
+										mDocumentIDByID(documentIDByID), mTableColumns(tableColumns), mInfos(infos)
+										{}
+
+				static	OV<SError>	processResultsRow(const CSQLiteResultsRow& resultsRow,
+											CacheGetValuesInfo* cacheGetValuesInfo)
+										{
+											// Setup
+											CDictionary	info;
+
+											//
+											SInt64	id = *resultsRow.getInteger(CCacheContentsTable::mIDTableColumn);
+											info.set(CString(OSSTR("documentID")),
+													*cacheGetValuesInfo->mDocumentIDByID[id]);
+
+											// Iterate cached value names
+											for (TIteratorD<CSQLiteTableColumn> iterator =
+															cacheGetValuesInfo->mTableColumns.getIterator();
+													iterator.hasValue(); iterator.advance()) {
+												// Get SQLiteTableColumn
+												switch (iterator->getKind()) {
+													case CSQLiteTableColumn::kKindInteger:
+														// Integer
+														info.set(iterator->getName(),
+																*resultsRow.getInteger(*iterator));
+														break;
+
+													case CSQLiteTableColumn::kKindReal:
+														// Real
+														info.set(iterator->getName(),
+																*resultsRow.getReal(*iterator));
+														break;
+
+													case CSQLiteTableColumn::kKindText:
+														// Text
+														info.set(iterator->getName(),
+																*resultsRow.getText(*iterator));
+														break;
+
+													case CSQLiteTableColumn::kKindBlob:
+														// Blobl
+														info.set(iterator->getName(),
+																*resultsRow.getBlob(*iterator));
+														break;
+
+													default:
+														// Invalid
+														break;
+												}
+											}
+
+											// Add to array
+											cacheGetValuesInfo->mInfos += info;
+
+											return OV<SError>();
+										}
+
+			private:
+				const	CDocumentTypeInfoTable::DocumentIDByID&	mDocumentIDByID;
+				const	TArray<CSQLiteTableColumn>&				mTableColumns;
+						TNArray<CDictionary>&					mInfos;
+		};
+
 		// CollectionUpdateInfo
 		struct CollectionUpdateInfo {
+			public:
 									CollectionUpdateInfo(const OV<IDArray >& includedIDs,
 											const OV<IDArray >& notIncludedIDs, const OV<UInt32>& lastRevision) :
 										mIncludedIDs(includedIDs.hasValue() ? *includedIDs : IDArray()),
@@ -1930,6 +2089,7 @@ class CMDSSQLiteDatabaseManager::Internals {
 
 		// DocumentTables
 		struct DocumentTables {
+			public:
 								DocumentTables(const CSQLiteTable& infoTable, const CSQLiteTable& contentsTable,
 										const CSQLiteTable& attachmentsTable) :
 									mInfoTable(infoTable), mContentsTable(contentsTable),
@@ -2000,6 +2160,7 @@ class CMDSSQLiteDatabaseManager::Internals {
 
 		// BatchInfo
 		struct BatchInfo {
+			public:
 															BatchInfo() {}
 															BatchInfo(const BatchInfo& other) :
 																mDocumentLastRevisionTypesNeedingWrite(
@@ -2092,37 +2253,6 @@ class CMDSSQLiteDatabaseManager::Internals {
 				TNDictionary<CacheUpdateInfo>		mCacheUpdateInfoByName;
 				TNDictionary<CollectionUpdateInfo>	mCollectionUpdateInfoByName;
 				TNDictionary<IndexUpdateInfo>		mIndexUpdateInfoByName;
-		};
-
-		// AssociationDetailInfo
-		struct AssociationDetailInfo {
-			public:
-												AssociationDetailInfo(const TArray<CString>& cachedValueNames,
-														const TDictionary<CSQLiteTableColumn>& cacheTableColumnByName) :
-													mCachedValueNames(cachedValueNames),
-															mCacheTableColumnByName(cacheTableColumnByName)
-													{}
-
-				const	TArray<CString>&		getCachedValueName() const
-													{ return mCachedValueNames; }
-				const	CSQLiteTableColumn&		getCacheTableColumn(const CString& name) const
-													{ return *mCacheTableColumnByName[name]; }
-
-						void					addResult(const CDictionary& result)
-													{ mResults += result; }
-				const	TArray<CDictionary>&	getResults() const
-													{ return mResults; }
-
-						void					addToID(SInt64 toID)
-													{ mToIDs.insert(toID); }
-				const	TNumberSet<SInt64>&		getToIDs() const
-													{ return mToIDs; }
-
-			private:
-				const	TArray<CString>&					mCachedValueNames;
-				const	TDictionary<CSQLiteTableColumn>&	mCacheTableColumnByName;
-						TNArray<CDictionary>				mResults;
-						TNumberSet<SInt64>					mToIDs;
 		};
 
 	public:
@@ -2247,59 +2377,6 @@ class CMDSSQLiteDatabaseManager::Internals {
 														*internals->mIndexTablesByName[name]);
 										}
 
-		static	OV<SError>			processAssociationDetailResultsRow(const CSQLiteResultsRow& resultsRow,
-											AssociationDetailInfo* associationDetailInfo)
-										{
-											// Setup
-											SInt64	toID =
-															*resultsRow.getInteger(
-																	CAssociationContentsTable::mToIDTableColumn);
-
-											CDictionary	info;
-											info.set(CString(OSSTR("fromID")),
-													*resultsRow.getInteger(
-															CAssociationContentsTable::mFromIDTableColumn));
-											info.set(CString(OSSTR("toID")), toID);
-
-											for (TIteratorD<CString> iterator =
-															associationDetailInfo->getCachedValueName().getIterator();
-													iterator.hasValue(); iterator.advance()) {
-												// Get CSQLiteTableColumn
-												const	CSQLiteTableColumn& tableColumn =
-																					associationDetailInfo->
-																							getCacheTableColumn(
-																									*iterator);
-												switch (tableColumn.getKind()) {
-													case CSQLiteTableColumn::kKindInteger:
-														// Integer
-														info.set(*iterator, *resultsRow.getInteger(tableColumn));
-														break;
-
-													case CSQLiteTableColumn::kKindReal:
-														// Real
-														info.set(*iterator, *resultsRow.getReal(tableColumn));
-														break;
-
-													case CSQLiteTableColumn::kKindText:
-														// Text
-														info.set(*iterator, *resultsRow.getText(tableColumn));
-														break;
-
-													case CSQLiteTableColumn::kKindBlob:
-														// Blob
-														info.set(*iterator, *resultsRow.getBlob(tableColumn));
-														break;
-
-													default:
-														break;
-												}
-											}
-
- 											associationDetailInfo->addResult(info);
-											associationDetailInfo->addToID(toID);
-
-											return OV<SError>();
-										}
 	private:
 		static	OV<SError>			storeDocumentLastRevision(const CSQLiteResultsRow& resultsRow, Internals* internals)
 										{
@@ -2664,12 +2741,6 @@ TVResult<SValue> CMDSSQLiteDatabaseManager::associationDetail(const I<CMDSAssoci
 	CSQLiteTable&				cacheContentsTable = *mInternals->mCacheTablesByName.get(cache->getName());
 	TArray<CSQLiteTableColumn>	cacheContentsTableColumns = cacheContentsTable.getTableColumns(cachedValueNames);
 
-	TNDictionary<CSQLiteTableColumn>	cacheContentsTableColumnByName;
-	for (TIteratorD<CSQLiteTableColumn> iterator = cacheContentsTableColumns.getIterator(); iterator.hasValue();
-			iterator.advance())
-		// Add table column
-		cacheContentsTableColumnByName.set(iterator->getName(), *iterator);
-
 	Internals::DocumentTables&	toDocumentTables = mInternals->getDocumentTables(association->getToDocumentType());
 
 	TNArray<CSQLiteTableColumn>	tableColumns;
@@ -2677,13 +2748,13 @@ TVResult<SValue> CMDSSQLiteDatabaseManager::associationDetail(const I<CMDSAssoci
 	tableColumns += CAssociationContentsTable::mToIDTableColumn;
 	tableColumns += cacheContentsTableColumns;
 
-	Internals::AssociationDetailInfo	associationDetailsInfo(cachedValueNames, cacheContentsTableColumnByName);
+	Internals::AssociationDetailInfo	associationDetailsInfo(cacheContentsTableColumns);
 	associationContentsTable.select(tableColumns,
 			CSQLiteInnerJoin(associationContentsTable, CAssociationContentsTable::mToIDTableColumn, cacheContentsTable,
 					CCacheContentsTable::mIDTableColumn),
 			CSQLiteWhere(CAssociationContentsTable::mFromIDTableColumn,
 					SSQLiteValue::valuesFrom(fromDocumentIDByID.getKeys())),
-			(CSQLiteResultsRow::Proc) Internals::processAssociationDetailResultsRow, &associationDetailsInfo);
+			(CSQLiteResultsRow::Proc) Internals::AssociationDetailInfo::processResultsRow, &associationDetailsInfo);
 
 	CDocumentTypeInfoTable::DocumentIDByID	toDocumentIDByID =
 													CDocumentTypeInfoTable::getDocumentIDByID(
@@ -2691,7 +2762,7 @@ TVResult<SValue> CMDSSQLiteDatabaseManager::associationDetail(const I<CMDSAssoci
 															toDocumentTables.getInfoTable());
 
 	TNArray<CDictionary>	finalizedResults;
-	for (TIteratorD<CDictionary> iterator = associationDetailsInfo.getResults().getIterator(); iterator.hasValue();
+	for (TIteratorD<CDictionary> iterator = associationDetailsInfo.getInfos().getIterator(); iterator.hasValue();
 			iterator.advance()) {
 		// Make copy
 		CDictionary	info(*iterator);
@@ -2802,6 +2873,61 @@ OV<CacheInfo> CMDSSQLiteDatabaseManager::cacheInfo(const CString& name)
 	}
 
 	return cacheInfo;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+TVResult<TArray<CDictionary> > CMDSSQLiteDatabaseManager::cacheGetValues(
+		const I<TMDSCache<SInt64, ValueInfoByID> >& cache, const TArray<CString>& valueNames,
+		const OV<TArray<CString> >& documentIDs)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	CSQLiteTable&				cacheContentsTable = *mInternals->mCacheTablesByName.get(cache->getName());
+	TArray<CSQLiteTableColumn>	cacheContentsTableColumns = cacheContentsTable.getTableColumns(valueNames);
+
+	Internals::DocumentTables&	documentTables = mInternals->getDocumentTables(cache->getDocumentType());
+
+	CDocumentTypeInfoTable::DocumentIDByID	documentIDByID;
+	if (documentIDs.hasValue()) {
+		// Setup
+		documentIDByID = CDocumentTypeInfoTable::getDocumentIDByID(*documentIDs, documentTables.getInfoTable());
+
+		if (documentIDByID.getKeyCount() < documentIDs->getCount()) {
+			// Did not resolve all documentIDs
+			CString	documentID = *TNSet<CString>(*documentIDs).getDifference(documentIDByID.getValues()).getAny();
+
+			return TVResult<TArray<CDictionary> >(CMDSDocumentStorage::getUnknownDocumentIDError(documentID));
+		}
+	} else
+		// Setup
+		documentIDByID = CDocumentTypeInfoTable::getDocumentIDByID(documentTables.getInfoTable());
+
+	TArray<CSQLiteTableColumn>	tableColumns =
+										TNArray<CSQLiteTableColumn>(CCacheContentsTable::mIDTableColumn) +
+												cacheContentsTableColumns;
+
+	// Check if have documentIDs
+	TNArray<CDictionary>			infos;
+	Internals::CacheGetValuesInfo	cacheGetValuesInfo(documentIDByID, cacheContentsTableColumns, infos);
+	if (documentIDs.hasValue()) {
+		// Iterate documentIDs
+		OV<SError>	error =
+							cacheContentsTable.select(tableColumns,
+									CSQLiteWhere(CCacheContentsTable::mIDTableColumn,
+											SSQLiteValue::valuesFrom(documentIDByID.getKeys())),
+									(CSQLiteResultsRow::Proc) Internals::CacheGetValuesInfo::processResultsRow,
+									&cacheGetValuesInfo);
+		ReturnValueIfError(error, TVResult<TArray<CDictionary> >(*error));
+	} else {
+		// All documentIDs
+		OV<SError>	error =
+							cacheContentsTable.select(tableColumns,
+									(CSQLiteResultsRow::Proc) Internals::CacheGetValuesInfo::processResultsRow,
+									&cacheGetValuesInfo);
+		ReturnValueIfError(error, TVResult<TArray<CDictionary> >(*error));
+	}
+
+	return TVResult<TArray<CDictionary> >(infos);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

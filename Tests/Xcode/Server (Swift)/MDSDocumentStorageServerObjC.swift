@@ -151,6 +151,16 @@ class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageS
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func cacheGetValues(for name :String, valueNames :[String], documentIDs :[String]?) throws -> [[String : Any]] {
+		// Get values
+		var	outInfos :NSArray?
+		try self.documentStorageObjC.cacheGetValuesNamed(name, valueNames: valueNames, documentIDs: documentIDs,
+				outInfos: &outInfos)
+
+		return outInfos as! [[String : Any]]
+	}
+	
+	//------------------------------------------------------------------------------------------------------------------
 	func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
 			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc, checkRelevantProperties :Bool) throws {

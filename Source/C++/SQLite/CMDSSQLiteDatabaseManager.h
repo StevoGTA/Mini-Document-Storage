@@ -560,6 +560,9 @@ class CMDSSQLiteDatabaseManager {
 															const TArray<CString>& relevantProperties,
 															const TArray<CacheValueInfo>& cacheValueInfos);
 				OV<CacheInfo>						cacheInfo(const CString& name);
+				TVResult<TArray<CDictionary> >		cacheGetValues(const I<TMDSCache<SInt64, ValueInfoByID> >& cache,
+															const TArray<CString>& valueNames,
+															const OV<TArray<CString> >& documentIDs);
 				void								cacheUpdate(const CString& name,
 															const OV<ValueInfoByID>& valueInfoByID,
 															const IDArray& removedIDs, const OV<UInt32>& lastRevision);

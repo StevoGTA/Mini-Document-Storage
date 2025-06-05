@@ -342,6 +342,33 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	public func cacheGetValues(for name :String, valueNames :[String], documentIDs :[String]?) throws ->
+			[[String : Any]] {
+		// May need to try this more than once
+		while true {
+			// Query collection document count
+			let	(info, error) =
+						self.httpEndpointClient.cacheGetValues(documentStorageID: self.documentStorageID, name: name,
+								valueNames: valueNames, documentIDs: documentIDs, authorization: self.authorization)
+
+			// Handle results
+			if info != nil {
+				// Received info
+				if !info!.isUpToDate {
+					// Not up to date
+					continue
+				} else {
+					// Success
+					return info!.info!
+				}
+			} else {
+				// Error
+				throw error!
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	public func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
 			documentIsIncludedProc: @escaping MDSDocument.IsIncludedProc, checkRelevantProperties: Bool) throws {

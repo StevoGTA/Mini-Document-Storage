@@ -267,6 +267,9 @@ typedef NS_ENUM(NSInteger) {
 - (BOOL) cacheRegisterNamed:(NSString*) name documentType:(NSString*) documentType
 		relevantProperties:(NSArray<NSString*>*) relevantProperties
 		cacheValueInfos:(NSArray<MDSCacheValueInfo*>*) cacheValueInfos error:(NSError**) error;
+- (BOOL) cacheGetValuesNamed:(NSString*) name valueNames:(NSArray<NSString*>*) valueNames
+		documentIDs:(nullable NSArray<NSString*>*) documentIDs
+		outInfos:(NSArray<NSDictionary*>* _Nullable * _Nullable) outInfos error:(NSError**) error;
 
 - (BOOL) collectionRegisterNamed:(NSString*) name documentType:(NSString*) documentType
 		relevantProperties:(NSArray<NSString*>*) relevantProperties isUpToDate:(BOOL) isUpToDate

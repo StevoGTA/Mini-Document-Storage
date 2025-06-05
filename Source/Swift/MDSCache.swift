@@ -15,26 +15,28 @@ public class MDSCache : Equatable {
 
 		// MARK: Properties
 					let	valueInfo :MDSValueInfo
-					let	selector :String
 
 		fileprivate	let	proc :MDSDocument.ValueProc
+
+		private		let	selector :String
 
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
 		init(valueInfo :MDSValueInfo, selector :String, proc :@escaping MDSDocument.ValueProc) {
 			// Store
 			self.valueInfo = valueInfo
-			self.selector = selector
-			
+
 			self.proc = proc
+
+			self.selector = selector
 		}
 	}
 
 	// MARK: Properties
 			let	name :String
 			let	documentType :String
-			let	relevantProperties: Set<String>
 
+	private	let	relevantProperties: Set<String>
 	private	let	valueInfos :[ValueInfo]
 
 	private	var	lastRevision :Int
@@ -45,11 +47,11 @@ public class MDSCache : Equatable {
 		// Store
 		self.name = name
 		self.documentType = documentType
+
 		self.relevantProperties = Set<String>(relevantProperties)
+		self.valueInfos = valueInfos
 
 		self.lastRevision = lastRevision
-
-		self.valueInfos = valueInfos
 	}
 
 	// MARK: Equatable implementation

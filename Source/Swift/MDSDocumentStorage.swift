@@ -16,6 +16,7 @@ public enum MDSDocumentStorageError : Error {
 	case invalidStartIndex(startIndex :Int)
 
 	case missingFromIndex(key :String)
+	case missingValueNames
 
 	case unknownAssociation(name :String)
 
@@ -46,6 +47,7 @@ extension MDSDocumentStorageError : CustomStringConvertible, LocalizedError {
 							case .invalidStartIndex(let startIndex): 		return "Invalid startIndex: \(startIndex)"
 
 							case .missingFromIndex(let key):				return "Missing from index: \(key)"
+							case .missingValueNames:						return "Missing valueNames"
 
 							case .unknownAssociation(let name):				return "Unknown association: \(name)"
 
@@ -87,6 +89,7 @@ public protocol MDSDocumentStorage {
 
 	func cacheRegister(name :String, documentType :String, relevantProperties :[String],
 			cacheValueInfos :[(valueInfo :MDSValueInfo, selector :String)]) throws
+	func cacheGetValues(for name :String, valueNames :[String], documentIDs :[String]?) throws -> [[String : Any]]
 
 	func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
