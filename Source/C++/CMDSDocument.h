@@ -684,6 +684,9 @@ struct SMDSValueInfo {
 		const	CString&	getValueType() const
 								{ return mValueType; }
 
+				bool		operator==(const SMDSValueInfo& other) const
+								{ return (mName == other.mName) && (mValueType == other.mValueType); }
+
 	// Properties
 	private:
 		CString	mName;
