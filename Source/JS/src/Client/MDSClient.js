@@ -987,7 +987,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentAddAttachment(documentType, document, info, content, documentStorageID = null) {
+	async documentAttachmentAdd(documentType, document, info, content, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -1040,7 +1040,7 @@ class MDSClient {
 	static	documentGetAttachmentTypeJSON = 'application/json';
 	static	documentGetAttachmentTypeText = 'text/plain';
 	static	documentGetAttachmentTypeXML = 'text/xml';
-	async documentGetAttachment(documentType, document, attachmentID, type, documentStorageID = null) {
+	async documentAttachmentGet(documentType, document, attachmentID, type, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -1062,7 +1062,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentUpdateAttachment(documentType, document, attachmentID, info, content, documentStorageID = null) {
+	async documentAttachmentUpdate(documentType, document, attachmentID, info, content, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -1105,7 +1105,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentRemoveAttachment(documentType, document, attachmentID, documentStorageID = null) {
+	async documentAttachmentRemove(documentType, document, attachmentID, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
