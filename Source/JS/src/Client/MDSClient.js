@@ -641,6 +641,51 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	async collectionGetAllDocumentInfos(name, documentStorageID = null) {
+		// Setup
+		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
+		let	url =
+					this.urlBase + '/v1/collection/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name) + '?fullInfo=0';
+		let	options = {headers: this.headers};
+
+		// Loop until up-to-date and have all infos
+		var	documentInfos = []
+		var	startIndex = 0;
+		while (true) {
+			// Compose URL
+			let	urlUse = url + '&startIndex=' + startIndex;
+
+			// Queue the call
+			let	response = await this.queue.add(() => fetch(urlUse, options));
+
+			// Handle results
+			if (response.status != 409) {
+				// Process response
+				await processResponse(response);
+
+				let	infos = await response.json();
+				documentInfos = documentInfos.concat(infos);
+
+				// Decode content range
+				let	contentRange = decodeContentRange(response);
+				let	range = contentRange.range;
+				if (range == "*")
+					// No range
+					return documentInfos;
+				
+				let	nextStartIndex = contentRange.rangeEnd + 1;
+				if (nextStartIndex == contentRange.size)
+					// All done
+					return documentInfos;
+				
+				// Prepare next request
+				startIndex = nextStartIndex;
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	async collectionGetDocuments(name, startIndex, count, documentCreationProc, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
@@ -667,6 +712,51 @@ class MDSClient {
 				let	infos = await response.json();
 
 				return infos.map(info => documentCreationProc(info));
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async collectionGetAllDocuments(name, documentCreationProc, documentStorageID = null) {
+		// Setup
+		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
+		let	url =
+					this.urlBase + '/v1/collection/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name) + '?fullInfo=1&count=1000';
+		let	options = {headers: this.headers};
+
+		// Loop until up-to-date and have all infos
+		var	documents = []
+		var	startIndex = 0;
+		while (true) {
+			// Compose URL
+			let	urlUse = url + '&startIndex=' + startIndex;
+
+			// Queue the call
+			let	response = await this.queue.add(() => fetch(urlUse, options));
+
+			// Handle results
+			if (response.status != 409) {
+				// Process response
+				await processResponse(response);
+
+				let	infos = await response.json();
+				documents = documents.concat(infos.map(info => documentCreationProc(info)));
+
+				// Decode content range
+				let	contentRange = decodeContentRange(response);
+				let	range = contentRange.range;
+				if (range == "*")
+					// No range
+					return documents;
+				
+				let	nextStartIndex = contentRange.rangeEnd + 1;
+				if (nextStartIndex == contentRange.size)
+					// All done
+					return documents;
+				
+				// Prepare next request
+				startIndex = nextStartIndex;
 			}
 		}
 	}
