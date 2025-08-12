@@ -600,12 +600,11 @@ class MDSClient {
 					// Some error, but no additional info
 					throw new Error('HTTP response: ' + response.status);
 
-				// Decode header
-				let	contentRange = response.headers.get('content-range');
-				let	contentRangeParts = (contentRange || '').split('/');
-				if (contentRangeParts.length == 2)
+				// Decode content range
+				let	contentRange = decodeContentRange(response);
+				if (contentRange.size != '*')
 					// Have count
-					return parseInt(contentRangeParts[1]);
+					return contentRange.size;
 				else
 					// Don't have count
 					throw new Error('Unable to get count from response');
@@ -730,12 +729,11 @@ class MDSClient {
 			// Some error, but no additional info
 			throw new Error('HTTP response: ' + response.status);
 
-		// Decode header
-		let	contentRange = response.headers.get('content-range');
-		let	contentRangeParts = (contentRange || '').split('/');
-		if (contentRangeParts.length == 2)
+		// Decode content range
+		let	contentRange = decodeContentRange(response);
+		if (contentRange.size != '*')
 			// Have count
-			return parseInt(contentRangeParts[1]);
+			return contentRange.size;
 		else
 			// Don't have count
 			throw new Error('Unable to get count from response');
@@ -829,10 +827,11 @@ class MDSClient {
 			if (documentsBatch.length > 0) {
 				// More Documents
 				if (totalDocumentCount == null) {
-					// Retrieve total count from header
-					let	contentRange = response.headers.get('content-range');
-					let	contentRangeParts = (contentRange || '').split('/');
-					totalDocumentCount = (contentRangeParts.length == 2) ? parseInt(contentRangeParts[1]) : null;
+					// Decode content range
+					let	contentRange = decodeContentRange(response);
+					if (contentRange.size != '*')
+						// Havea count
+						totalDocumentCount = contentRange.size;
 				}
 
 				// Check if have proc
@@ -1222,4 +1221,32 @@ async function processResponse(response) {
 	}
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+function decodeContentRange(response) {
+	// Get content range
+	let	contentRange = response.headers.get('content-range');
+	if (!contentRange)
+		// No content range
+		throw new Error('No content-range in response headers');
+
+	// Decode content range
+	let	result = contentRange.match(/(\w+)[ ](.+)\/(.+)/);
+	if (result.length != 4)
+		// Unable to decode
+		throw new Error('Unable to decode content range from response');
+
+	// Compose info
+	let	range = result[2];
+	let	size = result[3];
+
+	var	info = {'unit': result[1], 'range': range, 'size': (size != '*') ? parseInt(size) : size};
+	if (range != '*') {
+		// Decode range components
+		let	rangeParts = range.split('-');
+		info['rangeStart'] = parseInt(rangeParts[0]);
+		info['rangeEnd'] = parseInt(rangeParts[1]);
+	}
+
+	return info;
+}
 module.exports = MDSClient;
