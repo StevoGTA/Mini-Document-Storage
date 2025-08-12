@@ -496,7 +496,7 @@ class MDSClient {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		let	valueNameQuery = valueNames.map(valueName => 'valueName=' + encodeURIComponent(valueName)).join('&');
-		documentIDs = documents?.map(document => encodeURIComponent(document.documentID));
+		let	documentIDs = documents?.map(document => encodeURIComponent(document.documentID));
 		
 		let	urlBase =
 					this.urlBase + '/v1/cache/' + encodeURIComponent(documentStorageIDUse) + '/' +
@@ -530,13 +530,13 @@ class MDSClient {
 					};
 
 		// Check if have documentIDs
-		if (documents?.length > 0) {
+		if (documentIDs?.length > 0) {
 			// Max each call at 10 documentIDs
 			let	promises = [];
-			for (let i = 0, length = documents.length; i < length; i += 10) {
+			for (let i = 0, length = documentIDs.length; i < length; i += 10) {
 				// Setup
-				let	documentsSlice = documents.slice(i, i + 10);
-				promises.push(processURL(urlBase + '&id=' + documentsSlice.join('&id=')));
+				let	documentIDsSlice = documentIDs.slice(i, i + 10);
+				promises.push(processURL(urlBase + '&id=' + documentIDsSlice.join('&id=')));
 			}
 			await Promise.all(promises);
 		} else

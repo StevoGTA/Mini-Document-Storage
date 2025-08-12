@@ -78,6 +78,11 @@ class CMDSSQLiteDatabaseManager {
 											return info;
 										}
 
+						bool		operator==(const CacheValueInfo& other) const
+										{ return (mName == other.mName) &&
+												(mValueType == other.mValueType) &&
+												(mSelector == other.mSelector); }
+
 			// Properties
 			private:
 				CString	mName;

@@ -234,17 +234,17 @@ module.exports = class Associations {
 			// Select
 			let	fromDocumentIDString =
 						internals.documents.getDocumentIDTableColumnString(statementPerformer, association.fromType,
-								'fromDocumentID');
+								'fromDocumentID', 't1');
 			let	toDocumentIDString =
 						internals.documents.getDocumentIDTableColumnString(statementPerformer, association.toType,
-								'toDocumentID');
+								'toDocumentID', 't2');
 
 			let	results =
 						await statementPerformer.select(true, association.table,
 								fromDocumentIDString + ', ' + toDocumentIDString,
 								internals.documents.getInnerJoinForDocumentInfos(statementPerformer,
-										association.fromType, association.table.fromIDTableColumn,
-										association.toType, association.table.toIDTableColumn));
+										association.fromType, association.table.fromIDTableColumn, 't1',
+										association.toType, association.table.toIDTableColumn, 't2'));
 			
 			if (results)
 				// Success

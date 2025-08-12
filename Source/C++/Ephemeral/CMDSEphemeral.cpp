@@ -989,6 +989,11 @@ TVResult<SValue> CMDSEphemeral::associationGetValues(const CString& name, CMDSAs
 			results.set(CString(OSSTR("count")), count);
 
 			return SValue(results); }
+
+#if defined(TARGET_OS_WINDOWS)
+		default:
+			return TVResult<SValue>(SError::mUnimplemented);
+#endif
 	}
 }
 
@@ -1152,8 +1157,8 @@ TVResult<TArray<CDictionary> > CMDSEphemeral::cacheGetValues(const CString& name
 		}
 	} else {
 		// All documentIDs
-		TSet<CString>	documentIDs = cacheValuesByDocumentID.getKeys();
-		for (TIteratorS<CString> documentIDIterator = documentIDs.getIterator(); documentIDIterator.hasValue();
+		TSet<CString>	documentIDs_ = cacheValuesByDocumentID.getKeys();
+		for (TIteratorS<CString> documentIDIterator = documentIDs_.getIterator(); documentIDIterator.hasValue();
 				documentIDIterator.advance()) {
 			// Get cached values
 			const	OR<CDictionary>&	cacheValues = cacheValuesByDocumentID[*documentIDIterator];

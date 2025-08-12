@@ -31,6 +31,7 @@ class CMDSDocumentStorage {
 											{ return mValueInfo; }
 				const	CString&		getSelector() const
 											{ return mSelector; }
+
 			// Properties
 			private:
 				SMDSValueInfo	mValueInfo;

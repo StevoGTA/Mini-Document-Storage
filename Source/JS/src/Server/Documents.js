@@ -811,11 +811,11 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	getDocumentIDTableColumnString(statementPerformer, documentType, asName = null) {
+	getDocumentIDTableColumnString(statementPerformer, documentType, asName, tableAsName) {
 		// Setup
 		let	documentIDTableColumn = this.tablesInfo(statementPerformer, documentType).infoTable.documentIDTableColumn;
 
-		return asName ? documentIDTableColumn.getNameWithTableAs(asName) : documentIDTableColumn.mySQLNameWithTable;
+		return documentIDTableColumn.getMySQLNameAsWithTableAs(asName, tableAsName);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -837,14 +837,15 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	getInnerJoinForDocumentInfos(statementPerformer, documentType1, idTableColumn1, documentType2, idTableColumn2) {
+	getInnerJoinForDocumentInfos(statementPerformer, documentType1, tableColumn1, tableAsName1, documentType2,
+			tableColumn2, tableAsName2) {
 		// Setup
 		let	tablesInfo1 = this.tablesInfo(statementPerformer, documentType1);
 		let	tablesInfo2 = this.tablesInfo(statementPerformer, documentType2);
 
 		return statementPerformer.innerJoin(
-				[tablesInfo1.infoTable, idTableColumn1, tablesInfo1.infoTable.idTableColumn],
-				[tablesInfo2.infoTable, idTableColumn2, tablesInfo2.infoTable.idTableColumn]);
+				[tablesInfo1.infoTable, tableColumn1, tablesInfo1.infoTable.idTableColumn, tableAsName1],
+				[tablesInfo2.infoTable, tableColumn2, tablesInfo2.infoTable.idTableColumn, tableAsName2]);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
