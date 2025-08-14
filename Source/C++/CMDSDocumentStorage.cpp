@@ -433,13 +433,6 @@ SError CMDSDocumentStorage::getUnknownCacheValueName(const CString& valueName)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-SError CMDSDocumentStorage::getUnknownCacheValueSelector(const CString& selector)
-//----------------------------------------------------------------------------------------------------------------------
-{
-	return SError(CString(OSSTR("MDSDocumentStorage")), 43, CString(OSSTR("Invalid value selector: ")) + selector);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 SError CMDSDocumentStorage::getUnknownCollectionError(const CString& name)
 //----------------------------------------------------------------------------------------------------------------------
 {

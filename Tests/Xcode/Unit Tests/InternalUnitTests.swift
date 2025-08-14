@@ -25,7 +25,7 @@ class InternalUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Invalid documentStorageID: \(documentStorageID)",
 							"did not receive expected error message")
@@ -49,7 +49,7 @@ class InternalUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing info", "did not receive expected error message")
 

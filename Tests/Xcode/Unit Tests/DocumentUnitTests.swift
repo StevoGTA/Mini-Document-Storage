@@ -30,7 +30,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Invalid documentStorageID: \(documentStorageID)",
 							"did not receive expected error message")
@@ -58,7 +58,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing info(s)", "did not receive expected error message")
 
@@ -93,7 +93,7 @@ class DocumentUnitTests : XCTestCase {
 			XCTAssertNotNil(error, "did not receive error")
 			if error != nil {
 				switch error! {
-					case MDSError.invalidRequest(let message):
+					case MDSError.badRequest(let message):
 						// Expected error
 						XCTAssertEqual(message, "Invalid documentID: \(documentID) (exceeds max length of 22)",
 								"did not receive expected error message")
@@ -263,7 +263,7 @@ class DocumentUnitTests : XCTestCase {
 			switch error! {
 				case MDSError.failed(let status):
 					// Expected error
-					XCTAssertEqual(status, HTTPEndpointStatus.badRequest, "did not receive expected error")
+					XCTAssertEqual(status, HTTPEndpointStatus.notFound, "did not receive expected error")
 
 				default:
 					// Other error
@@ -289,7 +289,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Invalid documentStorageID: \(documentStorageID)",
 							"did not receive expected error message")
@@ -318,7 +318,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown documentType: \(documentType)",
 							"did not receive expected error message")
@@ -356,7 +356,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Invalid revision: -1", "did not receive expected error message")
 
@@ -393,7 +393,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Invalid count: -1", "did not receive expected error message")
 
@@ -421,7 +421,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Invalid documentStorageID: \(documentStorageID)",
 							"did not receive expected error message")
@@ -450,7 +450,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown documentType: \(documentType)",
 							"did not receive expected error message")
@@ -478,7 +478,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing id(s)", "did not receive expected error message")
 
@@ -514,7 +514,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown documentID: \(documentID)",
 							"did not receive expected error message")
@@ -543,7 +543,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Invalid documentStorageID: \(documentStorageID)",
 							"did not receive expected error message")
@@ -573,7 +573,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown documentType: \(documentType)",
 							"did not receive expected error message")
@@ -623,7 +623,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing documentID", "did not receive expected error message")
 
@@ -769,7 +769,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Invalid documentStorageID: \(documentStorageID)",
 							"did not receive expected error message")
@@ -797,7 +797,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown documentType: ABC", "did not receive expected error message")
 
@@ -836,7 +836,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown documentID: \(documentID)",
 							"did not receive expected error message")
@@ -884,7 +884,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing info", "did not receive expected error message")
 
@@ -932,7 +932,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing content", "did not receive expected error message")
 
@@ -960,7 +960,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Invalid documentStorageID: \(documentStorageID)",
 							"did not receive expected error message")
@@ -989,7 +989,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown documentType: \(documentType)",
 							"did not receive expected error message")
@@ -1026,7 +1026,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(attachmentGetError, "did not receive error")
 		if attachmentGetError != nil {
 			switch attachmentGetError! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown documentID: \(documentID)",
 							"did not receive expected error message")
@@ -1064,7 +1064,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown attachmentID: ABC", "did not receive expected error message")
 
@@ -1093,7 +1093,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Invalid documentStorageID: \(documentStorageID)",
 							"did not receive expected error message")
@@ -1123,7 +1123,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown documentType: \(documentType)",
 							"did not receive expected error message")
@@ -1161,7 +1161,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown documentID: \(documentID)",
 							"did not receive expected error message")
@@ -1202,7 +1202,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown attachmentID: \(attachmentID)",
 							"did not receive expected error message")
@@ -1266,7 +1266,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(updateAttachmentError, "did not receive error")
 		if updateAttachmentError != nil {
 			switch updateAttachmentError! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing info", "did not receive expected error message")
 
@@ -1330,7 +1330,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(updateAttachmentError, "did not receive error")
 		if updateAttachmentError != nil {
 			switch updateAttachmentError! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing content", "did not receive expected error message")
 
@@ -1356,7 +1356,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Invalid documentStorageID: \(documentStorageID)",
 							"did not receive expected error message")
@@ -1383,7 +1383,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown documentType: \(documentType)",
 							"did not receive expected error message")
@@ -1417,7 +1417,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown documentID: \(documentID)",
 							"did not receive expected error message")
@@ -1457,7 +1457,7 @@ class DocumentUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown attachmentID: \(attachmentID)",
 							"did not receive expected error message")

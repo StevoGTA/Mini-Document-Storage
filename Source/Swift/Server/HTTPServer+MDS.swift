@@ -17,6 +17,40 @@ fileprivate	typealias DocumentStorageInfo =
 fileprivate	var	documentStorageInfosByDocumentStorageID = [String : DocumentStorageInfo]()
 
 //----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSDocumentStorageError extension
+fileprivate extension MDSDocumentStorageError {
+
+	// MARK: Properties
+	var	status :HTTPEndpointStatus {
+				// Check error
+				switch self {
+					case .invalidCount(_):			return .badRequest
+					case .invalidDocumentType(_):	return .badRequest
+					case .invalidStartIndex(_):		return .badRequest
+
+					case .missingFromIndex(_):		return .badRequest
+					case .missingValueNames:		return .badRequest
+
+					case .unknownAssociation(_):	return .notFound
+
+					case .unknownAttachmentID(_):	return .notFound
+
+					case .unknownCache(_):			return .notFound
+					case .unknownCacheValueName(_):	return .notFound
+
+					case .unknownCollection(_):		return .notFound
+
+					case .unknownDocumentID(_):		return .notFound
+					case .unknownDocumentType(_):	return .notFound
+
+					case .unknownIndex(_):			return .notFound
+
+					case .illegalInBatch:			return .badRequest
+				}
+			}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSHTTPServices extension
 extension MDSHTTPServices {
 
@@ -190,7 +224,8 @@ extension HTTPServer {
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(associationRegisterEndpoint)
@@ -227,7 +262,8 @@ extension HTTPServer {
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(associationUpdateEndpoint)
@@ -305,7 +341,8 @@ extension HTTPServer {
 				}
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(associationGetEndpoint)
@@ -354,7 +391,8 @@ extension HTTPServer {
 				return (.ok, nil, .json(results))
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(associationGetValuesEndpoint)
@@ -425,7 +463,8 @@ extension HTTPServer {
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(cacheRegisterEndpoint)
@@ -446,7 +485,8 @@ extension HTTPServer {
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(cacheGetStatustEndpoint)
@@ -478,7 +518,8 @@ extension HTTPServer {
 				return (.ok, nil, .json(results))
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(cacheGetValuesEndpoint)
@@ -531,7 +572,8 @@ extension HTTPServer {
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(collectionRegisterEndpoint)
@@ -555,7 +597,8 @@ extension HTTPServer {
 						nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(collectionGetDocumentCountEndpoint)
@@ -609,7 +652,8 @@ extension HTTPServer {
 				}
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(collectionGetDocumentInfoEndpoint)
@@ -659,7 +703,8 @@ extension HTTPServer {
 						nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentGetCountEndpoint)
@@ -735,7 +780,8 @@ extension HTTPServer {
 				}
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentGetEndpoint)
@@ -759,7 +805,8 @@ extension HTTPServer {
 				return (.ok, nil, .json(infos))
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentUpdateEndpoint)
@@ -791,7 +838,8 @@ extension HTTPServer {
 				return (.ok, nil, .json(documentAttachmentInfo.httpServicesInfo))
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentAttachmentAddEndpoint)
@@ -814,7 +862,8 @@ extension HTTPServer {
 				return (.ok, nil, .data(content))
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentAttachmentGetEndpoint)
@@ -847,7 +896,8 @@ extension HTTPServer {
 				return (.ok, nil, .json(["revision": revision]))
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentAttachmentUpdateEndpoint)
@@ -869,7 +919,8 @@ extension HTTPServer {
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(documentAttachmentRemoveEndpoint)
@@ -920,7 +971,8 @@ extension HTTPServer {
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(indexRegisterEndpoint)
@@ -941,7 +993,8 @@ extension HTTPServer {
 				return (.ok, nil, nil)
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(indexGetStatustEndpoint)
@@ -979,7 +1032,8 @@ extension HTTPServer {
 				}
 			} catch {
 				// Error
-				return (.badRequest, nil, .json(["error": error.localizedDescription]))
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
 			}
 		}
 		register(indexGetDocumentInfoEndpoint)

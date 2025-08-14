@@ -28,7 +28,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Invalid documentStorageID: \(documentStorageID)",
 							"did not receive expected error message")
@@ -69,7 +69,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing name", "did not receive expected error message: \(message)")
 
@@ -109,7 +109,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing documentType",
 							"did not receive expected error message: \(message)")
@@ -150,7 +150,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing relevantProperties",
 							"did not receive expected error message: \(message)")
@@ -186,7 +186,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing valueInfos", "did not receive expected error message: \(message)")
 
@@ -222,7 +222,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing valueInfos", "did not receive expected error message: \(message)")
 
@@ -258,7 +258,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing value name", "did not receive expected error message: \(message)")
 
@@ -294,7 +294,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing value valueType",
 							"did not receive expected error message: \(message)")
@@ -331,7 +331,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Invalid value valueType: ABC",
 							"did not receive expected error message: \(message)")
@@ -368,7 +368,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing value selector",
 							"did not receive expected error message: \(message)")
@@ -405,7 +405,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Invalid value selector: ABC",
 							"did not receive expected error message: \(message)")
@@ -492,7 +492,7 @@ class CacheUnitTests : XCTestCase {
 			switch getStatusError! {
 				case MDSError.failed(let status):
 					// Expected error
-					XCTAssertEqual(status, HTTPEndpointStatus.badRequest, "did not receive expected error")
+					XCTAssertEqual(status, HTTPEndpointStatus.notFound, "did not receive expected error")
 
 				default:
 					// Other error
@@ -516,7 +516,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Invalid documentStorageID: \(documentStorageID)",
 							"did not receive expected error message")
@@ -552,7 +552,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(getValuesError, "did not receive error")
 		if getValuesError != nil {
 			switch getValuesError! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown cache: DEF", "did not receive expected error message")
 
@@ -588,7 +588,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(getValuesError, "did not receive error")
 		if getValuesError != nil {
 			switch getValuesError! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing valueNames", "did not receive expected error message")
 
@@ -624,7 +624,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(getValuesError, "did not receive error")
 		if getValuesError != nil {
 			switch getValuesError! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown cache valueName: DEF", "did not receive expected error message")
 
@@ -661,7 +661,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(getValuesError, "did not receive error")
 		if getValuesError != nil {
 			switch getValuesError! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown documentID: \(documentID)",
 							"did not receive expected error message")

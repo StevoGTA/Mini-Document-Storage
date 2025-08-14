@@ -346,7 +346,6 @@ class CMDSDocumentStorage {
 
 		static			SError								getUnknownCacheError(const CString& name);
 		static			SError								getUnknownCacheValueName(const CString& valueName);
-		static			SError								getUnknownCacheValueSelector(const CString& selector);
 
 		static			SError								getUnknownCollectionError(const CString& name);
 
