@@ -35,15 +35,15 @@ struct Server : ParsableCommand {
 	func run() {
 		// Setup HTTP Server
 		let	httpServer = VaporHTTPServer(port: 34343, maxBodySize: 1_000_000_000)
-
-		// Setup MDS
 		httpServer.setupMDSEndpoints()
+		httpServer.runDetached()
 
-		let	documentStorage :MDSDocumentStorageServer
+		// Setup MDSDocumentStorageServer
+		let	documentStorageServer :MDSDocumentStorageServer
 		switch self.documentStorage {
 			case .swiftEphemeral:
 				// Swift Ephemeral
-				documentStorage = MDSEphemeral()
+				documentStorageServer = MDSEphemeral()
 
 			case .swiftSQLite:
 				// Swift SQLite
@@ -51,11 +51,11 @@ struct Server : ParsableCommand {
 				let	applicationFolder = libraryFolder.folder(withSubPath: "Mini Document Storage Test Server (Swift)")
 				try! FileManager.default.create(applicationFolder)
 
-				documentStorage = try! MDSSQLite(in: applicationFolder)
+				documentStorageServer = try! MDSSQLite(in: applicationFolder)
 
 			case .cppEphemeral:
 				// C++ Ephemeral
-				documentStorage = MDSDocumentStorageServerObjC(documentStorageObjC: MDSEphemeralCpp())
+				documentStorageServer = MDSDocumentStorageServerObjC(documentStorageObjC: MDSEphemeralCpp())
 
 			case .cppSQLite:
 				// C++ SQLite
@@ -63,11 +63,11 @@ struct Server : ParsableCommand {
 				let	applicationFolder = libraryFolder.folder(withSubPath: "Mini Document Storage Test Server (Swift)")
 				try! FileManager.default.create(applicationFolder)
 
-				documentStorage =
+				documentStorageServer =
 						MDSDocumentStorageServerObjC(
 								documentStorageObjC: MDSSQLiteCpp(folderPath: applicationFolder.path))
 		}
-		MDSHTTPServices.register(documentStorage: documentStorage, for: "Sandbox")
+		MDSHTTPServices.register(documentStorage: documentStorageServer, for: "Sandbox")
 
 		// Loop forever
 		dispatchMain()

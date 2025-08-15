@@ -274,6 +274,9 @@
 		0AE25CD02B20019400EB2BDE /* CMDSSQLiteDocumentBacking.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A9C63832A19EC6E00800DBA /* CMDSSQLiteDocumentBacking.cpp */; };
 		0AE25CD12B20019700EB2BDE /* CMDSSQLiteDatabaseManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A9C63822A19EC6E00800DBA /* CMDSSQLiteDatabaseManager.cpp */; };
 		0AED2DBE29E61C2B00E07C13 /* VaporHTTPServer-4.x.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AE1646929DB9F47008B0814 /* VaporHTTPServer-4.x.swift */; };
+		0AFA09612E4EA9BD00A1F2D1 /* MDSDocumentStorage+Async.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AFA09602E4EA9B500A1F2D1 /* MDSDocumentStorage+Async.swift */; };
+		0AFA09632E4EA9BD00A1F2D1 /* MDSDocumentStorage+Async.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AFA09602E4EA9B500A1F2D1 /* MDSDocumentStorage+Async.swift */; };
+		0AFA09642E4EA9BD00A1F2D1 /* MDSDocumentStorage+Async.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AFA09602E4EA9B500A1F2D1 /* MDSDocumentStorage+Async.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -811,6 +814,7 @@
 		0ADC8E8828BED43600632551 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		0AE1646829DB9F47008B0814 /* VaporHTTPServer-3.x.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VaporHTTPServer-3.x.swift"; sourceTree = "<group>"; };
 		0AE1646929DB9F47008B0814 /* VaporHTTPServer-4.x.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VaporHTTPServer-4.x.swift"; sourceTree = "<group>"; };
+		0AFA09602E4EA9B500A1F2D1 /* MDSDocumentStorage+Async.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MDSDocumentStorage+Async.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1547,6 +1551,7 @@
 				0A5551ED27C5D8E7003E497B /* MDSDocument.swift */,
 				0A5551FD27C5D8E7003E497B /* MDSDocumentBackingCache.swift */,
 				0A5551EA27C5D8E7003E497B /* MDSDocumentStorage.swift */,
+				0AFA09602E4EA9B500A1F2D1 /* MDSDocumentStorage+Async.swift */,
 				0A5551EC27C5D8E7003E497B /* MDSHTTPServices.swift */,
 				0A5551EB27C5D8E7003E497B /* MDSIndex.swift */,
 			);
@@ -1950,7 +1955,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1320;
-				LastUpgradeCheck = 1320;
+				LastUpgradeCheck = 1640;
 				TargetAttributes = {
 					0A5551DE27C5CD13003E497B = {
 						CreatedOnToolsVersion = 13.2.1;
@@ -2048,6 +2053,7 @@
 				0A1F800527E40543007F8920 /* SQLiteOrderBy.swift in Sources */,
 				0A55527427C5DF6E003E497B /* InfoUnitTests.swift in Sources */,
 				0AAF04972A70DE8C000AF19F /* MDSEphemeral.swift in Sources */,
+				0AFA09642E4EA9BD00A1F2D1 /* MDSDocumentStorage+Async.swift in Sources */,
 				0A55526227C5DB5B003E497B /* HTTPEndpoint.swift in Sources */,
 				0A0C46B12BCF542D0028F319 /* Int64+Extensions.swift in Sources */,
 				0A687FE628EE59E200715660 /* MDSCache.swift in Sources */,
@@ -2112,6 +2118,7 @@
 				0A9668142818CA3C001CBC7B /* CollectionTransactionTests.swift in Sources */,
 				0A1F801027E40544007F8920 /* SQLiteTable.swift in Sources */,
 				0AAF04982A70DE8D000AF19F /* MDSEphemeral.swift in Sources */,
+				0AFA09632E4EA9BD00A1F2D1 /* MDSDocumentStorage+Async.swift in Sources */,
 				0A5E187227C71F5D0089E550 /* HTTPEndpointClient.swift in Sources */,
 				0A0C46B22BCF542E0028F319 /* Int64+Extensions.swift in Sources */,
 				0A5E185027C716FB0089E550 /* HTTPURLResponse+Extensions.swift in Sources */,
@@ -2178,6 +2185,7 @@
 				0A4313B228E3C1BC00CD1A6B /* MDSAssociation.swift in Sources */,
 				0A5E188727C71F9A0089E550 /* URLComponents+Extensions.swift in Sources */,
 				0A0C46B32BCF542E0028F319 /* Int64+Extensions.swift in Sources */,
+				0AFA09612E4EA9BD00A1F2D1 /* MDSDocumentStorage+Async.swift in Sources */,
 				0A87432F294AF48900DAB65D /* SQLiteLimit.swift in Sources */,
 				0A1F7FFE27E40528007F8920 /* MDSDocumentBackingCache.swift in Sources */,
 				0A1F801C27E40544007F8920 /* SQLiteTrigger.swift in Sources */,
@@ -2315,6 +2323,36 @@
 		0A5551D827C5CC55003E497B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -2322,6 +2360,34 @@
 		0A5551D927C5CC55003E497B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				DEAD_CODE_STRIPPING = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -2352,6 +2418,7 @@
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -2411,6 +2478,7 @@
 				CODE_SIGN_STYLE = Manual;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -2474,6 +2542,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -2542,6 +2611,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -2603,6 +2673,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -2671,6 +2742,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -2731,6 +2803,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -2795,6 +2868,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

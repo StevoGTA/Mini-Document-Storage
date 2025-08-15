@@ -150,11 +150,11 @@ public protocol MDSDocumentStorage {
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: - MDSDocumentStorage extension
-extension MDSDocumentStorage {
+public extension MDSDocumentStorage {
 
 	// MARK: Instance methods
 	//------------------------------------------------------------------------------------------------------------------
-	public func associationRegister(fromDocumentType :String, toDocumentType :String) throws {
+	func associationRegister(fromDocumentType :String, toDocumentType :String) throws {
 		// Register association
 		try associationRegister(
 				named: associationName(fromDocumentType: fromDocumentType, toDocumentType: toDocumentType),
@@ -162,7 +162,7 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func associationUpdate<T : MDSDocument, U : MDSDocument>(
+	func associationUpdate<T : MDSDocument, U : MDSDocument>(
 			updates :[(action :MDSAssociation.Update.Action, fromDocument :T, toDocument :U)]) throws {
 		// Update association
 		try associationUpdate(for: associationName(fromDocumentType: T.documentType, toDocumentType: U.documentType),
@@ -170,8 +170,7 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func associationIterate<T : MDSDocument, U : MDSDocument>(from document :T, proc :(_ document :U) -> Void)
-			throws {
+	func associationIterate<T : MDSDocument, U : MDSDocument>(from document :T, proc :(_ document :U) -> Void) throws {
 		// Register creation proc
 		register(documentCreateProc: { U(id: $0, documentStorage: $1) })
 
@@ -181,8 +180,7 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func associationIterate<T : MDSDocument, U : MDSDocument>(to document :U, proc :(_ document :T) -> Void)
-			throws {
+	func associationIterate<T : MDSDocument, U : MDSDocument>(to document :U, proc :(_ document :T) -> Void) throws {
 		// Register creation proc
 		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
 
@@ -192,8 +190,8 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func associationDocuments<T : MDSDocument, U : MDSDocument>(for name :String? = nil, from document :T) throws
-			-> [U] {
+	func associationDocuments<T : MDSDocument, U : MDSDocument>(for name :String? = nil, from document :T) throws ->
+			[U] {
 		// Register creation proc
 		register(documentCreateProc: { U(id: $0, documentStorage: $1) })
 
@@ -207,8 +205,7 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func associationDocuments<T : MDSDocument, U : MDSDocument>(for name :String? = nil, to document :U) throws
-			-> [T] {
+	func associationDocuments<T : MDSDocument, U : MDSDocument>(for name :String? = nil, to document :U) throws -> [T] {
 		// Register creation proc
 		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
 
@@ -222,7 +219,7 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func associationGetDetailValues(for name :String, fromDocumentIDs :[String], cacheName :String,
+	func associationGetDetailValues(for name :String, fromDocumentIDs :[String], cacheName :String,
 			cachedValueNames :[String]) throws -> [[String : Any]] {
 		// Get detail values
 		return try associationGetValues(for: name, action: .detail, fromDocumentIDs: fromDocumentIDs,
@@ -230,7 +227,7 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func associationGetSumValues(for name :String, fromDocumentIDs :[String], cacheName :String,
+	func associationGetSumValues(for name :String, fromDocumentIDs :[String], cacheName :String,
 			cachedValueNames :[String]) throws -> [String : Int64] {
 		// Get sum values
 		return try associationGetValues(for: name, action: .sum, fromDocumentIDs: fromDocumentIDs, cacheName: cacheName,
@@ -238,7 +235,7 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func cacheRegister(documentType :String, relevantProperties :[String]? = nil,
+	func cacheRegister(documentType :String, relevantProperties :[String]? = nil,
 			cacheValueInfos :[(valueInfo :MDSValueInfo, selector :String)]) throws {
 		// Register cache
 		try cacheRegister(name: documentType, documentType: documentType,
@@ -247,9 +244,9 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func collectionRegister(name :String, documentType :String, relevantProperties :[String],
-			isUpToDate :Bool = false, isIncludedSelector :String,
-			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc, checkRelevantProperties :Bool) throws {
+	func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool = false,
+			isIncludedSelector :String, documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc,
+			checkRelevantProperties :Bool) throws {
 		// Register collection
 		try collectionRegister(name: name, documentType: documentType, relevantProperties: relevantProperties,
 				isUpToDate: isUpToDate, isIncludedInfo: [:], isIncludedSelector: isIncludedSelector,
@@ -257,8 +254,8 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func collectionRegister<T : MDSDocument>(name :String, relevantProperties :[String],
-			isUpToDate :Bool = false, isIncludedInfo :[String : Any] = [:], isIncludedSelector :String,
+	func collectionRegister<T : MDSDocument>(name :String, relevantProperties :[String], isUpToDate :Bool = false,
+			isIncludedInfo :[String : Any] = [:], isIncludedSelector :String,
 			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool,
 			checkRelevantProperties :Bool = true) throws {
 		// Register creation proc
@@ -272,13 +269,13 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func collectionIterate<T : MDSDocument>(name :String, proc :(_ document : T) -> Void) throws {
+	func collectionIterate<T : MDSDocument>(name :String, proc :(_ document : T) -> Void) throws {
 		// Iterate collection
 		try collectionIterate(name: name, documentType: T.documentType, proc: { proc($0 as! T) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func collectionDocuments<T : MDSDocument>(for name :String) throws -> [T] {
+	func collectionDocuments<T : MDSDocument>(for name :String) throws -> [T] {
 		// Setup
 		var	documents = [T]()
 
@@ -289,7 +286,7 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentCreate(documentType :String, documentCreateInfos :[MDSDocument.CreateInfo]) throws ->
+	func documentCreate(documentType :String, documentCreateInfos :[MDSDocument.CreateInfo]) throws ->
 			[MDSDocument.OverviewInfo] {
 		// Create documents
 		return try documentCreate(documentType: documentType, documentCreateInfos: documentCreateInfos,
@@ -298,38 +295,35 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentCreate<T : MDSDocument>(proc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T) throws
-			-> T {
+	func documentCreate<T : MDSDocument>(proc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T) throws -> T {
 		// Create document
 		try documentCreate(documentType: T.documentType, documentCreateInfos: [MDSDocument.CreateInfo()],
 				proc: proc)[0].document as! T
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentCreate<T : MDSDocument>() throws -> T {
+	func documentCreate<T : MDSDocument>() throws -> T {
 		// Create document
 		try documentCreate(documentType: T.documentType, documentCreateInfos: [MDSDocument.CreateInfo()],
 				proc: { T(id: $0, documentStorage: $1) })[0].document as! T
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentIterate<T :MDSDocument>(documentIDs :[String],
-			proc :(_ document :T) -> Void) throws {
+	func documentIterate<T :MDSDocument>(for documentIDs :[String], proc :(_ document :T) -> Void) throws {
 		// Iterate documents
 		try documentIterate(for: T.documentType, documentIDs: documentIDs,
 				documentCreateProc: { T(id: $0, documentStorage: $1) }, proc: { proc($0 as! T) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentIterate<T :MDSDocument>(activeOnly: Bool,
-			proc :(_ document :T) -> Void) throws {
+	func documentIterate<T :MDSDocument>(activeOnly: Bool, proc :(_ document :T) -> Void) throws {
 		// Iterate documents
 		try documentIterate(for: T.documentType, activeOnly: activeOnly,
 				documentCreateProc: { T(id: $0, documentStorage: $1) }, proc: { proc($0 as! T) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documents<T :MDSDocument>(activeOnly :Bool = true) throws -> [T] {
+	func documents<T :MDSDocument>(activeOnly :Bool = true) throws -> [T] {
 		// Setup
 		var	documents = [T]()
 
@@ -341,7 +335,7 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func document<T : MDSDocument>(for documentID :String) throws -> T {
+	func document<T : MDSDocument>(for documentID :String) throws -> T {
 		// Retrieve document
 		var	document :T?
 		try documentIterate(for: T.documentType, documentIDs: [documentID],
@@ -351,7 +345,7 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documents<T :MDSDocument>(for documentIDs :[String]) throws -> [T] {
+	func documents<T :MDSDocument>(for documentIDs :[String]) throws -> [T] {
 		// Setup
 		var	documents = [T]()
 
@@ -363,8 +357,8 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentAttachmentAdd<T : MDSDocument>(to document :T, type :String, info :[String : Any],
-			content :Data) throws -> MDSDocument.AttachmentInfo {
+	func documentAttachmentAdd<T : MDSDocument>(to document :T, type :String, info :[String : Any], content :Data)
+			throws -> MDSDocument.AttachmentInfo {
 		// Setup
 		var	infoUse = info
 		infoUse["type"] = type
@@ -373,21 +367,21 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentAttachmentInfoByID(for document :MDSDocument) throws -> MDSDocument.AttachmentInfoByID {
+	func documentAttachmentInfoByID(for document :MDSDocument) throws -> MDSDocument.AttachmentInfoByID {
 		// Get document attachment info map
 		return try documentAttachmentInfoByID(for: type(of: document).documentType, documentID: document.id)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentAttachmentContent<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo)
-			throws -> Data {
+	func documentAttachmentContent<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo) throws
+			-> Data {
 		// Return document attachment content
 		return try documentAttachmentContent(for: T.documentType, documentID: document.id,
 				attachmentID: attachmentInfo.id)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentAttachmentUpdate<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
+	func documentAttachmentUpdate<T : MDSDocument>(for document :T, attachmentInfo :MDSDocument.AttachmentInfo,
 			updatedInfo :[String : Any], updatedContent :Data) throws {
 		// Setup
 		var	updatedInfoUse = updatedInfo
@@ -399,24 +393,23 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentAttachmentRemove<T : MDSDocument>(from document :T, attachmentInfo :MDSDocument.AttachmentInfo)
+	func documentAttachmentRemove<T : MDSDocument>(from document :T, attachmentInfo :MDSDocument.AttachmentInfo)
 			throws {
 		// Remove document attachment
 		try documentAttachmentRemove(for: T.documentType, documentID: document.id, attachmentID: attachmentInfo.id)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func indexRegister(name :String, documentType :String, relevantProperties :[String],
-			keysSelector :String, keysProc :@escaping MDSDocument.KeysProc) throws {
+	func indexRegister(name :String, documentType :String, relevantProperties :[String], keysSelector :String,
+			keysProc :@escaping MDSDocument.KeysProc) throws {
 		// Register index
 		try indexRegister(name: name, documentType: documentType, relevantProperties: relevantProperties,
 				keysInfo: [:], keysSelector: keysSelector, keysProc: keysProc)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func indexRegister<T : MDSDocument>(name :String, relevantProperties :[String],
-			keysInfo :[String : Any] = [:], keysSelector :String,
-			keysProc :@escaping (_ document :T, _ info :[String : Any]) -> [String]) throws {
+	func indexRegister<T : MDSDocument>(name :String, relevantProperties :[String], keysInfo :[String : Any] = [:],
+			keysSelector :String, keysProc :@escaping (_ document :T, _ info :[String : Any]) -> [String]) throws {
 		// Register creation proc
 		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
 
@@ -426,14 +419,14 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func indexIterate<T : MDSDocument>(name :String, keys :[String],
-			proc :(_ key :String, _ document :T) -> Void) throws {
+	func indexIterate<T : MDSDocument>(name :String, keys :[String], proc :(_ key :String, _ document :T) -> Void)
+			throws {
 		// Iterate index
 		try indexIterate(name: name, documentType: T.documentType, keys: keys, proc: { proc($0, $1 as! T) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func indexDocumentMap<T : MDSDocument>(for name :String, keys :[String]) throws -> [String : T] {
+	func indexDocumentMap<T : MDSDocument>(for name :String, keys :[String]) throws -> [String : T] {
 		// Setup
 		var	documentMap = [String : T]()
 
@@ -444,11 +437,11 @@ extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func infoString(for key :String) throws -> String? { try infoGet(for: [key])[key] }
+	func infoString(for key :String) throws -> String? { try infoGet(for: [key])[key] }
 
 	// MARK: Private methods
 	//------------------------------------------------------------------------------------------------------------------
-	func associationName(fromDocumentType :String, toDocumentType :String) -> String {
+	private func associationName(fromDocumentType :String, toDocumentType :String) -> String {
 		// Return
 		return "\(fromDocumentType)To\(toDocumentType.capitalizingFirstLetter)"
 	}
