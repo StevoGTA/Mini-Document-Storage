@@ -685,7 +685,7 @@ class CMDSEphemeral::Internals {
 																								(MDSCacheValueMap::
 																												KeyIsMatchProc)
 																										TSet<CString>::
-																												containsItem,
+																												doesNotContainItem,
 																								documentIDs);
 
 														return (!filteredCacheValueMap.isEmpty()) ?
@@ -726,7 +726,7 @@ class CMDSEphemeral::Internals {
 																							(TNArray<CString>::
 																											IsMatchProc)
 																									TSet<CString>::
-																											containsItem,
+																											doesNotContainItem,
 																							documentIDs);
 
 														return (!filteredDocumentIDs.isEmpty()) ?
@@ -744,7 +744,7 @@ class CMDSEphemeral::Internals {
 																								.filtered(
 																										(TNDictionary<CString>::KeyIsMatchProc)
 																												TSet<CString>::
-																														containsItem,
+																														doesNotContainItem,
 																										documentIDs);
 
 														return (!filteredDictionary.isEmpty()) ?
