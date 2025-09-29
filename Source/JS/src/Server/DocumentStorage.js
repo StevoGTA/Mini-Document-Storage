@@ -501,6 +501,8 @@ module.exports = class DocumentStorage {
 				for (let i = 0; i < documentsOrInfos.length; i++)
 					// Update document
 					documentsOrInfos[i].updateFromUpdate(infos[i]);
+				
+				return results;
 			}
 		} catch (error) {
 			// Error
