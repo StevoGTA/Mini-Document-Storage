@@ -219,7 +219,7 @@ module.exports = class DocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async cacheGetContent(documentStorageID, name, valueNames, documentIDs = null) {
+	async cacheGetStatus(documentStorageID, info) {
 		// Setup
 		let	statementPerformer = this.statementPerformerProc();
 		statementPerformer.use(documentStorageID);
@@ -231,7 +231,34 @@ module.exports = class DocumentStorage {
 			// Do it
 			let	{results} =
 						await statementPerformer.batch(true,
-								() => { return internals.caches.getContent(statementPerformer, name, valueNames,
+								() => { return internals.caches.getStatus(statementPerformer, info); });
+			
+			return results;
+		} catch (error) {
+			// Error
+			if (statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return [null, 'Invalid documentStorageID: ' + documentStorageID];
+			else
+				// Other
+				throw error;
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async cacheGetValues(documentStorageID, name, valueNames, documentIDs = null) {
+		// Setup
+		let	statementPerformer = this.statementPerformerProc();
+		statementPerformer.use(documentStorageID);
+
+		let	internals = this.internals(statementPerformer, documentStorageID);
+
+		// Catch errors
+		try {
+			// Do it
+			let	{results} =
+						await statementPerformer.batch(true,
+								() => { return internals.caches.getValues(statementPerformer, name, valueNames,
 										documentIDs); });
 			
 			return results;
@@ -239,7 +266,7 @@ module.exports = class DocumentStorage {
 			// Error
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
-				return 'Invalid documentStorageID: ' + documentStorageID;
+				return [null, null, 'Invalid documentStorageID: ' + documentStorageID];
 			else
 				// Other
 				throw error;
@@ -623,6 +650,33 @@ module.exports = class DocumentStorage {
 			if (statementPerformer.isUnknownDatabaseError(error))
 				// Unknown database
 				return 'Invalid documentStorageID: ' + documentStorageID;
+			else
+				// Other
+				throw error;
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async indexGetStatus(documentStorageID, info) {
+		// Setup
+		let	statementPerformer = this.statementPerformerProc();
+		statementPerformer.use(documentStorageID);
+
+		let	internals = this.internals(statementPerformer, documentStorageID);
+
+		// Catch errors
+		try {
+			// Do it
+			let	{results} =
+						await statementPerformer.batch(true,
+								() => { return internals.indexes.getStatus(statementPerformer, info); });
+			
+			return results;
+		} catch (error) {
+			// Error
+			if (statementPerformer.isUnknownDatabaseError(error))
+				// Unknown database
+				return [null, 'Invalid documentStorageID: ' + documentStorageID];
 			else
 				// Other
 				throw error;

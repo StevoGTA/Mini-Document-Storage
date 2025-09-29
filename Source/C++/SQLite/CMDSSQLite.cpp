@@ -2653,6 +2653,18 @@ TVResult<CMDSDocumentStorageServer::DocumentFullInfosWithTotalCount> CMDSSQLite:
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSSQLite::cacheGetStatus(const CString& name) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	OV<I<MDSCache> >	cache = mInternals->cacheGet(name);
+	if (!cache.hasValue())
+		return OV<SError>(getUnknownCacheError(name));
+
+	return OV<SError>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 TVResult<TArray<CMDSDocument::RevisionInfo> > CMDSSQLite::collectionGetDocumentRevisionInfos(const CString& name,
 		UInt32 startIndex, const OV<UInt32>& count) const
 //----------------------------------------------------------------------------------------------------------------------
@@ -2854,6 +2866,18 @@ TVResult<TArray<CMDSDocument::FullInfo> > CMDSSQLite::documentUpdate(const CStri
 			&documentUpdateInfo);
 
 	return TVResult<TArray<CMDSDocument::FullInfo> >(documentFullInfos);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+OV<SError> CMDSSQLite::indexGetStatus(const CString& name) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Validate
+	OV<I<MDSIndex> >	index = mInternals->indexGet(name);
+	if (!index.hasValue())
+		return OV<SError>(getUnknownIndexError(name));
+
+	return OV<SError>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------

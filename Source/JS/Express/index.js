@@ -38,6 +38,46 @@ export async function registerV1(request, response) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+// MARK: Get Status
+export async function getStatusV1(request, response) {
+	// Setup
+	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
+	let	name = decodeURIComponent(request.params.name);
+
+	// Catch errors
+	try {
+		// Get Index status
+		let	[upToDate, error] =
+					await request.app.locals.documentStorage.indexGetStatus(documentStorageID, name);
+		if (upToDate)
+			// Success
+			response
+					.status(200)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send();
+		else if (!error)
+			// Not up to date
+			response
+					.status(409)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send();
+		else
+			// Error
+			response
+					.status(400)
+					.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+					.send();
+	} catch (error) {
+		// Error
+		console.error(error.stack);
+		response
+				.status(500)
+				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+				.send();
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Document Infos
 export async function getDocumentsV1(request, response) {
 	// Setup

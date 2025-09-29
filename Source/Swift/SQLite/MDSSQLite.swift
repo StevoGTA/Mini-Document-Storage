@@ -1167,6 +1167,14 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func cacheGetStatus(for name :String) throws {
+		// Validate
+		guard cache(for: name) != nil else {
+			throw MDSDocumentStorageError.unknownCache(name: name)
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func collectionGetDocumentRevisionInfos(name :String, startIndex :Int, count :Int?) throws ->
 			[MDSDocument.RevisionInfo] {
 		// Setup
@@ -1358,6 +1366,14 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		return documentFullInfos
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func indexGetStatus(for name :String) throws {
+		// Validate
+		guard index(for: name) != nil else {
+			throw MDSDocumentStorageError.unknownIndex(name: name)
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
