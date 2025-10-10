@@ -16,17 +16,19 @@ class InternalUnitTests : XCTestCase {
 	func testSetInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.current
+		let	documentStorageID = UUID().uuidString
 
 		// Perform
-		let	error = config.httpEndpointClient.internalSet(documentStorageID: "ABC", info: ["abc": "abc"])
+		let	error = config.httpEndpointClient.internalSet(documentStorageID: documentStorageID, info: ["abc": "abc"])
 
 		// Evaluate results
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Invalid documentStorageID: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Invalid documentStorageID: \(documentStorageID)",
+							"did not receive expected error message")
 
 				default:
 					// Other error
@@ -47,7 +49,7 @@ class InternalUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing info", "did not receive expected error message")
 

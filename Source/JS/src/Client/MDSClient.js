@@ -467,7 +467,32 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async cacheGetValue(name, valueNames, documents = null, documentStorageID = null) {
+	async cacheGetStatus(name, documentStorageID = null) {
+		// Setup
+		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
+
+		let	url =
+					this.urlBase + '/v1/cache/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name);
+		let	options = {method: 'HEAD', headers: this.headers};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
+
+		// Handle results
+		if (response.ok)
+			// Up-to-date
+			return true;
+		else if (response.status == 409)
+			// Not up-to-date
+			return false;
+		else
+			// Error
+			throw new Error('HTTP response: ' + response.status);
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async cacheGetValues(name, valueNames, documents = null, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 		let	valueNameQuery = valueNames.map(valueName => 'valueName=' + encodeURIComponent(valueName)).join('&');
@@ -575,12 +600,11 @@ class MDSClient {
 					// Some error, but no additional info
 					throw new Error('HTTP response: ' + response.status);
 
-				// Decode header
-				let	contentRange = response.headers.get('content-range');
-				let	contentRangeParts = (contentRange || '').split('/');
-				if (contentRangeParts.length == 2)
+				// Decode content range
+				let	contentRange = decodeContentRange(response);
+				if (contentRange.size != '*')
 					// Have count
-					return parseInt(contentRangeParts[1]);
+					return contentRange.size;
 				else
 					// Don't have count
 					throw new Error('Unable to get count from response');
@@ -617,6 +641,51 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	async collectionGetAllDocumentInfos(name, documentStorageID = null) {
+		// Setup
+		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
+		let	url =
+					this.urlBase + '/v1/collection/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name) + '?fullInfo=0';
+		let	options = {headers: this.headers};
+
+		// Loop until up-to-date and have all infos
+		var	documentInfos = []
+		var	startIndex = 0;
+		while (true) {
+			// Compose URL
+			let	urlUse = url + '&startIndex=' + startIndex;
+
+			// Queue the call
+			let	response = await this.queue.add(() => fetch(urlUse, options));
+
+			// Handle results
+			if (response.status != 409) {
+				// Process response
+				await processResponse(response);
+
+				let	infos = await response.json();
+				documentInfos = documentInfos.concat(infos);
+
+				// Decode content range
+				let	contentRange = decodeContentRange(response);
+				let	range = contentRange.range;
+				if (range == "*")
+					// No range
+					return documentInfos;
+				
+				let	nextStartIndex = contentRange.rangeEnd + 1;
+				if (nextStartIndex == contentRange.size)
+					// All done
+					return documentInfos;
+				
+				// Prepare next request
+				startIndex = nextStartIndex;
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	async collectionGetDocuments(name, startIndex, count, documentCreationProc, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
@@ -643,6 +712,51 @@ class MDSClient {
 				let	infos = await response.json();
 
 				return infos.map(info => documentCreationProc(info));
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async collectionGetAllDocuments(name, documentCreationProc, documentStorageID = null) {
+		// Setup
+		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
+		let	url =
+					this.urlBase + '/v1/collection/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name) + '?fullInfo=1&count=1000';
+		let	options = {headers: this.headers};
+
+		// Loop until up-to-date and have all infos
+		var	documents = []
+		var	startIndex = 0;
+		while (true) {
+			// Compose URL
+			let	urlUse = url + '&startIndex=' + startIndex;
+
+			// Queue the call
+			let	response = await this.queue.add(() => fetch(urlUse, options));
+
+			// Handle results
+			if (response.status != 409) {
+				// Process response
+				await processResponse(response);
+
+				let	infos = await response.json();
+				documents = documents.concat(infos.map(info => documentCreationProc(info)));
+
+				// Decode content range
+				let	contentRange = decodeContentRange(response);
+				let	range = contentRange.range;
+				if (range == "*")
+					// No range
+					return documents;
+				
+				let	nextStartIndex = contentRange.rangeEnd + 1;
+				if (nextStartIndex == contentRange.size)
+					// All done
+					return documents;
+				
+				// Prepare next request
+				startIndex = nextStartIndex;
 			}
 		}
 	}
@@ -705,12 +819,11 @@ class MDSClient {
 			// Some error, but no additional info
 			throw new Error('HTTP response: ' + response.status);
 
-		// Decode header
-		let	contentRange = response.headers.get('content-range');
-		let	contentRangeParts = (contentRange || '').split('/');
-		if (contentRangeParts.length == 2)
+		// Decode content range
+		let	contentRange = decodeContentRange(response);
+		if (contentRange.size != '*')
 			// Have count
-			return parseInt(contentRangeParts[1]);
+			return contentRange.size;
 		else
 			// Don't have count
 			throw new Error('Unable to get count from response');
@@ -804,10 +917,11 @@ class MDSClient {
 			if (documentsBatch.length > 0) {
 				// More Documents
 				if (totalDocumentCount == null) {
-					// Retrieve total count from header
-					let	contentRange = response.headers.get('content-range');
-					let	contentRangeParts = (contentRange || '').split('/');
-					totalDocumentCount = (contentRangeParts.length == 2) ? parseInt(contentRangeParts[1]) : null;
+					// Decode content range
+					let	contentRange = decodeContentRange(response);
+					if (contentRange.size != '*')
+						// Havea count
+						totalDocumentCount = contentRange.size;
 				}
 
 				// Check if have proc
@@ -873,7 +987,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentAddAttachment(documentType, document, info, content, documentStorageID = null) {
+	async documentAttachmentAdd(documentType, document, info, content, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -926,7 +1040,7 @@ class MDSClient {
 	static	documentGetAttachmentTypeJSON = 'application/json';
 	static	documentGetAttachmentTypeText = 'text/plain';
 	static	documentGetAttachmentTypeXML = 'text/xml';
-	async documentGetAttachment(documentType, document, attachmentID, type, documentStorageID = null) {
+	async documentAttachmentGet(documentType, document, attachmentID, type, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -948,7 +1062,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentUpdateAttachment(documentType, document, attachmentID, info, content, documentStorageID = null) {
+	async documentAttachmentUpdate(documentType, document, attachmentID, info, content, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -991,7 +1105,7 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentRemoveAttachment(documentType, document, attachmentID, documentStorageID = null) {
+	async documentAttachmentRemove(documentType, document, attachmentID, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
@@ -1035,6 +1149,31 @@ class MDSClient {
 		// Queue the call
 		let	response = await this.queue.add(() => fetch(url, options));
 		await processResponse(response);
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	async indexGetStatus(name, documentStorageID = null) {
+		// Setup
+		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
+
+		let	url =
+					this.urlBase + '/v1/index/' + encodeURIComponent(documentStorageIDUse) + '/' +
+							encodeURIComponent(name);
+		let	options = {method: 'HEAD', headers: this.headers};
+
+		// Queue the call
+		let	response = await this.queue.add(() => fetch(url, options));
+
+		// Handle results
+		if (response.ok)
+			// Up-to-date
+			return true;
+		else if (response.status == 409)
+			// Not up-to-date
+			return false;
+		else
+			// Error
+			throw new Error('HTTP response: ' + response.status);
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1172,4 +1311,32 @@ async function processResponse(response) {
 	}
 }
 
+//----------------------------------------------------------------------------------------------------------------------
+function decodeContentRange(response) {
+	// Get content range
+	let	contentRange = response.headers.get('content-range');
+	if (!contentRange)
+		// No content range
+		throw new Error('No content-range in response headers');
+
+	// Decode content range
+	let	result = contentRange.match(/(\w+)[ ](.+)\/(.+)/);
+	if (result.length != 4)
+		// Unable to decode
+		throw new Error('Unable to decode content range from response');
+
+	// Compose info
+	let	range = result[2];
+	let	size = result[3];
+
+	var	info = {'unit': result[1], 'range': range, 'size': (size != '*') ? parseInt(size) : size};
+	if (range != '*') {
+		// Decode range components
+		let	rangeParts = range.split('-');
+		info['rangeStart'] = parseInt(rangeParts[0]);
+		info['rangeEnd'] = parseInt(rangeParts[1]);
+	}
+
+	return info;
+}
 module.exports = MDSClient;

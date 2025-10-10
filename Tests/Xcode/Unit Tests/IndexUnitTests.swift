@@ -16,19 +16,21 @@ class IndexUnitTests : XCTestCase {
 	func testRegisterInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.current
+		let	documentStorageID = UUID().uuidString
 
 		// Perform
 		let	error =
-					config.httpEndpointClient.indexRegister(documentStorageID: "ABC", name: "ABC", documentType: "ABC",
-							keysSelector: "keysForDocumentProperty()")
+					config.httpEndpointClient.indexRegister(documentStorageID: documentStorageID, name: "ABC",
+							documentType: "ABC", keysSelector: "keysForDocumentProperty()")
 
 		// Evaluate results
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Invalid documentStorageID: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Invalid documentStorageID: \(documentStorageID)",
+							"did not receive expected error message")
 
 				default:
 					// Other error
@@ -63,7 +65,7 @@ class IndexUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing name", "did not receive expected error message: \(message)")
 
@@ -100,7 +102,7 @@ class IndexUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing documentType",
 							"did not receive expected error message: \(message)")
@@ -138,7 +140,7 @@ class IndexUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing relevantProperties",
 							"did not receive expected error message: \(message)")
@@ -176,7 +178,7 @@ class IndexUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing keysSelector",
 							"did not receive expected error message: \(message)")
@@ -214,7 +216,7 @@ class IndexUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing keysSelectorInfo",
 							"did not receive expected error message: \(message)")
@@ -250,13 +252,68 @@ class IndexUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testGetDocumentInfosInvalidDocumentStorageID() throws {
+	func testGetStatusInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.current
 
 		// Perform
+		let	(isUpToDate, error) =
+					config.httpEndpointClient.indexGetStatus(documentStorageID: UUID().uuidString, name: "ABC")
+
+		// Evaluate results
+		XCTAssertNil(isUpToDate, "received isUpToDate")
+
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.failed(let status):
+					// Expected error
+					XCTAssertEqual(status, HTTPEndpointStatus.badRequest, "did not receive expected error")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testGetStatusUnknownName() throws {
+		// Setup
+		let	config = Config.current
+		let	name = UUID().uuidString
+
+		// Perform
+		let	(isUpToDate, error) =
+					config.httpEndpointClient.indexGetStatus(documentStorageID: config.documentStorageID, name: name)
+
+		// Evaluate results
+		XCTAssertNil(isUpToDate, "received isUpToDate")
+
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.failed(let status):
+					// Expected error
+					XCTAssertEqual(status, HTTPEndpointStatus.notFound, "did not receive expected error")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testGetDocumentInfosInvalidDocumentStorageID() throws {
+		// Setup
+		let	config = Config.current
+		let	documentStorageID = UUID().uuidString
+
+		// Perform
 		let	(isUpToDate, info, error) =
-					config.httpEndpointClient.indexGetDocumentInfos(documentStorageID: "ABC", name: "ABC", keys: ["ABC"])
+					config.httpEndpointClient.indexGetDocumentInfos(documentStorageID: documentStorageID, name: "ABC",
+							keys: ["ABC"])
 
 		// Evaluate results
 		XCTAssertNil(isUpToDate, "received isUpToDate")
@@ -266,9 +323,10 @@ class IndexUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Invalid documentStorageID: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Invalid documentStorageID: \(documentStorageID)",
+							"did not receive expected error message")
 
 				default:
 					// Other error
@@ -296,7 +354,7 @@ class IndexUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown index: \(name)",
 							"did not receive expected error message: \(message)")
@@ -312,10 +370,12 @@ class IndexUnitTests : XCTestCase {
 	func testGetDocumentsInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.current
+		let	documentStorageID = UUID().uuidString
 
 		// Perform
 		let	(isUpToDate, info, error) =
-					config.httpEndpointClient.indexGetDocuments(documentStorageID: "ABC", name: "ABC", keys: ["ABC"])
+					config.httpEndpointClient.indexGetDocuments(documentStorageID: documentStorageID, name: "ABC",
+							keys: ["ABC"])
 
 		// Evaluate results
 		XCTAssertNil(isUpToDate, "received isUpToDate")
@@ -325,9 +385,10 @@ class IndexUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Invalid documentStorageID: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Invalid documentStorageID: \(documentStorageID)",
+							"did not receive expected error message")
 
 				default:
 					// Other error
@@ -355,7 +416,7 @@ class IndexUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown index: \(name)",
 							"did not receive expected error message: \(message)")

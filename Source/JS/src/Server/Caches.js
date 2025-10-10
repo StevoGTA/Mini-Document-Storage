@@ -123,6 +123,34 @@ module.exports = class Caches {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	async getStatus(statementPerformer, name) {
+		// Setup
+		let	internals = this.internals;
+
+		// Get cache
+		let	[cache, cacheError] = await this.getForName(statementPerformer, name);
+		if (cacheError)
+			// Error
+			return [null, cacheError];
+		
+		// Get document type last revision
+		let	documentTypeLastRevision = await internals.documents.getLastRevision(statementPerformer, cache.type);
+
+		// Check if up to date
+		if (cache.lastDocumentRevision == documentTypeLastRevision)
+			// Up-to-date
+			return [true, null];
+		else if (documentTypeLastRevision) {
+			// Update
+			await this.updateCache(statementPerformer, cache);
+
+			return [false, null];
+		} else
+			// No document of this type yet
+			return [true, null];
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	async getForDocumentType(statementPerformer, documentType) {
 		// Catch errors
 		try {
@@ -185,7 +213,7 @@ module.exports = class Caches {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getContent(statementPerformer, name, valueNames, documentIDs = null) {
+	async getValues(statementPerformer, name, valueNames, documentIDs = null) {
 		// Validate
 		if (!name)
 			return [null, null, 'Missing name'];
@@ -227,14 +255,24 @@ module.exports = class Caches {
 			
 			// Check if have documentIDs
 			var	mySQLResults;
-			if (documentIDs != null)
+			if (documentIDs != null) {
 				// Have documentIDs
 				mySQLResults =
 						await statementPerformer.select(true, cache.table, tableColumns,
 								internals.documents.getInnerJoinForDocumentInfo(statementPerformer, cache.type,
 										cache.table.idTableColumn),
 								statementPerformer.where(documentIDTableColumn, documentIDs));
-			else
+				
+				// Validate all documentIDs
+				let	documentIDsSet = new Set(documentIDs);
+				for (let result of mySQLResults)
+					// Remove documentID
+					documentIDsSet.delete(result.documentID)
+				
+				if (documentIDsSet.size > 0)
+					// Unknown documentID
+					return [null, null, 'Unknown documentID: ' + documentIDsSet.values().next().value];
+			} else
 				// Don't have documentIDs
 				mySQLResults =
 						await statementPerformer.select(true, cache.table, tableColumns,

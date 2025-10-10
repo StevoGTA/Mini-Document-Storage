@@ -45,6 +45,45 @@ exports.registerV1 = async (event) => {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+// MARK: Get Status
+exports.getStatusV1 = async (event) => {
+	// Setup
+	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
+	let	name = decodeURIComponent(event.pathParameters.name);
+
+	// Catch errors
+	try {
+		// Get Document count
+		let	[upToDate, error] = await documentStorage.indexGetStatus(documentStorageID, name);
+		if (upToDate)
+			// Success
+			return {
+					statusCode: 200,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+			};
+		else if (!error)
+			// Not up to date
+			return {
+					statusCode: 409,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+			};
+		else
+			// Error
+			return {
+					statusCode: 400,
+					headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+			};
+	} catch (error) {
+		// Error
+		return {
+				statusCode: 500,
+				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+				body: 'Error: ' + error,
+		};
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 // MARK: Get Document Infos
 exports.getDocumentsV1 = async (event) => {
 	// Setup

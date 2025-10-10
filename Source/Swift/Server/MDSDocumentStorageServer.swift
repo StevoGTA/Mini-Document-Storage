@@ -22,6 +22,8 @@ protocol MDSDocumentStorageServer : MDSDocumentStorageCore, MDSDocumentStorage {
 	func associationGetDocumentFullInfos(name :String, to toDocumentID :String, startIndex :Int, count :Int?) throws ->
 			(totalCount :Int, documentFullInfos :[MDSDocument.FullInfo])
 
+	func cacheGetStatus(for name :String) throws
+
 	func collectionGetDocumentRevisionInfos(name :String, startIndex :Int, count :Int?) throws ->
 			[MDSDocument.RevisionInfo]
 	func collectionGetDocumentFullInfos(name :String, startIndex :Int, count :Int?) throws -> [MDSDocument.FullInfo]
@@ -37,6 +39,7 @@ protocol MDSDocumentStorageServer : MDSDocumentStorageCore, MDSDocumentStorage {
 	func documentUpdate(for documentType :String, documentUpdateInfos :[MDSDocument.UpdateInfo]) throws ->
 			[MDSDocument.FullInfo]
 
+	func indexGetStatus(for name :String) throws
 	func indexGetDocumentRevisionInfos(name :String, keys :[String]) throws -> [String : MDSDocument.RevisionInfo]
 	func indexGetDocumentFullInfos(name :String, keys :[String]) throws -> [String : MDSDocument.FullInfo]
 }

@@ -24,7 +24,6 @@ public enum MDSDocumentStorageError : Error {
 
 	case unknownCache(name :String)
 	case unknownCacheValueName(valueName :String)
-	case unknownCacheValueSelector(selector :String)
 
 	case unknownCollection(name :String)
 
@@ -55,7 +54,6 @@ extension MDSDocumentStorageError : CustomStringConvertible, LocalizedError {
 
 							case .unknownCache(let name):					return "Unknown cache: \(name)"
 							case .unknownCacheValueName(let valueName):		return "Unknown cache valueName: \(valueName)"
-							case .unknownCacheValueSelector(let selector):	return "Invalid value selector: \(selector)"
 
 							case .unknownCollection(let name):				return "Unknown collection: \(name)"
 

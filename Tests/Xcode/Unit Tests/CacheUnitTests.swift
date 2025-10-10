@@ -16,10 +16,11 @@ class CacheUnitTests : XCTestCase {
 	func testRegisterInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.current
+		let	documentStorageID = UUID().uuidString
 
 		// Perform
 		let	error =
-					config.httpEndpointClient.cacheRegister(documentStorageID: "ABC", name: "ABC",
+					config.httpEndpointClient.cacheRegister(documentStorageID: documentStorageID, name: "ABC",
 							documentType: Child.documentType,
 							valueInfos: [(MDSValueInfo(name: "ABC", type: .integer), "integerValueForProperty()")])
 
@@ -27,9 +28,10 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
-					XCTAssertEqual(message, "Invalid documentStorageID: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Invalid documentStorageID: \(documentStorageID)",
+							"did not receive expected error message")
 
 				default:
 					// Other error
@@ -67,7 +69,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing name", "did not receive expected error message: \(message)")
 
@@ -107,7 +109,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing documentType",
 							"did not receive expected error message: \(message)")
@@ -148,7 +150,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing relevantProperties",
 							"did not receive expected error message: \(message)")
@@ -184,7 +186,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing valueInfos", "did not receive expected error message: \(message)")
 
@@ -220,7 +222,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing valueInfos", "did not receive expected error message: \(message)")
 
@@ -256,7 +258,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing value name", "did not receive expected error message: \(message)")
 
@@ -292,7 +294,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing value valueType",
 							"did not receive expected error message: \(message)")
@@ -329,7 +331,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Invalid value valueType: ABC",
 							"did not receive expected error message: \(message)")
@@ -366,7 +368,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing value selector",
 							"did not receive expected error message: \(message)")
@@ -403,7 +405,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Invalid value selector: ABC",
 							"did not receive expected error message: \(message)")
@@ -438,21 +440,23 @@ class CacheUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testGetValuesInvalidDocumentStorageID() throws {
+	func testGetStatusInvalidDocumentStorageID() throws {
 		// Setup
 		let	config = Config.current
 
 		// Perform
-		let	(_, error) =
-					config.httpEndpointClient.cacheGetValues(documentStorageID: "ABC", name: "ABC", valueNames: ["ABC"])
+		let	(isUpToDate, error) =
+					config.httpEndpointClient.cacheGetStatus(documentStorageID: UUID().uuidString, name: "ABC")
 
 		// Evaluate results
+		XCTAssertNil(isUpToDate, "received isUpToDate")
+
 		XCTAssertNotNil(error, "did not receive error")
 		if error != nil {
 			switch error! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.failed(let status):
 					// Expected error
-					XCTAssertEqual(message, "Invalid documentStorageID: ABC", "did not receive expected error message")
+					XCTAssertEqual(status, HTTPEndpointStatus.badRequest, "did not receive expected error")
 
 				default:
 					// Other error
@@ -462,7 +466,70 @@ class CacheUnitTests : XCTestCase {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func testGetValuesInvalidName() throws {
+	func testGetStatusUnknownName() throws {
+		// Setup
+		let	config = Config.current
+
+		// Register
+		let	registerError =
+					config.httpEndpointClient.cacheRegister(documentStorageID: config.documentStorageID,
+							name: UUID().uuidString, documentType: Child.documentType, relevantProperties: ["size"],
+							valueInfos: [(MDSValueInfo(name: "size", type: .integer), "integerValueForProperty()")])
+
+		// Evaluate results
+		XCTAssertNil(registerError, "register received error: \(registerError!)")
+		guard registerError == nil else { return }
+
+		// Get values
+		let	(getStatusIsUpToDate, getStatusError) =
+					config.httpEndpointClient.cacheGetStatus(documentStorageID: config.documentStorageID, name: "DEF")
+
+		// Evaluate results
+		XCTAssertNil(getStatusIsUpToDate, "received isUpToDate")
+
+		XCTAssertNotNil(getStatusError, "did not receive error")
+		if getStatusError != nil {
+			switch getStatusError! {
+				case MDSError.failed(let status):
+					// Expected error
+					XCTAssertEqual(status, HTTPEndpointStatus.notFound, "did not receive expected error")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(getStatusError!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testGetValuesInvalidDocumentStorageID() throws {
+		// Setup
+		let	config = Config.current
+		let	documentStorageID = UUID().uuidString
+
+		// Perform
+		let	(_, error) =
+					config.httpEndpointClient.cacheGetValues(documentStorageID: documentStorageID, name: "ABC",
+							valueNames: ["ABC"])
+
+		// Evaluate results
+		XCTAssertNotNil(error, "did not receive error")
+		if error != nil {
+			switch error! {
+				case MDSError.badRequest(let message):
+					// Expected error
+					XCTAssertEqual(message, "Invalid documentStorageID: \(documentStorageID)",
+							"did not receive expected error message")
+
+				default:
+					// Other error
+					XCTFail("received unexpected error: \(error!)")
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func testGetValuesUnknownName() throws {
 		// Setup
 		let	config = Config.current
 
@@ -485,7 +552,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(getValuesError, "did not receive error")
 		if getValuesError != nil {
 			switch getValuesError! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown cache: DEF", "did not receive expected error message")
 
@@ -521,7 +588,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(getValuesError, "did not receive error")
 		if getValuesError != nil {
 			switch getValuesError! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.badRequest(let message):
 					// Expected error
 					XCTAssertEqual(message, "Missing valueNames", "did not receive expected error message")
 
@@ -539,8 +606,8 @@ class CacheUnitTests : XCTestCase {
 
 		// Register
 		let	registerError =
-					config.httpEndpointClient.cacheRegister(documentStorageID: config.documentStorageID, name: "ABC",
-							documentType: Child.documentType, relevantProperties: ["size"],
+					config.httpEndpointClient.cacheRegister(documentStorageID: config.documentStorageID,
+							name: UUID().uuidString, documentType: Child.documentType, relevantProperties: ["size"],
 							valueInfos: [(MDSValueInfo(name: "size", type: .integer), "integerValueForProperty()")])
 
 		// Evaluate results
@@ -557,7 +624,7 @@ class CacheUnitTests : XCTestCase {
 		XCTAssertNotNil(getValuesError, "did not receive error")
 		if getValuesError != nil {
 			switch getValuesError! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
 					XCTAssertEqual(message, "Unknown cache valueName: DEF", "did not receive expected error message")
 
@@ -572,6 +639,7 @@ class CacheUnitTests : XCTestCase {
 	func testGetValuesInvalidDocumentID() throws {
 		// Setup
 		let	config = Config.current
+		let	documentID = UUID().base64EncodedString
 
 		// Register
 		let	registerError =
@@ -587,15 +655,16 @@ class CacheUnitTests : XCTestCase {
 		// Get values
 		let	(_, getValuesError) =
 					config.httpEndpointClient.cacheGetValues(documentStorageID: config.documentStorageID, name: "ABC",
-							valueNames: ["size"], documentIDs: ["ABC"])
+							valueNames: ["size"], documentIDs: [documentID])
 
 		// Evaluate results
 		XCTAssertNotNil(getValuesError, "did not receive error")
 		if getValuesError != nil {
 			switch getValuesError! {
-				case MDSError.invalidRequest(let message):
+				case MDSError.notFound(let message):
 					// Expected error
-					XCTAssertEqual(message, "Unknown documentID: ABC", "did not receive expected error message")
+					XCTAssertEqual(message, "Unknown documentID: \(documentID)",
+							"did not receive expected error message")
 
 				default:
 					// Other error
@@ -620,7 +689,7 @@ class CacheUnitTests : XCTestCase {
 		guard registerError == nil else { return }
 
 		// Create document
-		let	documentID = UUID().uuidString
+		let	documentID = UUID().base64EncodedString
 		let	(_, childCreateError) =
 					config.httpEndpointClient.documentCreate(documentStorageID: config.documentStorageID,
 							documentType: Child.documentType,
