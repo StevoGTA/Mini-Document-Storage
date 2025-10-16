@@ -457,11 +457,11 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func update(valueInfoByID :[Int64 : [/* Name */ String : Any]], removedIDs :[Int64],
+		static func update(valueInfoByID :[Int64 : [/* Name */ String : Any]]?, removedIDs :[Int64],
 				in table :SQLiteTable) {
 			// Update
 			if !removedIDs.isEmpty { table.deleteRows(self.idTableColumn, values: removedIDs) }
-			valueInfoByID.forEach() {
+			valueInfoByID?.forEach() {
 				// Insert or replace row for this id
 				table.insertOrReplaceRow(
 						[(self.idTableColumn, $0.key)] + $0.value.map({ (table.tableColumn(for: $0.key), $0.value) }))
@@ -620,10 +620,10 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func update(includedIDs :[Int64], notIncludedIDs :[Int64], in table :SQLiteTable) {
+		static func update(includedIDs :[Int64]?, notIncludedIDs :[Int64]?, in table :SQLiteTable) {
 			// Update
-			if !notIncludedIDs.isEmpty { table.deleteRows(self.idTableColumn, values: notIncludedIDs) }
-			if !includedIDs.isEmpty { table.insertOrReplaceRows(self.idTableColumn, values: includedIDs) }
+			if !(notIncludedIDs?.isEmpty ?? true) { table.deleteRows(self.idTableColumn, values: notIncludedIDs!) }
+			if !(includedIDs?.isEmpty ?? true) { table.insertOrReplaceRows(self.idTableColumn, values: includedIDs!) }
 		}
 	}
 
@@ -1183,13 +1183,13 @@ class MDSSQLiteDatabaseManager {
 		static func key(for resultsRow :SQLiteResultsRow) -> String { resultsRow.text(for: self.keyTableColumn)! }
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func update(keysInfos :[(keys :[String], id :Int64)], removedIDs :[Int64], in table :SQLiteTable) {
+		static func update(keysInfos :[(keys :[String], id :Int64)]?, removedIDs :[Int64]?, in table :SQLiteTable) {
 			// Setup
-			let	idsToRemove = removedIDs + keysInfos.map({ $0.id })
+			let	idsToRemove = (removedIDs ?? []) + (keysInfos?.map({ $0.id }) ?? [])
 
 			// Update
 			if !idsToRemove.isEmpty { table.deleteRows(self.idTableColumn, values: idsToRemove) }
-			keysInfos.forEach() { keysInfo in keysInfo.keys.forEach() {
+			keysInfos?.forEach() { keysInfo in keysInfo.keys.forEach() {
 				// Insert this key
 				table.insertRow([
 									(tableColumn: self.keyTableColumn, value: $0),
@@ -2311,11 +2311,10 @@ class MDSSQLiteDatabaseManager {
 			// Update Caches table
 			CachesTable.update(name: name, lastRevision: lastRevision!, in: self.cachesTable)
 		}
-		if (valueInfoByID != nil) || !removedIDs.isEmpty {
-			// Update Cache contents table
-			CacheContentsTable.update(valueInfoByID: valueInfoByID ?? [:], removedIDs: removedIDs,
-					in: self.cacheTablesByName.value(for: name)!)
-		}
+
+		// Update Cache contents table
+		CacheContentsTable.update(valueInfoByID: valueInfoByID, removedIDs: removedIDs,
+				in: self.cacheTablesByName.value(for: name)!)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -2325,11 +2324,10 @@ class MDSSQLiteDatabaseManager {
 			// Update Collections table
 			CollectionsTable.update(name: name, lastRevision: lastRevision!, in: self.collectionsTable)
 		}
-		if (includedIDs != nil) || (notIncludedIDs != nil) {
-			// Update Collection contents table
-			CollectionContentsTable.update(includedIDs: includedIDs ?? [], notIncludedIDs: notIncludedIDs ?? [],
-					in: self.collectionTablesByName.value(for: name)!)
-		}
+
+		// Update Collection contents table
+		CollectionContentsTable.update(includedIDs: includedIDs, notIncludedIDs: notIncludedIDs,
+				in: self.collectionTablesByName.value(for: name)!)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -2390,10 +2388,9 @@ class MDSSQLiteDatabaseManager {
 			// Update Indexes table
 			IndexesTable.update(name: name, lastRevision: lastRevision!, in: self.indexesTable)
 		}
-		if (keysInfos != nil) || (removedIDs != nil) {
-			// Update Index contents table
-			IndexContentsTable.update(keysInfos: keysInfos ?? [], removedIDs: removedIDs ?? [],
-					in: self.indexTablesByName.value(for: name)!)
-		}
+
+		// Update Index contents table
+		IndexContentsTable.update(keysInfos: keysInfos, removedIDs: removedIDs,
+				in: self.indexTablesByName.value(for: name)!)
 	}
 }
