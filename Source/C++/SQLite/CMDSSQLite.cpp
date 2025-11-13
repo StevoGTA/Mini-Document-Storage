@@ -1707,9 +1707,6 @@ OV<SError> CMDSSQLite::cacheRegister(const CString& name, const CString& documen
 	mInternals->mCacheByName.set(name, cache);
 	mInternals->mCachesByDocumentType.add(documentType, cache);
 
-	// Bring up to date
-	mInternals->cacheUpdate(cache, mInternals->getUpdatesInfo(documentType, lastRevision));
-
 	return OV<SError>();
 }
 
@@ -1731,6 +1728,9 @@ TVResult<TArray<CDictionary> > CMDSSQLite::cacheGetValues(const CString& name, c
 		if (!(*cache)->hasValueInfo(*iterator))
 			return TVResult<TArray<CDictionary> >(getUnknownCacheValueName(*iterator));
 	}
+
+	// Bring up to date
+	mInternals->cacheUpdate(cache, mInternals->getUpdatesInfo(documentType, lastRevision));
 
 	return mInternals->mDatabaseManager.cacheGetValues(*cache, valueNames, documentIDs);
 }
@@ -1760,11 +1760,6 @@ OV<SError> CMDSSQLite::collectionRegister(const CString& name, const CString& do
 	mInternals->mCollectionByName.set(name, collection);
 	mInternals->mCollectionsByDocumentType.add(documentType, collection);
 
-	// Check if is up to date
-	if (!isUpToDate)
-		// Bring up to date
-		mInternals->collectionUpdate(collection, mInternals->getUpdatesInfo(documentType, lastRevision));
-
 	return OV<SError>();
 }
 
@@ -1780,7 +1775,8 @@ TVResult<UInt32> CMDSSQLite::collectionGetDocumentCount(const CString& name) con
 		return TVResult<UInt32>(getIllegalInBatchError());
 
 	// Bring up to date
-	mInternals->collectionUpdate(*collection, mInternals->getUpdatesInfo((*collection)->getDocumentType(), 0));
+	mInternals->collectionUpdate(*collection, mInternals->getUpdatesInfo((*collection)->getDocumentType(),
+			(*collection)->getLastRevision()));
 
 	return TVResult<UInt32>(mInternals->mDatabaseManager.collectionGetDocumentCount(name));
 }
@@ -1798,7 +1794,8 @@ OV<SError> CMDSSQLite::collectionIterate(const CString& name, const CString& doc
 		return OV<SError>(getIllegalInBatchError());
 
 	// Bring up to date
-	mInternals->collectionUpdate(*collection, mInternals->getUpdatesInfo((*collection)->getDocumentType(), 0));
+	mInternals->collectionUpdate(*collection, mInternals->getUpdatesInfo((*collection)->getDocumentType(),
+			collection.getLastRevision()));
 
 	// Collect document IDs
 	TNArray<CString>	documentIDs;
@@ -2392,9 +2389,6 @@ OV<SError> CMDSSQLite::indexRegister(const CString& name, const CString& documen
 	// Add to maps
 	mInternals->mIndexByName.set(name, index);
 	mInternals->mIndexesByDocumentType.add(documentType, index);
-
-	// Bring up to date
-	mInternals->indexUpdate(index, mInternals->getUpdatesInfo(documentType, lastRevision));
 
 	return OV<SError>();
 }

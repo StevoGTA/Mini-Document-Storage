@@ -2354,41 +2354,35 @@ class CMDSSQLiteDatabaseManager::Internals {
 											Internals* internals)
 										{
 											// Update tables
+											CCacheContentsTable::update(valueInfoByID, removedIDs,
+													*internals->mCacheTablesByName[name]);
 											if (lastRevision.hasValue())
 												// Update Caches table
 												CCachesTable::update(name, *lastRevision, internals->mCachesTable);
-
-											// Update Cache contents table
-											CCacheContentsTable::update(valueInfoByID, removedIDs,
-													*internals->mCacheTablesByName[name]);
 										}
 		static	void				collectionUpdate(const CString& name, const OV<IDArray >& includedIDs,
 											const OV<IDArray >& notIncludedIDs, const OV<UInt32>& lastRevision,
 											Internals* internals)
 										{
 											// Update tables
+											CCollectionContentsTable::update(includedIDs, notIncludedIDs,
+													*internals->mCollectionTablesByName[name]);
 											if (lastRevision.hasValue())
 												// Update Collections table
 												CCollectionsTable::update(name, *lastRevision,
 														internals->mCollectionsTable);
-
-											// Update Collection contents table
-											CCollectionContentsTable::update(includedIDs, notIncludedIDs,
-													*internals->mCollectionTablesByName[name]);
 										}
 		static	void				indexUpdate(const CString& name, const OV<TArray<IndexKeysInfo> >& indexKeysInfos,
 											const OV<IDArray >& removedIDs, const OV<UInt32>& lastRevision,
 											Internals* internals)
 										{
 											// Update tables
+											CIndexContentsTable::update(indexKeysInfos, removedIDs,
+													*internals->mIndexTablesByName[name]);
 											if (lastRevision.hasValue())
 												// Update Indexes table
 												CIndexesTable::update(name, *lastRevision,
 														internals->mIndexesTable);
-
-											// Update Index contents table
-											CIndexContentsTable::update(indexKeysInfos, removedIDs,
-													*internals->mIndexTablesByName[name]);
 										}
 
 	private:
@@ -2843,24 +2837,24 @@ UInt32 CMDSSQLiteDatabaseManager::cacheRegister(const CString& name, const CStri
 
 	// Compose next steps
 	UInt32	lastRevision;
-	bool	updateMasterTable;
+	bool	updateMainTable;
 	if (!currentInfo.hasValue()) {
 		// New
 		lastRevision = 0;
-		updateMasterTable = true;
+		updateMainTable = true;
 	} else if ((relevantProperties != currentInfo->getRelevantProperties()) ||
 			(cacheValueInfos != currentInfo->getCacheValueInfos())) {
 		// Info has changed
 		lastRevision = 0;
-		updateMasterTable = true;
+		updateMainTable = true;
 	} else {
 		// No change
 		lastRevision = currentInfo->getLastRevision();
-		updateMasterTable = false;
+		updateMainTable = false;
 	}
 
 	// Check if need to update the master table
-	if (updateMasterTable) {
+	if (updateMainTable) {
 		// New or updated
 		CCachesTable::addOrUpdate(name, documentType, relevantProperties, cacheValueInfos, mInternals->mCachesTable);
 
@@ -2975,7 +2969,7 @@ UInt32 CMDSSQLiteDatabaseManager::collectionRegister(const CString& name, const 
 
 	// Compose next steps
 	UInt32	lastRevision;
-	bool	updateMasterTable;
+	bool	updateMainTable;
 	if (!currentInfo.hasValue()) {
 		// New
 		if (isUpToDate) {
@@ -2986,21 +2980,28 @@ UInt32 CMDSSQLiteDatabaseManager::collectionRegister(const CString& name, const 
 		} else
 			// Not up-to-date
 			lastRevision = 0;
-		updateMasterTable = true;
+		updateMainTable = true;
 	} else if ((relevantProperties != currentInfo->getRelevantProperties()) ||
 			(isIncludedSelector != currentInfo->getIsIncludedSelector()) ||
 			(isIncludedSelectorInfo != currentInfo->getIsIncludedSelectorInfo())) {
 		// Info has changed
-		lastRevision = 0;
-		updateMasterTable = true;
+		if (isUpToDate) {
+			// Up-to-date
+			const	OR<TNumber<UInt32> >	currentRevision =
+													mInternals->mDocumentLastRevisionByDocumentType.get(documentType);
+			lastRevision = currentRevision.hasReference() ? **currentRevision : 0;
+		} else
+			// Not up-to-date
+			lastRevision = 0;
+		updateMainTable = true;
 	} else {
 		// No change
 		lastRevision = currentInfo->getLastRevision();
-		updateMasterTable = false;
+		updateMainTable = false;
 	}
 
 	// Check if need to update the master table
-	if (updateMasterTable) {
+	if (updateMainTable) {
 		// New or updated
 		CCollectionsTable::addOrUpdate(name, documentType, relevantProperties, isIncludedSelector,
 				isIncludedSelectorInfo, lastRevision, mInternals->mCollectionsTable);
@@ -3294,25 +3295,25 @@ UInt32 CMDSSQLiteDatabaseManager::indexRegister(const CString& name, const CStri
 
 	// Compose next steps
 	UInt32	lastRevision;
-	bool	updateMasterTable;
+	bool	updateMainTable;
 	if (!currentInfo.hasValue()) {
 		// New
 		lastRevision = 0;
-		updateMasterTable = true;
+		updateMainTable = true;
 	} else if ((relevantProperties != currentInfo->getRelevantProperties()) ||
 			(keysSelector != currentInfo->getKeysSelector()) ||
 			(keysSelectorInfo != currentInfo->getKeysSelectorInfo())) {
 		// Info has changed
 		lastRevision = 0;
-		updateMasterTable = true;
+		updateMainTable = true;
 	} else {
 		// No change
 		lastRevision = currentInfo->getLastRevision();
-		updateMasterTable = false;
+		updateMainTable = false;
 	}
 
 	// Check if need to update the master table
-	if (updateMasterTable) {
+	if (updateMainTable) {
 		// New or updated
 		CIndexesTable::addOrUpdate(name, documentType, relevantProperties, keysSelector,
 				keysSelectorInfo, lastRevision, mInternals->mIndexesTable);

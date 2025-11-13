@@ -36,10 +36,10 @@ public class MDSCache : Equatable {
 			let	name :String
 			let	documentType :String
 
+			var	lastRevision :Int
+
 	private	let	relevantProperties: Set<String>
 	private	let	valueInfos :[ValueInfo]
-
-	private	var	lastRevision :Int
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------

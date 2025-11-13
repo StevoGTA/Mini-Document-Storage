@@ -14,12 +14,12 @@ class MDSCollection : Equatable {
 			let	name :String
 			let	documentType :String
 
+			var	lastRevision :Int
+
 	private	let	relevantProperties: Set<String>
 	private	let	documentIsIncludedProc :MDSDocument.IsIncludedProc
 	private	let	checkRelevantProperties :Bool
 	private	let	isIncludedInfo :[String : Any]
-
-	private	var	lastRevision :Int
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------

@@ -14,11 +14,11 @@ class MDSIndex : Equatable {
 			let	name :String
 			let	documentType :String
 
+			var	lastRevision :Int
+
 	private	let	relevantProperties :Set<String>
 	private	let	keysProc :MDSDocument.KeysProc
 	private	let	keysInfo :[String : Any]
-
-	private	var	lastRevision :Int
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------

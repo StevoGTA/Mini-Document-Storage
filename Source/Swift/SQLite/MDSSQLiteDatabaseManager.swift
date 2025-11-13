@@ -1733,24 +1733,24 @@ class MDSSQLiteDatabaseManager {
 
 		// Compose next steps
 		let	lastRevision :Int
-		let	updateMasterTable :Bool
+		let	updateMainTable :Bool
 		if currentInfo == nil {
 			// New
 			lastRevision = 0
-			updateMasterTable = true
+			updateMainTable = true
 		} else if (relevantProperties != currentInfo!.relevantProperties) ||
 				(cacheValueInfos != currentInfo!.valueInfos) {
 			// Info has changed
 			lastRevision = 0
-			updateMasterTable = true
+			updateMainTable = true
 		} else {
 			// No change
 			lastRevision = currentInfo!.lastRevision
-			updateMasterTable = false
+			updateMainTable = false
 		}
 
 		// Check if need to update the master table
-		if updateMasterTable {
+		if updateMainTable {
 			// New or updated
 			CachesTable.addOrUpdate(name: name, documentType: documentType, relevantProperties: relevantProperties,
 					valueInfos: cacheValueInfos, in: self.cachesTable)
@@ -1890,25 +1890,25 @@ class MDSSQLiteDatabaseManager {
 
 		// Compose next steps
 		let	lastRevision :Int
-		let	updateMasterTable :Bool
+		let	updateMainTable :Bool
 		if currentInfo == nil {
 			// New
 			lastRevision = isUpToDate ? self.documentLastRevisionByDocumentType.value(for: documentType) ?? 0 : 0
-			updateMasterTable = true
+			updateMainTable = true
 		} else if (relevantProperties != currentInfo!.relevantProperties) ||
 				(isIncludedSelector != currentInfo!.isIncludedSelector) ||
 				!isIncludedSelectorInfo.equals(currentInfo!.isIncludedSelectorInfo) {
 			// Info has changed
-			lastRevision = 0
-			updateMasterTable = true
+			lastRevision = isUpToDate ? self.documentLastRevisionByDocumentType.value(for: documentType) ?? 0 : 0
+			updateMainTable = true
 		} else {
 			// No change
 			lastRevision = currentInfo!.lastRevision
-			updateMasterTable = false
+			updateMainTable = false
 		}
 
 		// Check if need to update the master table
-		if updateMasterTable {
+		if updateMainTable {
 			// New or updated
 			CollectionsTable.addOrUpdate(name: name, documentType: documentType, relevantProperties: relevantProperties,
 					isIncludedSelector: isIncludedSelector, isIncludedSelectorInfo: isIncludedSelectorInfo,
@@ -2174,24 +2174,24 @@ class MDSSQLiteDatabaseManager {
 
 		// Compose next steps
 		let	lastRevision :Int
-		let	updateMasterTable :Bool
+		let	updateMainTable :Bool
 		if currentInfo == nil {
 			// New
 			lastRevision = 0
-			updateMasterTable = true
+			updateMainTable = true
 		} else if (relevantProperties != currentInfo!.relevantProperties) ||
 				(keysSelector != currentInfo!.keysSelector) || !keysSelectorInfo.equals(currentInfo!.keysSelectorInfo) {
 			// Info has changed
 			lastRevision = 0
-			updateMasterTable = true
+			updateMainTable = true
 		} else {
 			// No change
 			lastRevision = currentInfo!.lastRevision
-			updateMasterTable = false
+			updateMainTable = false
 		}
 
 		// Check if need to update the master table
-		if updateMasterTable {
+		if updateMainTable {
 			// New or updated
 			IndexesTable.addOrUpdate(name: name, documentType: documentType, relevantProperties: relevantProperties,
 					keysSelector: keysSelector, keysSelectorInfo: keysSelectorInfo, lastRevision: lastRevision,
@@ -2292,12 +2292,12 @@ class MDSSQLiteDatabaseManager {
 		}
 		batchInfo.iterateCollectionUpdateInfos() {
 			// Update Collection
-			self.collectionUpdate(name: $0, includedIDs: $1.includedIDs, notIncludedIDs: $1.notIncludedIDs,
+			self.collectionUpdateInternal(name: $0, includedIDs: $1.includedIDs, notIncludedIDs: $1.notIncludedIDs,
 					lastRevision: $1.lastRevision)
 		}
 		batchInfo.iterateIndexUpdateInfos() {
 			// Update Index
-			self.indexUpdate(name: $0, keysInfos: $1.keysInfos, removedIDs: $1.removedIDs,
+			self.indexUpdateInternal(name: $0, keysInfos: $1.keysInfos, removedIDs: $1.removedIDs,
 					lastRevision: $1.lastRevision)
 		}
 	}
@@ -2307,27 +2307,23 @@ class MDSSQLiteDatabaseManager {
 	private func cacheUpdateInternal(name :String, valueInfoByID :[Int64 : [/* Name */ String : Any]]?,
 			removedIDs :[Int64], lastRevision :Int?) {
 		// Update tables
+		CacheContentsTable.update(valueInfoByID: valueInfoByID, removedIDs: removedIDs,
+				in: self.cacheTablesByName.value(for: name)!)
 		if lastRevision != nil {
 			// Update Caches table
 			CachesTable.update(name: name, lastRevision: lastRevision!, in: self.cachesTable)
 		}
-
-		// Update Cache contents table
-		CacheContentsTable.update(valueInfoByID: valueInfoByID, removedIDs: removedIDs,
-				in: self.cacheTablesByName.value(for: name)!)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func collectionUpdateInternal(name :String, includedIDs :[Int64]?, notIncludedIDs :[Int64]?, lastRevision :Int?) {
 		// Update tables
+		CollectionContentsTable.update(includedIDs: includedIDs, notIncludedIDs: notIncludedIDs,
+				in: self.collectionTablesByName.value(for: name)!)
 		if lastRevision != nil {
 			// Update Collections table
 			CollectionsTable.update(name: name, lastRevision: lastRevision!, in: self.collectionsTable)
 		}
-
-		// Update Collection contents table
-		CollectionContentsTable.update(includedIDs: includedIDs, notIncludedIDs: notIncludedIDs,
-				in: self.collectionTablesByName.value(for: name)!)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -2384,13 +2380,11 @@ class MDSSQLiteDatabaseManager {
 	func indexUpdateInternal(name :String, keysInfos :[(keys :[String], id :Int64)]?, removedIDs :[Int64]?,
 			lastRevision :Int?) {
 		// Update tables
+		IndexContentsTable.update(keysInfos: keysInfos, removedIDs: removedIDs,
+				in: self.indexTablesByName.value(for: name)!)
 		if lastRevision != nil {
 			// Update Indexes table
 			IndexesTable.update(name: name, lastRevision: lastRevision!, in: self.indexesTable)
 		}
-
-		// Update Index contents table
-		IndexContentsTable.update(keysInfos: keysInfos, removedIDs: removedIDs,
-				in: self.indexTablesByName.value(for: name)!)
 	}
 }

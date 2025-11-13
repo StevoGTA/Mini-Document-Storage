@@ -77,6 +77,8 @@ template <typename T> class TMDSIndex : public CEquatable {
 									{ return mName; }
 		const	CString&		getDocumentType() const
 									{ return mDocumentType; }
+				UInt32			getLastRevision() const
+									{ return mLastRevision; }
 
 				UpdateResults	update(const TArray<TMDSUpdateInfo<T> >& updateInfos)
 									{
