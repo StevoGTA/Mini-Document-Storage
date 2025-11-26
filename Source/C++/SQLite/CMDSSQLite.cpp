@@ -1730,7 +1730,8 @@ TVResult<TArray<CDictionary> > CMDSSQLite::cacheGetValues(const CString& name, c
 	}
 
 	// Bring up to date
-	mInternals->cacheUpdate(cache, mInternals->getUpdatesInfo(documentType, lastRevision));
+	mInternals->cacheUpdate(*cache, mInternals->getUpdatesInfo((*cache)->getDocumentType(),
+			(*cache)->getLastRevision()));
 
 	return mInternals->mDatabaseManager.cacheGetValues(*cache, valueNames, documentIDs);
 }
@@ -1795,7 +1796,7 @@ OV<SError> CMDSSQLite::collectionIterate(const CString& name, const CString& doc
 
 	// Bring up to date
 	mInternals->collectionUpdate(*collection, mInternals->getUpdatesInfo((*collection)->getDocumentType(),
-			collection.getLastRevision()));
+			(*collection)->getLastRevision()));
 
 	// Collect document IDs
 	TNArray<CString>	documentIDs;
@@ -2406,7 +2407,7 @@ OV<SError> CMDSSQLite::indexIterate(const CString& name, const CString& document
 		return OV<SError>(getIllegalInBatchError());
 
 	// Bring up to date
-	mInternals->indexUpdate((*index), mInternals->getUpdatesInfo(documentType, 0));
+	mInternals->indexUpdate(*index, mInternals->getUpdatesInfo(documentType, (*index)->getLastRevision()));
 
 	// Compose map
 	CDictionary	documentIDByKey;
