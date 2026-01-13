@@ -586,7 +586,7 @@ class CCacheContentsTable {
 
 										return table;
 									}
-		static	void			update(const CMDSSQLiteDatabaseManager::ValueInfoByID& valueInfoByID,
+		static	void			update(const OV<CMDSSQLiteDatabaseManager::ValueInfoByID>& valueInfoByID,
 										const IDArray& removedIDs, CSQLiteTable& table)
 									{
 										// Update
@@ -594,27 +594,33 @@ class CCacheContentsTable {
 											// Remove IDs
 											table.deleteRows(mIDTableColumn, SSQLiteValue::valuesFrom(removedIDs));
 
-										TSet<CString>	keys = valueInfoByID.getKeys();
-										for (TIteratorS<CString> keyIterator = keys.getIterator();
-												keyIterator.hasValue(); keyIterator.advance()) {
-											// Setup
-													SInt64			id = keyIterator->getSInt64();
-											const	CDictionary&	valueInfo = *valueInfoByID[id];
-
-											// Compose table columns
-											TNArray<TableColumnAndValue>	tableColumnAndValues;
-											tableColumnAndValues += TableColumnAndValue(mIDTableColumn, id);
-
-											TSet<CString>	valueInfoKeys = valueInfo.getKeys();
-											for (TIteratorS<CString> valueInfoKeyIterator = valueInfoKeys.getIterator();
-													valueInfoKeyIterator.hasValue(); valueInfoKeyIterator.advance())
+										// Check if have updates
+										if (valueInfoByID.hasValue() && !valueInfoByID->isEmpty()) {
+											// Update
+											TSet<CString>	keys = valueInfoByID->getKeys();
+											for (TIteratorS<CString> keyIterator = keys.getIterator();
+													keyIterator.hasValue(); keyIterator.advance()) {
 												// Setup
-												tableColumnAndValues +=
-														TableColumnAndValue(table.getTableColumn(*valueInfoKeyIterator),
-																*valueInfo[*valueInfoKeyIterator]);
+														SInt64			id = keyIterator->getSInt64();
+												const	CDictionary&	valueInfo = *(*valueInfoByID)[id];
 
-											// Insert or replace row for this id
-											table.insertOrReplaceRow(tableColumnAndValues);
+												// Compose table columns
+												TNArray<TableColumnAndValue>	tableColumnAndValues;
+												tableColumnAndValues += TableColumnAndValue(mIDTableColumn, id);
+
+												TSet<CString>	valueInfoKeys = valueInfo.getKeys();
+												for (TIteratorS<CString> valueInfoKeyIterator =
+																valueInfoKeys.getIterator();
+														valueInfoKeyIterator.hasValue(); valueInfoKeyIterator.advance())
+													// Setup
+													tableColumnAndValues +=
+															TableColumnAndValue(
+																	table.getTableColumn(*valueInfoKeyIterator),
+																	*valueInfo[*valueInfoKeyIterator]);
+
+												// Insert or replace row for this id
+												table.insertOrReplaceRow(tableColumnAndValues);
+											}
 										}
 									}
 
@@ -840,16 +846,17 @@ class CCollectionContentsTable {
 
 										return table;
 									}
-		static	void			update(const IDArray& includedIDs, const IDArray& notIncludedIDs, CSQLiteTable& table)
+		static	void			update(const OV<IDArray >& includedIDs, const OV<IDArray >& notIncludedIDs,
+										CSQLiteTable& table)
 									{
 										// Update
-										if (!notIncludedIDs.isEmpty())
+										if (notIncludedIDs.hasValue() && !notIncludedIDs->isEmpty())
 											// Delete
-											table.deleteRows(mIDTableColumn, SSQLiteValue::valuesFrom(notIncludedIDs));
-										if (!includedIDs.isEmpty())
+											table.deleteRows(mIDTableColumn, SSQLiteValue::valuesFrom(*notIncludedIDs));
+										if (includedIDs.hasValue() && !includedIDs->isEmpty())
 											// Update
 											table.insertOrReplaceRows(mIDTableColumn,
-													SSQLiteValue::valuesFrom(includedIDs));
+													SSQLiteValue::valuesFrom(*includedIDs));
 									}
 
 	// Properties
@@ -1742,39 +1749,52 @@ class CIndexContentsTable {
 													SSQLiteValue::valuesFrom(includedIDs));
 									}
 
-		static	void			update(const TArray<IndexKeysInfo>& indexKeysInfos, const IDArray& removedIDs,
+		static	void			update(const OV<TArray<IndexKeysInfo> >& indexKeysInfos, const OV<IDArray>& removedIDs,
 										CSQLiteTable& table)
 									{
 										// Setup
-										TNArray<SSQLiteValue>	idsToRemove(SSQLiteValue::valuesFrom(removedIDs));
-										for (TIteratorD<IndexKeysInfo> iterator = indexKeysInfos.getIterator();
-												iterator.hasValue(); iterator.advance())
-											// Add value
-											idsToRemove += SSQLiteValue(iterator->getID());
+										TNArray<SSQLiteValue>	idsToRemove;
+										if (removedIDs.hasValue() && !removedIDs->isEmpty())
+											// Have ids to remove
+											idsToRemove += SSQLiteValue::valuesFrom(*removedIDs);
+										if (indexKeysInfos.hasValue() && !indexKeysInfos->isEmpty()) {
+											// Have info to add
+											for (TIteratorD<IndexKeysInfo> iterator = indexKeysInfos->getIterator();
+													iterator.hasValue(); iterator.advance())
+												// Add value
+												idsToRemove += SSQLiteValue(iterator->getID());
+										}
 
-										// Update
+										// Remove
 										if (!idsToRemove.isEmpty())
-											// Delete
+											// Remove
 											table.deleteRows(mIDTableColumn, idsToRemove);
-										for (TIteratorD<IndexKeysInfo> indexKeysInfoIterator =
-														indexKeysInfos.getIterator();
-												indexKeysInfoIterator.hasValue(); indexKeysInfoIterator.advance())
-											// Insert new keys
-											for (TIteratorD<CString> keyIterator =
-															indexKeysInfoIterator->getKeys().getIterator();
-													keyIterator.hasValue(); keyIterator.advance()) {
-												// Insert this key
-												TableColumnAndValue	tableColumnAndValues[] =
-																			{
-																				TableColumnAndValue(mKeyTableColumn,
-																						*keyIterator),
-																				TableColumnAndValue(mIDTableColumn,
-																						indexKeysInfoIterator->getID()),
-																			};
-												table.insertRow(
-														TSARRAY_FROM_C_ARRAY(TableColumnAndValue,
-																tableColumnAndValues));
-											}
+
+
+										// Check if have info to add
+										if (indexKeysInfos.hasValue()) {
+											// Iterate info
+											for (TIteratorD<IndexKeysInfo> indexKeysInfoIterator =
+															indexKeysInfos->getIterator();
+													indexKeysInfoIterator.hasValue(); indexKeysInfoIterator.advance())
+												// Insert new keys
+												for (TIteratorD<CString> keyIterator =
+																indexKeysInfoIterator->getKeys().getIterator();
+														keyIterator.hasValue(); keyIterator.advance()) {
+													// Insert this key
+													TableColumnAndValue	tableColumnAndValues[] =
+																				{
+																					TableColumnAndValue(mKeyTableColumn,
+																							*keyIterator),
+																					TableColumnAndValue(mIDTableColumn,
+																							indexKeysInfoIterator->
+																									getID()),
+																				};
+													table.insertRow(
+															TSARRAY_FROM_C_ARRAY(TableColumnAndValue,
+																	tableColumnAndValues));
+												}
+										}
 									}
 
 		static	OV<SError>		callDocumentInfoKeyProcInfo(const CSQLiteResultsRow& resultsRow,
@@ -2334,47 +2354,35 @@ class CMDSSQLiteDatabaseManager::Internals {
 											Internals* internals)
 										{
 											// Update tables
+											CCacheContentsTable::update(valueInfoByID, removedIDs,
+													*internals->mCacheTablesByName[name]);
 											if (lastRevision.hasValue())
 												// Update Caches table
 												CCachesTable::update(name, *lastRevision, internals->mCachesTable);
-											if (valueInfoByID.hasValue() || !removedIDs.isEmpty())
-												// Update Cache contents table
-												CCacheContentsTable::update(
-														valueInfoByID.hasValue() ? *valueInfoByID : ValueInfoByID(),
-														removedIDs, *internals->mCacheTablesByName[name]);
 										}
 		static	void				collectionUpdate(const CString& name, const OV<IDArray >& includedIDs,
 											const OV<IDArray >& notIncludedIDs, const OV<UInt32>& lastRevision,
 											Internals* internals)
 										{
 											// Update tables
+											CCollectionContentsTable::update(includedIDs, notIncludedIDs,
+													*internals->mCollectionTablesByName[name]);
 											if (lastRevision.hasValue())
 												// Update Collections table
 												CCollectionsTable::update(name, *lastRevision,
 														internals->mCollectionsTable);
-											if (includedIDs.hasValue() || notIncludedIDs.hasValue())
-												// Update Collection contents table
-												CCollectionContentsTable::update(
-														includedIDs.hasValue() ? *includedIDs : IDArray(),
-														notIncludedIDs.hasValue() ? *notIncludedIDs : IDArray(),
-														*internals->mCollectionTablesByName[name]);
 										}
 		static	void				indexUpdate(const CString& name, const OV<TArray<IndexKeysInfo> >& indexKeysInfos,
 											const OV<IDArray >& removedIDs, const OV<UInt32>& lastRevision,
 											Internals* internals)
 										{
 											// Update tables
+											CIndexContentsTable::update(indexKeysInfos, removedIDs,
+													*internals->mIndexTablesByName[name]);
 											if (lastRevision.hasValue())
 												// Update Indexes table
 												CIndexesTable::update(name, *lastRevision,
 														internals->mIndexesTable);
-											if (indexKeysInfos.hasValue() || removedIDs.hasValue())
-												// Update Index contents table
-												CIndexContentsTable::update(
-														indexKeysInfos.hasValue() ?
-																*indexKeysInfos : TNArray<IndexKeysInfo>(),
-														removedIDs.hasValue() ? *removedIDs : IDArray(),
-														*internals->mIndexTablesByName[name]);
 										}
 
 	private:
@@ -2829,24 +2837,24 @@ UInt32 CMDSSQLiteDatabaseManager::cacheRegister(const CString& name, const CStri
 
 	// Compose next steps
 	UInt32	lastRevision;
-	bool	updateMasterTable;
+	bool	updateMainTable;
 	if (!currentInfo.hasValue()) {
 		// New
 		lastRevision = 0;
-		updateMasterTable = true;
+		updateMainTable = true;
 	} else if ((relevantProperties != currentInfo->getRelevantProperties()) ||
 			(cacheValueInfos != currentInfo->getCacheValueInfos())) {
 		// Info has changed
 		lastRevision = 0;
-		updateMasterTable = true;
+		updateMainTable = true;
 	} else {
 		// No change
 		lastRevision = currentInfo->getLastRevision();
-		updateMasterTable = false;
+		updateMainTable = false;
 	}
 
 	// Check if need to update the master table
-	if (updateMasterTable) {
+	if (updateMainTable) {
 		// New or updated
 		CCachesTable::addOrUpdate(name, documentType, relevantProperties, cacheValueInfos, mInternals->mCachesTable);
 
@@ -2961,7 +2969,7 @@ UInt32 CMDSSQLiteDatabaseManager::collectionRegister(const CString& name, const 
 
 	// Compose next steps
 	UInt32	lastRevision;
-	bool	updateMasterTable;
+	bool	updateMainTable;
 	if (!currentInfo.hasValue()) {
 		// New
 		if (isUpToDate) {
@@ -2972,21 +2980,28 @@ UInt32 CMDSSQLiteDatabaseManager::collectionRegister(const CString& name, const 
 		} else
 			// Not up-to-date
 			lastRevision = 0;
-		updateMasterTable = true;
+		updateMainTable = true;
 	} else if ((relevantProperties != currentInfo->getRelevantProperties()) ||
 			(isIncludedSelector != currentInfo->getIsIncludedSelector()) ||
 			(isIncludedSelectorInfo != currentInfo->getIsIncludedSelectorInfo())) {
 		// Info has changed
-		lastRevision = 0;
-		updateMasterTable = true;
+		if (isUpToDate) {
+			// Up-to-date
+			const	OR<TNumber<UInt32> >	currentRevision =
+													mInternals->mDocumentLastRevisionByDocumentType.get(documentType);
+			lastRevision = currentRevision.hasReference() ? **currentRevision : 0;
+		} else
+			// Not up-to-date
+			lastRevision = 0;
+		updateMainTable = true;
 	} else {
 		// No change
 		lastRevision = currentInfo->getLastRevision();
-		updateMasterTable = false;
+		updateMainTable = false;
 	}
 
 	// Check if need to update the master table
-	if (updateMasterTable) {
+	if (updateMainTable) {
 		// New or updated
 		CCollectionsTable::addOrUpdate(name, documentType, relevantProperties, isIncludedSelector,
 				isIncludedSelectorInfo, lastRevision, mInternals->mCollectionsTable);
@@ -3280,25 +3295,25 @@ UInt32 CMDSSQLiteDatabaseManager::indexRegister(const CString& name, const CStri
 
 	// Compose next steps
 	UInt32	lastRevision;
-	bool	updateMasterTable;
+	bool	updateMainTable;
 	if (!currentInfo.hasValue()) {
 		// New
 		lastRevision = 0;
-		updateMasterTable = true;
+		updateMainTable = true;
 	} else if ((relevantProperties != currentInfo->getRelevantProperties()) ||
 			(keysSelector != currentInfo->getKeysSelector()) ||
 			(keysSelectorInfo != currentInfo->getKeysSelectorInfo())) {
 		// Info has changed
 		lastRevision = 0;
-		updateMasterTable = true;
+		updateMainTable = true;
 	} else {
 		// No change
 		lastRevision = currentInfo->getLastRevision();
-		updateMasterTable = false;
+		updateMainTable = false;
 	}
 
 	// Check if need to update the master table
-	if (updateMasterTable) {
+	if (updateMainTable) {
 		// New or updated
 		CIndexesTable::addOrUpdate(name, documentType, relevantProperties, keysSelector,
 				keysSelectorInfo, lastRevision, mInternals->mIndexesTable);

@@ -265,9 +265,6 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Add to maps
 		self.cacheByName.set(cache, for: name)
 		self.cachesByDocumentType.append(cache, for: documentType)
-
-		// Bring up to date
-		autoreleasepool() { cacheUpdate(cache, info: self.info(for: documentType, sinceRevision: lastRevision)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -286,6 +283,12 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			if !cache.hasValueInfo(for: $0) {
 				throw MDSDocumentStorageError.unknownCacheValueName(valueName: $0)
 			}
+		}
+
+		// Bring up to date
+		autoreleasepool() {
+			// Update
+			cacheUpdate(cache, info: self.info(for: cache.documentType, sinceRevision: cache.lastRevision))
 		}
 
 		return try self.databaseManager.cacheGetValues(cache: cache, valueNames: valueNames, documentIDs: documentIDs)
@@ -317,12 +320,6 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Add to maps
 		self.collectionByName.set(collection, for: name)
 		self.collectionsByDocumentType.append(collection, for: documentType)
-
-		// Check if is up to date
-		if !isUpToDate {
-			// Bring up to date
-			autoreleasepool() { collectionUpdate(collection, info: self.info(for: documentType, sinceRevision: 0)) }
-		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -338,7 +335,8 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Bring up to date
 		autoreleasepool() {
 			// Update
-			collectionUpdate(collection, info: self.info(for: collection.documentType, sinceRevision: 0))
+			collectionUpdate(collection, info: self.info(for: collection.documentType,
+					sinceRevision: collection.lastRevision))
 		}
 
 		return self.databaseManager.collectionGetDocumentCount(for: name)
@@ -357,7 +355,8 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Bring up to date
 		autoreleasepool() {
 			// Update
-			collectionUpdate(collection, info: self.info(for: collection.documentType, sinceRevision: 0))
+			collectionUpdate(collection,
+					info: self.info(for: collection.documentType, sinceRevision: collection.lastRevision))
 		}
 
 		// Collect document IDs
@@ -870,9 +869,6 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Add to maps
 		self.indexByName.set(index, for: name)
 		self.indexesByDocumentType.append(index, for: documentType)
-
-		// Bring up to date
-		indexUpdate(index, info: self.info(for: documentType, sinceRevision: lastRevision))
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -887,7 +883,10 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Bring up to date
-		autoreleasepool() { indexUpdate(index, info: self.info(for: index.documentType, sinceRevision: 0)) }
+		autoreleasepool() {
+			// Update index
+			indexUpdate(index, info: self.info(for: index.documentType, sinceRevision: index.lastRevision))
+		}
 
 		// Compose map
 		var	documentIDByKey = [/* Key */ String : /* String */ String]()
@@ -1501,8 +1500,8 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Check if have updates
 		if (valueInfoByID != nil) || !info.removedIDs.isEmpty {
 			// Update database
-			self.databaseManager.cacheUpdate(name: cache.name, valueInfoByID: valueInfoByID, removedIDs: info.removedIDs,
-					lastRevision: lastRevision)
+			self.databaseManager.cacheUpdate(name: cache.name, valueInfoByID: valueInfoByID,
+					removedIDs: info.removedIDs, lastRevision: lastRevision)
 		}
 	}
 

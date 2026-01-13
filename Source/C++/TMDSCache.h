@@ -85,6 +85,8 @@ template <typename T, typename U> class TMDSCache : public CEquatable {
 									{ return mName; }
 		const	CString&		getDocumentType() const
 									{ return mDocumentType; }
+				UInt32			getLastRevision() const
+									{ return mLastRevision; }
 
 				bool			hasValueInfo(const CString& valueName) const
 									{ return mValueInfos.getFirst(
