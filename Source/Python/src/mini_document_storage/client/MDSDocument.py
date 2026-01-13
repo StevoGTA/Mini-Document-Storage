@@ -21,8 +21,8 @@ class MDSDocument:
 	@property
 	def document_id_uuid_hex(self):														# str
 		# Return UUID hex
-		return str(uuid.UUID(bytes = base64.b64decode(self.document_id + '==')))
-	
+		return str(uuid.UUID(bytes = base64.urlsafe_b64decode(self.document_id + '==')))
+
 	@property
 	def revision(self):																	# int (None if not yet created)
 		return self.info.get('revision')
@@ -69,7 +69,7 @@ class MDSDocument:
 		# Check situation
 		if info == None:
 			# New
-			document_id = base64.urlsafe_b64encode(uuid.uuid4().bytes).decode('utf-8').strip('=')
+			document_id = base64.b64encode(uuid.uuid4().bytes).decode('utf-8').strip('=')
 
 			self.info = {'documentID': document_id, 'active': 1, 'json': {}, 'attachments': {}}
 			self.is_new = True
