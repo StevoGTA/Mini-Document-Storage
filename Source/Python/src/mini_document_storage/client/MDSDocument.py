@@ -19,6 +19,11 @@ class MDSDocument:
 	def document_id(self):																# str
 		return self.info['documentID']
 	@property
+	def document_id_uuid_hex(self):														# str
+		# Return UUID hex
+		return str(uuid.UUID(bytes = base64.b64decode(self.document_id + '==')))
+	
+	@property
 	def revision(self):																	# int (None if not yet created)
 		return self.info.get('revision')
 	
