@@ -155,8 +155,7 @@ template <typename DB> class TMDSBatch {
 																			mUpdatedPropertyMap.getValue(property));
 																else if (mInitialPropertyMap.hasValue())
 																	// Try initial property map
-																	return OV<SValue>(
-																			mInitialPropertyMap->getValue(property));
+																	return mInitialPropertyMap->getOValue(property);
 																else
 																	// Sorry
 																	return OV<SValue>();
