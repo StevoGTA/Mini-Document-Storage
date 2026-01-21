@@ -87,7 +87,13 @@ class MDSClient:
 				# Process response
 				await self.process_response(response)
 
-				return response
+				# Return response
+				try:
+					# Return JSON if possible
+					return await response.json()
+				except Exception:
+					# No JSON
+					return None
 		else:
 			# Assume JSON
 			async with self.session.patch(subpath, headers={**self.headers, **headers}, params=params, json=body) as \
@@ -95,7 +101,13 @@ class MDSClient:
 				# Process response
 				await self.process_response(response)
 
-				return response
+				# Return response
+				try:
+					# Return JSON if possible
+					return await response.json()
+				except Exception:
+					# No JSON
+					return None
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def post(self, subpath, params={}, body=None, headers={}):
@@ -107,7 +119,13 @@ class MDSClient:
 				# Process response
 				await self.process_response(response)
 
-				return response
+				# Return response
+				try:
+					# Return JSON if possible
+					return await response.json()
+				except Exception:
+					# No JSON
+					return None
 		else:
 			# Assume JSON
 			async with self.session.post(subpath, headers={**self.headers, **headers}, params=params, json=body) as \
@@ -115,7 +133,13 @@ class MDSClient:
 				# Process response
 				await self.process_response(response)
 
-				return response
+				# Return response
+				try:
+					# Return JSON if possible
+					return await response.json()
+				except Exception:
+					# No JSON
+					return None
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def put(self, subpath, params={}, body=None, headers={}):
@@ -127,7 +151,13 @@ class MDSClient:
 				# Process response
 				await self.process_response(response)
 
-				return response
+				# Return response
+				try:
+					# Return JSON if possible
+					return await response.json()
+				except Exception:
+					# No JSON
+					return None
 		else:
 			# Assume JSON
 			async with self.session.put(subpath, headers={**self.headers, **headers}, params=params, json=body) as \
@@ -135,7 +165,13 @@ class MDSClient:
 				# Process response
 				await self.process_response(response)
 
-				return response
+				# Return response
+				try:
+					# Return JSON if possible
+					return await response.json()
+				except Exception:
+					# No JSON
+					return None
 
 	#-------------------------------------------------------------------------------------------------------------------
 	async def association_register(self, name, from_document_type, to_document_type, document_storage_id=None):
