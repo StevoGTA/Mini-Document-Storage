@@ -100,8 +100,9 @@ template <typename T> class TMDSDocumentBackingCache {
 												mLock.lockForWriting();
 
 												// Iterate all backing infos
-												for (TIteratorD<T> iterator = documentBackings.getIterator();
-														iterator.hasValue(); iterator.advance())
+												for (typename TArray<T>::Iterator iterator =
+																documentBackings.getIterator();
+														iterator; iterator++)
 													// Store
 													mReferenceByDocumentID.set((*iterator)->getDocumentID(),
 															Reference(*iterator));
@@ -135,8 +136,8 @@ template <typename T> class TMDSDocumentBackingCache {
 												mLock.lockForReading();
 
 												// Iterate document IDs
-												for (TIteratorD<CString> iterator = documentIDs.getIterator();
-														iterator.hasValue(); iterator.advance()) {
+												for (TArray<CString>::Iterator iterator = documentIDs.getIterator();
+														iterator; iterator++) {
 													// Look up reference for this document ID
 													const	OR<T>	reference = mReferenceByDocumentID[*iterator];
 													if (reference.hasReference()) {
@@ -162,8 +163,8 @@ template <typename T> class TMDSDocumentBackingCache {
 												mLock.lockForReading();
 
 												// Iterate document IDs
-												for (TIteratorD<CString> iterator = documentIDs.getIterator();
-														iterator.hasValue(); iterator.advance()) {
+												for (TArray<CString>::Iterator iterator = documentIDs.getIterator();
+														iterator; iterator++) {
 													// Look up reference for this document ID
 													const	OR<T>	reference = mReferenceByDocumentID[*iterator];
 													if (reference.hasReference()) {
@@ -186,8 +187,8 @@ template <typename T> class TMDSDocumentBackingCache {
 												mLock.lockForWriting();
 
 												// Iterate document IDs
-												for (TIteratorD<CString> iterator = documentIDs.getIterator();
-														iterator.hasValue(); iterator.advance())
+												for (TArray<CString>::Iterator iterator = documentIDs.getIterator();
+														iterator; iterator++)
 													// Remove from storage
 													mReferenceByDocumentID.remove(*iterator);
 

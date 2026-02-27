@@ -85,8 +85,9 @@ template <typename T> class TMDSIndex : public CEquatable {
 										// Compose results
 										TNArray<KeysInfo>	keysInfos;
 										OV<UInt32>			lastRevision;
-										for (TIteratorD<TMDSUpdateInfo<T> > iterator = updateInfos.getIterator();
-												iterator.hasValue(); iterator.advance()) {
+										for (typename TArray<TMDSUpdateInfo<T> >::Iterator iterator =
+														updateInfos.getIterator();
+												iterator; iterator++) {
 											// Check if there is something to do
 											if (!iterator->getChangedProperties().hasValue() ||
 													(mRelevantProperties.intersects(

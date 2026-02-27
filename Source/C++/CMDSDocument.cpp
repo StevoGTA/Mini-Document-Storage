@@ -433,7 +433,7 @@ void CMDSDocument::set(const CString& property, const TArray<CMDSDocument>& docu
 {
 	// Collect document IDs
 	TNArray<CString>	documentIDs;
-	for (TIteratorD<CMDSDocument> iterator = documents.getIterator(); iterator.hasValue(); iterator.advance())
+	for (TArray<CMDSDocument>::Iterator iterator = documents.getIterator(); iterator; iterator++)
 		// Add document ID
 		documentIDs += iterator->getID();
 	set(property, documentIDs);
@@ -457,16 +457,13 @@ TArray<CMDSDocument::AttachmentInfo> CMDSDocument::getAttachmentInfos(const CStr
 																getDocumentType(), getID());
 
 	// Filter by type
-	TSet<CString>			attachmentIDs = attachmentInfoByID->getKeys();
 	TNArray<AttachmentInfo>	attachmentInfos;
-	for (TIteratorS<CString> iterator = attachmentIDs.getIterator(); iterator.hasValue(); iterator.advance()) {
-		// Get Attachment Info
-		AttachmentInfo&	attachmentInfo = *(attachmentInfoByID->get(*iterator));
-
+	for (CMDSDocument::AttachmentInfoByID::ValueIterator iterator = attachmentInfoByID->getValueIterator(); iterator;
+			iterator++) {
 		// Check type
-		if (attachmentInfo.getType() == type)
+		if (iterator->getType() == type)
 			// Match!
-			attachmentInfos += attachmentInfo;
+			attachmentInfos += *iterator;
 	}
 
 	return attachmentInfos;

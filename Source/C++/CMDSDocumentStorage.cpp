@@ -281,8 +281,8 @@ void CMDSDocumentStorage::registerDocumentIsIncludedPerformerInfos(
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Iterate
-	for (TIteratorD<DocumentIsIncludedPerformerInfo> iterator = documentIsIncludedPerformerInfos.getIterator();
-			iterator.hasValue(); iterator.advance())
+	for (TArray<DocumentIsIncludedPerformerInfo>::Iterator iterator = documentIsIncludedPerformerInfos.getIterator();
+			iterator; iterator++)
 		// Add
 		mInternals->mDocumentIsIncludedPerformerInfoBySelector.set(
 				iterator->getDocumentIsIncludedPerformer().getSelector(), *iterator);
@@ -302,8 +302,8 @@ void CMDSDocumentStorage::registerDocumentKeysPerformers(
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Iterate
-	for (TIteratorD<CMDSDocument::KeysPerformer> iterator = documentKeysPerformers.getIterator(); iterator.hasValue();
-			iterator.advance())
+	for (TArray<CMDSDocument::KeysPerformer>::Iterator iterator = documentKeysPerformers.getIterator(); iterator;
+			iterator++)
 		// Add
 		mInternals->mDocumentKeysPerformerBySelector.set(iterator->getSelector(), *iterator);
 }
@@ -320,8 +320,7 @@ void CMDSDocumentStorage::registerValueInfos(const TArray<CMDSDocument::ValueInf
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Iterate
-	for (TIteratorD<CMDSDocument::ValueInfo> iterator = documentValueInfos.getIterator(); iterator.hasValue();
-			iterator.advance())
+	for (TArray<CMDSDocument::ValueInfo>::Iterator iterator = documentValueInfos.getIterator(); iterator; iterator++)
 		// Add
 		mInternals->mDocumentValueInfoBySelector.set(iterator->getSelector(), *iterator);
 }
@@ -360,8 +359,8 @@ void CMDSDocumentStorage::notifyDocumentChanged(const I<CMDSDocument>& document,
 	DocumentChangedInfos	documentChangedInfos = this->documentChangedInfos(document->getDocumentType());
 
 	// Call document changed procs
-	for (TIteratorD<CMDSDocument::ChangedInfo> iterator = documentChangedInfos.getIterator();
-			iterator.hasValue(); iterator.advance())
+	for (TArray<CMDSDocument::ChangedInfo>::Iterator iterator = documentChangedInfos.getIterator(); iterator;
+			iterator++)
 		// Call proc
 		iterator->notify(document, documentChangeKind);
 }

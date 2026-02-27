@@ -98,18 +98,18 @@ template <typename T, typename U> class TMDSCache : public CEquatable {
 										// Compose results
 										U			valueInfoByID;
 										OV<UInt32>	lastRevision;
-										for (TIteratorD<TMDSUpdateInfo<T> > updateInfoIterator =
+										for (typename TArray<TMDSUpdateInfo<T> >::Iterator updateInfoIterator =
 														updateInfos.getIterator();
-												updateInfoIterator.hasValue(); updateInfoIterator.advance()) {
+												updateInfoIterator; updateInfoIterator++) {
 											// Check if there is something to do
 											if (!updateInfoIterator->getChangedProperties().hasValue() ||
 													(mRelevantProperties.intersects(
 															*updateInfoIterator->getChangedProperties()))) {
 												// Collect value infos
 												CDictionary	valueByName;
-												for (TIteratorD<SMDSCacheValueInfo> valueInfoIterator =
+												for (TArray<SMDSCacheValueInfo>::Iterator valueInfoIterator =
 																mValueInfos.getIterator();
-														valueInfoIterator.hasValue(); valueInfoIterator.advance()) {
+														valueInfoIterator; valueInfoIterator++) {
 													// Add entry for this ValueInfo
 													const	CString&	valueName =
 																				valueInfoIterator->getValueInfo()

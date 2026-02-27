@@ -441,9 +441,9 @@ class CMDSSQLite::Internals {
 													if (cacheInfo.hasValue()) {
 														// Have stored
 														TNArray<SMDSCacheValueInfo>	cacheValueInfos;
-														for (TIteratorD<DMCacheValueInfo> iterator =
+														for (TArray<DMCacheValueInfo>::Iterator iterator =
 																		cacheInfo->getCacheValueInfos().getIterator();
-																iterator.hasValue(); iterator.advance())
+																iterator; iterator++)
 															// Add
 															cacheValueInfos +=
 																	SMDSCacheValueInfo(
@@ -638,9 +638,9 @@ class CMDSSQLite::Internals {
 													// Iterate infos
 													TNArray<KeyAndDocumentInfo>	keyAndDocumentInfosNotFound;
 													TNArray<DMDocumentInfo>		documentInfosNotFound;
-													for (TIteratorD<KeyAndDocumentInfo> iterator =
+													for (TArray<KeyAndDocumentInfo>::Iterator iterator =
 																	keyAndDocumentInfos.getIterator();
-															iterator.hasValue(); iterator.advance()) {
+															iterator; iterator++) {
 														// Check cache
 														const	CString&							documentID =
 																											iterator->
@@ -671,9 +671,9 @@ class CMDSSQLite::Internals {
 																	&documentContentInfoByID));
 
 													// Iterate infos not found
-													for (TIteratorD<KeyAndDocumentInfo> iterator =
+													for (TArray<KeyAndDocumentInfo>::Iterator iterator =
 																	keyAndDocumentInfosNotFound.getIterator();
-															iterator.hasValue(); iterator.advance()) {
+															iterator; iterator++) {
 														// Get DocumentContentInfo
 														const	DMDocumentInfo&				documentInfo =
 																									iterator->
@@ -806,8 +806,9 @@ class CMDSSQLite::Internals {
 																										documentType];
 													if (caches.hasReference())
 														// Iterate caches
-														for (TIteratorD<I<MDSCache> > iterator = caches->getIterator();
-																iterator.hasValue(); iterator.advance())
+														for (TArray<I<MDSCache> >::Iterator iterator =
+																		caches->getIterator();
+																iterator; iterator++)
 															// Update cache
 															cacheUpdate(*iterator, updatesInfo);
 
@@ -817,9 +818,9 @@ class CMDSSQLite::Internals {
 																											documentType];
 													if (collections.hasReference())
 														// Iterate collections
-														for (TIteratorD<I<MDSCollection> > iterator =
+														for (TArray<I<MDSCollection> >::Iterator iterator =
 																		collections->getIterator();
-																iterator.hasValue(); iterator.advance())
+																iterator; iterator++)
 															// Update collection
 															collectionUpdate(*iterator, updatesInfo);
 
@@ -829,8 +830,9 @@ class CMDSSQLite::Internals {
 																										documentType];
 													if (indexes.hasReference())
 														// Iterate indexes
-														for (TIteratorD<I<MDSIndex> > iterator = indexes->getIterator();
-																iterator.hasValue(); iterator.advance())
+														for (TArray<I<MDSIndex> >::Iterator iterator =
+																		indexes->getIterator();
+																iterator; iterator++)
 															// Update index
 															indexUpdate(*iterator, updatesInfo);
 												}
@@ -856,11 +858,11 @@ class CMDSSQLite::Internals {
 																	documentBacking->getID(), changedProperties));
 
 													// Process attachments
-													for (TIteratorS<CString> iterator =
+													for (TSet<CString>::Iterator iterator =
 																	batchDocumentInfo
 																			.getRemovedAttachmentIDs()
 																			.getIterator();
-															iterator.hasValue(); iterator.advance())
+															iterator; iterator++)
 														// Remove attachment
 														documentBacking->attachmentRemove(
 																batchDocumentInfo.getDocumentType(), *iterator,
@@ -870,43 +872,37 @@ class CMDSSQLite::Internals {
 																	addAttachmentInfosByID =
 																			batchDocumentInfo
 																					.getAddAttachmentInfosByID();
-															TSet<CString>
-																	attachmentIDs = addAttachmentInfosByID.getKeys();
-													for (TIteratorS<CString> iterator = attachmentIDs.getIterator();
-															iterator.hasValue(); iterator.advance()) {
+													for (TDictionary<MDSBatch::AddAttachmentInfo>::ValueIterator
+																	iterator =
+																			addAttachmentInfosByID.getValueIterator();
+															iterator; iterator++)
 														// Add attachment
-														const	MDSBatch::AddAttachmentInfo&	batchAddAttachmentInfo =
-																										*addAttachmentInfosByID[
-																												*iterator];
 														documentBacking->attachmentAdd(
 																batchDocumentInfo.getDocumentType(),
-																batchAddAttachmentInfo.getInfo(),
-																batchAddAttachmentInfo.getContent(), mDatabaseManager);
-													}
+																iterator->getInfo(), iterator->getContent(),
+																mDatabaseManager);
 
 													const	TDictionary<MDSBatch::UpdateAttachmentInfo>&
 																	updateAttachmentInfosByID =
 																			batchDocumentInfo
 																					.getUpdateAttachmentInfosByID();
-													attachmentIDs = updateAttachmentInfosByID.getKeys();
-													for (TIteratorS<CString> iterator = attachmentIDs.getIterator();
-															iterator.hasValue(); iterator.advance()) {
+													for (TDictionary<MDSBatch::UpdateAttachmentInfo>::ValueIterator
+																	iterator =
+																			updateAttachmentInfosByID
+																					.getValueIterator();
+															iterator; iterator++)
 														// Update attachment
-														const	MDSBatch::UpdateAttachmentInfo&
-																		batchUpdateAttachmentInfo =
-																				*updateAttachmentInfosByID[*iterator];
 														documentBacking->attachmentUpdate(
 																batchDocumentInfo.getDocumentType(),
-																batchUpdateAttachmentInfo.getID(),
-																batchUpdateAttachmentInfo.getInfo(),
-																batchUpdateAttachmentInfo.getContent(),
+																iterator->getID(),
+																iterator->getInfo(),
+																iterator->getContent(),
 																mDatabaseManager);
-													}
 
 													// Call document changed procs
-													for (TIteratorD<CMDSDocument::ChangedInfo> iterator =
+													for (TArray<CMDSDocument::ChangedInfo>::Iterator iterator =
 																	documentChangedInfos.getIterator();
-															iterator.hasValue(); iterator.advance())
+															iterator; iterator++)
 														// Call proc
 														iterator->notify(document, documentChangeKind);
 												}
@@ -917,7 +913,7 @@ class CMDSSQLite::Internals {
 												{ (*documentFullInfos) += documentBacking->getDocumentFullInfo(); }
 		static	void						addDocumentIDToDocumentIDDictionary(const CString& key,
 													const I<CMDSSQLiteDocumentBacking>& documentBacking,
-													CDictionary* documentIDByKey)
+													TDictionary<CString>* documentIDByKey)
 												{ documentIDByKey->set(key, documentBacking->getDocumentID()); }
 		static	void						addDocumentInfoToDocumentFullInfoDictionary(const CString& key,
 														const I<CMDSSQLiteDocumentBacking>& documentBacking,
@@ -992,26 +988,28 @@ class CMDSSQLite::Internals {
 													// Iterate all document changes
 													MDSBatchDocumentInfoByDocumentIDByDocumentType	batchDocumentInfoByDocumentType =
 																											batch.documentGetInfosByDocumentType();
-													TSet<CString>									documentTypes =
-																											batchDocumentInfoByDocumentType
-																													.getKeys();
-													for (TIteratorS<CString> documentTypeIterator =
-																	documentTypes.getIterator();
-															documentTypeIterator.hasValue(); documentTypeIterator.advance()) {
+													for (MDSBatchDocumentInfoByDocumentIDByDocumentType::Iterator
+																	documentTypeIterator =
+																			batchDocumentInfoByDocumentType
+																					.getIterator();
+															documentTypeIterator; documentTypeIterator++) {
 														// Setup
+														const	CString&				documentType =
+																								documentTypeIterator
+																										.getKey();
+
 														const	CMDSDocument::Info&		documentInfo =
 																								documentStorage
 																										.documentCreateInfo(
-																												*documentTypeIterator);
+																												documentType);
 																DocumentChangedInfos	documentChangedInfos =
 																								documentStorage
 																										.documentChangedInfos(
-																												*documentTypeIterator);
+																												documentType);
 
 
 
-																Info					info(internals,
-																								*documentTypeIterator);
+																Info					info(internals, documentType);
 																MDSUpdateInfoBatchQueue	updateInfoBatchQueue(
 																								databaseManager
 																										.getVariableNumberLimit(),
@@ -1026,23 +1024,19 @@ class CMDSSQLite::Internals {
 																												::Proc)
 																										processRemoves,
 																								&info);
-
-														// Update documents
-														MDSBatchDocumentInfoByDocumentID	batchDocumentInfoByDocumentID =
-																									*batchDocumentInfoByDocumentType
-																											.get(
-																											*documentTypeIterator);
-														TSet<CString>						documentIDs =
-																									batchDocumentInfoByDocumentID
-																											.getKeys();
-														for (TIteratorS<CString> documentIDIterator =
-																		documentIDs.getIterator();
-																documentIDIterator.hasValue();
-																documentIDIterator.advance()) {
+														for (MDSBatchDocumentInfoByDocumentID::Iterator
+																		documentIDIterator =
+																				documentTypeIterator
+																						.getValue()
+																						.getIterator();
+																documentIDIterator; documentIDIterator++) {
 															// Setup
+															const	CString&				documentID =
+																									documentIDIterator
+																											.getKey();
 															const	MDSBatchDocumentInfo&	batchDocumentInfo =
-																									*batchDocumentInfoByDocumentID
-																											.get(*documentIDIterator);
+																									documentIDIterator
+																											.getValue();
 
 															// Check removed
 															const	OR<I<CMDSSQLiteDocumentBacking> >&	documentBacking =
@@ -1052,7 +1046,7 @@ class CMDSSQLite::Internals {
 																// Add/update document
 																if (documentBacking.hasReference()) {
 																	// Update document
-																	(*documentBacking)->update(*documentTypeIterator,
+																	(*documentBacking)->update(documentType,
 																			batchDocumentInfo.getUpdatedPropertyMap(),
 																			batchDocumentInfo.getRemovedProperties(),
 																			databaseManager);
@@ -1065,7 +1059,7 @@ class CMDSSQLite::Internals {
 																											.getKeys()) +
 																									batchDocumentInfo
 																											.getRemovedProperties();
-																	internals.process(*documentIDIterator,
+																	internals.process(documentID,
 																			batchDocumentInfo, *documentBacking,
 																			changedProperties, documentInfo,
 																			updateInfoBatchQueue, documentChangedInfos,
@@ -1074,8 +1068,8 @@ class CMDSSQLite::Internals {
 																	// Add document
 																	I<CMDSSQLiteDocumentBacking>	newDocumentBacking(
 																											new CMDSSQLiteDocumentBacking(
-																													*documentTypeIterator,
-																													*documentIDIterator,
+																													documentType,
+																													documentID,
 																													batchDocumentInfo
 																															.getCreationUniversalTime(),
 																													batchDocumentInfo
@@ -1088,7 +1082,7 @@ class CMDSSQLite::Internals {
 																					newDocumentBacking));
 
 																	// Process
-																	internals.process(*documentIDIterator,
+																	internals.process(documentID,
 																			batchDocumentInfo, newDocumentBacking,
 																			TNSet<CString>(), documentInfo,
 																			updateInfoBatchQueue, documentChangedInfos,
@@ -1096,7 +1090,7 @@ class CMDSSQLite::Internals {
 																}
 															} else if (documentBacking.hasReference()) {
 																// Remove document
-																databaseManager.documentRemove(*documentTypeIterator,
+																databaseManager.documentRemove(documentType,
 																		(*documentBacking)->getID());
 																internals.mDocumentBackingByDocumentID.remove(
 																		TSArray<CString>(
@@ -1110,13 +1104,14 @@ class CMDSSQLite::Internals {
 																	// Create document
 																	I<CMDSDocument>	document =
 																							documentInfo.create(
-																									*documentIDIterator,
+																									documentID,
 																									documentStorage);
 
 																	// Call document changed procs
-																	for (TIteratorD<CMDSDocument::ChangedInfo> iterator =
+																	for (TArray<CMDSDocument::ChangedInfo>::Iterator
+																					iterator =
 																					documentChangedInfos.getIterator();
-																			iterator.hasValue(); iterator.advance())
+																			iterator; iterator++)
 																		// Call proc
 																		iterator->notify(document,
 																				CMDSDocument::kChangeKindRemoved);
@@ -1132,10 +1127,9 @@ class CMDSSQLite::Internals {
 													// Iterate all association changes
 													TSet<CString>	associationNames =
 																			batch.associationGetUpdatedNames();
-													for (TIteratorS<CString> associationNameIterator =
+													for (TSet<CString>::Iterator associationNameIterator =
 																	associationNames.getIterator();
-															associationNameIterator.hasValue();
-															associationNameIterator.advance()) {
+															associationNameIterator; associationNameIterator++) {
 														// Update association
 														DMAssociationInfo	associationInfo =
 																					*databaseManager
@@ -1159,10 +1153,10 @@ class CMDSSQLite::Internals {
 
 													MDSDocumentUpdateByDocumentID	documentUpdateInfoByDocumentID;
 													TNArray<CString>				documentIDs;
-													for (TIteratorD<CMDSDocument::UpdateInfo> iterator =
+													for (TArray<CMDSDocument::UpdateInfo>::Iterator iterator =
 																	documentUpdateInfo->getDocumentUpdateInfos()
 																			.getIterator();
-															iterator.hasValue(); iterator.advance()) {
+															iterator; iterator++) {
 														// Update
 														documentUpdateInfoByDocumentID.set(iterator->getDocumentID(),
 																*iterator);
@@ -1236,10 +1230,10 @@ class CMDSSQLite::Internals {
 																					&info);
 
 													// Iterate document create infos
-													for (TIteratorD<CMDSDocument::CreateInfo> iterator =
+													for (TArray<CMDSDocument::CreateInfo>::Iterator iterator =
 																	documentCreateInfo->getDocumentCreateInfos()
 																			.getIterator();
-															iterator.hasValue(); iterator.advance()) {
+															iterator; iterator++) {
 														// Setup
 														CString	documentID =
 																		iterator->getDocumentID().hasValue() ?
@@ -1516,8 +1510,7 @@ OV<SError> CMDSSQLite::associationIterateFrom(const CString& name, const CString
 
 	// Iterate document IDs;
 	const	CMDSDocument::Info&	documentInfo = documentCreateInfo(toDocumentType);
-	for (TIteratorD<CMDSAssociation::Item> iterator = associationItems.getIterator(); iterator.hasValue();
-			iterator.advance()) {
+	for (TArray<CMDSAssociation::Item>::Iterator iterator = associationItems.getIterator(); iterator; iterator++) {
 		// Check fromDocumentID
 		if (iterator->getFromDocumentID() == fromDocumentID)
 			// Call proc
@@ -1553,8 +1546,7 @@ OV<SError> CMDSSQLite::associationIterateTo(const CString& name, const CString& 
 
 	// Iterate document IDs;
 	const	CMDSDocument::Info&	documentInfo = documentCreateInfo(fromDocumentType);
-	for (TIteratorD<CMDSAssociation::Item> iterator = associationItems.getIterator(); iterator.hasValue();
-			iterator.advance()) {
+	for (TArray<CMDSAssociation::Item>::Iterator iterator = associationItems.getIterator(); iterator; iterator++) {
 		// Check fromDocumentID
 		if (iterator->getToDocumentID() == toDocumentID)
 			// Call proc
@@ -1576,7 +1568,7 @@ TVResult<SValue> CMDSSQLite::associationGetValues(const CString& name, CMDSAssoc
 	OV<I<MDSCache> >	cache = mInternals->cacheGet(cacheName);
 	if (!cache.hasValue())
 		return TVResult<SValue>(getUnknownCacheError(cacheName));
-	for (TIteratorD<CString> iterator = cachedValueNames.getIterator(); iterator.hasValue(); iterator.advance()) {
+	for (TArray<CString>::Iterator iterator = cachedValueNames.getIterator(); iterator; iterator++) {
 		// Check if have info for this cachedValueName
 		if (!(*cache)->hasValueInfo(*iterator))
 			return TVResult<SValue>(getUnknownCacheValueName(*iterator));
@@ -1590,8 +1582,8 @@ TVResult<SValue> CMDSSQLite::associationGetValues(const CString& name, CMDSAssoc
 	if (batch.hasReference()) {
 		// Get updates
 		TArray<CMDSAssociation::Update>	associationUpdates = (*batch)->associationGetUpdates(name);
-		for (TIteratorD<CMDSAssociation::Update> iterator = associationUpdates.getIterator(); iterator.hasValue();
-				iterator.advance()) {
+		for (TArray<CMDSAssociation::Update>::Iterator iterator = associationUpdates.getIterator(); iterator;
+				iterator++) {
 			// Check action
 			if (iterator->getAction() == CMDSAssociation::Update::kActionAdd)
 				// Add
@@ -1686,7 +1678,7 @@ OV<SError> CMDSSQLite::cacheRegister(const CString& name, const CString& documen
 	// Setup
 	TNArray<DMCacheValueInfo>	_cacheValueInfos;
 	TNArray<SMDSCacheValueInfo>	__cacheValueInfos;
-	for (TIteratorD<CacheValueInfo> iterator = cacheValueInfos.getIterator(); iterator.hasValue(); iterator.advance()) {
+	for (TArray<CacheValueInfo>::Iterator iterator = cacheValueInfos.getIterator(); iterator; iterator++) {
 		// Add
 		_cacheValueInfos +=
 				DMCacheValueInfo(iterator->getValueInfo().getName(), iterator->getValueInfo().getValueType(),
@@ -1723,7 +1715,7 @@ TVResult<TArray<CDictionary> > CMDSSQLite::cacheGetValues(const CString& name, c
 	if (valueNames.isEmpty())
 		return TVResult<TArray<CDictionary> >(getMissingValueNamesError());
 
-	for (TIteratorD<CString> iterator = valueNames.getIterator(); iterator.hasValue(); iterator.advance()) {
+	for (TArray<CString>::Iterator iterator = valueNames.getIterator(); iterator; iterator++) {
 		// Ensure we have this value name
 		if (!(*cache)->hasValueInfo(*iterator))
 			return TVResult<TArray<CDictionary> >(getUnknownCacheValueName(*iterator));
@@ -1807,7 +1799,7 @@ OV<SError> CMDSSQLite::collectionIterate(const CString& name, const CString& doc
 	const	CMDSDocument::Info&	documentInfo = documentCreateInfo(documentType);
 
 	// Iterate document IDs
-	for (TIteratorD<CString> iterator = documentIDs.getIterator(); iterator.hasValue(); iterator.advance())
+	for (TArray<CString>::Iterator iterator = documentIDs.getIterator(); iterator; iterator++)
 		// Call proc
 		proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
 
@@ -1827,8 +1819,8 @@ TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSSQLite::documentCreate(
 	if (batch.hasReference()) {
 		// In batch
 		UniversalTime	universalTime = SUniversalTime::getCurrent();
-		for (TIteratorD<CMDSDocument::CreateInfo> iterator = documentCreateInfos.getIterator(); iterator.hasValue();
-				iterator.advance()) {
+		for (TArray<CMDSDocument::CreateInfo>::Iterator iterator = documentCreateInfos.getIterator(); iterator;
+				iterator++) {
 			// Setup
 			CString	documentID =
 							iterator->getDocumentID().hasValue() ?
@@ -1849,8 +1841,8 @@ TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSSQLite::documentCreate(
 				&documentCreateInfo);
 
 		// Call document changed procs
-		for (TIteratorD<CMDSDocument::CreateResultInfo> iterator = documentCreateResultInfos.getIterator();
-				iterator.hasValue(); iterator.advance())
+		for (TArray<CMDSDocument::CreateResultInfo>::Iterator iterator = documentCreateResultInfos.getIterator();
+				iterator; iterator++)
 			// Call proc
 			notifyDocumentChanged(iterator->getDocument(), CMDSDocument::kChangeKindCreated);
 	}
@@ -1885,7 +1877,7 @@ OV<SError> CMDSSQLite::documentIterate(const CMDSDocument::Info& documentInfo, c
 
 	// Iterate initial document IDs
 	TNArray<CString>	documentIDsToCache;
-	for (TIteratorD<CString> iterator = documentIDs.getIterator(); iterator.hasValue(); iterator.advance()) {
+	for (TArray<CString>::Iterator iterator = documentIDs.getIterator(); iterator; iterator++) {
 		// Check what we have currently
 		if (batch.hasReference() && (*batch)->documentInfoGet(*iterator).hasReference())
 			// Have document in batch
@@ -2410,16 +2402,15 @@ OV<SError> CMDSSQLite::indexIterate(const CString& name, const CString& document
 	mInternals->indexUpdate(*index, mInternals->getUpdatesInfo(documentType, (*index)->getLastRevision()));
 
 	// Compose map
-	CDictionary	documentIDByKey;
+	TNDictionary<CString>	documentIDByKey;
 	mInternals->indexIterate(name, documentType, keys,
 			(CMDSSQLiteDocumentBacking::KeyProc) Internals::addDocumentIDToDocumentIDDictionary, &documentIDByKey);
 
 	// Iterate map
 	const	CMDSDocument::Info&	documentInfo = documentCreateInfo(documentType);
-	for (TIteratorS<CDictionary::Item> iterator = documentIDByKey.getIterator(); iterator.hasValue();
-			iterator.advance())
+	for (TDictionary<CString>::Iterator iterator = documentIDByKey.getIterator(); iterator; iterator++)
 		// Call proc
-		documentKeyProc(iterator->mKey, documentInfo.create(iterator->mValue.getString(), (CMDSDocumentStorage&) *this),
+		documentKeyProc(iterator.getKey(), documentInfo.create(iterator.getValue(), (CMDSDocumentStorage&) *this),
 				documentKeyProcUserData);
 
 	return OV<SError>();
@@ -2431,7 +2422,7 @@ TVResult<TDictionary<CString> > CMDSSQLite::infoGet(const TArray<CString>& keys)
 {
 	// Collect info
 	TNDictionary<CString>	info;
-	for (TIteratorD<CString> iterator = keys.getIterator(); iterator.hasValue(); iterator.advance())
+	for (TArray<CString>::Iterator iterator = keys.getIterator(); iterator; iterator++)
 		// Update info
 		info.set(*iterator, mInternals->mDatabaseManager.infoString(*iterator));
 
@@ -2443,9 +2434,9 @@ OV<SError> CMDSSQLite::infoSet(const TDictionary<CString>& info)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Iterate
-	for (TIteratorS<CDictionary::Item> iterator = info.getIterator(); iterator.hasValue(); iterator.advance())
+	for (TDictionary<CString>::Iterator iterator = info.getIterator(); iterator; iterator++)
 		// Set
-		mInternals->mDatabaseManager.infoSet(iterator->mKey, OV<CString>(*info[iterator->mKey]));
+		mInternals->mDatabaseManager.infoSet(iterator.getKey(), OV<CString>(iterator.getValue()));
 
 	return OV<SError>();
 }
@@ -2455,7 +2446,7 @@ OV<SError> CMDSSQLite::infoRemove(const TArray<CString>& keys)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Iterate
-	for (TIteratorD<CString> iterator = keys.getIterator(); iterator.hasValue(); iterator.advance())
+	for (TArray<CString>::Iterator iterator = keys.getIterator(); iterator; iterator++)
 		// Remove
 		mInternals->mDatabaseManager.infoSet(*iterator, OV<CString>());
 
@@ -2468,7 +2459,7 @@ TVResult<TDictionary<CString> > CMDSSQLite::internalGet(const TArray<CString>& k
 {
 	// Collect info
 	TNDictionary<CString>	info;
-	for (TIteratorD<CString> iterator = keys.getIterator(); iterator.hasValue(); iterator.advance())
+	for (TArray<CString>::Iterator iterator = keys.getIterator(); iterator; iterator++)
 		// Update info
 		info.set(*iterator, mInternals->mDatabaseManager.internalString(*iterator));
 
@@ -2480,9 +2471,9 @@ OV<SError> CMDSSQLite::internalSet(const TDictionary<CString>& info)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Iterate
-	for (TIteratorS<CDictionary::Item> iterator = info.getIterator(); iterator.hasValue(); iterator.advance())
+	for (TDictionary<CString>::Iterator iterator = info.getIterator(); iterator; iterator++)
 		// Set
-		mInternals->mDatabaseManager.internalSet(iterator->mKey, OV<CString>(*info[iterator->mKey]));
+		mInternals->mDatabaseManager.internalSet(iterator.getKey(), OV<CString>(iterator.getValue()));
 
 	return OV<SError>();
 }
@@ -2744,7 +2735,7 @@ TVResult<TArray<CMDSDocument::FullInfo> > CMDSSQLite::documentFullInfos(const CS
 	// Iterate initial document IDs
 	TNArray<CMDSDocument::FullInfo>	documentFullInfos;
 	TNArray<CString>				documentIDsToCache;
-	for (TIteratorD<CString> iterator = documentIDs.getIterator(); iterator.hasValue(); iterator.advance()) {
+	for (TArray<CString>::Iterator iterator = documentIDs.getIterator(); iterator; iterator++) {
 		// Check what we have currently
 		OR<I<CMDSSQLiteDocumentBacking> >	documentBacking =
 													mInternals->mDocumentBackingByDocumentID.getDocumentBacking(
