@@ -250,11 +250,21 @@ class CMDSDocumentStorage {
 																						fromDocument->getID(),
 																						toDocument->getID()))); }
 						DocumentsResult						associationGetDocumentsFrom(
-																	const I<CMDSDocument>& fromDocument,
+																	const CMDSDocument& fromDocument,
 																	const CMDSDocument::Info& toDocumentInfo);
+						DocumentsResult						associationGetDocumentsFrom(
+																	const I<CMDSDocument>& fromDocument,
+																	const CMDSDocument::Info& toDocumentInfo)
+																{ return associationGetDocumentsFrom(*fromDocument,
+																		toDocumentInfo); }
 						DocumentsResult						associationGetDocumentsTo(
 																	const CMDSDocument::Info& fromDocumentInfo,
-																	const I<CMDSDocument>& toDocument);
+																	const CMDSDocument& toDocument);
+						DocumentsResult						associationGetDocumentsTo(
+																	const CMDSDocument::Info& fromDocumentInfo,
+																	const I<CMDSDocument>& toDocument)
+																{ return associationGetDocumentsTo(fromDocumentInfo,
+																		*toDocument); }
 						TVResult<TArray<CDictionary> >		associationGetDetailValues(const CString& name,
 																	const TArray<CString>& fromDocumentIDs,
 																	const CString& cacheName,

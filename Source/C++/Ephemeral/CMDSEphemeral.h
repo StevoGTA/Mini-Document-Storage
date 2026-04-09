@@ -18,6 +18,7 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 	public:
 													// Lifecycle methods
 													CMDSEphemeral();
+													CMDSEphemeral(const CDictionary& storageInfo);
 													~CMDSEphemeral();
 
 													// CMDSDocumentStorage methods
@@ -165,6 +166,8 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 															const TArray<CString>& keys) const;
 		DocumentFullInfoDictionaryResult			indexGetDocumentFullInfos(const CString& name,
 															const TArray<CString>& keys) const;
+
+		CDictionary									getStorageInfo() const;
 
 	// Properties
 	private:

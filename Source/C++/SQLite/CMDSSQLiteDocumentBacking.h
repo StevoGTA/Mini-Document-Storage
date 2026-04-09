@@ -14,9 +14,9 @@ class CMDSSQLiteDatabaseManager;
 class CMDSSQLiteDocumentBacking {
 	// Procs
 	public:
-		typedef	void	(*Proc)(const I<CMDSSQLiteDocumentBacking>& documentBacking, void* userData);
-		typedef	void	(*KeyProc)(const CString& key, const I<CMDSSQLiteDocumentBacking>& documentBacking,
-								void* userData);
+		typedef	OV<SError>	(*Proc)(const I<CMDSSQLiteDocumentBacking>& documentBacking, void* userData);
+		typedef	OV<SError>	(*KeyProc)(const CString& key, const I<CMDSSQLiteDocumentBacking>& documentBacking,
+									void* userData);
 
 	// Classes
 	private:

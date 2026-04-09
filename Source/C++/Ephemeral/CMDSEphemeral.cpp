@@ -32,27 +32,55 @@ typedef	TMDSUpdateInfo<CString>							MDSUpdateInfo;
 class CMDSEphemeral::Internals {
 	// AttachmentContentInfo
 	public:
-		struct AttachmentContentInfo {
+		class AttachmentContentInfo : public CHashable {
 			// Methods
 			public:
-														// Lifecycle methods
-														AttachmentContentInfo(
-																const CMDSDocument::AttachmentInfo&
-																		documentAttachmentInfo,
-																const CData& content) :
-															mDocumentAttachmentInfo(documentAttachmentInfo),
-																	mContent(content)
-															{}
-														AttachmentContentInfo(const AttachmentContentInfo& other) :
-															mDocumentAttachmentInfo(other.mDocumentAttachmentInfo),
-																	mContent(other.mContent)
-															{}
+																// Lifecycle methods
+																AttachmentContentInfo(
+																		const CMDSDocument::AttachmentInfo&
+																				documentAttachmentInfo,
+																		const CData& content) :
+																	mDocumentAttachmentInfo(documentAttachmentInfo),
+																			mContent(content)
+																	{}
+																AttachmentContentInfo(const CDictionary& storageInfo);
+																AttachmentContentInfo(
+																		const AttachmentContentInfo& other) :
+																	mDocumentAttachmentInfo(
+																					other.mDocumentAttachmentInfo),
+																			mContent(other.mContent)
+																	{}
 
-														// Instance methods
-				const	CMDSDocument::AttachmentInfo&	getDocumentAttachmentInfo() const
-															{ return mDocumentAttachmentInfo; }
-				const	CData&							getContent() const
-															{ return mContent; }
+																// CEquatable methods
+								bool							operator==(const CEquatable& other) const
+																	{ return mDocumentAttachmentInfo.getID() ==
+																			((const AttachmentContentInfo&) other)
+																					.mDocumentAttachmentInfo.getID(); }
+
+																// CHashable methods
+								void							hashInto(
+																		CHashable::HashCollector& hashableHashCollector)
+																		const
+																	{ mDocumentAttachmentInfo.getID()
+																			.hashInto(hashableHashCollector); }
+
+																// Instance methods
+						const	CMDSDocument::AttachmentInfo&	getDocumentAttachmentInfo() const
+																	{ return mDocumentAttachmentInfo; }
+						const	CData&							getContent() const
+																	{ return mContent; }
+
+								CDictionary						getStorageInfo() const;
+
+																// Class methods
+				static			CDictionary						toStorageInfo(
+																		AttachmentContentInfo* attachmentContentInfo,
+																				void* userData)
+																	{ return attachmentContentInfo->getStorageInfo(); }
+				static			AttachmentContentInfo			fromStorageInfo(CDictionary* storageInfo,
+																		void* userData)
+																	{ return AttachmentContentInfo(*storageInfo); }
+
 			// Properties
 			private:
 				CMDSDocument::AttachmentInfo	mDocumentAttachmentInfo;
@@ -65,150 +93,187 @@ class CMDSEphemeral::Internals {
 			// Methods
 			public:
 
-													// Lifecycle methods
-													DocumentBacking(const CString& documentID, UInt32 revision,
-															UniversalTime creationUniversalTime,
-															UniversalTime modificationUniversalTime,
-															const CDictionary& propertyMap) :
-														mDocumentID(documentID), mRevision(revision),
-																mCreationUniversalTime(creationUniversalTime),
-																mModificationUniversalTime(modificationUniversalTime),
-																mPropertyMap(propertyMap)
-														{}
+															// Lifecycle methods
+															DocumentBacking(const CString& documentType,
+																	const CString& documentID, UInt32 revision,
+																	UniversalTime creationUniversalTime,
+																	UniversalTime modificationUniversalTime,
+																	const CDictionary& propertyMap) :
+																mDocumentType(documentType), mDocumentID(documentID),
+																		mRevision(revision), mActive(true),
+																		mCreationUniversalTime(creationUniversalTime),
+																		mModificationUniversalTime(
+																				modificationUniversalTime),
+																		mPropertyMap(propertyMap)
+																{}
+															DocumentBacking(const CDictionary& storageInfo);
 
-													// Instance methods
-		const	CString&							getDocumentID() const
-														{ return mDocumentID; }
-				UniversalTime						getCreationUniversalTime() const
-														{ return mCreationUniversalTime; }
-				UniversalTime						getModificationUniversalTime() const
-														{ return mModificationUniversalTime; }
+															// Instance methods
+				const	CString&							getDocumentType() const
+																{ return mDocumentType; }
+				const	CString&							getDocumentID() const
+																{ return mDocumentID; }
+						UniversalTime						getCreationUniversalTime() const
+																{ return mCreationUniversalTime; }
+						UniversalTime						getModificationUniversalTime() const
+																{ return mModificationUniversalTime; }
 
-				UInt32								getRevision() const
-														{ return mRevision; }
-				bool								isActive() const
-														{ return mActive; }
-				void								setActive(bool active)
-														{ mActive = active; }
-				CDictionary&						getPropertyMap()
-														{ return mPropertyMap; }
-				CMDSDocument::AttachmentInfoByID	getDocumentAttachmentInfoByID() const
-														{
-															// Setup
-															TNDictionary<CMDSDocument::AttachmentInfo>
-																	documentAttachmentInfoByID;
+						UInt32								getRevision() const
+																{ return mRevision; }
+						bool								isActive() const
+																{ return mActive; }
+						void								setActive(bool active)
+																{ mActive = active; }
+						CDictionary&						getPropertyMap()
+																{ return mPropertyMap; }
+						CMDSDocument::AttachmentInfoByID	getDocumentAttachmentInfoByID() const
+																{
+																	// Setup
+																	TNDictionary<CMDSDocument::AttachmentInfo>
+																			documentAttachmentInfoByID;
 
-															// Iterate
-															for (TDictionary<AttachmentContentInfo>::Iterator iterator =
-																			mAttachmentContentInfoByAttachmentID
-																					.getIterator();
-																	iterator; iterator++)
-																// Copy
-																documentAttachmentInfoByID.set(iterator.getKey(),
-																		iterator.getValue()
-																				.getDocumentAttachmentInfo());
-
-															return documentAttachmentInfoByID;
-														}
-
-				CMDSDocument::RevisionInfo			getDocumentRevisionInfo() const
-														{ return CMDSDocument::RevisionInfo(mDocumentID, mRevision); }
-				CMDSDocument::FullInfo				getDocumentFullInfo() const
-														{
-															// Setup
-															MDSDocumentAttachmentInfoByID	documentAttachmentInfoByID;
-															for (TDictionary<AttachmentContentInfo>::Iterator
-																			iterator =
+																	// Iterate
+																	for (TDictionary<AttachmentContentInfo>::Iterator
+																					iterator =
 																					mAttachmentContentInfoByAttachmentID
 																							.getIterator();
-																	iterator; iterator++)
-																// Update
-																documentAttachmentInfoByID.set(iterator.getKey(),
-																		iterator.getValue()
-																				.getDocumentAttachmentInfo());
+																			iterator; iterator++)
+																		// Copy
+																		documentAttachmentInfoByID.set(
+																				iterator.getKey(),
+																				iterator.getValue()
+																						.getDocumentAttachmentInfo());
 
-															return CMDSDocument::FullInfo(mDocumentID, mRevision,
-																	mActive, mCreationUniversalTime,
-																	mModificationUniversalTime, mPropertyMap,
-																	documentAttachmentInfoByID);
-														}
+																	return documentAttachmentInfoByID;
+																}
 
-				void								update(UInt32 revision, const OV<CDictionary>& updatedPropertyMap,
-															const OV<TSet<CString> >& removedProperties)
-														{
-															// Update
-															mRevision = revision;
-															mModificationUniversalTime = SUniversalTime::getCurrent();
-															if (updatedPropertyMap.hasValue())
-																// Update property map
-																mPropertyMap += *updatedPropertyMap;
-															if (removedProperties.hasValue())
-																// Update property map
-																mPropertyMap.remove(*removedProperties);
-														}
-				CMDSDocument::AttachmentInfo		attachmentAdd(const CString& attachmentID, UInt32 documentRevision,
-															const CDictionary& attachmentInfo,
-															const CData& attachmentContent)
-														{
-															// Setup
-															CMDSDocument::AttachmentInfo	documentAttachmentInfo(
-																									attachmentID, 1,
-																									attachmentInfo);
+						CMDSDocument::RevisionInfo			getDocumentRevisionInfo() const
+																{ return CMDSDocument::RevisionInfo(mDocumentID,
+																		mRevision); }
+						CMDSDocument::FullInfo				getDocumentFullInfo() const
+																{
+																	// Setup
+																	MDSDocumentAttachmentInfoByID
+																			documentAttachmentInfoByID;
+																	for (TDictionary<AttachmentContentInfo>::Iterator
+																					iterator =
+																							mAttachmentContentInfoByAttachmentID
+																									.getIterator();
+																			iterator; iterator++)
+																		// Update
+																		documentAttachmentInfoByID.set(
+																				iterator.getKey(),
+																				iterator.getValue()
+																						.getDocumentAttachmentInfo());
 
-															// Add
-															mAttachmentContentInfoByAttachmentID.set(attachmentID,
-																	AttachmentContentInfo(documentAttachmentInfo,
-																			attachmentContent));
+																	return CMDSDocument::FullInfo(mDocumentID,
+																			mRevision, mActive, mCreationUniversalTime,
+																			mModificationUniversalTime, mPropertyMap,
+																			documentAttachmentInfoByID);
+																}
 
-															// Update
-															mRevision = documentRevision;
-															mModificationUniversalTime = SUniversalTime::getCurrent();
+						void								update(UInt32 revision,
+																	const OV<CDictionary>& updatedPropertyMap,
+																	const OV<TSet<CString> >& removedProperties)
+																{
+																	// Update
+																	mRevision = revision;
+																	mModificationUniversalTime =
+																			SUniversalTime::getCurrent();
+																	if (updatedPropertyMap.hasValue())
+																		// Update property map
+																		mPropertyMap += *updatedPropertyMap;
+																	if (removedProperties.hasValue())
+																		// Update property map
+																		mPropertyMap.remove(*removedProperties);
+																}
+						CMDSDocument::AttachmentInfo		attachmentAdd(const CString& attachmentID,
+																	UInt32 documentRevision,
+																	const CDictionary& attachmentInfo,
+																	const CData& attachmentContent)
+																{
+																	// Setup
+																	CMDSDocument::AttachmentInfo	documentAttachmentInfo(
+																											attachmentID,
+																											1,
+																											attachmentInfo);
 
-															return documentAttachmentInfo;
-														}
-				OR<AttachmentContentInfo>			getAttachmentContentInfo(const CString& attachmentID)
-														{ return mAttachmentContentInfoByAttachmentID.get(attachmentID); }
-				UInt32								attachmentUpdate(UInt32 revision, const CString& attachmentID,
-															const CDictionary& updatedInfo, const CData& updatedContent)
-														{
-															// Setup
-															UInt32	attachmentRevision =
-																			mAttachmentContentInfoByAttachmentID.get(
-																					attachmentID)->
-																							getDocumentAttachmentInfo()
-																									.getRevision() + 1;
+																	// Add
+																	mAttachmentContentInfoByAttachmentID.set(
+																			attachmentID,
+																			AttachmentContentInfo(
+																					documentAttachmentInfo,
+																					attachmentContent));
 
-															// Update
-															mAttachmentContentInfoByAttachmentID.set(attachmentID,
-																	AttachmentContentInfo(
-																			CMDSDocument::AttachmentInfo(attachmentID,
-																					attachmentRevision, updatedInfo),
-																			updatedContent));
+																	// Update
+																	mRevision = documentRevision;
+																	mModificationUniversalTime =
+																			SUniversalTime::getCurrent();
 
-															// Update
-															mRevision = revision;
-															mModificationUniversalTime = SUniversalTime::getCurrent();
+																	return documentAttachmentInfo;
+																}
+						OR<AttachmentContentInfo>			getAttachmentContentInfo(const CString& attachmentID)
+																{ return mAttachmentContentInfoByAttachmentID.get(
+																		attachmentID); }
+						UInt32								attachmentUpdate(UInt32 revision,
+																	const CString& attachmentID,
+																	const CDictionary& updatedInfo,
+																	const CData& updatedContent)
+																{
+																	// Setup
+																	UInt32	attachmentRevision =
+																					mAttachmentContentInfoByAttachmentID
+																							.get(attachmentID)->
+																									getDocumentAttachmentInfo()
+																											.getRevision() +
+																													1;
 
-															return revision;
-														}
-				void								attachmentRemove(UInt32 revision, const CString& attachmentID)
-														{
-															// Remove
-															mAttachmentContentInfoByAttachmentID.remove(attachmentID);
+																	// Update
+																	mAttachmentContentInfoByAttachmentID.set(
+																			attachmentID,
+																			AttachmentContentInfo(
+																					CMDSDocument::AttachmentInfo(
+																							attachmentID,
+																							attachmentRevision,
+																							updatedInfo),
+																					updatedContent));
 
-															// Update
-															mRevision = revision;
-															mModificationUniversalTime = SUniversalTime::getCurrent();
-														}
+																	// Update
+																	mRevision = revision;
+																	mModificationUniversalTime =
+																			SUniversalTime::getCurrent();
 
-													// Class methods
-		static	bool								compareRevision(const I<DocumentBacking>& documentBacking1,
-															const I<DocumentBacking>& documentBacking2, void* userData)
-														{ return documentBacking1->getRevision() <
-																documentBacking2->getRevision(); }
+																	return revision;
+																}
+						void								attachmentRemove(UInt32 revision,
+																	const CString& attachmentID)
+																{
+																	// Remove
+																	mAttachmentContentInfoByAttachmentID.remove(
+																			attachmentID);
+
+																	// Update
+																	mRevision = revision;
+																	mModificationUniversalTime =
+																			SUniversalTime::getCurrent();
+																}
+
+						CDictionary							getStorageInfo() const;
+
+															// Class methods
+				static	bool								compareRevision(const I<DocumentBacking>& documentBacking1,
+																	const I<DocumentBacking>& documentBacking2,
+																	void* userData)
+																{ return documentBacking1->getRevision() <
+																		documentBacking2->getRevision(); }
+
+				static	CDictionary							toStorageInfo(I<DocumentBacking>* documentBacking,
+																	void* userData)
+																{ return (*documentBacking)->getStorageInfo(); }
 
 			// Properties
 			private:
+				CString								mDocumentType;
 				CString								mDocumentID;
 				UniversalTime						mCreationUniversalTime;
 
@@ -770,6 +835,88 @@ class CMDSEphemeral::Internals {
 
 //----------------------------------------------------------------------------------------------------------------------
 //----------------------------------------------------------------------------------------------------------------------
+// MARK: - CMDSEphemeral::Internals::AttachmentContentInfo
+
+// MARK: Lifecycle methods
+
+//----------------------------------------------------------------------------------------------------------------------
+CMDSEphemeral::Internals::AttachmentContentInfo::AttachmentContentInfo(const CDictionary& storageInfo) :
+		mDocumentAttachmentInfo(storageInfo.getDictionary(CString(OSSTR("info")))),
+		mContent(storageInfo.getData(CString(OSSTR("content"))))
+//----------------------------------------------------------------------------------------------------------------------
+{
+}
+
+// MARK: Instance methods
+
+//----------------------------------------------------------------------------------------------------------------------
+CDictionary CMDSEphemeral::Internals::AttachmentContentInfo::getStorageInfo() const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Compose Storage info
+	CDictionary	storageInfo;
+	storageInfo.set(CString(OSSTR("info")), mDocumentAttachmentInfo.getStorageInfo());
+	storageInfo.set(CString(OSSTR("content")), mContent);
+
+	return storageInfo;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - CMDSEphemeral::Internals::DocumentBacking
+
+// MARK: Lifecycle methods
+
+//----------------------------------------------------------------------------------------------------------------------
+CMDSEphemeral::Internals::DocumentBacking::DocumentBacking(const CDictionary& storageInfo) :
+		mDocumentType(storageInfo.getString(CString(OSSTR("documentType")))),
+		mDocumentID(storageInfo.getString(CString(OSSTR("documentID")))),
+		mCreationUniversalTime(storageInfo.getFloat64(CString(OSSTR("creationUniversalTime")))),
+		mRevision(storageInfo.getUInt32(CString(OSSTR("revision")))),
+		mActive(storageInfo.getBool(CString(OSSTR("active")))),
+		mModificationUniversalTime(storageInfo.getFloat64(CString(OSSTR("modificationUniversalTime")))),
+		mPropertyMap(storageInfo.getDictionary(CString(OSSTR("propertyMap"))))
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Set up Attachment Content Infos
+	for (TArray<CDictionary>::Iterator iterator =
+					storageInfo.getArrayOfDictionaries(CString(OSSTR("attachmentContentInfos"))).getIterator();
+			iterator; iterator++) {
+		// Create Attachment Content Info
+		AttachmentContentInfo	attachmentContentInfo(*iterator);
+
+		// Add
+		mAttachmentContentInfoByAttachmentID.set(attachmentContentInfo.getDocumentAttachmentInfo().getID(),
+				attachmentContentInfo);
+	}
+}
+
+// MARK: Instance methods
+
+//----------------------------------------------------------------------------------------------------------------------
+CDictionary CMDSEphemeral::Internals::DocumentBacking::getStorageInfo() const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Compose Storage info
+	CDictionary	storageInfo;
+
+	storageInfo.set(CString(OSSTR("documentType")), mDocumentType);
+	storageInfo.set(CString(OSSTR("documentID")), mDocumentID);
+	storageInfo.set(CString(OSSTR("creationUniversalTime")), mCreationUniversalTime);
+
+	storageInfo.set(CString(OSSTR("revision")), mRevision);
+	storageInfo.set(CString(OSSTR("active")), mActive);
+	storageInfo.set(CString(OSSTR("modificationUniversalTime")), mModificationUniversalTime);
+	storageInfo.set(CString(OSSTR("propertyMap")), mPropertyMap);
+	storageInfo.set(CString(OSSTR("attachmentContentInfos")),
+			TNArray<CDictionary>(mAttachmentContentInfoByAttachmentID.getValues().getArray(),
+					(TNArray<CDictionary>::MapProc) AttachmentContentInfo::toStorageInfo));
+
+	return storageInfo;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
 // MARK: - CMDSEphemeral
 
 // MARK: Lifecycle methods
@@ -779,6 +926,61 @@ CMDSEphemeral::CMDSEphemeral() : CMDSDocumentStorageServer()
 //----------------------------------------------------------------------------------------------------------------------
 {
 	mInternals = new Internals(*this);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+CMDSEphemeral::CMDSEphemeral(const CDictionary& storageInfo)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	mInternals = new Internals(*this);
+
+	// Read info
+	for (TArray<CDictionary>::Iterator iterator =
+					storageInfo.getArrayOfDictionaries(CString(OSSTR("associations"))).getIterator();
+			iterator; iterator++) {
+		// Get association
+		I<CMDSAssociation>	association(new CMDSAssociation(*iterator));
+
+		// Add association
+		mInternals->mAssociationByName.set(association->getName(), association);
+	}
+
+	for (CDictionary::Iterator iterator = storageInfo.getDictionary(CString(OSSTR("associationItems"))).getIterator();
+			iterator; iterator++) {
+		// Get association items
+		TNArray<CMDSAssociation::Item>	associationItems;
+		for (TArray<CDictionary>::Iterator associationItemIterator =
+						iterator.getValue().getArrayOfDictionaries().getIterator();
+				associationItemIterator; associationItemIterator++)
+			// Add assocation item
+			associationItems += CMDSAssociation::Item(*associationItemIterator);
+
+		// Add
+		mInternals->mAssociationItemsByName.add(iterator.getKey(), associationItems);
+	}
+
+	for (TArray<CDictionary>::Iterator iterator =
+					storageInfo.getArrayOfDictionaries(CString(OSSTR("documentBackings"))).getIterator();
+			iterator; iterator++) {
+		// Get document backing
+		I<Internals::DocumentBacking>	documentBacking(new Internals::DocumentBacking(*iterator));
+
+		// Add document backing
+		mInternals->mDocumentBackingByDocumentID.set(documentBacking->getDocumentID(), documentBacking);
+		mInternals->mDocumentIDsByDocumentType.insert(documentBacking->getDocumentType(),
+				documentBacking->getDocumentID());
+
+		// Update last revision
+		mInternals->mDocumentLastRevisionByDocumentType.set(documentBacking->getDocumentType(),
+				std::max(documentBacking->getRevision(),
+						mInternals->mDocumentLastRevisionByDocumentType.getUInt32(documentBacking->getDocumentType())));
+	}
+
+	mInternals->mInfoValueByKey += (const TDictionary<CString>&) storageInfo.getDictionary(CString(OSSTR("info")));
+
+	mInternals->mInternalValueByKey +=
+			(const TDictionary<CString>&) storageInfo.getDictionary(CString(OSSTR("internal")));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -839,9 +1041,13 @@ OV<SError> CMDSEphemeral::associationIterateFrom(const CString& name, const CStr
 			TArray<CMDSAssociation::Item>	associationItems = mInternals->associationGetItems(name);
 	for (TArray<CMDSAssociation::Item>::Iterator iterator = associationItems.getIterator(); iterator; iterator++) {
 		// Check for docmentID match
-		if (iterator->getFromDocumentID() == fromDocumentID)
+		if (iterator->getFromDocumentID() == fromDocumentID) {
 			// Match
-			proc(documentInfo.create(iterator->getToDocumentID(), (CMDSDocumentStorage&) *this), procUserData);
+			OV<SError>	error =
+								proc(documentInfo.create(iterator->getToDocumentID(), (CMDSDocumentStorage&) *this),
+										procUserData);
+			ReturnErrorIfError(error);
+		}
 	}
 
 	return OV<SError>();
@@ -871,9 +1077,13 @@ OV<SError> CMDSEphemeral::associationIterateTo(const CString& name, const CStrin
 			TArray<CMDSAssociation::Item>	associationItems = mInternals->associationGetItems(name);
 	for (TArray<CMDSAssociation::Item>::Iterator iterator = associationItems.getIterator(); iterator; iterator++) {
 		// Check for docmentID match
-		if (iterator->getToDocumentID() == toDocumentID)
+		if (iterator->getToDocumentID() == toDocumentID) {
 			// Match
-			proc(documentInfo.create(iterator->getFromDocumentID(), (CMDSDocumentStorage&) *this), procUserData);
+			OV<SError>	error =
+								proc(documentInfo.create(iterator->getFromDocumentID(), (CMDSDocumentStorage&) *this),
+										procUserData);
+			ReturnErrorIfError(error);
+		}
 	}
 
 	return OV<SError>();
@@ -1230,9 +1440,11 @@ OV<SError> CMDSEphemeral::collectionIterate(const CString& name, const CString& 
 	const	CMDSDocument::Info&	documentInfo = documentCreateInfo(documentType);
 
 	// Iterate
-	for (TArray<CString>::Iterator iterator = documentIDs->getIterator(); iterator; iterator++)
+	for (TArray<CString>::Iterator iterator = documentIDs->getIterator(); iterator; iterator++) {
 		// Call proc
-		proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
+		OV<SError>	error = proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
+		ReturnErrorIfError(error);
+	}
 
 	return OV<SError>();
 }
@@ -1293,9 +1505,9 @@ TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSEphemeral::documentCreate(
 			UniversalTime					modificationUniversalTime =
 													iterator->getModificationUniversalTime().getValue(universalTime);
 			I<Internals::DocumentBacking>	documentBacking(
-													new Internals::DocumentBacking(documentID, revision,
-															creationUniversalTime, modificationUniversalTime,
-															propertyMap));
+													new Internals::DocumentBacking(documentInfoForNew.getDocumentType(),
+															documentID, revision, creationUniversalTime,
+															modificationUniversalTime, propertyMap));
 			mInternals->mDocumentMapsLock.lockForWriting();
 			mInternals->mDocumentBackingByDocumentID.set(documentID, documentBacking);
 			mInternals->mDocumentIDsByDocumentType.insert(documentInfoForNew.getDocumentType(), documentID);
@@ -1362,9 +1574,13 @@ OV<SError> CMDSEphemeral::documentIterate(const CMDSDocument::Info& documentInfo
 	ReturnErrorIfResultError(documentBackingsResult);
 
 	for (TArray<I<Internals::DocumentBacking> >::Iterator iterator = documentBackingsResult->getIterator(); iterator;
-			iterator++)
+			iterator++) {
 		// Call proc
-		proc(documentInfo.create((*iterator)->getDocumentID(), (CMDSDocumentStorage&) *this), procUserData);
+		OV<SError>	error =
+							proc(documentInfo.create((*iterator)->getDocumentID(), (CMDSDocumentStorage&) *this),
+									procUserData);
+		ReturnErrorIfError(error);
+	}
 
 	return OV<SError>();
 }
@@ -1386,9 +1602,13 @@ OV<SError> CMDSEphemeral::documentIterate(const CMDSDocument::Info& documentInfo
 	ReturnErrorIfResultError(documentBackingsResult);
 
 	for (TArray<I<Internals::DocumentBacking> >::Iterator iterator = documentBackingsResult->getIterator(); iterator;
-			iterator++)
+			iterator++) {
 		// Call proc
-		proc(documentInfo.create((*iterator)->getDocumentID(), (CMDSDocumentStorage&) *this), procUserData);
+		OV<SError>	error =
+							proc(documentInfo.create((*iterator)->getDocumentID(), (CMDSDocumentStorage&) *this),
+									procUserData);
+		ReturnErrorIfError(error);
+	}
 
 	return OV<SError>();
 }
@@ -2035,7 +2255,7 @@ OV<SError> CMDSEphemeral::batch(BatchProc batchProc, void* userData)
 					} else {
 						// Add document
 						I<Internals::DocumentBacking>	newDocumentBacking(
-																new Internals::DocumentBacking(documentID,
+																new Internals::DocumentBacking(documentType, documentID,
 																		mInternals->nextRevision(documentType),
 																		batchDocumentInfo.getCreationUniversalTime(),
 																		batchDocumentInfo
@@ -2688,4 +2908,38 @@ TVResult<TDictionary<CMDSDocument::FullInfo> > CMDSEphemeral::indexGetDocumentFu
 	return !error.hasValue() ?
 			TVResult<TDictionary<CMDSDocument::FullInfo> >(documentFullInfos) :
 			TVResult<TDictionary<CMDSDocument::FullInfo> >(*error);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+CDictionary CMDSEphemeral::getStorageInfo() const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Compose Storage info
+	CDictionary	storageInfo;
+
+	storageInfo.set(CString(OSSTR("associations")),
+			TNArray<CDictionary>(mInternals->mAssociationByName.getValues().getArray(),
+					(TNArray<CDictionary>::MapProc) CMDSAssociation::toStorageInfo));
+
+	CDictionary	associationItemInfosByName;
+	for (TLockingArrayDictionary<CMDSAssociation::Item>::Iterator iterator =
+					mInternals->mAssociationItemsByName.getIterator();
+			iterator; iterator++)
+		// Add association item infos
+		associationItemInfosByName.set(iterator.getKey(),
+				TNArray<CDictionary>(iterator.getValue(),
+						(TNArray<CDictionary>::MapProc) CMDSAssociation::Item::toStorageInfo));
+	storageInfo.set(CString(OSSTR("associationItems")), associationItemInfosByName);
+
+	mInternals->mDocumentMapsLock.lockForReading();
+	storageInfo.set(CString(OSSTR("documentBackings")),
+			TNArray<CDictionary>(mInternals->mDocumentBackingByDocumentID.getValues().getArray(),
+					(TNArray<CDictionary>::MapProc) Internals::DocumentBacking::toStorageInfo));
+	mInternals->mDocumentMapsLock.unlockForReading();
+
+	storageInfo.set(CString(OSSTR("info")), mInternals->mInfoValueByKey);
+
+	storageInfo.set(CString(OSSTR("internal")), mInternals->mInternalValueByKey);
+
+	return storageInfo;
 }

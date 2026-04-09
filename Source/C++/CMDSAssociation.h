@@ -22,24 +22,31 @@ class CMDSAssociation : public CEquatable {
 		struct Item {
 			// Methods
 			public:
-												// Lifecycle methods
-												Item(const CString& fromDocumentID, const CString& toDocumentID) :
-													mFromDocumentID(fromDocumentID), mToDocumentID(toDocumentID)
-													{}
-												Item(const Item& other) :
-													mFromDocumentID(other.mFromDocumentID),
-															mToDocumentID(other.mToDocumentID)
-													{}
+											// Lifecycle methods
+											Item(const CString& fromDocumentID, const CString& toDocumentID) :
+												mFromDocumentID(fromDocumentID), mToDocumentID(toDocumentID)
+												{}
+											Item(const CDictionary& storageInfo);
+											Item(const Item& other) :
+												mFromDocumentID(other.mFromDocumentID),
+														mToDocumentID(other.mToDocumentID)
+												{}
 
-												// Instance methods
-						const	CString&		getFromDocumentID() const
-													{ return mFromDocumentID; }
-						const	CString&		getToDocumentID() const
-													{ return mToDocumentID; }
+											// Instance methods
+						const	CString&	getFromDocumentID() const
+												{ return mFromDocumentID; }
+						const	CString&	getToDocumentID() const
+												{ return mToDocumentID; }
 
-								bool			operator==(const Item& other) const
-													{ return (mFromDocumentID == other.mFromDocumentID) &&
-															(mToDocumentID == other.mToDocumentID); }
+								CDictionary	getStorageInfo() const;
+
+								bool		operator==(const Item& other) const
+												{ return (mFromDocumentID == other.mFromDocumentID) &&
+														(mToDocumentID == other.mToDocumentID); }
+
+											// Class methods
+				static			CDictionary	toStorageInfo(Item* item, void* userData)
+												{ return item->getStorageInfo(); }
 
 			// Properties
 			private:
@@ -112,23 +119,31 @@ class CMDSAssociation : public CEquatable {
 
 	// Methods
 	public:
-							// Lifecycle methods
-							CMDSAssociation(const CString& name, const CString& fromDocumentType,
-									const CString& toDocumentType) :
-								mName(name), mFromDocumentType(fromDocumentType), mToDocumentType(toDocumentType)
-								{}
+										// Lifecycle methods
+										CMDSAssociation(const CString& name, const CString& fromDocumentType,
+												const CString& toDocumentType) :
+											mName(name), mFromDocumentType(fromDocumentType),
+													mToDocumentType(toDocumentType)
+											{}
+										CMDSAssociation(const CDictionary& storageInfo);
 
-							// CEquatable methods
-				bool		operator==(const CEquatable& other) const
-								{ return mName == ((const CMDSAssociation&) other).mName; }
+										// CEquatable methods
+						bool			operator==(const CEquatable& other) const
+											{ return mName == ((const CMDSAssociation&) other).mName; }
 
-							// Instance methods
-		const	CString&	getName() const
-								{ return mName; }
-		const	CString&	getFromDocumentType() const
-								{ return mFromDocumentType; }
-		const	CString&	getToDocumentType() const
-								{ return mToDocumentType; }
+										// Instance methods
+				const	CString&		getName() const
+											{ return mName; }
+				const	CString&		getFromDocumentType() const
+											{ return mFromDocumentType; }
+				const	CString&		getToDocumentType() const
+											{ return mToDocumentType; }
+
+						CDictionary		getStorageInfo() const;
+
+										// Class methods
+		static			CDictionary		toStorageInfo(I<CMDSAssociation>* association, void* userData)
+											{ return (*association)->getStorageInfo(); }
 
 	// Properties
 	private:

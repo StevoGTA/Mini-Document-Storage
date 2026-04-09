@@ -92,7 +92,7 @@ CMDSDocumentStorage::~CMDSDocumentStorage()
 
 //----------------------------------------------------------------------------------------------------------------------
 TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocumentsFrom(
-		const I<CMDSDocument>& fromDocument, const CMDSDocument::Info& toDocumentInfo)
+		const CMDSDocument& fromDocument, const CMDSDocument::Info& toDocumentInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Register
@@ -104,8 +104,8 @@ TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocuments
 	// Iterate documents
 	OV<SError>	error =
 						associationIterateFrom(
-								associationName(fromDocument->getDocumentType(), toDocumentInfo.getDocumentType()),
-								fromDocument->getID(), toDocumentInfo.getDocumentType(),
+								associationName(fromDocument.getDocumentType(), toDocumentInfo.getDocumentType()),
+								fromDocument.getID(), toDocumentInfo.getDocumentType(),
 								(CMDSDocument::Proc) CMDSDocument::Collector::addDocument, &documentCollector);
 
 	return error.hasValue() ?
@@ -115,7 +115,7 @@ TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocuments
 
 //----------------------------------------------------------------------------------------------------------------------
 TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocumentsTo(
-		const CMDSDocument::Info& fromDocumentInfo, const I<CMDSDocument>& toDocument)
+		const CMDSDocument::Info& fromDocumentInfo, const CMDSDocument& toDocument)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Register
@@ -127,8 +127,8 @@ TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocuments
 	// Iterate documents
 	OV<SError>	error =
 						associationIterateTo(
-								associationName(fromDocumentInfo.getDocumentType(), toDocument->getDocumentType()),
-								fromDocumentInfo.getDocumentType(), toDocument->getID(),
+								associationName(fromDocumentInfo.getDocumentType(), toDocument.getDocumentType()),
+								fromDocumentInfo.getDocumentType(), toDocument.getID(),
 								(CMDSDocument::Proc) CMDSDocument::Collector::addDocument, &documentCollector);
 
 	return error.hasValue() ?

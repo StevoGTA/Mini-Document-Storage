@@ -33,6 +33,7 @@ class CMDSDocument : public CHashable {
 										AttachmentInfo(const CString& id, UInt32 revision, const CDictionary& info) :
 											mID(id), mRevision(revision), mInfo(info)
 											{}
+										AttachmentInfo(const CDictionary& storageInfo);
 										AttachmentInfo(const AttachmentInfo& other) :
 											mID(other.mID), mRevision(other.mRevision), mInfo(other.mInfo)
 											{}
@@ -48,6 +49,8 @@ class CMDSDocument : public CHashable {
 				const	CString&		getType() const
 											{ return mInfo.getString(CString(OSSTR("type"))); }
 
+						CDictionary		getStorageInfo() const;
+						
 			// Properties
 			private:
 				CString		mID;
@@ -394,7 +397,7 @@ class CMDSDocument : public CHashable {
 	public:
 		typedef	I<CMDSDocument>	(*CreateProc)(const CString& id, CMDSDocumentStorage& documentStorage);
 		typedef	void			(*KeyProc)(const CString& key, const I<CMDSDocument>& document, void* userData);
-		typedef	void			(*Proc)(const I<CMDSDocument>& document, void* userData);
+		typedef	OV<SError>		(*Proc)(const I<CMDSDocument>& document, void* userData);
 
 	// Infos
 	public:
@@ -450,9 +453,14 @@ class CMDSDocument : public CHashable {
 																{ return mDocuments; }
 
 															// Class methods
-				static			void						addDocument(const I<CMDSDocument>& document,
+				static			OV<SError>					addDocument(const I<CMDSDocument>& document,
 																	Collector* collector)
-																{ collector->mDocuments += document; }
+																{
+																	// Add
+																	collector->mDocuments += document;
+
+																	return OV<SError>();
+																}
 
 			// Properties
 			private:

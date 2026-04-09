@@ -97,38 +97,45 @@ class CMDSSQLite::Internals {
 	public:
 		struct DocumentBackingDocumentIDsIterateInfo {
 			public:
-						DocumentBackingDocumentIDsIterateInfo(const CMDSDocument::Info& documentInfo,
-								CMDSDocumentStorage& documentStorage, TNArray<CString>& documentIDs,
-								CMDSDocument::Proc proc, void* procUserData) :
-							mDocumentIDs(documentIDs),
-									mDocumentInfo(documentInfo), mDocumentStorage(documentStorage), mProc(proc),
-									mProcUserData(procUserData)
-							{}
-						DocumentBackingDocumentIDsIterateInfo(TNArray<CMDSDocument::FullInfo>& documentFullInfos,
-								TNArray<CString>& documentIDs) :
-							mDocumentIDs(documentIDs),
-									mProc(nil), mProcUserData(nil), mDocumentFullInfos(documentFullInfos)
-							{}
+							DocumentBackingDocumentIDsIterateInfo(const CMDSDocument::Info& documentInfo,
+									CMDSDocumentStorage& documentStorage, TNArray<CString>& documentIDs,
+									CMDSDocument::Proc proc, void* procUserData) :
+								mDocumentIDs(documentIDs),
+										mDocumentInfo(documentInfo), mDocumentStorage(documentStorage), mProc(proc),
+										mProcUserData(procUserData)
+								{}
+							DocumentBackingDocumentIDsIterateInfo(TNArray<CMDSDocument::FullInfo>& documentFullInfos,
+									TNArray<CString>& documentIDs) :
+								mDocumentIDs(documentIDs),
+										mProc(nil), mProcUserData(nil), mDocumentFullInfos(documentFullInfos)
+								{}
 
-				void	process(const I<CMDSSQLiteDocumentBacking>& documentBacking) const
-							{
-								// Check how to process
-								if (mProc != nil)
-									// Call proc
-									mProc(mDocumentInfo->create(documentBacking->getDocumentID(), *mDocumentStorage),
-											mProcUserData);
-								else
-									// Add to array
-									mDocumentFullInfos->add(documentBacking->getDocumentFullInfo());
+				OV<SError>	processX(const I<CMDSSQLiteDocumentBacking>& documentBacking) const
+								{
+									// Check how to process
+									if (mProc != nil) {
+										// Call proc
+										OV<SError>	error =
+															mProc(
+																	mDocumentInfo->create(
+																			documentBacking->getDocumentID(),
+																					*mDocumentStorage),
+																	mProcUserData);
+										ReturnErrorIfError(error);
+									} else
+										// Add to array
+										mDocumentFullInfos->add(documentBacking->getDocumentFullInfo());
 
-								// Update
-								mDocumentIDs -= documentBacking->getDocumentID();
-							}
+									// Update
+									mDocumentIDs -= documentBacking->getDocumentID();
+
+									return OV<SError>();
+								}
 
 			private:
 				TNArray<CString>&						mDocumentIDs;
 
-				OR<const CMDSDocument::Info>					mDocumentInfo;
+				OR<const CMDSDocument::Info>			mDocumentInfo;
 				OR<CMDSDocumentStorage>					mDocumentStorage;
 				CMDSDocument::Proc						mProc;
 				void*									mProcUserData;
@@ -138,14 +145,14 @@ class CMDSSQLite::Internals {
 
 	public:
 		struct DocumentBackingSinceRevisionIterateInfo {
-						DocumentBackingSinceRevisionIterateInfo(const CMDSDocument::Info& documentInfo,
-								CMDSDocumentStorage& documentStorage, CMDSDocument::Proc proc, void* procUserData) :
-							mDocumentInfo(documentInfo), mDocumentStorage(documentStorage), mProc(proc),
-									mProcUserData(procUserData)
-							{}
+							DocumentBackingSinceRevisionIterateInfo(const CMDSDocument::Info& documentInfo,
+									CMDSDocumentStorage& documentStorage, CMDSDocument::Proc proc, void* procUserData) :
+								mDocumentInfo(documentInfo), mDocumentStorage(documentStorage), mProc(proc),
+										mProcUserData(procUserData)
+								{}
 
-				void	process(const CString& documentID) const
-							{ mProc(mDocumentInfo.create(documentID, mDocumentStorage), mProcUserData); }
+				OV<SError>	processX(const CString& documentID) const
+								{ return mProc(mDocumentInfo.create(documentID, mDocumentStorage), mProcUserData); }
 
 			private:
 				const	CMDSDocument::Info&		mDocumentInfo;
@@ -595,7 +602,7 @@ class CMDSSQLite::Internals {
 
 													return MDSDocumentBackingResult(*documentBackingValue);
 												}
-				void						documentBackingsIterate(const CString& documentType,
+				OV<SError>					documentBackingsIterate(const CString& documentType,
 													const TArray<CString>& documentIDs,
 													CMDSSQLiteDocumentBacking::KeyProc documentBackingKeyProc,
 													void* userData)
@@ -608,11 +615,10 @@ class CMDSSQLite::Internals {
 																			addDocumentInfoToKeyAndDocumentInfoArray,
 																	&keyAndDocumentInfos));
 
-													// Iterate document backings
-													documentBackingsIterate(documentType, keyAndDocumentInfos,
+													return documentBackingsIterate(documentType, keyAndDocumentInfos,
 															documentBackingKeyProc, userData);
 												}
-				void						documentBackingsIterate(const CString& documentType, UInt32 sinceRevision,
+				OV<SError>					documentBackingsIterate(const CString& documentType, UInt32 sinceRevision,
 													const OV<UInt32>& count, bool activeOnly,
 													CMDSSQLiteDocumentBacking::KeyProc documentBackingKeyProc,
 													void* userData)
@@ -626,11 +632,10 @@ class CMDSSQLite::Internals {
 																			addDocumentInfoToKeyAndDocumentInfoArray,
 																	&keyAndDocumentInfos));
 
-													// Iterate document backings
-													documentBackingsIterate(documentType, keyAndDocumentInfos,
+													return documentBackingsIterate(documentType, keyAndDocumentInfos,
 															documentBackingKeyProc, userData);
 												}
-				void						documentBackingsIterate(const CString& documentType,
+				OV<SError>					documentBackingsIterate(const CString& documentType,
 													const TArray<KeyAndDocumentInfo>& keyAndDocumentInfos,
 													CMDSSQLiteDocumentBacking::KeyProc documentBackingKeyProc,
 													void* userData)
@@ -649,11 +654,15 @@ class CMDSSQLite::Internals {
 														const	OR<I<CMDSSQLiteDocumentBacking> >	documentBacking =
 																											mDocumentBackingByDocumentID[
 																													documentID];
-														if (documentBacking.hasReference())
+														if (documentBacking.hasReference()) {
 															// Have in cache
-															documentBackingKeyProc(iterator->getKey(), *documentBacking,
-																	userData);
-														else {
+															OV<SError>	error =
+																				documentBackingKeyProc(
+																						iterator->getKey(),
+																						*documentBacking,
+																						userData);
+															ReturnErrorIfError(error);
+														} else {
 															// Don't have in cache
 															keyAndDocumentInfosNotFound += *iterator;
 															documentInfosNotFound += iterator->getDocumentInfo();
@@ -711,9 +720,13 @@ class CMDSSQLite::Internals {
 																TSArray<I<CMDSSQLiteDocumentBacking> >(documentBacking));
 
 														// Call proc
-														documentBackingKeyProc(iterator->getKey(), documentBacking,
-																userData);
+														OV<SError>	error =
+																			documentBackingKeyProc(iterator->getKey(),
+																					documentBacking, userData);
+														ReturnErrorIfError(error);
 													}
+
+													return OV<SError>();
 												}
 
 				OV<I<MDSIndex> >			indexGet(const CString& name)
@@ -1199,17 +1212,17 @@ class CMDSSQLite::Internals {
 													updateInfoBatchQueue.finalize();
 												}
 
-		static	void						processDocumentBackingForDocumentIDs(const CString& key,
+		static	OV<SError>					processDocumentBackingForDocumentIDs(const CString& key,
 													const I<CMDSSQLiteDocumentBacking>& documentBacking,
 													DocumentBackingDocumentIDsIterateInfo*
 															documentBackingDocumentIDsIterateInfo)
-												{ documentBackingDocumentIDsIterateInfo->process(
+												{ return documentBackingDocumentIDsIterateInfo->processX(
 														documentBacking); }
-		static	void						processDocumentBackingForSinceRevision(const CString& key,
+		static	OV<SError>					processDocumentBackingForSinceRevision(const CString& key,
 													const I<CMDSSQLiteDocumentBacking>& documentBacking,
 													DocumentBackingSinceRevisionIterateInfo*
 															documentBackingSinceRevisionIterateInfo)
-												{ documentBackingSinceRevisionIterateInfo->process(
+												{ return documentBackingSinceRevisionIterateInfo->processX(
 														documentBacking->getDocumentID()); }
 		static	void						processDocumentCreate(DocumentCreateInfo* documentCreateInfo)
 												{
@@ -1512,9 +1525,13 @@ OV<SError> CMDSSQLite::associationIterateFrom(const CString& name, const CString
 	const	CMDSDocument::Info&	documentInfo = documentCreateInfo(toDocumentType);
 	for (TArray<CMDSAssociation::Item>::Iterator iterator = associationItems.getIterator(); iterator; iterator++) {
 		// Check fromDocumentID
-		if (iterator->getFromDocumentID() == fromDocumentID)
+		if (iterator->getFromDocumentID() == fromDocumentID) {
 			// Call proc
-			proc(documentInfo.create(iterator->getToDocumentID(), (CMDSDocumentStorage&) *this), procUserData);
+			OV<SError>	error =
+								proc(documentInfo.create(iterator->getToDocumentID(), (CMDSDocumentStorage&) *this),
+										procUserData);
+			ReturnErrorIfError(error);
+		}
 	}
 
 	return OV<SError>();
@@ -1548,9 +1565,13 @@ OV<SError> CMDSSQLite::associationIterateTo(const CString& name, const CString& 
 	const	CMDSDocument::Info&	documentInfo = documentCreateInfo(fromDocumentType);
 	for (TArray<CMDSAssociation::Item>::Iterator iterator = associationItems.getIterator(); iterator; iterator++) {
 		// Check fromDocumentID
-		if (iterator->getToDocumentID() == toDocumentID)
+		if (iterator->getToDocumentID() == toDocumentID) {
 			// Call proc
-			proc(documentInfo.create(iterator->getFromDocumentID(), (CMDSDocumentStorage&) *this), procUserData);
+			OV<SError>	error =
+								proc(documentInfo.create(iterator->getFromDocumentID(), (CMDSDocumentStorage&) *this),
+										procUserData);
+			ReturnErrorIfError(error);
+		}
 	}
 
 	return OV<SError>();
@@ -1799,9 +1820,11 @@ OV<SError> CMDSSQLite::collectionIterate(const CString& name, const CString& doc
 	const	CMDSDocument::Info&	documentInfo = documentCreateInfo(documentType);
 
 	// Iterate document IDs
-	for (TArray<CString>::Iterator iterator = documentIDs.getIterator(); iterator; iterator++)
+	for (TArray<CString>::Iterator iterator = documentIDs.getIterator(); iterator; iterator++) {
 		// Call proc
-		proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
+		OV<SError>	error = proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
+		ReturnErrorIfError(error);
+	}
 
 	return OV<SError>();
 }
@@ -1879,13 +1902,15 @@ OV<SError> CMDSSQLite::documentIterate(const CMDSDocument::Info& documentInfo, c
 	TNArray<CString>	documentIDsToCache;
 	for (TArray<CString>::Iterator iterator = documentIDs.getIterator(); iterator; iterator++) {
 		// Check what we have currently
-		if (batch.hasReference() && (*batch)->documentInfoGet(*iterator).hasReference())
+		if (batch.hasReference() && (*batch)->documentInfoGet(*iterator).hasReference()) {
 			// Have document in batch
-			proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
-		else if (mInternals->mDocumentBackingByDocumentID.getDocumentBacking(*iterator).hasReference())
+			OV<SError>	error = proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
+			ReturnErrorIfError(error);
+		} else if (mInternals->mDocumentBackingByDocumentID.getDocumentBacking(*iterator).hasReference()) {
 			// Have documentBacking in cache
-			proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
-		else
+			OV<SError>	error = proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
+			ReturnErrorIfError(error);
+		} else
 			// Will need to retrieve from database
 			documentIDsToCache += *iterator;
 	}
@@ -1894,9 +1919,15 @@ OV<SError> CMDSSQLite::documentIterate(const CMDSDocument::Info& documentInfo, c
 	Internals::DocumentBackingDocumentIDsIterateInfo	documentBackingDocumentIDsIterateInfo(documentInfo,
 																(CMDSDocumentStorage&) *this, documentIDsToCache, proc,
 																procUserData);
-	mInternals->documentBackingsIterate(documentInfo.getDocumentType(), documentIDsToCache,
-			(CMDSSQLiteDocumentBacking::KeyProc) Internals::processDocumentBackingForDocumentIDs,
-			&documentBackingDocumentIDsIterateInfo);
+	OV<SError>											error =
+																mInternals->documentBackingsIterate(
+																		documentInfo.getDocumentType(),
+																		documentIDsToCache,
+																		(CMDSSQLiteDocumentBacking::KeyProc)
+																				Internals::
+																						processDocumentBackingForDocumentIDs,
+																		&documentBackingDocumentIDsIterateInfo);
+	ReturnErrorIfError(error);
 
 	// Check if have any that we didn't find
 	if (!documentIDsToCache.isEmpty())
@@ -1919,11 +1950,10 @@ OV<SError> CMDSSQLite::documentIterate(const CMDSDocument::Info& documentInfo, b
 	// Iterate document backings
 	Internals::DocumentBackingSinceRevisionIterateInfo	documentBackingSinceRevisionIterateInfo(documentInfo,
 																(CMDSDocumentStorage&) *this, proc, procUserData);
-	mInternals->documentBackingsIterate(documentInfo.getDocumentType(), 0, OV<UInt32>(), activeOnly,
+
+	return mInternals->documentBackingsIterate(documentInfo.getDocumentType(), 0, OV<UInt32>(), activeOnly,
 			(CMDSSQLiteDocumentBacking::KeyProc) Internals::processDocumentBackingForSinceRevision,
 			&documentBackingSinceRevisionIterateInfo);
-
-	return OV<SError>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
