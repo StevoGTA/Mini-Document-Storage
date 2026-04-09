@@ -8,7 +8,36 @@
 #include "CMDSDocumentStorage.h"
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: CMDSDocument::Internals
+// MARK: CMDSDocument::AttachmentInfo
+
+// MARK :Lifecycle methods
+
+//----------------------------------------------------------------------------------------------------------------------
+CMDSDocument::AttachmentInfo::AttachmentInfo(const CDictionary& storageInfo) :
+		mID(storageInfo.getString(CString(OSSTR("id")))), mRevision(storageInfo.getUInt32(CString(OSSTR("revision")))),
+		mInfo(storageInfo.getDictionary(CString(OSSTR("info"))))
+//----------------------------------------------------------------------------------------------------------------------
+{
+}
+
+// MARK: Instance methods
+
+//----------------------------------------------------------------------------------------------------------------------
+CDictionary CMDSDocument::AttachmentInfo::getStorageInfo() const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Compose Storage info
+	CDictionary	storageInfo;
+	storageInfo.set(CString(OSSTR("id")), mID);
+	storageInfo.set(CString(OSSTR("revision")), mRevision);
+	storageInfo.set(CString(OSSTR("info")), mInfo);
+
+	return storageInfo;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - CMDSDocument::Internals
 
 class CMDSDocument::Internals {
 	public:
@@ -230,7 +259,7 @@ OV<SInt32> CMDSDocument::getSInt32(const CString& property) const
 {
 	// Get value
 	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, makeI());
-	AssertFailIf(value.hasValue() && (value->getType() != SValue::kTypeSInt32));
+	AssertFailIf(value.hasValue() && !value->canCoerceToType(SValue::kTypeSInt32));
 
 	return value.hasValue() ? OV<SInt32>(value->getSInt32()) : OV<SInt32>();
 }
@@ -254,7 +283,7 @@ OV<SInt64> CMDSDocument::getSInt64(const CString& property) const
 {
 	// Get value
 	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, makeI());
-	AssertFailIf(value.hasValue() && (value->getType() != SValue::kTypeSInt64));
+	AssertFailIf(value.hasValue() && !value->canCoerceToType(SValue::kTypeSInt64));
 
 	return value.hasValue() ? OV<SInt64>(value->getSInt64()) : OV<SInt64>();
 }
@@ -302,7 +331,7 @@ OV<UInt8> CMDSDocument::getUInt8(const CString& property) const
 {
 	// Get value
 	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, makeI());
-	AssertFailIf(value.hasValue() && (value->getType() != SValue::kTypeUInt8));
+	AssertFailIf(value.hasValue() && !value->canCoerceToType(SValue::kTypeUInt8));
 
 	return value.hasValue() ? OV<UInt8>(value->getUInt8()) : OV<UInt8>();
 }
@@ -340,7 +369,7 @@ OV<UInt16> CMDSDocument::getUInt16(const CString& property) const
 {
 	// Get value
 	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, makeI());
-	AssertFailIf(value.hasValue() && (value->getType() != SValue::kTypeUInt16));
+	AssertFailIf(value.hasValue() && !value->canCoerceToType(SValue::kTypeUInt16));
 
 	return value.hasValue() ? OV<UInt16>(value->getUInt16()) : OV<UInt16>();
 }
@@ -364,7 +393,7 @@ OV<UInt32> CMDSDocument::getUInt32(const CString& property) const
 {
 	// Get value
 	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, makeI());
-	AssertFailIf(value.hasValue() && (value->getType() != SValue::kTypeUInt32));
+	AssertFailIf(value.hasValue() && !value->canCoerceToType(SValue::kTypeUInt32));
 
 	return value.hasValue() ? OV<UInt32>(value->getUInt32()) : OV<UInt32>();
 }
@@ -388,7 +417,7 @@ OV<UInt64> CMDSDocument::getUInt64(const CString& property) const
 {
 	// Get value
 	OV<SValue>	value = mInternals->mDocumentStorage.documentValue(property, makeI());
-	AssertFailIf(value.hasValue() && (value->getType() != SValue::kTypeUInt64));
+	AssertFailIf(value.hasValue() && !value->canCoerceToType(SValue::kTypeUInt64));
 
 	return value.hasValue() ? OV<UInt64>(value->getUInt64()) : OV<UInt64>();
 }
@@ -433,7 +462,7 @@ void CMDSDocument::set(const CString& property, const TArray<CMDSDocument>& docu
 {
 	// Collect document IDs
 	TNArray<CString>	documentIDs;
-	for (TIteratorD<CMDSDocument> iterator = documents.getIterator(); iterator.hasValue(); iterator.advance())
+	for (TArray<CMDSDocument>::Iterator iterator = documents.getIterator(); iterator; iterator++)
 		// Add document ID
 		documentIDs += iterator->getID();
 	set(property, documentIDs);
@@ -457,16 +486,13 @@ TArray<CMDSDocument::AttachmentInfo> CMDSDocument::getAttachmentInfos(const CStr
 																getDocumentType(), getID());
 
 	// Filter by type
-	TSet<CString>			attachmentIDs = attachmentInfoByID->getKeys();
 	TNArray<AttachmentInfo>	attachmentInfos;
-	for (TIteratorS<CString> iterator = attachmentIDs.getIterator(); iterator.hasValue(); iterator.advance()) {
-		// Get Attachment Info
-		AttachmentInfo&	attachmentInfo = *(attachmentInfoByID->get(*iterator));
-
+	for (CMDSDocument::AttachmentInfoByID::ValueIterator iterator = attachmentInfoByID->getValueIterator(); iterator;
+			iterator++) {
 		// Check type
-		if (attachmentInfo.getType() == type)
+		if (iterator->getType() == type)
 			// Match!
-			attachmentInfos += attachmentInfo;
+			attachmentInfos += *iterator;
 	}
 
 	return attachmentInfos;

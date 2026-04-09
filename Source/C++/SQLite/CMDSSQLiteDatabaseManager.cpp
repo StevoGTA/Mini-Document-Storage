@@ -373,8 +373,8 @@ class CAssociationContentsTable {
 		static	void			add(const TArray<Item>& items, CSQLiteTable& table)
 									{
 										// Iterate items
-										for (TIteratorD<Item> iterator = items.getIterator(); iterator.hasValue();
-												iterator.advance()) {
+										for (TArray<Item>::Iterator iterator = items.getIterator(); iterator;
+												iterator++) {
 											// Insert
 											TableColumnAndValue	tableColumnAndValues[] =
 																		{
@@ -390,8 +390,8 @@ class CAssociationContentsTable {
 		static	void			remove(const TArray<Item>& items, CSQLiteTable& table)
 									{
 										// Iterate items
-										for (TIteratorD<Item> iterator = items.getIterator(); iterator.hasValue();
-												iterator.advance())
+										for (TArray<Item>::Iterator iterator = items.getIterator(); iterator;
+												iterator++)
 											// Delete
 											table.deleteRow(
 													CSQLiteWhere(mFromIDTableColumn,
@@ -459,8 +459,8 @@ class CCachesTable {
 									{
 										// Setup
 										TNArray<CDictionary>	infos;
-										for (TIteratorD<CacheValueInfo> iterator = cacheValueInfos.getIterator();
-												iterator.hasValue(); iterator.advance())
+										for (TArray<CacheValueInfo>::Iterator iterator = cacheValueInfos.getIterator();
+												iterator; iterator++)
 											// Add info
 											infos += iterator->getInfo();
 
@@ -511,8 +511,8 @@ class CCachesTable {
 																			*resultsRow.getBlob(mInfoTableColumn));
 
 										TNArray<CacheValueInfo>	cacheValueInfos;
-										for (TIteratorD<CDictionary> iterator = infos.getIterator();
-												iterator.hasValue(); iterator.advance())
+										for (TArray<CDictionary>::Iterator iterator = infos.getIterator(); iterator;
+												iterator++)
 											// Add Cache Value Info
 											cacheValueInfos += CacheValueInfo(*iterator);
 
@@ -560,8 +560,8 @@ class CCacheContentsTable {
 									{
 										// Setup
 										TNArray<CSQLiteTableColumn>	tableColumns(mIDTableColumn);
-										for (TIteratorD<CacheValueInfo> iterator = cacheValueInfos.getIterator();
-												iterator.hasValue(); iterator.advance())
+										for (TArray<CacheValueInfo>::Iterator iterator = cacheValueInfos.getIterator();
+												iterator; iterator++)
 											// Add table column
 											tableColumns +=
 													CSQLiteTableColumn(iterator->getName(),
@@ -597,26 +597,23 @@ class CCacheContentsTable {
 										// Check if have updates
 										if (valueInfoByID.hasValue() && !valueInfoByID->isEmpty()) {
 											// Update
-											TSet<CString>	keys = valueInfoByID->getKeys();
-											for (TIteratorS<CString> keyIterator = keys.getIterator();
-													keyIterator.hasValue(); keyIterator.advance()) {
-												// Setup
-														SInt64			id = keyIterator->getSInt64();
-												const	CDictionary&	valueInfo = *(*valueInfoByID)[id];
-
+											for (CMDSSQLiteDatabaseManager::ValueInfoByID::Iterator
+															valueInfoByIDIterator = valueInfoByID->getIterator();
+													valueInfoByIDIterator; valueInfoByIDIterator++) {
 												// Compose table columns
 												TNArray<TableColumnAndValue>	tableColumnAndValues;
-												tableColumnAndValues += TableColumnAndValue(mIDTableColumn, id);
+												tableColumnAndValues +=
+														TableColumnAndValue(mIDTableColumn,
+																valueInfoByIDIterator.getKey());
 
-												TSet<CString>	valueInfoKeys = valueInfo.getKeys();
-												for (TIteratorS<CString> valueInfoKeyIterator =
-																valueInfoKeys.getIterator();
-														valueInfoKeyIterator.hasValue(); valueInfoKeyIterator.advance())
-													// Setup
+												for (CDictionary::Iterator valueInfoIterator =
+																valueInfoByIDIterator.getValue().getIterator();
+														valueInfoIterator; valueInfoIterator++)
+													// Add
 													tableColumnAndValues +=
 															TableColumnAndValue(
-																	table.getTableColumn(*valueInfoKeyIterator),
-																	*valueInfo[*valueInfoKeyIterator]);
+																	table.getTableColumn(valueInfoIterator.getKey()),
+																	valueInfoIterator.getValue());
 
 												// Insert or replace row for this id
 												table.insertOrReplaceRow(tableColumnAndValues);
@@ -1759,8 +1756,9 @@ class CIndexContentsTable {
 											idsToRemove += SSQLiteValue::valuesFrom(*removedIDs);
 										if (indexKeysInfos.hasValue() && !indexKeysInfos->isEmpty()) {
 											// Have info to add
-											for (TIteratorD<IndexKeysInfo> iterator = indexKeysInfos->getIterator();
-													iterator.hasValue(); iterator.advance())
+											for (TArray<IndexKeysInfo>::Iterator iterator =
+															indexKeysInfos->getIterator();
+													iterator; iterator++)
 												// Add value
 												idsToRemove += SSQLiteValue(iterator->getID());
 										}
@@ -1774,13 +1772,13 @@ class CIndexContentsTable {
 										// Check if have info to add
 										if (indexKeysInfos.hasValue()) {
 											// Iterate info
-											for (TIteratorD<IndexKeysInfo> indexKeysInfoIterator =
+											for (TArray<IndexKeysInfo>::Iterator indexKeysInfoIterator =
 															indexKeysInfos->getIterator();
-													indexKeysInfoIterator.hasValue(); indexKeysInfoIterator.advance())
+													indexKeysInfoIterator; indexKeysInfoIterator++)
 												// Insert new keys
-												for (TIteratorD<CString> keyIterator =
+												for (TArray<CString>::Iterator keyIterator =
 																indexKeysInfoIterator->getKeys().getIterator();
-														keyIterator.hasValue(); keyIterator.advance()) {
+														keyIterator; keyIterator++) {
 													// Insert this key
 													TableColumnAndValue	tableColumnAndValues[] =
 																				{
@@ -1912,10 +1910,10 @@ class CMDSSQLiteDatabaseManager::Internals {
 																		CAssociationContentsTable::mFromIDTableColumn));
 														info.set(CString(OSSTR("toID")), toID);
 
-														for (TIteratorD<CSQLiteTableColumn> iterator =
+														for (TArray<CSQLiteTableColumn>::Iterator iterator =
 																		associationDetailInfo->mTableColumns
 																				.getIterator();
-																iterator.hasValue(); iterator.advance()) {
+																iterator; iterator++) {
 															// Check kind
 															switch (iterator->getKind()) {
 																case CSQLiteTableColumn::kKindInteger:
@@ -2019,9 +2017,9 @@ class CMDSSQLiteDatabaseManager::Internals {
 													*cacheGetValuesInfo->mDocumentIDByID[id]);
 
 											// Iterate cached value names
-											for (TIteratorD<CSQLiteTableColumn> iterator =
+											for (TArray<CSQLiteTableColumn>::Iterator iterator =
 															cacheGetValuesInfo->mTableColumns.getIterator();
-													iterator.hasValue(); iterator.advance()) {
+													iterator; iterator++) {
 												// Get SQLiteTableColumn
 												switch (iterator->getKind()) {
 													case CSQLiteTableColumn::kKindInteger:
@@ -2509,8 +2507,7 @@ TArray<CMDSAssociation::Item> CMDSSQLiteDatabaseManager::associationGet(const CS
 
 	// Prepare result
 	TNArray<CMDSAssociation::Item>	associationItems;
-	for (TIteratorD<CAssociationContentsTable::Item> iterator = items.getIterator(); iterator.hasValue();
-			iterator.advance())
+	for (TArray<CAssociationContentsTable::Item>::Iterator iterator = items.getIterator(); iterator; iterator++)
 		// Add association item
 		associationItems +=
 				CMDSAssociation::Item(*fromDocumentIDByID[iterator->getFromID()],
@@ -2548,8 +2545,7 @@ TVResult<TArray<CMDSAssociation::Item> > CMDSSQLiteDatabaseManager::associationG
 
 	// Prepare result
 	TNArray<CMDSAssociation::Item>	associationItems;
-	for (TIteratorD<CAssociationContentsTable::Item> iterator = items.getIterator(); iterator.hasValue();
-			iterator.advance())
+	for (TArray<CAssociationContentsTable::Item>::Iterator iterator = items.getIterator(); iterator; iterator++)
 		// Add association item
 		associationItems += CMDSAssociation::Item(fromDocumentID, *toDocumentIDByID[iterator->getToID()]);
 
@@ -2584,8 +2580,7 @@ TVResult<TArray<CMDSAssociation::Item> > CMDSSQLiteDatabaseManager::associationG
 
 	// Prepare result
 	TNArray<CMDSAssociation::Item>	associationItems;
-	for (TIteratorD<CAssociationContentsTable::Item> iterator = items.getIterator(); iterator.hasValue();
-			iterator.advance())
+	for (TArray<CAssociationContentsTable::Item>::Iterator iterator = items.getIterator(); iterator; iterator++)
 		// Add association item
 		associationItems += CMDSAssociation::Item(*fromDocumentIDByID[iterator->getFromID()], toDocumentID);
 
@@ -2703,7 +2698,7 @@ void CMDSSQLiteDatabaseManager::associationUpdate(const CString& name, const TAr
 	// Update Association
 	TNArray<CAssociationContentsTable::Item>	addAssociationContentsTableItems;
 	TNArray<CAssociationContentsTable::Item>	removeAssociationContentsTableItems;
-	for (TIteratorD<CMDSAssociation::Update> iterator = updates.getIterator(); iterator.hasValue(); iterator.advance())
+	for (TArray<CMDSAssociation::Update>::Iterator iterator = updates.getIterator(); iterator; iterator++)
 		// Check update action
 		if (iterator->getAction() == CMDSAssociation::Update::kActionAdd)
 			// Add
@@ -2733,7 +2728,7 @@ TVResult<SValue> CMDSSQLiteDatabaseManager::associationDetail(const I<CMDSAssoci
 	CDocumentTypeInfoTable::DocumentIDByID	fromDocumentIDByID =
 													CDocumentTypeInfoTable::getDocumentIDByID(fromDocumentIDs,
 															fromDocumentTables.getInfoTable());
-	if (fromDocumentIDByID.getKeyCount() < fromDocumentIDs.getCount()) {
+	if (fromDocumentIDByID.getCount() < fromDocumentIDs.getCount()) {
 		// Did not resolve all documentIDs
 				TNSet<CString>	notFoundFromDocumentIDs =
 										TNSet<CString>(fromDocumentIDs).getDifference(fromDocumentIDByID.getValues());
@@ -2770,8 +2765,8 @@ TVResult<SValue> CMDSSQLiteDatabaseManager::associationDetail(const I<CMDSAssoci
 															toDocumentTables.getInfoTable());
 
 	TNArray<CDictionary>	finalizedResults;
-	for (TIteratorD<CDictionary> iterator = associationDetailsInfo.getInfos().getIterator(); iterator.hasValue();
-			iterator.advance()) {
+	for (TArray<CDictionary>::Iterator iterator = associationDetailsInfo.getInfos().getIterator(); iterator;
+			iterator++) {
 		// Make copy
 		CDictionary	info(*iterator);
 		info.set(CString(OSSTR("fromID")), *fromDocumentIDByID[info.getSInt64(CString(OSSTR("fromID")))]);
@@ -2792,7 +2787,7 @@ TVResult<SValue> CMDSSQLiteDatabaseManager::associationSum(const I<CMDSAssociati
 	Internals::DocumentTables&	fromDocumentTables = mInternals->getDocumentTables(association->getFromDocumentType());
 
 	TNArray<SSQLiteValue>		fromIDs;
-	for (TIteratorD<CString> iterator = fromDocumentIDs.getIterator(); iterator.hasValue(); iterator.advance()) {
+	for (TArray<CString>::Iterator iterator = fromDocumentIDs.getIterator(); iterator; iterator++) {
 		// Get fromID
 		OV<SInt64>	fromID = CDocumentTypeInfoTable::getID(*iterator, fromDocumentTables.getInfoTable());
 		if (!fromID.hasValue())
@@ -2900,7 +2895,7 @@ TVResult<TArray<CDictionary> > CMDSSQLiteDatabaseManager::cacheGetValues(
 		// Setup
 		documentIDByID = CDocumentTypeInfoTable::getDocumentIDByID(*documentIDs, documentTables.getInfoTable());
 
-		if (documentIDByID.getKeyCount() < documentIDs->getCount()) {
+		if (documentIDByID.getCount() < documentIDs->getCount()) {
 			// Did not resolve all documentIDs
 			CString	documentID = *TNSet<CString>(*documentIDs).getDifference(documentIDByID.getValues()).getAny();
 
@@ -3417,41 +3412,39 @@ void CMDSSQLiteDatabaseManager::batch(BatchProc batchProc, void* userData)
 	Internals::BatchInfo	batchInfo = *mInternals->mBatchInfoByThreadRef.get(CThread::getCurrentRefAsString());
 	mInternals->mBatchInfoByThreadRef.remove(CThread::getCurrentRefAsString());
 
-	for (TIteratorS<CString> iterator = batchInfo.getDocumentLastRevisionTypesNeedingWrite().getIterator();
-			iterator.hasValue(); iterator.advance())
+	for (TSet<CString>::Iterator iterator = batchInfo.getDocumentLastRevisionTypesNeedingWrite().getIterator();
+			iterator; iterator++)
 		// Update
 		CDocumentsTable::set(**mInternals->mDocumentLastRevisionByDocumentType.get(*iterator), *iterator,
 				mInternals->mDocumentsTable);
-	for (TIteratorS<CDictionary::Item> iterator = batchInfo.getCacheUpdateInfoByName().getIterator();
-			iterator.hasValue(); iterator.advance()) {
+	for (TDictionary<Internals::CacheUpdateInfo>::Iterator iterator =
+					batchInfo.getCacheUpdateInfoByName().getIterator();
+			iterator; iterator++) {
 		// Setup
-		const	Internals::CacheUpdateInfo&	cacheUpdateInfo =
-															*((Internals::CacheUpdateInfo*)
-																	iterator->mValue.getOpaque());
+		const	Internals::CacheUpdateInfo&	cacheUpdateInfo = iterator.getValue();
 
 		// Update cache
-		Internals::cacheUpdate(iterator->mKey, cacheUpdateInfo.getValueInfoByID(),
+		Internals::cacheUpdate(iterator.getKey(), cacheUpdateInfo.getValueInfoByID(),
 				cacheUpdateInfo.getRemovedIDs(), cacheUpdateInfo.getLastRevision(), mInternals);
 	}
-	for (TIteratorS<CDictionary::Item> iterator = batchInfo.getCollectionUpdateInfoByName().getIterator();
-			iterator.hasValue(); iterator.advance()) {
+	for (TDictionary<Internals::CollectionUpdateInfo>::Iterator iterator =
+					batchInfo.getCollectionUpdateInfoByName().getIterator();
+			iterator; iterator++) {
 		// Setup
-		const	Internals::CollectionUpdateInfo&	collectionUpdateInfo =
-															*((Internals::CollectionUpdateInfo*)
-																	iterator->mValue.getOpaque());
+		const	Internals::CollectionUpdateInfo&	collectionUpdateInfo = iterator.getValue();
 
 		// Update collection
-		Internals::collectionUpdate(iterator->mKey, collectionUpdateInfo.getIncludedIDs(),
+		Internals::collectionUpdate(iterator.getKey(), collectionUpdateInfo.getIncludedIDs(),
 				collectionUpdateInfo.getNotIncludedIDs(), collectionUpdateInfo.getLastRevision(), mInternals);
 	}
-	for (TIteratorS<CDictionary::Item> iterator = batchInfo.getIndexUpdateInfoByName().getIterator();
-			iterator.hasValue(); iterator.advance()) {
+	for (TDictionary<Internals::IndexUpdateInfo>::Iterator iterator =
+					batchInfo.getIndexUpdateInfoByName().getIterator();
+			iterator; iterator++) {
 		// Setup
-		const	Internals::IndexUpdateInfo&	indexUpdateInfo =
-													*((Internals::IndexUpdateInfo*) iterator->mValue.getOpaque());
+		const	Internals::IndexUpdateInfo&	indexUpdateInfo = iterator.getValue();
 
 		// Update index
-		Internals::indexUpdate(iterator->mKey, indexUpdateInfo.getIndexKeysInfos(), indexUpdateInfo.getRemovedIDs(),
+		Internals::indexUpdate(iterator.getKey(), indexUpdateInfo.getIndexKeysInfos(), indexUpdateInfo.getRemovedIDs(),
 				indexUpdateInfo.getLastRevision(), mInternals);
 	}
 }

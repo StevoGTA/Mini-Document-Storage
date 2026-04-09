@@ -155,8 +155,7 @@ template <typename DB> class TMDSBatch {
 																			mUpdatedPropertyMap.getValue(property));
 																else if (mInitialPropertyMap.hasValue())
 																	// Try initial property map
-																	return OV<SValue>(
-																			mInitialPropertyMap->getValue(property));
+																	return mInitialPropertyMap->getOValue(property);
 																else
 																	// Sorry
 																	return OV<SValue>();
@@ -190,24 +189,30 @@ template <typename DB> class TMDSBatch {
 																				initialDocumentAttachmentInfoByID);
 
 																// Process adds
-																TSet<CString>	keys =
+																for (typename TDictionary<AddAttachmentInfo>::Iterator
+																				iterator =
 																						mAddAttachmentInfosByID
-																								.getKeys();
-																for (TIteratorS<CString> iterator = keys.getIterator();
-																		iterator.hasValue(); iterator.advance())
+																								.getIterator();
+																		iterator; iterator++)
 																	// Process add
-																	updatedDocumentAttachmentInfoByID.set(*iterator,
-																			mAddAttachmentInfosByID[*iterator]->
-																					getDocumentAttachmentInfo());
+																	updatedDocumentAttachmentInfoByID.set(
+																			iterator.getKey(),
+																			iterator
+																					.getValue()
+																					.getDocumentAttachmentInfo());
 
 																// Process updates
-																keys = mUpdateAttachmentInfosByID.getKeys();
-																for (TIteratorS<CString> iterator = keys.getIterator();
-																		iterator.hasValue(); iterator.advance())
+																for (typename TNDictionary<UpdateAttachmentInfo>::Iterator
+																				iterator =
+																						mUpdateAttachmentInfosByID
+																								.getIterator();
+																		iterator; iterator++)
 																	// Process update
-																	updatedDocumentAttachmentInfoByID.set(*iterator,
-																			mUpdateAttachmentInfosByID[*iterator]->
-																					getDocumentAttachmentInfo());
+																	updatedDocumentAttachmentInfoByID.set(
+																			iterator.getKey(),
+																			iterator
+																					.getValue()
+																					.getDocumentAttachmentInfo());
 
 																// Process removes
 																updatedDocumentAttachmentInfoByID.remove(
@@ -332,9 +337,9 @@ template <typename DB> class TMDSBatch {
 															TArray<CMDSAssociation::Update>	associationUpdates =
 																									*mAssociationUpdatesByAssociationName[
 																											name];
-															for (TIteratorD<CMDSAssociation::Update> iterator =
+															for (TArray<CMDSAssociation::Update>::Iterator iterator =
 																			associationUpdates.getIterator();
-																	iterator.hasValue(); iterator.advance()) {
+																	iterator; iterator++) {
 																// Check update
 																if (iterator->getAction() ==
 																		CMDSAssociation::Update::kActionAdd)
@@ -400,18 +405,16 @@ template <typename DB> class TMDSBatch {
 														TNDictionary<DocumentInfoByDocumentID >	info;
 
 														// Iterate changes
-														TSet<CString>	keys = mDocumentInfoByDocumentID.getKeys();
-														for (TIteratorS<CString> iterator = keys.getIterator();
-																iterator.hasValue(); iterator.advance()) {
+														for (typename DocumentInfoByDocumentID::Iterator iterator =
+																		mDocumentInfoByDocumentID.getIterator();
+																iterator; iterator++) {
 															// Update
-															DocumentInfo&	documentInfo =
-																					*mDocumentInfoByDocumentID[
-																							*iterator];
+															const	DocumentInfo&	documentInfo = iterator.getValue();
 															if (!info.contains(documentInfo.getDocumentType()))
 																// Create dictionary
 																info.set(documentInfo.getDocumentType(),
 																		DocumentInfoByDocumentID());
-															info[documentInfo.getDocumentType()]->set(*iterator,
+															info[documentInfo.getDocumentType()]->set(iterator.getKey(),
 																	documentInfo);
 														}
 
@@ -423,16 +426,14 @@ template <typename DB> class TMDSBatch {
 														TNArray<CString>	documentIDs;
 
 														// Iterate changes
-														TSet<CString>	keys = mDocumentInfoByDocumentID.getKeys();
-														for (TIteratorS<CString> iterator = keys.getIterator();
-																iterator.hasValue(); iterator.advance()) {
+														for (typename DocumentInfoByDocumentID::Iterator iterator =
+																		mDocumentInfoByDocumentID.getIterator();
+																iterator; iterator++) {
 															// Update
-															DocumentInfo&	documentInfo =
-																					*mDocumentInfoByDocumentID[
-																							*iterator];
+															const	DocumentInfo&	documentInfo = iterator.getValue();
 															if (documentInfo.getDocumentType() == documentType)
 																// Add document ID
-																documentIDs += *iterator;
+																documentIDs += iterator.getKey();
 														}
 
 														return documentIDs;

@@ -73,8 +73,9 @@ template <typename T, typename AT> class TMDSCollection : public CEquatable {
 											AT			includedIDs;
 											AT			notIncludedIDs;
 											OV<UInt32>	lastRevision;
-											for (TIteratorD<TMDSUpdateInfo<T> > iterator = updateInfos.getIterator();
-													iterator.hasValue(); iterator.advance()) {
+											for (typename TArray<TMDSUpdateInfo<T> >::Iterator iterator =
+															updateInfos.getIterator();
+													iterator; iterator++) {
 												// Check if there is something to do
 												if (!mCheckRelevantProperties ||
 														!iterator->getChangedProperties().hasValue() ||
