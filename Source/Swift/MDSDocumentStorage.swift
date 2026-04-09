@@ -78,9 +78,9 @@ public protocol MDSDocumentStorage {
 	func associationRegister(named name :String, fromDocumentType :String, toDocumentType :String) throws
 	func associationGet(for name :String) throws -> [MDSAssociation.Item]
 	func associationIterate(for name :String, from fromDocumentID :String, toDocumentType :String,
-			proc :(_ document :MDSDocument) -> Void) throws
-	func associationIterate(for name :String, fromDocumentType :String, to toDocumentID :String,
-			proc :(_ document :MDSDocument) -> Void) throws
+			proc :MDSDocument.Proc) throws
+	func associationIterate(for name :String, fromDocumentType :String, to toDocumentID :String, proc :MDSDocument.Proc)
+			throws
 	func associationGetValues(for name :String, action :MDSAssociation.GetValueAction,
 			fromDocumentIDs :[String], cacheName :String, cachedValueNames :[String]) throws -> Any
 	func associationUpdate(for name :String, updates :[MDSAssociation.Update]) throws
@@ -93,16 +93,16 @@ public protocol MDSDocumentStorage {
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
 			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc, checkRelevantProperties :Bool) throws
 	func collectionGetDocumentCount(for name :String) throws -> Int
-	func collectionIterate(name :String, documentType :String, proc :(_ document :MDSDocument) -> Void) throws
+	func collectionIterate(name :String, documentType :String, proc :MDSDocument.Proc) throws
 
 	func documentCreate(documentType :String, documentCreateInfos :[MDSDocument.CreateInfo],
 			proc :MDSDocument.CreateProc) throws ->
 			[(document :MDSDocument, documentOverviewInfo :MDSDocument.OverviewInfo?)]
 	func documentGetCount(for documentType :String) throws -> Int
 	func documentIterate(for documentType :String, documentIDs :[String], documentCreateProc :MDSDocument.CreateProc,
-			proc :(_ document :MDSDocument) -> Void) throws
+			proc :MDSDocument.Proc) throws
 	func documentIterate(for documentType :String, activeOnly: Bool, documentCreateProc :MDSDocument.CreateProc,
-			proc :(_ document :MDSDocument) -> Void) throws
+			proc :MDSDocument.Proc) throws
 
 	func documentCreationDate(for document :MDSDocument) -> Date
 	func documentModificationDate(for document :MDSDocument) -> Date
@@ -135,7 +135,7 @@ public protocol MDSDocumentStorage {
 	func internalGet(for keys :[String]) -> [String : String]
 	func internalSet(_ info :[String : String]) throws
 
-	func batch(_ proc :() throws -> MDSBatchResult) rethrows
+	func batch(_ proc :() throws -> MDSBatchResult) throws
 
 	func register<T : MDSDocument>(
 			documentCreateProc :@escaping (_ id :String, _ documentStorage :MDSDocumentStorage) -> T)

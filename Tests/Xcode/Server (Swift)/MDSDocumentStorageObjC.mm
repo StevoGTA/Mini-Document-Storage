@@ -152,7 +152,7 @@
 		self.revision = documentAttachmentInfo.getRevision();
 		self.info =
 				(NSDictionary*)
-						CFBridgingRelease(CCoreFoundation::createDictionaryRefFrom(documentAttachmentInfo.getInfo()));
+						CFBridgingRelease(*CCoreFoundation::dictionaryRefFrom(documentAttachmentInfo.getInfo()));
 	}
 
 	return self;
@@ -230,16 +230,15 @@
 				[NSDate dateWithTimeIntervalSinceReferenceDate:documentFullInfo.getModificationUniversalTime()];
 		self.propertyMap =
 				(NSDictionary*)
-						CFBridgingRelease(CCoreFoundation::createDictionaryRefFrom(documentFullInfo.getPropertyMap()));
+						CFBridgingRelease(*CCoreFoundation::dictionaryRefFrom(documentFullInfo.getPropertyMap()));
 
-		const	TSet<CString>	keys = documentFullInfo.getAttachmentInfoByID().getKeys();
 		self.attachmentInfoByID = [[NSMutableDictionary alloc] init];
-		for (TIteratorS<CString> iterator = keys.getIterator(); iterator.hasValue(); iterator.advance())
+		for (CMDSDocument::AttachmentInfoByID::Iterator
+						iterator = documentFullInfo.getAttachmentInfoByID().getIterator();
+				iterator; iterator++)
 			[(NSMutableDictionary*) self.attachmentInfoByID
-					setObject:
-							[[MDSDocumentAttachmentInfo alloc]
-									initWithDocumentAttachmentInfo:*documentFullInfo.getAttachmentInfoByID()[*iterator]]
-					forKey:(__bridge NSString*) iterator->getOSString()];
+					setObject: [[MDSDocumentAttachmentInfo alloc] initWithDocumentAttachmentInfo:iterator.getValue()]
+					forKey:(__bridge NSString*) iterator.getKey().getOSString()];
 	}
 
 	return self;
@@ -470,8 +469,7 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 
 	// Prepare results
 	*outAssociationItems = [[NSMutableArray alloc] init];
-	for (TIteratorD<CMDSAssociation::Item> iterator = associationItemsResult.getValue().getIterator();
-			iterator.hasValue(); iterator.advance())
+	for (TArray<CMDSAssociation::Item>::Iterator iterator = associationItemsResult->getIterator(); iterator; iterator++)
 		// Add object
 		[(NSMutableArray*) *outAssociationItems
 				addObject:[[MDSAssociationItem alloc] initWithAssociationItem:*iterator]];
@@ -504,9 +502,9 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 	*outTotalCount =  documentStorageServerDocumentRevisionInfosWithTotalCount->getTotalCount();
 
 	*outDocumentRevisionInfos = [[NSMutableArray alloc] init];
-	for (TIteratorD<CMDSDocument::RevisionInfo> iterator =
+	for (TArray<CMDSDocument::RevisionInfo>::Iterator iterator =
 					documentStorageServerDocumentRevisionInfosWithTotalCount->getDocumentRevisionInfos().getIterator();
-			iterator.hasValue(); iterator.advance())
+			iterator; iterator++)
 		// Add object
 		[(NSMutableArray*) *outDocumentRevisionInfos
 				addObject:[[MDSDocumentRevisionInfo alloc] initWithDocumentRevisionInfo:*iterator]];
@@ -539,9 +537,9 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 	*outTotalCount = documentStorageServerDocumentRevisionInfosWithTotalCount->getTotalCount();
 
 	*outDocumentRevisionInfos = [[NSMutableArray alloc] init];
-	for (TIteratorD<CMDSDocument::RevisionInfo> iterator =
+	for (TArray<CMDSDocument::RevisionInfo>::Iterator iterator =
 					documentStorageServerDocumentRevisionInfosWithTotalCount->getDocumentRevisionInfos().getIterator();
-			iterator.hasValue(); iterator.advance())
+			iterator; iterator++)
 		// Add object
 		[(NSMutableArray*) *outDocumentRevisionInfos
 				addObject:[[MDSDocumentRevisionInfo alloc] initWithDocumentRevisionInfo:*iterator]];
@@ -574,9 +572,9 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 	*outTotalCount = documentStorageServerDocumentFullInfosWithTotalCount->getTotalCount();
 
 	*outDocumentFullInfos = [[NSMutableArray alloc] init];
-	for (TIteratorD<CMDSDocument::FullInfo> iterator =
+	for (TArray<CMDSDocument::FullInfo>::Iterator iterator =
 					documentStorageServerDocumentFullInfosWithTotalCount->getDocumentFullInfos().getIterator();
-			iterator.hasValue(); iterator.advance())
+			iterator; iterator++)
 		// Add object
 		[(NSMutableArray*) *outDocumentFullInfos
 				addObject:[[MDSDocumentFullInfo alloc] initWithDocumentFullInfo:*iterator]];
@@ -609,9 +607,9 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 	*outTotalCount = documentStorageServerDocumentFullInfosWithTotalCount->getTotalCount();
 
 	*outDocumentFullInfos = [[NSMutableArray alloc] init];
-	for (TIteratorD<CMDSDocument::FullInfo> iterator =
+	for (TArray<CMDSDocument::FullInfo>::Iterator iterator =
 					documentStorageServerDocumentFullInfosWithTotalCount->getDocumentFullInfos().getIterator();
-			iterator.hasValue(); iterator.advance())
+			iterator; iterator++)
 		// Add object
 		[(NSMutableArray*) *outDocumentFullInfos
 				addObject:[[MDSDocumentFullInfo alloc] initWithDocumentFullInfo:*iterator]];
@@ -652,13 +650,13 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 		case kMDSAssociationGetValueActionDetail:
 			// Detail
 			*outInfo =
-					(NSArray*) CFBridgingRelease(CCoreFoundation::createArrayRefFrom(value->getArrayOfDictionaries()));
+					(NSArray*) CFBridgingRelease(*CCoreFoundation::arrayRefFrom(value->getArrayOfDictionaries()));
 			break;
 
 		case kMDSAssociationGetValueActionSum:
 			// Sum
 			*outInfo =
-					(NSArray*) CFBridgingRelease(CCoreFoundation::createDictionaryRefFrom(value->getDictionary()));
+					(NSArray*) CFBridgingRelease(*CCoreFoundation::dictionaryRefFrom(value->getDictionary()));
 			break;
 	}
 
@@ -741,10 +739,10 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 
 	// Compose results
 	*outInfos = [[NSMutableArray alloc] init];
-	for (TIteratorD<CDictionary> iterator = infos->getIterator(); iterator.hasValue(); iterator.advance())
+	for (TArray<CDictionary>::Iterator iterator = infos->getIterator(); iterator; iterator++)
 		// Add result
 		[(NSMutableArray*) *outInfos
-				addObject:(NSDictionary*) CFBridgingRelease(CCoreFoundation::createDictionaryRefFrom(*iterator))];
+				addObject:(NSDictionary*) CFBridgingRelease(*CCoreFoundation::dictionaryRefFrom(*iterator))];
 
 	return YES;
 }
@@ -817,9 +815,9 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 
 	// Prepare results
 	*outDocumentRevisionInfos = [[NSMutableArray alloc] init];
-	for (TIteratorD<CMDSDocument::RevisionInfo> iterator =
+	for (TArray<CMDSDocument::RevisionInfo>::Iterator iterator =
 					documentStorageServerDocumentRevisionInfos->getValue().getIterator();
-			iterator.hasValue(); iterator.advance())
+			iterator; iterator++)
 		// Add object
 		[(NSMutableArray*) *outDocumentRevisionInfos
 				addObject:[[MDSDocumentRevisionInfo alloc] initWithDocumentRevisionInfo:*iterator]];
@@ -848,8 +846,9 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 
 	// Prepare results
 	*outDocumentFullInfos = [[NSMutableArray alloc] init];
-	for (TIteratorD<CMDSDocument::FullInfo> iterator = documentStorageServerDocumentFullInfos->getValue().getIterator();
-			iterator.hasValue(); iterator.advance())
+	for (TArray<CMDSDocument::FullInfo>::Iterator iterator =
+					documentStorageServerDocumentFullInfos->getValue().getIterator();
+			iterator; iterator++)
 		// Add object
 		[(NSMutableArray*) *outDocumentFullInfos
 				addObject:[[MDSDocumentFullInfo alloc] initWithDocumentFullInfo:*iterator]];
@@ -879,8 +878,8 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 	if (result.hasValue()) {
 		// Success
 		*outDocumentOverviewInfos = [[NSMutableArray<MDSDocumentOverviewInfo*> alloc] init];
-		for (TIteratorD<CMDSDocument::CreateResultInfo> iterator = result.getValue().getIterator(); iterator.hasValue();
-				iterator.advance())
+		for (TArray<CMDSDocument::CreateResultInfo>::Iterator iterator = result.getValue().getIterator(); iterator;
+				iterator++)
 			// Add Overview Info
 			[(NSMutableArray<MDSDocumentOverviewInfo*>*) *outDocumentOverviewInfos
 					addObject:
@@ -936,8 +935,8 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 
 	// Prepare results
 	*documentRevisionInfos = [[NSMutableArray alloc] init];
-	for (TIteratorD<CMDSDocument::RevisionInfo> iterator = documentRevisionInfosResult->getIterator();
-			iterator.hasValue(); iterator.advance())
+	for (TArray<CMDSDocument::RevisionInfo>::Iterator iterator = documentRevisionInfosResult->getIterator(); iterator;
+			iterator++)
 		// Add object
 		[(NSMutableArray*) *documentRevisionInfos
 				addObject:[[MDSDocumentRevisionInfo alloc] initWithDocumentRevisionInfo:*iterator]];
@@ -968,8 +967,8 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 
 	// Prepare results
 	*documentRevisionInfos = [[NSMutableArray alloc] init];
-	for (TIteratorD<CMDSDocument::RevisionInfo> iterator = documentRevisionInfosResult->getIterator();
-			iterator.hasValue(); iterator.advance())
+	for (TArray<CMDSDocument::RevisionInfo>::Iterator iterator = documentRevisionInfosResult->getIterator(); iterator;
+			iterator++)
 		// Add object
 		[(NSMutableArray*) *documentRevisionInfos
 				addObject:[[MDSDocumentRevisionInfo alloc] initWithDocumentRevisionInfo:*iterator]];
@@ -996,8 +995,8 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 
 	// Prepare results
 	*documentFullInfos = [[NSMutableArray alloc] init];
-	for (TIteratorD<CMDSDocument::FullInfo> iterator = documentFullInfosResult->getIterator(); iterator.hasValue();
-			iterator.advance())
+	for (TArray<CMDSDocument::FullInfo>::Iterator iterator = documentFullInfosResult->getIterator(); iterator;
+			iterator++)
 		// Add object
 		[(NSMutableArray*) *documentFullInfos
 				addObject:[[MDSDocumentFullInfo alloc] initWithDocumentFullInfo:*iterator]];
@@ -1027,8 +1026,8 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 
 	// Prepare results
 	*documentFullInfos = [[NSMutableArray alloc] init];
-	for (TIteratorD<CMDSDocument::FullInfo> iterator = documentFullInfosResult->getIterator(); iterator.hasValue();
-			iterator.advance())
+	for (TArray<CMDSDocument::FullInfo>::Iterator iterator = documentFullInfosResult->getIterator(); iterator;
+			iterator++)
 		// Add object
 		[(NSMutableArray*) *documentFullInfos
 				addObject:[[MDSDocumentFullInfo alloc] initWithDocumentFullInfo:*iterator]];
@@ -1062,8 +1061,8 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 
 	// Prepare results
 	*outDocumentFullInfos = [[NSMutableArray alloc] init];
-	for (TIteratorD<CMDSDocument::FullInfo> iterator = documentFullInfosResult->getIterator(); iterator.hasValue();
-			iterator.advance())
+	for (TArray<CMDSDocument::FullInfo>::Iterator iterator = documentFullInfosResult->getIterator(); iterator;
+			iterator++)
 		// Add object
 		[(NSMutableArray*) *outDocumentFullInfos
 				addObject:[[MDSDocumentFullInfo alloc] initWithDocumentFullInfo:*iterator]];
@@ -1117,7 +1116,7 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 	}
 
 	// Prepare result
-	*outData = (NSData*) CFBridgingRelease(CCoreFoundation::createDataRefFrom(*data));
+	*outData = (NSData*) CFBridgingRelease(*CCoreFoundation::dataRefFrom(*data));
 
 	return YES;
 }
@@ -1205,7 +1204,7 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 
 	// Prepare results
 	*outDocumentRevisionInfoDictionary = [[NSMutableDictionary alloc] init];
-	for (TIteratorD<CString> iterator = keysArray.getIterator(); iterator.hasValue(); iterator.advance())
+	for (TArray<CString>::Iterator iterator = keysArray.getIterator(); iterator; iterator++)
 		// Add object
 		[(NSMutableDictionary*) *outDocumentRevisionInfoDictionary
 				setObject:
@@ -1240,7 +1239,7 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 
 	// Prepare results
 	*outDocumentFullInfoDictionary = [[NSMutableDictionary alloc] init];
-	for (TIteratorD<CString> iterator = keysArray.getIterator(); iterator.hasValue(); iterator.advance())
+	for (TArray<CString>::Iterator iterator = keysArray.getIterator(); iterator; iterator++)
 		// Add object
 		[(NSMutableDictionary*) *outDocumentFullInfoDictionary
 				setObject:
@@ -1275,7 +1274,7 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 	}
 
 	// Prepare out info
-	*outInfo = (NSDictionary*) CFBridgingRelease(CCoreFoundation::createDictionaryRefFrom(*info));
+	*outInfo = (NSDictionary*) CFBridgingRelease(*CCoreFoundation::dictionaryRefFrom(*info));
 
 	return YES;
 }
@@ -1335,11 +1334,7 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 - (NSError*) errorFrom:(const SError&) error
 {
 	return [NSError errorWithDomain:(__bridge NSString*) error.getDomain().getOSString() code:error.getCode()
-			userInfo:
-					@{
-						NSLocalizedDescriptionKey:
-								(__bridge NSString*) error.getDefaultLocalizedDescription().getOSString(),
-					 }];
+			userInfo:@{NSLocalizedDescriptionKey:(__bridge NSString*) error.getLocalizedDescription().getOSString()}];
 }
 
 @end

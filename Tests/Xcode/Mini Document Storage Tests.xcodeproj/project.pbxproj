@@ -80,7 +80,6 @@
 		0A36CDF82A1F3201005C7A40 /* CMDSEphemeral.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A9C63892A19EC6E00800DBA /* CMDSEphemeral.cpp */; };
 		0A36CDF92A1F3210005C7A40 /* CMDSDocumentStorage.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A9C638C2A19EC6F00800DBA /* CMDSDocumentStorage.cpp */; };
 		0A36CDFA2A1F348D005C7A40 /* CUUID.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F36F2A0E133C00E4F149 /* CUUID.cpp */; };
-		0A36CDFC2A1F34B9005C7A40 /* CUUID-Apple.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F3402A0E133B00E4F149 /* CUUID-Apple.cpp */; };
 		0A4313B028E3C1BC00CD1A6B /* MDSAssociation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4313AF28E3C1BC00CD1A6B /* MDSAssociation.swift */; };
 		0A4313B128E3C1BC00CD1A6B /* MDSAssociation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4313AF28E3C1BC00CD1A6B /* MDSAssociation.swift */; };
 		0A4313B228E3C1BC00CD1A6B /* MDSAssociation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A4313AF28E3C1BC00CD1A6B /* MDSAssociation.swift */; };
@@ -226,6 +225,11 @@
 		0AC76DF12A79D3A600C656A9 /* MDSDocumentStorageServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AC76DF02A79D3A600C656A9 /* MDSDocumentStorageServer.swift */; };
 		0AC798C52D76D99F00AF505F /* ArgumentParser in Frameworks */ = {isa = PBXBuildFile; productRef = 0AC798C42D76D99F00AF505F /* ArgumentParser */; };
 		0AC798C82D76D9ED00AF505F /* Vapor in Frameworks */ = {isa = PBXBuildFile; productRef = 0AC798C72D76D9ED00AF505F /* Vapor */; };
+		0AC9E8EA2F8829AB00D7C980 /* Sequence+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55520E27C5DA60003E497B /* Sequence+Extensions.swift */; };
+		0AC9E8EC2F8829DA00D7C980 /* CMDSAssociation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0AC9E8EB2F8829DA00D7C980 /* CMDSAssociation.cpp */; };
+		0AC9E8ED2F882A2700D7C980 /* Sequence+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55520E27C5DA60003E497B /* Sequence+Extensions.swift */; };
+		0AC9E8EE2F882A2700D7C980 /* Sequence+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55520E27C5DA60003E497B /* Sequence+Extensions.swift */; };
+		0AC9E8EF2F882A2700D7C980 /* Sequence+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55520E27C5DA60003E497B /* Sequence+Extensions.swift */; };
 		0ACCD91428137C6B001D52CB /* IndexUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACCD91328137C6B001D52CB /* IndexUnitTests.swift */; };
 		0ACCD9162814EBBC001D52CB /* CollectionUnitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ACCD9152814EBBC001D52CB /* CollectionUnitTests.swift */; };
 		0AD596002B33D1B7005E3ADC /* CJSON.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0A16F2CB2A0E133900E4F149 /* CJSON.cpp */; };
@@ -485,7 +489,6 @@
 		0A16F33D2A0E133B00E4F149 /* CCoreGraphics.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CCoreGraphics.cpp; sourceTree = "<group>"; };
 		0A16F33E2A0E133B00E4F149 /* CCoreServices-Apple.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "CCoreServices-Apple.cpp"; sourceTree = "<group>"; };
 		0A16F33F2A0E133B00E4F149 /* CFilesystem-Apple.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = "CFilesystem-Apple.mm"; sourceTree = "<group>"; };
-		0A16F3402A0E133B00E4F149 /* CUUID-Apple.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "CUUID-Apple.cpp"; sourceTree = "<group>"; };
 		0A16F3412A0E133B00E4F149 /* CPreferences-Apple.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "CPreferences-Apple.cpp"; sourceTree = "<group>"; };
 		0A16F3422A0E133B00E4F149 /* CApplication-Apple.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = "CApplication-Apple.cpp"; sourceTree = "<group>"; };
 		0A16F3432A0E133B00E4F149 /* CCoreMediaVideoCodec.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CCoreMediaVideoCodec.h; sourceTree = "<group>"; };
@@ -526,8 +529,6 @@
 		0A16F3702A0E133C00E4F149 /* CString.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CString.cpp; sourceTree = "<group>"; };
 		0A16F3712A0E133C00E4F149 /* CDictionary.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CDictionary.h; sourceTree = "<group>"; };
 		0A16F3722A0E133C00E4F149 /* CppToolboxAssert.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CppToolboxAssert.h; sourceTree = "<group>"; };
-		0A16F3732A0E133C00E4F149 /* Compare.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Compare.cpp; sourceTree = "<group>"; };
-		0A16F3742A0E133C00E4F149 /* CPreferences.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CPreferences.cpp; sourceTree = "<group>"; };
 		0A16F3752A0E133C00E4F149 /* CNotificationCenter.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CNotificationCenter.cpp; sourceTree = "<group>"; };
 		0A16F3762A0E133C00E4F149 /* CPreferences.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CPreferences.h; sourceTree = "<group>"; };
 		0A16F3772A0E133C00E4F149 /* CProgress.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CProgress.cpp; sourceTree = "<group>"; };
@@ -549,12 +550,10 @@
 		0A16F3882A0E133C00E4F149 /* CppToolboxAssert.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CppToolboxAssert.cpp; sourceTree = "<group>"; };
 		0A16F3892A0E133C00E4F149 /* SError.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = SError.cpp; sourceTree = "<group>"; };
 		0A16F38A2A0E133C00E4F149 /* TimeAndDate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TimeAndDate.h; sourceTree = "<group>"; };
-		0A16F38B2A0E133C00E4F149 /* Compare.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Compare.h; sourceTree = "<group>"; };
 		0A16F38C2A0E133C00E4F149 /* CUUID.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CUUID.h; sourceTree = "<group>"; };
 		0A16F38D2A0E133C00E4F149 /* SError.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SError.h; sourceTree = "<group>"; };
 		0A16F38E2A0E133C00E4F149 /* CIterator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CIterator.h; sourceTree = "<group>"; };
 		0A16F38F2A0E133C00E4F149 /* CNotificationCenter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CNotificationCenter.h; sourceTree = "<group>"; };
-		0A16F3902A0E133C00E4F149 /* CTreeViewBacking.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CTreeViewBacking.cpp; sourceTree = "<group>"; };
 		0A16F3912A0E133C00E4F149 /* CURL.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CURL.cpp; sourceTree = "<group>"; };
 		0A16F3922A0E133C00E4F149 /* CSet.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CSet.cpp; sourceTree = "<group>"; };
 		0A16F3932A0E133C00E4F149 /* TWrappers.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TWrappers.h; sourceTree = "<group>"; };
@@ -569,8 +568,6 @@
 		0A16F39C2A0E133D00E4F149 /* CData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CData.h; sourceTree = "<group>"; };
 		0A16F39D2A0E133D00E4F149 /* CLogServices.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CLogServices.cpp; sourceTree = "<group>"; };
 		0A16F39F2A0E133D00E4F149 /* SValue.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SValue.h; sourceTree = "<group>"; };
-		0A16F3A02A0E133D00E4F149 /* CTreeItem.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CTreeItem.h; sourceTree = "<group>"; };
-		0A16F3A12A0E133D00E4F149 /* CTreeViewBacking.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CTreeViewBacking.h; sourceTree = "<group>"; };
 		0A16F3A22A0E133D00E4F149 /* CData.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CData.cpp; sourceTree = "<group>"; };
 		0A16F3A52A0E133D00E4F149 /* CCodecRegistry.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CCodecRegistry.cpp; sourceTree = "<group>"; };
 		0A16F3A72A0E133D00E4F149 /* CH264VideoCodec.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CH264VideoCodec.cpp; sourceTree = "<group>"; };
@@ -808,6 +805,8 @@
 		0AC76DF02A79D3A600C656A9 /* MDSDocumentStorageServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MDSDocumentStorageServer.swift; sourceTree = "<group>"; };
 		0AC76DF22A79D46D00C656A9 /* CMDSDocumentStorageServer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CMDSDocumentStorageServer.h; sourceTree = "<group>"; };
 		0AC7D3402B16CB4000AB9F5B /* CReferenceCountable.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CReferenceCountable.h; sourceTree = "<group>"; };
+		0AC9E8E92F88259600D7C980 /* Tuple.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Tuple.h; sourceTree = "<group>"; };
+		0AC9E8EB2F8829DA00D7C980 /* CMDSAssociation.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CMDSAssociation.cpp; sourceTree = "<group>"; };
 		0ACCD91328137C6B001D52CB /* IndexUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IndexUnitTests.swift; sourceTree = "<group>"; };
 		0ACCD9152814EBBC001D52CB /* CollectionUnitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionUnitTests.swift; sourceTree = "<group>"; };
 		0ADC8E8628BED43600632551 /* Server (Swift) */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "Server (Swift)"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1228,7 +1227,6 @@
 				0A16F3412A0E133B00E4F149 /* CPreferences-Apple.cpp */,
 				0A16F33B2A0E133B00E4F149 /* CString-Apple.cpp */,
 				0A16F33C2A0E133B00E4F149 /* CTimer-Apple.mm */,
-				0A16F3402A0E133B00E4F149 /* CUUID-Apple.cpp */,
 				0A16F34B2A0E133B00E4F149 /* SError-Apple.h */,
 				0A16F34E2A0E133B00E4F149 /* SError-Apple.cpp */,
 				0A16F34D2A0E133B00E4F149 /* TimeAndDate-Apple.cpp */,
@@ -1325,8 +1323,6 @@
 				0A7F3FE02B92A93300E22467 /* CHashable.cpp */,
 				0A16F38F2A0E133C00E4F149 /* CNotificationCenter.h */,
 				0A16F3752A0E133C00E4F149 /* CNotificationCenter.cpp */,
-				0A16F38B2A0E133C00E4F149 /* Compare.h */,
-				0A16F3732A0E133C00E4F149 /* Compare.cpp */,
 				0A16F3722A0E133C00E4F149 /* CppToolboxAssert.h */,
 				0A16F3882A0E133C00E4F149 /* CppToolboxAssert.cpp */,
 				0A16F38E2A0E133C00E4F149 /* CIterator.h */,
@@ -1335,7 +1331,6 @@
 				0A16F39B2A0E133D00E4F149 /* CLogServices.h */,
 				0A16F39D2A0E133D00E4F149 /* CLogServices.cpp */,
 				0A16F3762A0E133C00E4F149 /* CPreferences.h */,
-				0A16F3742A0E133C00E4F149 /* CPreferences.cpp */,
 				0A16F3832A0E133C00E4F149 /* CProgress.h */,
 				0A16F3772A0E133C00E4F149 /* CProgress.cpp */,
 				0AC7D3402B16CB4000AB9F5B /* CReferenceCountable.h */,
@@ -1344,9 +1339,6 @@
 				0A16F3852A0E133C00E4F149 /* CString.h */,
 				0A16F3702A0E133C00E4F149 /* CString.cpp */,
 				0A16F3862A0E133C00E4F149 /* CTimer.h */,
-				0A16F3A02A0E133D00E4F149 /* CTreeItem.h */,
-				0A16F3A12A0E133D00E4F149 /* CTreeViewBacking.h */,
-				0A16F3902A0E133C00E4F149 /* CTreeViewBacking.cpp */,
 				0A16F3952A0E133C00E4F149 /* CURL.h */,
 				0A16F3912A0E133C00E4F149 /* CURL.cpp */,
 				0A16F38C2A0E133C00E4F149 /* CUUID.h */,
@@ -1365,6 +1357,7 @@
 				0A9FA1442D6EAD5D00AFB37B /* TimeAndDate+Default.cpp */,
 				0A16F3992A0E133C00E4F149 /* TIndexes.h */,
 				0A16F3872A0E133C00E4F149 /* TResult.h */,
+				0AC9E8E92F88259600D7C980 /* Tuple.h */,
 				0A16F3932A0E133C00E4F149 /* TWrappers.h */,
 			);
 			path = Base;
@@ -1812,6 +1805,7 @@
 				0A9C63902A19EC9400800DBA /* Server */,
 				0A9C637D2A19EC6E00800DBA /* SQLite */,
 				0AB3D2452A70E19900347E86 /* CMDSAssociation.h */,
+				0AC9E8EB2F8829DA00D7C980 /* CMDSAssociation.cpp */,
 				0A9C638D2A19EC6F00800DBA /* CMDSDocument.h */,
 				0A9C637C2A19EC6E00800DBA /* CMDSDocument.cpp */,
 				0A9C638A2A19EC6E00800DBA /* CMDSDocumentStorage.h */,
@@ -2047,6 +2041,7 @@
 				0A1F800427E40543007F8920 /* SQLiteStatementPerformer.swift in Sources */,
 				0A1F800927E40543007F8920 /* SQLiteInnerJoin.swift in Sources */,
 				0A55526327C5DB66003E497B /* HTTPEndpointClient.swift in Sources */,
+				0AC9E8ED2F882A2700D7C980 /* Sequence+Extensions.swift in Sources */,
 				0A55526127C5DB42003E497B /* HTTPEndpointRequest.swift in Sources */,
 				0A55526027C5DB32003E497B /* String+Extensions.swift in Sources */,
 				0A55526727C5DBD1003E497B /* LockingPrimitives.swift in Sources */,
@@ -2112,6 +2107,7 @@
 				0A4313B128E3C1BC00CD1A6B /* MDSAssociation.swift in Sources */,
 				0A1F7FF827E40528007F8920 /* MDSIndex.swift in Sources */,
 				0A5E187E27C71F860089E550 /* FileManager+Extensions.swift in Sources */,
+				0AC9E8EE2F882A2700D7C980 /* Sequence+Extensions.swift in Sources */,
 				0A91AB7A28127F7000FE1549 /* Child.swift in Sources */,
 				0A9668162818CA45001CBC7B /* IndexTransactionTests.swift in Sources */,
 				0A5E187A27C71F7F0089E550 /* Dictionary+Extensions.swift in Sources */,
@@ -2191,6 +2187,7 @@
 				0A1F801C27E40544007F8920 /* SQLiteTrigger.swift in Sources */,
 				0A1F801B27E40544007F8920 /* SQLiteInnerJoin.swift in Sources */,
 				0A1F801627E40544007F8920 /* SQLiteStatementPerformer.swift in Sources */,
+				0AC9E8EF2F882A2700D7C980 /* Sequence+Extensions.swift in Sources */,
 				0A5E188327C71F8F0089E550 /* RangeReplaceableCollection+Extensions.swift in Sources */,
 				0A5E186927C71F3C0089E550 /* LockingDictionary.swift in Sources */,
 				0A5E188927C71F9F0089E550 /* URL+Extensions.swift in Sources */,
@@ -2219,6 +2216,7 @@
 				0A2F30802A17434D00855E9B /* CSet.cpp in Sources */,
 				0ADC8EA728BED86500632551 /* File.swift in Sources */,
 				0ADC8EAF28BED8DC00632551 /* String+Extensions.swift in Sources */,
+				0AC9E8EC2F8829DA00D7C980 /* CMDSAssociation.cpp in Sources */,
 				0AE25CCF2B20018F00EB2BDE /* CMDSSQLite.cpp in Sources */,
 				0A9C636E2A19EAC300800DBA /* CSQLiteResultsRow.cpp in Sources */,
 				0ADC8EA128BED85200632551 /* SQLiteResultsRow.swift in Sources */,
@@ -2233,6 +2231,7 @@
 				0A6BAAE529C3EB36006ECB61 /* MDSSQLite+MDSDocumentStorageServer.swift in Sources */,
 				0A9C63692A19E93200800DBA /* CLogServices.cpp in Sources */,
 				0ADC8E9928BED81C00632551 /* MDSSQLiteDocumentBacking.swift in Sources */,
+				0AC9E8EA2F8829AB00D7C980 /* Sequence+Extensions.swift in Sources */,
 				0ADC8E9728BED81400632551 /* MDSDocument.swift in Sources */,
 				0A4FE8C52B2A88F00076C753 /* CSQLiteLimit.cpp in Sources */,
 				0ADC8EB328BED91300632551 /* LockingPrimitives.swift in Sources */,
@@ -2296,7 +2295,6 @@
 				0ADC8E9A28BED81C00632551 /* MDSSQLiteDatabaseManager.swift in Sources */,
 				0ADC8EA828BED87100632551 /* Lock.swift in Sources */,
 				0AE25CD12B20019700EB2BDE /* CMDSSQLiteDatabaseManager.cpp in Sources */,
-				0A36CDFC2A1F34B9005C7A40 /* CUUID-Apple.cpp in Sources */,
 				0A36CDF72A1F2FC5005C7A40 /* MDSDocumentStorageObjC.mm in Sources */,
 				0A2F30852A1743D600855E9B /* CppToolboxAssert.cpp in Sources */,
 				0A36CDF82A1F3201005C7A40 /* CMDSEphemeral.cpp in Sources */,

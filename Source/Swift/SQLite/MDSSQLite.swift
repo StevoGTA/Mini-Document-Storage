@@ -81,7 +81,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationIterate(for name :String, from fromDocumentID :String, toDocumentType :String,
-			proc :(_ document :MDSDocument) -> Void) throws {
+			proc :MDSDocument.Proc) throws {
 		// Validate
 		guard let association = association(for: name) else {
 			throw MDSDocumentStorageError.unknownAssociation(name: name)
@@ -100,16 +100,16 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Iterate document IDs
 		let	documentCreateProc = self.documentCreateProc(for: toDocumentType)
-		autoreleasepool() {
-			associationItems
+		try autoreleasepool() {
+			try associationItems
 					.filter({ $0.fromDocumentID == fromDocumentID })
-					.forEach() { proc(documentCreateProc($0.toDocumentID, self)) }
+					.forEach() { try proc(documentCreateProc($0.toDocumentID, self)) }
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationIterate(for name :String, fromDocumentType :String, to toDocumentID :String,
-			proc :(_ document :MDSDocument) -> Void) throws {
+			proc :MDSDocument.Proc) throws {
 		// Validate
 		guard let association = association(for: name) else {
 			throw MDSDocumentStorageError.unknownAssociation(name: name)
@@ -127,10 +127,10 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Iterate document IDs
 		let	documentCreateProc = self.documentCreateProc(for: fromDocumentType)
-		autoreleasepool() {
-			associationItems
+		try autoreleasepool() {
+			try associationItems
 					.filter({ $0.toDocumentID == toDocumentID })
-					.forEach() { proc(documentCreateProc($0.fromDocumentID, self)) }
+					.forEach() { try proc(documentCreateProc($0.fromDocumentID, self)) }
 		}
 	}
 
@@ -343,7 +343,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func collectionIterate(name :String, documentType :String, proc :(_ document :MDSDocument) -> Void) throws {
+	public func collectionIterate(name :String, documentType :String, proc :MDSDocument.Proc) throws {
 		// Validate
 		guard let collection = collection(for: name) else {
 			throw MDSDocumentStorageError.unknownCollection(name: name)
@@ -361,14 +361,14 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Collect document IDs
 		var	documentIDs = [String]()
-		autoreleasepool() {
-			collectionIterate(name: name, documentType: documentType, startIndex: 0, count: nil)
+		try autoreleasepool() {
+			try collectionIterate(name: name, documentType: documentType, startIndex: 0, count: nil)
 					{ documentIDs.append($0.documentID) }
 		}
 
 		// Iterate document IDs
 		let	documentCreateProc = self.documentCreateProc(for: documentType)
-		autoreleasepool() { documentIDs.forEach() { proc(documentCreateProc($0, self)) } }
+		try autoreleasepool() { try documentIDs.forEach() { try proc(documentCreateProc($0, self)) } }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -397,7 +397,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			let	documentChangedProcs = self.documentChangedProcs(for: documentType)
 
 			// Batch
-			self.databaseManager.batch() {
+			try self.databaseManager.batch() {
 				// Setup
 				let	batchQueue =
 							BatchQueue<MDSUpdateInfo<Int64>>(
@@ -464,7 +464,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentIterate(for documentType :String, documentIDs :[String],
-			documentCreateProc :MDSDocument.CreateProc, proc :(_ document :MDSDocument) -> Void) throws {
+			documentCreateProc :MDSDocument.CreateProc, proc :MDSDocument.Proc) throws {
 		// Validate
 		guard self.databaseManager.documentTypeIsKnown(documentType) else {
 			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
@@ -475,14 +475,14 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Iterate initial document IDs
 		var	documentIDsToCache = [String]()
-		documentIDs.forEach() {
+		try documentIDs.forEach() {
 			// Check what we have currently
 			if batch?.documentInfoGet(for: $0) != nil {
 				// Have document in batch
-				proc(documentCreateProc($0, self))
+				try proc(documentCreateProc($0, self))
 			} else if self.documentBackingByDocumentID.documentBacking(for: $0) != nil {
 				// Have documentBacking in cache
-				proc(documentCreateProc($0, self))
+				try proc(documentCreateProc($0, self))
 			} else {
 				// Will need to retrieve from database
 				documentIDsToCache.append($0)
@@ -490,9 +490,9 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Iterate document IDs not found in batch or cache
-		documentBackingsIterate(documentType: documentType, documentIDs: documentIDsToCache) {
+		try documentBackingsIterate(documentType: documentType, documentIDs: documentIDsToCache) {
 			// Call proc
-			proc(documentCreateProc($0.documentID, self))
+			try proc(documentCreateProc($0.documentID, self))
 
 			// Update
 			documentIDsToCache.remove($0.documentID)
@@ -506,7 +506,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentIterate(for documentType :String, activeOnly: Bool, documentCreateProc :MDSDocument.CreateProc,
-			proc :(_ document :MDSDocument) -> Void) throws {
+			proc :MDSDocument.Proc) throws {
 		// Validate
 		guard self.databaseManager.documentTypeIsKnown(documentType) else {
 			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
@@ -516,8 +516,8 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Iterate document backings
-		documentBackingsIterate(documentType: documentType, sinceRevision: 0, count: nil, activeOnly: activeOnly)
-				{ proc(documentCreateProc($0.documentID, self)) }
+		try documentBackingsIterate(documentType: documentType, sinceRevision: 0, count: nil, activeOnly: activeOnly)
+				{ try proc(documentCreateProc($0.documentID, self)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -890,9 +890,9 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Compose map
 		var	documentIDByKey = [/* Key */ String : /* String */ String]()
-		autoreleasepool() {
+		try autoreleasepool() {
 			// Iterate index
-			self.indexIterate(name: name, documentType: documentType, keys: keys)
+			try self.indexIterate(name: name, documentType: documentType, keys: keys)
 					{ documentIDByKey[$0] = $1.documentID }
 		}
 
@@ -929,7 +929,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func batch(_ proc :() throws -> MDSBatchResult) rethrows {
+	public func batch(_ proc :() throws -> MDSBatchResult) throws {
 		// Setup
 		let	batch = Batch()
 
@@ -947,7 +947,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Check result
 		if result == .commit {
 			// Batch changes
-			self.databaseManager.batch() {
+			try self.databaseManager.batch() {
 				// Iterate all document changes
 				batch.documentInfosByDocumentType.forEach() { documentType, batchDocumentInfosByDocumentID in
 					// Setup
@@ -1197,9 +1197,9 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Collect MDSDocument FullInfos
 		var	documentFullInfos = [MDSDocument.FullInfo]()
-		autoreleasepool() {
-			collectionIterate(name: name, documentType: collection.documentType, startIndex: startIndex, count: count)
-					{ documentFullInfos.append($0.documentFullInfo) }
+		try autoreleasepool() {
+			try collectionIterate(name: name, documentType: collection.documentType, startIndex: startIndex,
+					count: count) { documentFullInfos.append($0.documentFullInfo) }
 		}
 
 		return documentFullInfos
@@ -1258,7 +1258,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Iterate documentIDs not found in cache
-		documentBackingsIterate(documentType: documentType, documentIDs: documentIDsToCache) {
+		try documentBackingsIterate(documentType: documentType, documentIDs: documentIDsToCache) {
 			// Call proc
 			documentFullInfos.append($0.documentFullInfo)
 
@@ -1284,7 +1284,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Iterate document backings
 		var	documentFullInfos = [MDSDocument.FullInfo]()
-		documentBackingsIterate(documentType: documentType, sinceRevision: sinceRevision, count: count,
+		try documentBackingsIterate(documentType: documentType, sinceRevision: sinceRevision, count: count,
 				activeOnly: false) { documentFullInfos.append($0.documentFullInfo) }
 
 		return documentFullInfos
@@ -1316,7 +1316,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Batch changes
 		var	documentFullInfos = [MDSDocument.FullInfo]()
-		self.databaseManager.batch() {
+		try self.databaseManager.batch() {
 			// Setup
 			let	documentCreateProc = self.documentCreateProc(for: documentType)
 			let	documentUpdateInfoByDocumentID = Dictionary(documentUpdateInfos.map() { ($0.documentID, $0) })
@@ -1329,7 +1329,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 								{ self.update(for: documentType, info: ([], $0)) }
 
 			// Iterate document backings
-			documentBackingsIterate(documentType: documentType, documentIDs: documentIDs) {
+			try documentBackingsIterate(documentType: documentType, documentIDs: documentIDs) {
 				// Setup
 				let	documentUpdateInfo = documentUpdateInfoByDocumentID[$0.documentID]!
 
@@ -1402,9 +1402,9 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Compose MDSDocument FullInfo map
 		var	documentFullInfoByKey = [String : MDSDocument.FullInfo]()
-		autoreleasepool() {
+		try autoreleasepool() {
 			// Iterate index
-			self.indexIterate(name: name, documentType: index.documentType, keys: keys)
+			try self.indexIterate(name: name, documentType: index.documentType, keys: keys)
 					{ documentFullInfoByKey[$0] = $1.documentFullInfo }
 		}
 
@@ -1434,7 +1434,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func associationIterate(association :MDSAssociation, fromDocumentID :String, startIndex :Int,
-			count :Int?, proc :(_ documentBacking :MDSSQLiteDocumentBacking) -> Void) throws {
+			count :Int?, proc :(_ documentBacking :MDSSQLiteDocumentBacking) throws -> Void) throws {
 		// Collect DocumentInfos
 		var	documentInfos = [MDSSQLiteDatabaseManager.DocumentInfo]()
 		try autoreleasepool() {
@@ -1446,13 +1446,13 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Iterate document backings
-		documentBackingsIterate(documentType: association.toDocumentType, infos: documentInfos.map({ ("", $0) }))
-				{ proc($1) }
+		try documentBackingsIterate(documentType: association.toDocumentType, infos: documentInfos.map({ ("", $0) }))
+				{ try proc($1) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func associationIterate(association :MDSAssociation, toDocumentID :String, startIndex :Int,
-			count :Int?, proc :(_ documentBacking :MDSSQLiteDocumentBacking) -> Void) throws {
+			count :Int?, proc :(_ documentBacking :MDSSQLiteDocumentBacking) throws -> Void) throws {
 		// Collect DocumentInfos
 		var	documentInfos = [MDSSQLiteDatabaseManager.DocumentInfo]()
 		try autoreleasepool() {
@@ -1463,8 +1463,8 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Iterate document backings
-		documentBackingsIterate(documentType: association.fromDocumentType, infos: documentInfos.map({ ("", $0) }))
-				{ proc($1) }
+		try documentBackingsIterate(documentType: association.fromDocumentType, infos: documentInfos.map({ ("", $0) }))
+				{ try proc($1) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1531,7 +1531,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func collectionIterate(name :String, documentType :String, startIndex :Int, count :Int?,
-			proc :(_ documentBacking :MDSSQLiteDocumentBacking) -> Void) {
+			proc :(_ documentBacking :MDSSQLiteDocumentBacking) throws -> Void) throws {
 		// Collect DocumentInfos
 		var	documentInfos = [MDSSQLiteDatabaseManager.DocumentInfo]()
 		autoreleasepool() {
@@ -1541,7 +1541,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Iterate document backings
-		documentBackingsIterate(documentType: documentType, infos: documentInfos.map({ ("", $0) })) { proc($1) }
+		try documentBackingsIterate(documentType: documentType, infos: documentInfos.map({ ("", $0) })) { try proc($1) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1567,7 +1567,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		} else {
 			// Try to retrieve from database
 			var	documentBacking :MDSSQLiteDocumentBacking?
-			documentBackingsIterate(documentType: documentType, documentIDs: [documentID]) { documentBacking = $0 }
+			try! documentBackingsIterate(documentType: documentType, documentIDs: [documentID]) { documentBacking = $0 }
 
 			// Check results
 			guard documentBacking != nil else {
@@ -1583,39 +1583,39 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func documentBackingsIterate(documentType :String, documentIDs :[String],
-			proc :(_ documentBacking :MDSSQLiteDocumentBacking) -> Void) {
+			proc :(_ documentBacking :MDSSQLiteDocumentBacking) throws -> Void) throws {
 		// Collect DocumentInfos
 		var	documentInfos = [MDSSQLiteDatabaseManager.DocumentInfo]()
 		self.databaseManager.documentInfoIterate(documentType: documentType, documentIDs: documentIDs)
 				{ documentInfos.append($0) }
 
 		// Iterate document backings
-		documentBackingsIterate(documentType: documentType, infos: documentInfos.map({ ("", $0) })) { proc($1) }
+		try documentBackingsIterate(documentType: documentType, infos: documentInfos.map({ ("", $0) })) { try proc($1) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func documentBackingsIterate(documentType :String, sinceRevision :Int, count :Int? = nil, activeOnly: Bool,
-			proc :(_ documentBacking :MDSSQLiteDocumentBacking) -> Void) {
+			proc :(_ documentBacking :MDSSQLiteDocumentBacking) throws -> Void) throws {
 		// Collect DocumentInfos
 		var	documentInfos = [MDSSQLiteDatabaseManager.DocumentInfo]()
 		self.databaseManager.documentInfoIterate(documentType: documentType, sinceRevision: sinceRevision,
 				count: count, activeOnly: activeOnly) { documentInfos.append($0) }
 
 		// Iterate document backings
-		documentBackingsIterate(documentType: documentType, infos: documentInfos.map({ ("", $0) })) { proc($1) }
+		try documentBackingsIterate(documentType: documentType, infos: documentInfos.map({ ("", $0) })) { try proc($1) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func documentBackingsIterate(documentType :String,
 			infos :[(key :String, documentInfo :MDSSQLiteDatabaseManager.DocumentInfo)],
-			proc :(_ key :String, _ documentBacking :MDSSQLiteDocumentBacking) -> Void) {
+			proc :(_ key :String, _ documentBacking :MDSSQLiteDocumentBacking) throws -> Void) throws {
 		// Iterate infos
 		var	infosNotFound = [(key :String, documentInfo :MDSSQLiteDatabaseManager.DocumentInfo)]()
-		infos.forEach() {
+		try infos.forEach() {
 			// Check cache
 			if let documentBacking = self.documentBackingByDocumentID.documentBacking(for: $0.documentInfo.documentID) {
 				// Have in cache
-				proc($0.key, documentBacking)
+				try proc($0.key, documentBacking)
 			} else {
 				// Don't have in cache
 				infosNotFound.append($0)
@@ -1628,7 +1628,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 				documentInfos: infosNotFound.map({ $0.documentInfo })) { documentContentInfoByID[$0.id] = $0 }
 
 		// Iterate infos not found
-		infosNotFound.forEach() {
+		try infosNotFound.forEach() {
 			// Get DocumentContentInfo
 			let	documentContentInfo = documentContentInfoByID[$0.documentInfo.id]!
 
@@ -1648,7 +1648,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			self.documentBackingByDocumentID.add([documentBacking])
 
 			// Call proc
-			proc($0.key, documentBacking)
+			try proc($0.key, documentBacking)
 		}
 	}
 
@@ -1676,7 +1676,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func indexIterate(name :String, documentType :String, keys :[String],
-			proc :(_ key :String, _ documentBacking :MDSSQLiteDocumentBacking) -> Void) {
+			proc :(_ key :String, _ documentBacking :MDSSQLiteDocumentBacking) throws -> Void) throws {
 		// Compose map
 		var	infos = [(key :String, documentInfo :MDSSQLiteDatabaseManager.DocumentInfo)]()
 		autoreleasepool() {
@@ -1686,7 +1686,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Iterate document backings
-		documentBackingsIterate(documentType: documentType, infos: infos) { proc($0, $1) }
+		try documentBackingsIterate(documentType: documentType, infos: infos) { try proc($0, $1) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1712,7 +1712,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Collect update infos
 		var	updateInfos = [MDSUpdateInfo<Int64>]()
 		var	removedIDs = [Int64]()
-		documentBackingsIterate(documentType: documentType, sinceRevision: sinceRevision, activeOnly: false) {
+		try! documentBackingsIterate(documentType: documentType, sinceRevision: sinceRevision, activeOnly: false) {
 			// Query batch info
 			let	removed = batch?.documentInfoGet(for: $0.documentID)?.removed ?? false
 

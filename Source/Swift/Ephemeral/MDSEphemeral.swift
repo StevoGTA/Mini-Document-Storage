@@ -177,7 +177,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationIterate(for name :String, from fromDocumentID :String, toDocumentType :String,
-			proc :(_ document :MDSDocument) -> Void) throws {
+			proc :MDSDocument.Proc) throws {
 		// Validate
 		guard let association = self.associationByName.value(for: name) else {
 			throw MDSDocumentStorageError.unknownAssociation(name: name)
@@ -191,14 +191,14 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Iterate association items
 		let	documentCreateProc = self.documentCreateProc(for: toDocumentType)
-		self.associationItems(for: name)
+		try self.associationItems(for: name)
 				.filter({ $0.fromDocumentID == fromDocumentID })
-				.forEach() { proc(documentCreateProc($0.toDocumentID, self)) }
+				.forEach() { try proc(documentCreateProc($0.toDocumentID, self)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationIterate(for name :String, fromDocumentType :String, to toDocumentID :String,
-			proc :(_ document :MDSDocument) -> Void) throws {
+			proc :MDSDocument.Proc) throws {
 		// Validate
 		guard let association = self.associationByName.value(for: name) else {
 			throw MDSDocumentStorageError.unknownAssociation(name: name)
@@ -212,9 +212,9 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Iterate association items
 		let	documentCreateProc = self.documentCreateProc(for: fromDocumentType)
-		self.associationItems(for: name)
+		try self.associationItems(for: name)
 				.filter({ $0.toDocumentID == toDocumentID })
-				.forEach() { proc(documentCreateProc($0.fromDocumentID, self)) }
+				.forEach() { try proc(documentCreateProc($0.fromDocumentID, self)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -477,7 +477,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func collectionIterate(name :String, documentType :String, proc :(_ document :MDSDocument) -> Void) throws {
+	public func collectionIterate(name :String, documentType :String, proc :MDSDocument.Proc) throws {
 		// Validate
 		guard let documentIDs = self.collectionValuesByName.value(for: name) else {
 			throw MDSDocumentStorageError.unknownCollection(name: name)
@@ -490,7 +490,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		let	documentCreateProc = self.documentCreateProc(for: documentType)
 
 		// Iterate
-		documentIDs.forEach() { proc(documentCreateProc($0, self)) }
+		try documentIDs.forEach() { try proc(documentCreateProc($0, self)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -583,17 +583,17 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentIterate(for documentType :String, documentIDs :[String],
-			documentCreateProc :MDSDocument.CreateProc, proc :(_ document :MDSDocument) -> Void) throws {
+			documentCreateProc :MDSDocument.CreateProc, proc :MDSDocument.Proc) throws {
 		// Setup
 		let	batch = self.batchByThread.value(for: .current)
 
 		// Iterate document IDs
 		var	documentIDsForDocumentBackings = [String]()
-		documentIDs.forEach() {
+		try documentIDs.forEach() {
 			// Check what we have currently
 			if batch?.documentInfoGet(for: $0) != nil {
 				// Have document in batch
-				proc(documentCreateProc($0, self))
+				try proc(documentCreateProc($0, self))
 			} else {
 				// Not in batch
 				documentIDsForDocumentBackings.append($0)
@@ -602,12 +602,12 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Iterate document backings
 		try documentBackingsIterate(for: documentType, documentIDs: documentIDsForDocumentBackings,
-				proc: { proc(documentCreateProc($0.documentID, self)) })
+				proc: { try proc(documentCreateProc($0.documentID, self)) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentIterate(for documentType :String, activeOnly: Bool, documentCreateProc :MDSDocument.CreateProc,
-			proc :(_ document :MDSDocument) -> Void) throws {
+			proc :MDSDocument.Proc) throws {
 		// Validate
 		guard self.batchByThread.value(for: .current) == nil else {
 			throw MDSDocumentStorageError.illegalInBatch
@@ -615,7 +615,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Iterate document backings
 		try documentBackingsIterate(for: documentType, sinceRevision: 0, count: nil, activeOnly: activeOnly,
-				proc: { proc(documentCreateProc($0.documentID, self)) })
+				proc: { try proc(documentCreateProc($0.documentID, self)) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1037,7 +1037,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	public func internalSet(_ info :[String : String]) throws { self.internalValueByKey.merge(info) }
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func batch(_ proc :() throws -> MDSBatchResult) rethrows {
+	public func batch(_ proc :() throws -> MDSBatchResult) throws {
 		// Setup
 		let	batch = Batch()
 
@@ -1579,7 +1579,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func documentBackingsIterate(for documentType :String, documentIDs :[String],
-			proc :(_ documentBacking :DocumentBacking) -> Void) throws {
+			proc :(_ documentBacking :DocumentBacking) throws -> Void) throws {
 		// Validate
 		guard self.documentMapsLock.read({ self.documentIDsByDocumentType[documentType] }) != nil else {
 			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
@@ -1599,12 +1599,12 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 				}
 
 		// Iterate document backings
-		documentBackings.forEach({ proc($0) })
+		try documentBackings.forEach({ try proc($0) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func documentBackingsIterate(for documentType :String, sinceRevision :Int, count :Int?, activeOnly: Bool,
-			proc :(_ documentBacking :DocumentBacking) -> Void) throws {
+			proc :(_ documentBacking :DocumentBacking) throws -> Void) throws {
 		// Retrieve document backings
 		let	documentBackings =
 					try self.documentMapsLock.read() { () -> [DocumentBacking] in
@@ -1621,10 +1621,10 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Check if have count
 		if count != nil {
 			// Have count
-			documentBackings.sorted(by: { $0.revision < $1.revision })[..<count!].forEach({ proc($0) })
+			try documentBackings.sorted(by: { $0.revision < $1.revision })[..<count!].forEach({ try proc($0) })
 		} else {
 			// Don't have count
-			documentBackings.forEach({ proc($0) })
+			try documentBackings.forEach({ try proc($0) })
 		}
 	}
 

@@ -89,13 +89,13 @@ class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageS
 
 	//------------------------------------------------------------------------------------------------------------------
 	func associationIterate(for name :String, from fromDocumentID :String, toDocumentType :String,
-			proc :(_ document :MDSDocument) -> Void) throws {
+			proc :MDSDocument.Proc) throws {
 		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func associationIterate(for name :String, fromDocumentType :String, to toDocumentID :String,
-			proc :(_ document :MDSDocument) -> Void) throws {
+			proc :MDSDocument.Proc) throws {
 		fatalError("Unimplemented")
 	}
 
@@ -186,7 +186,7 @@ class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageS
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func collectionIterate(name :String, documentType :String, proc :(_ document :MDSDocument) -> Void) throws {
+	func collectionIterate(name :String, documentType :String, proc :MDSDocument.Proc) throws {
 		fatalError("Unimplemented")
 	}
 
@@ -226,13 +226,13 @@ class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageS
 
 	//------------------------------------------------------------------------------------------------------------------
 	func documentIterate(for documentType :String, documentIDs :[String], documentCreateProc :MDSDocument.CreateProc,
-			proc :(_ document :MDSDocument) -> Void) throws {
+			proc :MDSDocument.Proc) throws {
 		fatalError("Unimplemented")
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func documentIterate(for documentType :String, activeOnly: Bool, documentCreateProc :MDSDocument.CreateProc,
-			proc :(_ document :MDSDocument) -> Void) throws {
+			proc :MDSDocument.Proc) throws {
 		fatalError("Unimplemented")
 	}
 

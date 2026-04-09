@@ -122,6 +122,7 @@ open class MDSDocument : Hashable {
 	public	typealias ChangedProc = (_ document :MDSDocument, _ changeKind :ChangeKind) -> Void
 	public	typealias IsIncludedProc = (_ documentType :String, _ document :MDSDocument, _ info :[String : Any]) -> Bool
 	public	typealias KeysProc = (_ documentType :String, _ document :MDSDocument, _ info :[String : Any]) -> [String]
+	public	typealias Proc = (_ document :MDSDocument) throws -> Void
 	public	typealias ValueProc = (_ documentType :String, _ document :MDSDocument, _ property :String) -> Any
 
 	// MARK: Properties

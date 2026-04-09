@@ -161,7 +161,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationIterate(for name :String, from fromDocumentID :String, toDocumentType :String,
-			proc :(_ document :MDSDocument) -> Void) throws {
+			proc :MDSDocument.Proc) throws {
 		// Setup
 		let	documentCreateProc = documentCreateProc(for: toDocumentType)
 
@@ -205,15 +205,15 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Iterate document IDs and retrieve any needed documents
 		try documentIterateIDs(documentType: toDocumentType, documentRevisionInfos: documentRevisionInfos,
-				activeOnly: false) { proc(documentCreateProc($0, self)) }
+				activeOnly: false) { try proc(documentCreateProc($0, self)) }
 
 		// Iterate adds and just use latest local document backing
-		associationAdds.forEach() { proc(documentCreateProc($0.toDocumentID, self)) }
+		try associationAdds.forEach() { try proc(documentCreateProc($0.toDocumentID, self)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func associationIterate(for name :String, fromDocumentType :String, to toDocumentID :String,
-			proc :(_ document :MDSDocument) -> Void) throws {
+			proc :MDSDocument.Proc) throws {
 		// Setup
 		let	documentCreateProc = documentCreateProc(for: fromDocumentType)
 
@@ -257,10 +257,10 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Iterate document IDs and retrieve any needed documents
 		try documentIterateIDs(documentType: fromDocumentType, documentRevisionInfos: documentRevisionInfos,
-				activeOnly: false) { proc(documentCreateProc($0, self)) }
+				activeOnly: false) { try proc(documentCreateProc($0, self)) }
 
 		// Iterate adds and just use latest local document backing
-		associationAdds.forEach() { proc(documentCreateProc($0.fromDocumentID, self)) }
+		try associationAdds.forEach() { try proc(documentCreateProc($0.fromDocumentID, self)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -416,7 +416,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func collectionIterate(name :String, documentType :String, proc :(_ document :MDSDocument) -> Void) throws {
+	public func collectionIterate(name :String, documentType :String, proc :MDSDocument.Proc) throws {
 		// Validate
 		guard self.batchMap.value(for: .current) == nil else {
 			throw MDSDocumentStorageError.illegalInBatch
@@ -441,7 +441,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 			} else if let (documentRevisionInfos, isComplete) = info {
 				// Success
 				try documentIterateIDs(documentType: documentType, documentRevisionInfos: documentRevisionInfos,
-						activeOnly: false) { proc(documentCreateProc($0, self)) }
+						activeOnly: false) { try proc(documentCreateProc($0, self)) }
 
 				// Update
 				startIndex += documentRevisionInfos.count
@@ -540,7 +540,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentIterate(for documentType :String, documentIDs :[String],
-			documentCreateProc :MDSDocument.CreateProc, proc :(_ document :MDSDocument) -> Void) throws {
+			documentCreateProc :MDSDocument.CreateProc, proc :MDSDocument.Proc) throws {
 		// Retrieve info
 		let	(documentRevisionInfos, errors) =
 					self.httpEndpointClient.documentGetDocumentRevisionInfos(documentStorageID: self.documentStorageID,
@@ -552,12 +552,12 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Iterate document IDs and retrieve any needed documents
 		try documentIterateIDs(documentType: documentType, documentRevisionInfos: documentRevisionInfos!,
-				activeOnly: false) { proc(documentCreateProc($0, self)) }
+				activeOnly: false) { try proc(documentCreateProc($0, self)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func documentIterate(for documentType :String, activeOnly: Bool, documentCreateProc :MDSDocument.CreateProc,
-			proc :(_ document :MDSDocument) -> Void) throws {
+			proc :MDSDocument.Proc) throws {
 		// Iterate document revision infos
 		var	documentRevisionInfos = [MDSDocument.RevisionInfo]()
 		var	startRevision = 0
@@ -586,7 +586,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Iterate document IDs and retrieve any needed documents
 		try documentIterateIDs(documentType: documentType, documentRevisionInfos: documentRevisionInfos,
-				activeOnly: activeOnly) { proc(documentCreateProc($0, self)) }
+				activeOnly: activeOnly) { try proc(documentCreateProc($0, self)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1032,7 +1032,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func batch(_ proc :() throws -> MDSBatchResult) rethrows {
+	public func batch(_ proc :() throws -> MDSBatchResult) throws {
 		// Setup
 		let	batch = Batch()
 
@@ -1381,7 +1381,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func documentIterateIDs(documentType :String, documentRevisionInfos :[MDSDocument.RevisionInfo],
-			activeOnly :Bool, proc :(_ documentID :String) -> Void) throws {
+			activeOnly :Bool, proc :(_ documentID :String) throws -> Void) throws {
 		// Preflight
 		guard !documentRevisionInfos.isEmpty else { return }
 
@@ -1391,13 +1391,13 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Iterate all infos
 		var	documentRevisionInfosPossiblyInCache = [MDSDocument.RevisionInfo]()
 		var	documentRevisionInfosToRetrieve = [MDSDocument.RevisionInfo]()
-		documentRevisionInfos.forEach() {
+		try documentRevisionInfos.forEach() {
 			// Check if in batch
 			if let documentInfo = batch?.documentInfoGet(for: $0.documentID) {
 				// Have document in batch
 				if !activeOnly || (documentInfo.documentBacking == nil) || documentInfo.documentBacking!.active {
 					// Call proc
-					proc($0.documentID)
+					try proc($0.documentID)
 				}
 			} else if let documentBacking = self.documentBackingCache.documentBacking(for: $0.documentID) {
 				// Check active
@@ -1405,7 +1405,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 					// Check revision
 					if documentBacking.revision == $0.revision {
 						// Use from documents cache
-						proc($0.documentID)
+						try proc($0.documentID)
 					} else {
 						// Must retrieve
 						documentRevisionInfosToRetrieve.append($0)
@@ -1422,9 +1422,9 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 					self.remoteStorageCache.info(for: documentType, with: documentRevisionInfosPossiblyInCache)
 
 		// Update document backing cache
-		documentBackingCacheUpdate(for: documentType, with: documentFullInfos)
+		try documentBackingCacheUpdate(for: documentType, with: documentFullInfos)
 				.filter({ !activeOnly || $0.active })
-				.forEach() { proc($0.documentID) }
+				.forEach() { try proc($0.documentID) }
 
 		// Check if have documents to retrieve
 		documentRevisionInfosToRetrieve += documentRevisionInfosNotResolved
@@ -1434,10 +1434,10 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 					{ _ in }
 
 			// Create documents
-			documentRevisionInfosToRetrieve
+			try documentRevisionInfosToRetrieve
 					.map({ ($0.documentID, self.documentBackingCache.documentBacking(for: $0.documentID)!) })
 					.filter({ !activeOnly || $0.1.active })
-					.forEach() { proc($0.0) }
+					.forEach() { try proc($0.0) }
 		}
 	}
 

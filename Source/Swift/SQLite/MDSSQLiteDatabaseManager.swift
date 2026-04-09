@@ -2269,13 +2269,13 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func batch(_ proc :() -> Void) {
+	func batch(_ proc :() throws -> Void) throws {
 		// Setup
 		let	batchInfo = BatchInfo()
 		self.batchInfoByThread.set(batchInfo, for: .current)
 
 		// Call proc
-		proc()
+		try proc()
 
 		// Commit changes
 		self.batchInfoByThread.set(nil, for: .current)
