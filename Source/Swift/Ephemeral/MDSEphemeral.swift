@@ -16,6 +16,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	private class DocumentBacking : MDSDocumentBacking {
 
 		// MARK: Properties
+				let	documentType :String
 				let	documentID :String
 				let	creationDate :Date
 
@@ -41,9 +42,10 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// MARK: Lifecycle methods
 		//--------------------------------------------------------------------------------------------------------------
-		init(documentID :String, revision :Int, creationDate :Date, modificationDate :Date,
+		init(documentType :String, documentID :String, revision :Int, creationDate :Date, modificationDate :Date,
 				propertyMap :[String : Any]) {
 			// Store
+			self.documentType = documentType
 			self.documentID = documentID
 			self.creationDate = creationDate
 
@@ -537,8 +539,9 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 				let	creationDate = $0.creationDate ?? date
 				let	modificationDate = $0.modificationDate ?? date
 				let	documentBacking =
-							DocumentBacking(documentID: documentID, revision: revision, creationDate: creationDate,
-									modificationDate: modificationDate, propertyMap: propertyMap)
+							DocumentBacking(documentType: documentType, documentID: documentID, revision: revision,
+									creationDate: creationDate, modificationDate: modificationDate,
+									propertyMap: propertyMap)
 				self.documentMapsLock.write() {
 					// Update maps
 					self.documentBackingByDocumentID[documentID] = documentBacking
@@ -1116,7 +1119,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 							} else {
 								// Add document
 								let	documentBacking =
-											DocumentBacking(documentID: documentID,
+											DocumentBacking(documentType: documentType, documentID: documentID,
 													revision: nextRevision(for: documentType),
 													creationDate: batchDocumentInfo.creationDate,
 													modificationDate: batchDocumentInfo.modificationDate,
