@@ -149,9 +149,17 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	private	let	infoValueByKey = LockingDictionary<String, String>()
 	private	let	internalValueByKey = LockingDictionary<String, String>()
 
+	private	let	noteChangesMadeProc :() -> Void
+
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	public override init() {}
+	public init(noteChangesMadeProc :@escaping () -> Void = {}) {
+		// Store
+		self.noteChangesMadeProc = noteChangesMadeProc
+
+		// Do super
+		super.init()
+	}
 
 	// MARK: MDSDocumentStorage methods
 	//------------------------------------------------------------------------------------------------------------------
@@ -344,6 +352,9 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			// Update
 			self.associationItemsByName.remove(updates.filter({ $0.action == .remove }).map({ $0.item }), for: name)
 			self.associationItemsByName.append(updates.filter({ $0.action == .add }).map({ $0.item }), for: name)
+
+			// Note changes made
+			self.noteChangesMadeProc()
 		}
 	}
 
@@ -369,8 +380,14 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		self.cacheByName.set(cache, for: name)
 		self.cachesByDocumentType.append(cache, for: documentType)
 
-		// Bring up to date
-		cacheUpdate(cache, updateInfos: self.updateInfos(for: documentType, sinceRevision: 0))
+		// Check if have any content
+		if !self.documentBackingByDocumentID.isEmpty {
+			// Bring up to date
+			cacheUpdate(cache, updateInfos: self.updateInfos(for: documentType, sinceRevision: 0))
+
+			// Note changes made
+			self.noteChangesMadeProc()
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -456,10 +473,13 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		self.collectionByName.set(collection, for: name)
 		self.collectionsByDocumentType.append(collection, for: documentType)
 
-		// Check if is up to date
-		if !isUpToDate {
+		// Check if is up to date and have documents
+		if !isUpToDate && !self.documentBackingByDocumentID.isEmpty {
 			// Bring up to date
 			collectionUpdate(collection, updateInfos: self.updateInfos(for: documentType, sinceRevision: 0))
+
+			// Note changes made
+			self.noteChangesMadeProc()
 		}
 	}
 
@@ -563,6 +583,9 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 			// Update stuffs
 			update(for: documentType, updateInfos: updateInfos)
+
+			// Note changes made
+			self.noteChangesMadeProc()
 		}
 
 		return infos
@@ -729,6 +752,9 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 			// Call document changed procs
 			noteDocumentChanged(document: document, changeKind: .updated)
+
+			// Note changes made
+			self.noteChangesMadeProc()
 		}
 	}
 
@@ -767,8 +793,14 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 				// Setup
 				if let documentBacking = self.documentBackingByDocumentID[documentID] {
 					// Add attachment
-					return documentBacking.attachmentAdd(revision: self.nextRevision(for: documentType), info: info,
-							content: content)
+					let	documentAttachmentInfo =
+								documentBacking.attachmentAdd(revision: self.nextRevision(for: documentType),
+										info: info, content: content)
+
+					// Note changes made
+					self.noteChangesMadeProc()
+
+					return documentAttachmentInfo
 				} else {
 					// No document
 					throw MDSDocumentStorageError.unknownDocumentID(documentID: documentID)
@@ -885,11 +917,17 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 				throw MDSDocumentStorageError.unknownAttachmentID(attachmentID: attachmentID)
 			}
 
-			return self.documentMapsLock.write() {
-				// Update attachment
-				return documentBacking.attachmentUpdate(revision: self.nextRevision(for: documentType),
-						attachmentID: attachmentID, updatedInfo: updatedInfo, updatedContent: updatedContent)
-			}
+			let	attachmentRevision =
+						self.documentMapsLock.write() {
+							// Update attachment
+							return documentBacking.attachmentUpdate(revision: self.nextRevision(for: documentType),
+									attachmentID: attachmentID, updatedInfo: updatedInfo, updatedContent: updatedContent)
+						}
+
+			// Note changes made
+			self.noteChangesMadeProc()
+
+			return attachmentRevision
 		}
 	}
 
@@ -936,6 +974,9 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 				documentBacking.attachmentRemove(revision: self.nextRevision(for: documentType),
 						attachmentID: attachmentID)
 			}
+
+			// Note changes made
+			self.noteChangesMadeProc()
 		}
 	}
 
@@ -964,6 +1005,9 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 			// Call document changed procs
 			noteDocumentChanged(document: document, changeKind: .removed)
+
+			// Note changes made
+			self.noteChangesMadeProc()
 		}
 	}
 
@@ -985,8 +1029,14 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		self.indexByName.set(index, for: name)
 		self.indexesByDocumentType.append(index, for: documentType)
 
-		// Bring up to date
-		indexUpdate(index, updateInfos: self.updateInfos(for: documentType, sinceRevision: 0))
+		// Check if have documents
+		if !self.documentBackingByDocumentID.isEmpty {
+			// Bring up to date
+			indexUpdate(index, updateInfos: self.updateInfos(for: documentType, sinceRevision: 0))
+
+			// Note changes made
+			self.noteChangesMadeProc()
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -1022,10 +1072,22 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func infoSet(_ info :[String : String]) throws { self.infoValueByKey.merge(info) }
+	public func infoSet(_ info :[String : String]) throws {
+		// Merge it in!
+		self.infoValueByKey.merge(info)
+
+		// Note changes made
+		self.noteChangesMadeProc()
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func infoRemove(keys :[String]) throws { self.infoValueByKey.remove(keys) }
+	public func infoRemove(keys :[String]) throws {
+		// Remove
+		self.infoValueByKey.remove(keys)
+
+		// Note changes made
+		self.noteChangesMadeProc()
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func internalGet(for keys :[String]) -> [String : String] {
@@ -1034,7 +1096,13 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func internalSet(_ info :[String : String]) throws { self.internalValueByKey.merge(info) }
+	public func internalSet(_ info :[String : String]) throws {
+		// Mertge it in!
+		self.internalValueByKey.merge(info)
+
+		// Note changes made
+		self.noteChangesMadeProc()
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func batch(_ proc :() throws -> MDSBatchResult) throws {
@@ -1165,6 +1233,9 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 						for: name)
 				self.associationItemsByName.append(updates.filter({ $0.action == .add }).map({ $0.item }), for: name)
 			}
+
+			// Note changes made
+			self.noteChangesMadeProc()
 		}
 	}
 
@@ -1479,6 +1550,9 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Update stuffs
 		note(removedDocumentIDs: removedDocumentIDs)
 		update(for: documentType, updateInfos: updateInfos)
+
+		// Note changes made
+		self.noteChangesMadeProc()
 
 		return documentFullInfos
 	}
