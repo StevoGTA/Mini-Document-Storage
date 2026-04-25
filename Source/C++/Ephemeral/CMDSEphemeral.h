@@ -10,6 +10,33 @@
 // MARK: CMDSEphemeral
 
 class CMDSEphemeral : public CMDSDocumentStorageServer {
+	// Procs
+	public:
+		struct Procs {
+			// Procs
+			public:
+				typedef	void	(*NoteChangesMadeProc)(void* userData);
+
+			// Methods
+			public:
+						// Lifecycle methods
+						Procs(NoteChangesMadeProc noteChangesMadeProc, void* userData) :
+							mNoteChangesMadeProc(noteChangesMadeProc), mUserData(userData)
+							{}
+						Procs(const Procs& other) :
+							mNoteChangesMadeProc(other.mNoteChangesMadeProc), mUserData(other.mUserData)
+							{}
+
+						// Instance methods
+				void	noteChangesMade() const
+							{ mNoteChangesMadeProc(mUserData); }
+
+			// Properties
+			private:
+				NoteChangesMadeProc	mNoteChangesMadeProc;
+				void*				mUserData;
+		};
+
 	// Classes
 	private:
 		class Internals;
@@ -17,8 +44,8 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 	// Methods
 	public:
 													// Lifecycle methods
-													CMDSEphemeral();
-													CMDSEphemeral(const CDictionary& storageInfo);
+													CMDSEphemeral(const Procs& procs,
+															const CDictionary& storageInfo = CDictionary::mEmpty);
 													~CMDSEphemeral();
 
 													// CMDSDocumentStorage methods

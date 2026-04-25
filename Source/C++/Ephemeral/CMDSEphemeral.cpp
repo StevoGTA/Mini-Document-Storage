@@ -296,8 +296,8 @@ class CMDSEphemeral::Internals {
 	// Methods
 	public:
 												// Lifecycle methods
-												Internals(CMDSDocumentStorage& documentStorage) :
-													mDocumentStorage(documentStorage)
+												Internals(CMDSDocumentStorage& documentStorage, const Procs& procs) :
+													mDocumentStorage(documentStorage), mProcs(procs)
 													{}
 
 												// Instance methods
@@ -804,6 +804,7 @@ class CMDSEphemeral::Internals {
 	// Properties
 	public:
 		CMDSDocumentStorage&							mDocumentStorage;
+		Procs											mProcs;
 
 		TNLockingDictionary<I<CMDSAssociation> >		mAssociationByName;
 		TNLockingArrayDictionary<CMDSAssociation::Item>	mAssociationItemsByName;
@@ -922,18 +923,11 @@ CDictionary CMDSEphemeral::Internals::DocumentBacking::getStorageInfo() const
 // MARK: Lifecycle methods
 
 //----------------------------------------------------------------------------------------------------------------------
-CMDSEphemeral::CMDSEphemeral() : CMDSDocumentStorageServer()
-//----------------------------------------------------------------------------------------------------------------------
-{
-	mInternals = new Internals(*this);
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-CMDSEphemeral::CMDSEphemeral(const CDictionary& storageInfo)
+CMDSEphemeral::CMDSEphemeral(const Procs& procs, const CDictionary& storageInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Setup
-	mInternals = new Internals(*this);
+	mInternals = new Internals(*this, procs);
 
 	// Read info
 	for (TArray<CDictionary>::Iterator iterator =
@@ -1263,6 +1257,9 @@ OV<SError> CMDSEphemeral::associationUpdate(const CString& name, const TArray<CM
 			else
 				// Remove
 				mInternals->mAssociationItemsByName.remove(name, iterator->getItem());
+
+		// Note changes made
+		mInternals->mProcs.noteChangesMade();
 	}
 
 	return OV<SError>();
@@ -1291,8 +1288,14 @@ OV<SError> CMDSEphemeral::cacheRegister(const CString& name, const CString& docu
 	mInternals->mCacheByName.set(name, cache);
 	mInternals->mCachesByDocumentType.add(documentType, cache);
 
-	// Bring up to date
-	mInternals->cacheUpdate(cache, mInternals->updateInfosGet(documentType, documentCreateInfo(documentType), 0));
+	// Check if have any content
+	if (!mInternals->mDocumentBackingByDocumentID.isEmpty()) {
+		// Bring up to date
+		mInternals->cacheUpdate(cache, mInternals->updateInfosGet(documentType, documentCreateInfo(documentType), 0));
+
+		// Note changes made
+		mInternals->mProcs.noteChangesMade();
+	}
 
 	return OV<SError>();
 }
@@ -1401,11 +1404,15 @@ OV<SError> CMDSEphemeral::collectionRegister(const CString& name, const CString&
 	mInternals->mCollectionByName.set(name, collection);
 	mInternals->mCollectionsByDocumentType.add(documentType, collection);
 
-	// Check if is up to date
-	if (!isUpToDate)
+	// Check if is up to date and have documents
+	if (!isUpToDate && !mInternals->mDocumentBackingByDocumentID.isEmpty()) {
 		// Bring up to date
 		mInternals->collectionUpdate(collection,
 				mInternals->updateInfosGet(documentType, documentCreateInfo(documentType), 0));
+
+		// Note changes made
+		mInternals->mProcs.noteChangesMade();
+	}
 
 	return OV<SError>();
 }
@@ -1526,6 +1533,9 @@ TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSEphemeral::documentCreate(
 
 		// Update stuffs
 		mInternals->update(documentInfoForNew.getDocumentType(), updateInfos);
+
+		// Note changes made
+		mInternals->mProcs.noteChangesMade();
 	}
 
 	return TVResult<TArray<CMDSDocument::CreateResultInfo> >(documentCreateResultInfos);
@@ -1768,6 +1778,9 @@ void CMDSEphemeral::documentSet(const CString& property, const OV<SValue>& value
 
 			// Call document changed procs
 			notifyDocumentChanged(document, CMDSDocument::kChangeKindUpdated);
+
+			// Note changes made
+			mInternals->mProcs.noteChangesMade();
 		}
 	}
 }
@@ -1817,9 +1830,15 @@ TVResult<CMDSDocument::AttachmentInfo> CMDSEphemeral::documentAttachmentAdd(cons
 							info, content));
 		mInternals->mDocumentMapsLock.unlockForWriting();
 
-		return documentAttachmentInfo.hasValue() ?
-				TVResult<CMDSDocument::AttachmentInfo>(*documentAttachmentInfo) :
-				TVResult<CMDSDocument::AttachmentInfo>(getUnknownDocumentIDError(documentID));
+		// Check situation
+		if (documentAttachmentInfo.hasValue()) {
+			// Note changes made
+			mInternals->mProcs.noteChangesMade();
+
+			return TVResult<CMDSDocument::AttachmentInfo>(*documentAttachmentInfo);
+		} else
+			// Unknown document ID
+			return TVResult<CMDSDocument::AttachmentInfo>(getUnknownDocumentIDError(documentID));
 	}
 }
 
@@ -1968,6 +1987,9 @@ TVResult<OV<UInt32> > CMDSEphemeral::documentAttachmentUpdate(const CString& doc
 								updatedInfo, updatedContent);
 		mInternals->mDocumentMapsLock.unlockForWriting();
 
+		// Note changes made
+		mInternals->mProcs.noteChangesMade();
+
 		return TVResult<OV<UInt32> >(OV<UInt32>(revision));
 	}
 }
@@ -2026,6 +2048,9 @@ OV<SError> CMDSEphemeral::documentAttachmentRemove(const CString& documentType, 
 		(*documentBacking)->attachmentRemove(mInternals->nextRevision(documentType), attachmentID);
 		mInternals->mDocumentMapsLock.unlockForWriting();
 
+		// Note changes made
+		mInternals->mProcs.noteChangesMade();
+
 		return OV<SError>();
 	}
 }
@@ -2065,6 +2090,9 @@ OV<SError> CMDSEphemeral::documentRemove(const I<CMDSDocument>& document)
 
 		// Call document changed procs
 		notifyDocumentChanged(document, CMDSDocument::ChangeKind::kChangeKindRemoved);
+
+		// Note changes made
+		mInternals->mProcs.noteChangesMade();
 	}
 
 	return OV<SError>();
@@ -2089,8 +2117,14 @@ OV<SError> CMDSEphemeral::indexRegister(const CString& name, const CString& docu
 	mInternals->mIndexByName.set(name, index);
 	mInternals->mIndexesByDocumentType.add(documentType, index);
 
-	// Bring up to date
-	mInternals->indexUpdate(index, mInternals->updateInfosGet(documentType, documentCreateInfo(documentType), 0));
+	// Check if have documents
+	if (!mInternals->mDocumentBackingByDocumentID.isEmpty()) {
+		// Bring up to date
+		mInternals->indexUpdate(index, mInternals->updateInfosGet(documentType, documentCreateInfo(documentType), 0));
+
+		// Note changes made
+		mInternals->mProcs.noteChangesMade();
+	}
 
 	return OV<SError>();
 }
@@ -2150,6 +2184,9 @@ OV<SError> CMDSEphemeral::infoSet(const TDictionary<CString>& info)
 	// Merge it in!
 	mInternals->mInfoValueByKey += info;
 
+	// Note changes made
+	mInternals->mProcs.noteChangesMade();
+
 	return OV<SError>();
 }
 
@@ -2159,6 +2196,9 @@ OV<SError> CMDSEphemeral::infoRemove(const TArray<CString>& keys)
 {
 	// Remove
 	mInternals->mInfoValueByKey.remove(keys);
+
+	// Note changes made
+	mInternals->mProcs.noteChangesMade();
 
 	return OV<SError>();
 }
@@ -2188,6 +2228,9 @@ OV<SError> CMDSEphemeral::internalSet(const TDictionary<CString>& info)
 {
 	// Merge it in!
 	mInternals->mInternalValueByKey += info;
+
+	// Note changes made
+	mInternals->mProcs.noteChangesMade();
 
 	return OV<SError>();
 }
@@ -2323,6 +2366,9 @@ OV<SError> CMDSEphemeral::batch(BatchProc batchProc, void* userData)
 							associationUpdateIterator->getItem());
 			}
 		}
+
+		// Note changes made
+		mInternals->mProcs.noteChangesMade();
 	}
 
 	return OV<SError>();
@@ -2830,6 +2876,9 @@ TVResult<TArray<CMDSDocument::FullInfo> > CMDSEphemeral::documentUpdate(const CS
 	// Update stuffs
 	mInternals->noteRemoved(removedDocumentIDs);
 	mInternals->update(documentType, updateInfos);
+
+	// Note changes made
+	mInternals->mProcs.noteChangesMade();
 
 	return TVResult<TArray<CMDSDocument::FullInfo> >(documentFullInfos);
 }
