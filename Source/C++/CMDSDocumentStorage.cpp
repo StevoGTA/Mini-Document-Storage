@@ -293,7 +293,13 @@ const CMDSDocumentStorage::DocumentIsIncludedPerformerInfo& CMDSDocumentStorage:
 		const CString& selector) const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return *mInternals->mDocumentIsIncludedPerformerInfoBySelector[selector];
+	// Retrieve
+	const	OR<DocumentIsIncludedPerformerInfo>&	documentIsIncludedPerformerInfo =
+															mInternals->mDocumentIsIncludedPerformerInfoBySelector[
+																	selector];
+	AssertFailIf(!documentIsIncludedPerformerInfo.hasReference());
+
+	return *documentIsIncludedPerformerInfo;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -312,7 +318,12 @@ void CMDSDocumentStorage::registerDocumentKeysPerformers(
 const CMDSDocument::KeysPerformer& CMDSDocumentStorage::documentKeysPerformer(const CString& selector) const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return *mInternals->mDocumentKeysPerformerBySelector[selector];
+	// Retrieve
+	const	OR<CMDSDocument::KeysPerformer>	documentKeysPerformer =
+													mInternals->mDocumentKeysPerformerBySelector[selector];
+	AssertFailIf(!documentKeysPerformer.hasReference());
+
+	return *documentKeysPerformer;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -329,9 +340,12 @@ void CMDSDocumentStorage::registerValueInfos(const TArray<CMDSDocument::ValueInf
 const CMDSDocument::ValueInfo& CMDSDocumentStorage::documentValueInfo(const CString& selector) const
 //----------------------------------------------------------------------------------------------------------------------
 {
-	return *mInternals->mDocumentValueInfoBySelector[selector];
-}
+	// Retrieve
+	const	OR<CMDSDocument::ValueInfo>&	documentValueInfo = *mInternals->mDocumentValueInfoBySelector[selector];
+	AssertFailIf(!documentValueInfo.hasReference());
 
+	return *documentValueInfo;
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 OV<SValue> CMDSDocumentStorage::ephemeralValue(const CString& key) const
