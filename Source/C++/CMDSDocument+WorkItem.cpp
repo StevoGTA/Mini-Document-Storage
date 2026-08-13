@@ -58,5 +58,8 @@ void CMDSDocumentLoadAttachmentDataWorkItem::perform(const I<CWorkItem>& workIte
 const TVResult<CData>& CMDSDocumentLoadAttachmentDataWorkItem::getData() const
 //----------------------------------------------------------------------------------------------------------------------
 {
+	// Validate
+	AssertFailIf(!mInternals->mData.hasValue());
+
 	return *mInternals->mData;
 }

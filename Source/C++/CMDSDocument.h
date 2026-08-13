@@ -829,7 +829,7 @@ class CMDSDocument : public CHashable {
 																		updatedContent); }
 						void								removeAttachment(const AttachmentInfo& attachmentInfo);
 
-						void								remove() const;
+		virtual			void								remove() const;
 
 						OV<SError>							associationRegisterTo(const Info& info) const;
 						OV<SError>							associationUpdateAddTo(const I<CMDSDocument>& document)

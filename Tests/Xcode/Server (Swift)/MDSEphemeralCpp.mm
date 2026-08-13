@@ -10,7 +10,13 @@
 #import "CMDSEphemeral.h"
 
 //----------------------------------------------------------------------------------------------------------------------
-// MARK: MDSDocumentStorageObjC
+// MARK: Local procs
+
+static	void	noteChangesMade(void* userData) {}
+
+//----------------------------------------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------------------------------------
+// MARK: - MDSDocumentStorageObjC
 
 @interface MDSDocumentStorageObjC (Internal)
 
@@ -33,7 +39,7 @@
 	self = [super init];
 	if (self) {
 		// Setup
-		self.documentStorageServer = new CMDSEphemeral();
+		self.documentStorageServer = new CMDSEphemeral(CMDSEphemeral::Procs(noteChangesMade, nil));
 
 		// Complete setup
 		[self completeSetup];

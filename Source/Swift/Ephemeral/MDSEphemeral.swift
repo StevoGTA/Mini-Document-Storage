@@ -384,9 +384,6 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		if !self.documentBackingByDocumentID.isEmpty {
 			// Bring up to date
 			cacheUpdate(cache, updateInfos: self.updateInfos(for: documentType, sinceRevision: 0))
-
-			// Note changes made
-			self.noteChangesMadeProc()
 		}
 	}
 
@@ -476,9 +473,6 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		if !isUpToDate && !self.documentBackingByDocumentID.isEmpty {
 			// Bring up to date
 			collectionUpdate(collection, updateInfos: self.updateInfos(for: documentType, sinceRevision: 0))
-
-			// Note changes made
-			self.noteChangesMadeProc()
 		}
 	}
 
@@ -1055,9 +1049,6 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		if !self.documentBackingByDocumentID.isEmpty {
 			// Bring up to date
 			indexUpdate(index, updateInfos: self.updateInfos(for: documentType, sinceRevision: 0))
-
-			// Note changes made
-			self.noteChangesMadeProc()
 		}
 	}
 
@@ -1153,6 +1144,8 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			var	attachmentUpdatedNotificationInfos =
 						[(document :MDSDocument, attachmentInfo :MDSDocument.AttachmentInfo)]()
 			var	attachmentRemovedNotificationInfos = [(document :MDSDocument, attachmentID :String)]()
+			var	anyDocumentRemoved = false
+			var	anyAssociationChanged = false
 
 			// Iterate all document changes
 			batch.documentInfosByDocumentType.forEach() { documentType, batchDocumentInfoByDocumentID in
@@ -1261,6 +1254,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 					} else {
 						// Remove document
 						removedDocumentIDs.insert(documentID)
+						anyDocumentRemoved = true
 
 						// Call document removed procs - before any removal work, and outside documentMapsLock
 						if !self.documentRemovedProcs(for: documentType).isEmpty {
@@ -1296,14 +1290,21 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 			// Iterate all association changes
 			batch.associationIterateChanges() { name, updates in
+				// Note association changed
+				anyAssociationChanged = true
+
 				// Update association
 				self.associationItemsByName.remove(updates.filter({ $0.action == .remove }).map({ $0.item }),
 						for: name)
 				self.associationItemsByName.append(updates.filter({ $0.action == .add }).map({ $0.item }), for: name)
 			}
 
-			// Note changes made
-			self.noteChangesMadeProc()
+			// Note changes made - only if something actually changed
+			if !createdDocuments.isEmpty || !updatedNotificationInfos.isEmpty ||
+					!attachmentCreatedNotificationInfos.isEmpty || !attachmentUpdatedNotificationInfos.isEmpty ||
+					!attachmentRemovedNotificationInfos.isEmpty || anyDocumentRemoved || anyAssociationChanged {
+				self.noteChangesMadeProc()
+			}
 		}
 	}
 

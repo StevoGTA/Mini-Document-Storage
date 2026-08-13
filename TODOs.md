@@ -57,6 +57,14 @@ C++ only. Sites: `ephemeral/MDSEphemeral.kt:133, 257, 290, 367, 392, 412`;
 Kotlin's lock is reentrant, so its in-lock notifications (`367, 392, 412`) don't deadlock — but they do hold a
 global write lock across client code. It already gets the post-settle ordering right.
 
+**W11 — Remove the `Internal` concept entirely.** `L`. Independent of the notification work.
+The storage-private `Internal` key-value store (`internalGet`/`internalSet`, distinct from the client-visible
+`Info` store) was invented for a single situation that has since migrated to something else. Rip it out across
+every implementation: Swift (`MDSEphemeral`, `MDSSQLite`, `MDSRemoteStorage`, server), C++ (`CMDSEphemeral`,
+`CMDSSQLite`), Kotlin, and the JS/Python clients + JS server — including the SQLite internal table and the
+wire-protocol endpoints. `Info` stays. Note that this store currently participates in the coarse
+`noteChangesMade` signal (`internalSet`), so that call site goes away with it.
+
 ---
 
 ## Notes
