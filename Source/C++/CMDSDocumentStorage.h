@@ -46,28 +46,22 @@ class CMDSDocumentStorage {
 													// Lifecycle methods
 													DocumentIsIncludedPerformerInfo(
 															CMDSDocument::IsIncludedPerformer
-																	documentIsIncludedPerformer,
-															bool checkRelevantProperties) :
-														mDocumentIsIncludedPerformer(documentIsIncludedPerformer),
-																mCheckRelevantProperties(checkRelevantProperties)
+																	documentIsIncludedPerformer) :
+														mDocumentIsIncludedPerformer(documentIsIncludedPerformer)
 														{}
 													DocumentIsIncludedPerformerInfo(
 															const DocumentIsIncludedPerformerInfo& other) :
 														mDocumentIsIncludedPerformer(
-																		other.mDocumentIsIncludedPerformer),
-																mCheckRelevantProperties(other.mCheckRelevantProperties)
+																		other.mDocumentIsIncludedPerformer)
 														{}
 
 													// Instance methods
 				CMDSDocument::IsIncludedPerformer	getDocumentIsIncludedPerformer() const
 														{ return mDocumentIsIncludedPerformer; }
-				bool								getCheckRelevantProperties() const
-														{ return mCheckRelevantProperties; }
 
 			// Properties
 			private:
 				CMDSDocument::IsIncludedPerformer	mDocumentIsIncludedPerformer;
-				bool								mCheckRelevantProperties;
 		};
 
 	// SetValueKind
@@ -85,7 +79,12 @@ class CMDSDocumentStorage {
 	typedef	TVResult<TArray<CMDSAssociation::Item> >			AssociationItemsResult;
 	typedef	TVResult<CMDSDocument::AttachmentInfo>				DocumentAttachmentInfoResult;
 	typedef	TVResult<CMDSDocument::AttachmentInfoByID>			DocumentAttachmentInfoByIDResult;
-	typedef	TArray<CMDSDocument::ChangedInfo>					DocumentChangedInfos;
+	typedef	TArray<CMDSDocument::CreatedInfo>					DocumentCreatedInfos;
+	typedef	TArray<CMDSDocument::UpdatedInfo>					DocumentUpdatedInfos;
+	typedef	TArray<CMDSDocument::RemovedInfo>					DocumentRemovedInfos;
+	typedef	TArray<CMDSDocument::AttachmentCreatedInfo>			DocumentAttachmentCreatedInfos;
+	typedef	TArray<CMDSDocument::AttachmentUpdatedInfo>			DocumentAttachmentUpdatedInfos;
+	typedef	TArray<CMDSDocument::AttachmentRemovedInfo>			DocumentAttachmentRemovedInfos;
 	typedef	TVResult<TArray<CMDSDocument::CreateResultInfo> >	DocumentCreateResultInfosResult;
 	typedef	CMDSDocument::IsIncludedPerformer					DocumentIsIncludedPerformer;
 	typedef	CMDSDocument::KeysPerformer							DocumentKeysPerformer;
@@ -129,7 +128,7 @@ class CMDSDocumentStorage {
 
 		virtual			OV<SError>							cacheRegister(const CString& name,
 																	const CString& documentType,
-																	const TArray<CString>& relevantProperties,
+																	const OV<TArray<CString> >& relevantProperties,
 																	const TArray<CacheValueInfo>& cacheValueInfos) = 0;
 		virtual			TVResult<TArray<CDictionary> >		cacheGetValues(const CString& name,
 																	const TArray<CString>& valueNames,
@@ -137,11 +136,10 @@ class CMDSDocumentStorage {
 
 		virtual			OV<SError>							collectionRegister(const CString& name,
 																	const CString& documentType,
-																	const TArray<CString>& relevantProperties,
+																	const OV<TArray<CString> >& relevantProperties,
 																	bool isUpToDate, const CDictionary& isIncludedInfo,
 																	const DocumentIsIncludedPerformer&
-																			documentIsIncludedPerformer,
-																	bool checkRelevantProperties) = 0;
+																			documentIsIncludedPerformer) = 0;
 		virtual			TVResult<UInt32>					collectionGetDocumentCount(const CString& name) const = 0;
 		virtual			OV<SError>							collectionIterate(const CString& name,
 																	const CString& documentType,
@@ -200,7 +198,7 @@ class CMDSDocumentStorage {
 
 		virtual			OV<SError>							indexRegister(const CString& name,
 																	const CString& documentType,
-																	const TArray<CString>& relevantProperties,
+																	const OV<TArray<CString> >& relevantProperties,
 																	const CDictionary& keysInfo,
 																	const DocumentKeysPerformer& documentKeysPerformer)
 																	= 0;
@@ -286,10 +284,9 @@ class CMDSDocumentStorage {
 
 						OV<SError>							collectionRegister(const CString& name,
 																	const CString& documentType,
-																	const TArray<CString>& relevantProperties,
+																	const OV<TArray<CString> >& relevantProperties,
 																	bool isUpToDate, const CDictionary& isIncludedInfo,
-																	const CString& isIncludedSelector,
-																	bool checkRelevantProperties);
+																	const CString& isIncludedSelector);
 
 						DocumentCreateResultInfosResult		documentCreate(const CString& documentType,
 																	const TArray<CMDSDocument::CreateInfo>&
@@ -302,7 +299,7 @@ class CMDSDocumentStorage {
 
 						OV<SError>							indexRegister(const CString& name,
 																	const CString& documentType,
-																	const TArray<CString>& relevantProperties,
+																	const OV<TArray<CString> >& relevantProperties,
 																	const CDictionary& keysInfo,
 																	const CString& keysSelector)
 																{ return indexRegister(name, documentType,
@@ -317,11 +314,44 @@ class CMDSDocumentStorage {
 																	const CMDSDocument::Info& documentInfo);
 				const	CMDSDocument::Info&					documentCreateInfo(const CString& documentType) const;
 
-						void								registerDocumentChangedInfos(
+						void								registerDocumentCreatedInfo(
 																	const CMDSDocument::Info& documentInfo,
-																	const CMDSDocument::ChangedInfo&
-																			documentChangedInfo);
-						DocumentChangedInfos				documentChangedInfos(const CString& documentType) const;
+																	const CMDSDocument::CreatedInfo&
+																			documentCreatedInfo);
+						DocumentCreatedInfos				documentCreatedInfos(const CString& documentType) const;
+
+						void								registerDocumentUpdatedInfo(
+																	const CMDSDocument::Info& documentInfo,
+																	const CMDSDocument::UpdatedInfo&
+																			documentUpdatedInfo);
+						DocumentUpdatedInfos				documentUpdatedInfos(const CString& documentType) const;
+
+						void								registerDocumentRemovedInfo(
+																	const CMDSDocument::Info& documentInfo,
+																	const CMDSDocument::RemovedInfo&
+																			documentRemovedInfo);
+						DocumentRemovedInfos				documentRemovedInfos(const CString& documentType) const;
+
+						void								registerDocumentAttachmentCreatedInfo(
+																	const CMDSDocument::Info& documentInfo,
+																	const CMDSDocument::AttachmentCreatedInfo&
+																			documentAttachmentCreatedInfo);
+						DocumentAttachmentCreatedInfos		documentAttachmentCreatedInfos(
+																	const CString& documentType) const;
+
+						void								registerDocumentAttachmentUpdatedInfo(
+																	const CMDSDocument::Info& documentInfo,
+																	const CMDSDocument::AttachmentUpdatedInfo&
+																			documentAttachmentUpdatedInfo);
+						DocumentAttachmentUpdatedInfos		documentAttachmentUpdatedInfos(
+																	const CString& documentType) const;
+
+						void								registerDocumentAttachmentRemovedInfo(
+																	const CMDSDocument::Info& documentInfo,
+																	const CMDSDocument::AttachmentRemovedInfo&
+																			documentAttachmentRemovedInfo);
+						DocumentAttachmentRemovedInfos		documentAttachmentRemovedInfos(
+																	const CString& documentType) const;
 
 						void								registerDocumentIsIncludedPerformerInfos(
 																	const TArray<DocumentIsIncludedPerformerInfo>&
@@ -371,8 +401,26 @@ class CMDSDocumentStorage {
 															CMDSDocumentStorage();
 
 															// Subclass methods
-						void								notifyDocumentChanged(const I<CMDSDocument>& document,
-																	CMDSDocument::ChangeKind documentChangeKind) const;
+						void								notifyDocumentCreated(const I<CMDSDocument>& document)
+																	const;
+						void								notifyDocumentUpdated(const I<CMDSDocument>& document,
+																	const TSet<CString>& updatedProperties,
+																	const TSet<CString>& removedProperties) const;
+						void								notifyDocumentRemoved(const I<CMDSDocument>& document)
+																	const;
+						void								notifyDocumentAttachmentCreated(
+																	const I<CMDSDocument>& document,
+																	const CString& attachmentID,
+																	const CMDSDocument::AttachmentInfo&
+																			attachmentInfo) const;
+						void								notifyDocumentAttachmentUpdated(
+																	const I<CMDSDocument>& document,
+																	const CString& attachmentID,
+																	const CMDSDocument::AttachmentInfo&
+																			attachmentInfo) const;
+						void								notifyDocumentAttachmentRemoved(
+																	const I<CMDSDocument>& document,
+																	const CString& attachmentID) const;
 
 	private:
 															// Instance methods

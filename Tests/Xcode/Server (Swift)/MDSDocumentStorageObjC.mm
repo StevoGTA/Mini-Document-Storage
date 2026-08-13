@@ -425,8 +425,7 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 					CMDSDocumentStorage::DocumentIsIncludedPerformerInfo(
 							CMDSDocument::IsIncludedPerformer(CString(OSSTR("documentPropertyIsValue()")),
 									(CMDSDocument::IsIncludedPerformer::Proc) sDocumentPropertyIsValue,
-									self.documentStorageServer),
-							true)));
+									self.documentStorageServer))));
 	self.documentStorageServer->registerDocumentKeysPerformers(
 			TSArray<CMDSDocument::KeysPerformer>(
 					CMDSDocument::KeysPerformer(CString(OSSTR("keysForDocumentProperty()")),
@@ -683,7 +682,7 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 
 //----------------------------------------------------------------------------------------------------------------------
 - (BOOL) cacheRegisterNamed:(NSString*) name documentType:(NSString*) documentType
-		relevantProperties:(NSArray<NSString*>*) relevantProperties
+		relevantProperties:(nullable NSArray<NSString*>*) relevantProperties
 		cacheValueInfos:(NSArray<MDSCacheValueInfo*>*) cacheValueInfos error:(NSError**) error
 {
 	// Setup
@@ -696,7 +695,11 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 	OV<SError>	cppError =
 						self.documentStorageServer->cacheRegister(CString((__bridge CFStringRef) name),
 								CString((__bridge CFStringRef) documentType),
-								CCoreFoundation::arrayOfStringsFrom((__bridge CFArrayRef) relevantProperties),
+								(relevantProperties != nil) ?
+										OV<TArray<CString> >(
+												CCoreFoundation::arrayOfStringsFrom(
+														(__bridge CFArrayRef) relevantProperties)) :
+										OV<TArray<CString> >(),
 								cppCacheValueInfos);
 
 	return [self composeResultsFrom:cppError error:error];
@@ -758,17 +761,21 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 
 //----------------------------------------------------------------------------------------------------------------------
 - (BOOL) collectionRegisterNamed:(NSString*) name documentType:(NSString*) documentType
-		relevantProperties:(NSArray<NSString*>*) relevantProperties isUpToDate:(BOOL) isUpToDate
+		relevantProperties:(nullable NSArray<NSString*>*) relevantProperties isUpToDate:(BOOL) isUpToDate
 		isIncludedInfo:(NSDictionary<NSString*, id>*) isIncludedInfo isIncludedSelector:(NSString*) isIncludedSelector
-		checkRelevantProperties:(BOOL) checkRelevantProperties error:(NSError**) error
+		error:(NSError**) error
 {
 	// Register collection
 	OV<SError>	cppError =
 						self.documentStorageServer->collectionRegister(CString((__bridge CFStringRef) name),
 								CString((__bridge CFStringRef) documentType),
-								CCoreFoundation::arrayOfStringsFrom((__bridge CFArrayRef) relevantProperties),
+								(relevantProperties != nil) ?
+										OV<TArray<CString> >(
+												CCoreFoundation::arrayOfStringsFrom(
+														(__bridge CFArrayRef) relevantProperties)) :
+										OV<TArray<CString> >(),
 								isUpToDate, CCoreFoundation::dictionaryFrom((__bridge CFDictionaryRef) isIncludedInfo),
-								CString((__bridge CFStringRef) isIncludedSelector), checkRelevantProperties);
+								CString((__bridge CFStringRef) isIncludedSelector));
 
 	return [self composeResultsFrom:cppError error:error];
 }
@@ -1166,14 +1173,18 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 
 //----------------------------------------------------------------------------------------------------------------------
 - (BOOL) indexRegisterNamed:(NSString*) name documentType:(NSString*) documentType
-		relevantProperties:(NSArray<NSString*>*) relevantProperties keysInfo:(NSDictionary<NSString*, id>*) keysInfo
-		keysSelector:(NSString*) keysSelector error:(NSError**) error
+		relevantProperties:(nullable NSArray<NSString*>*) relevantProperties
+		keysInfo:(NSDictionary<NSString*, id>*) keysInfo keysSelector:(NSString*) keysSelector error:(NSError**) error
 {
 	// Register index
 	OV<SError>	cppError =
 						self.documentStorageServer->indexRegister(CString((__bridge CFStringRef) name),
 								CString((__bridge CFStringRef) documentType),
-								CCoreFoundation::arrayOfStringsFrom((__bridge CFArrayRef) relevantProperties),
+								(relevantProperties != nil) ?
+										OV<TArray<CString> >(
+												CCoreFoundation::arrayOfStringsFrom(
+														(__bridge CFArrayRef) relevantProperties)) :
+										OV<TArray<CString> >(),
 								CCoreFoundation::dictionaryFrom((__bridge CFDictionaryRef) keysInfo),
 								CString((__bridge CFStringRef) keysSelector));
 

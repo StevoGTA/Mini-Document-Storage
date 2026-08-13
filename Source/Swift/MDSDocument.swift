@@ -12,13 +12,6 @@ import Foundation
 // MARK: MDSDocument
 open class MDSDocument : Hashable {
 
-	// MARK: ChangeKind
-	public enum ChangeKind {
-		case created
-		case updated
-		case removed
-	}
-
 	// MARK: AttachmentInfo
 	public struct AttachmentInfo {
 
@@ -119,7 +112,18 @@ open class MDSDocument : Hashable {
 
 	// MARK: Procs
 	public	typealias CreateProc = (_ id :String, _ documentStorage :MDSDocumentStorage) -> MDSDocument
-	public	typealias ChangedProc = (_ document :MDSDocument, _ changeKind :ChangeKind) -> Void
+
+	public	typealias CreatedProc = (_ document :MDSDocument) -> Void
+	public	typealias UpdatedProc =
+					(_ document :MDSDocument, _ updatedProperties :Set<String>,
+							_ removedProperties :Set<String>, _ changedProperties :Set<String>) -> Void
+	public	typealias RemovedProc = (_ document :MDSDocument) -> Void
+	public	typealias AttachmentCreatedProc =
+					(_ document :MDSDocument, _ attachmentID :String, _ attachmentInfo :AttachmentInfo) -> Void
+	public	typealias AttachmentUpdatedProc =
+					(_ document :MDSDocument, _ attachmentID :String, _ attachmentInfo :AttachmentInfo) -> Void
+	public	typealias AttachmentRemovedProc = (_ document :MDSDocument, _ attachmentID :String) -> Void
+
 	public	typealias IsIncludedProc = (_ documentType :String, _ document :MDSDocument, _ info :[String : Any]) -> Bool
 	public	typealias KeysProc = (_ documentType :String, _ document :MDSDocument, _ info :[String : Any]) -> [String]
 	public	typealias Proc = (_ document :MDSDocument) throws -> Void
@@ -157,6 +161,9 @@ open class MDSDocument : Hashable {
 		return self.documentStorage.documentValue(for: property, of: self) as? [Any]
 	}
 	public func set<T>(_ value :[T]?, for property :String) {
+		// Check if different
+		guard value?.map({ $0 as Any }) != array(for: property) else { return }
+
 		// Set value
 		self.documentStorage.documentSet(value, for: property, of: self)
 	}
@@ -301,6 +308,9 @@ open class MDSDocument : Hashable {
 		return self.documentStorage.documentValue(for: property, of: self) as? [String : Any]
 	}
 	public func set(_ value :[String : Any]?, for property :String) {
+		// Check if different
+		guard value != map(for: property) else { return }
+
 		// Set value
 		self.documentStorage.documentSet(value, for: property, of: self)
 	}
@@ -317,6 +327,9 @@ open class MDSDocument : Hashable {
 		}
 	}
 	public func set<T>(_ value :Set<T>?, for property :String) {
+		// Check if different - stored as an Array, so compare with Set semantics
+		guard value.map({ Set<AnyHashable>($0.map({ $0 as AnyHashable }) ) }) != set(for: property) else { return }
+
 		// Set value
 		self.documentStorage.documentSet((value != nil) ? Array(value!) : nil, for: property, of: self)
 	}
@@ -378,6 +391,9 @@ open class MDSDocument : Hashable {
 		return try! self.documentStorage.documents(for: documentIDs)
 	}
 	public func set<T : MDSDocument>(_ documents :[T]?, for property :String) {
+		// Check if different
+		guard documents?.map({ $0.id }) != (array(for: property) as? [String]) else { return }
+
 		// Set value
 		self.documentStorage.documentSet(documents?.map({ $0.id }), for: property, of: self)
 	}
@@ -398,12 +414,18 @@ open class MDSDocument : Hashable {
 		return storedMap.mapValues() { documentMap[$0]! }
 	}
 	public func set<T : MDSDocument>(documentMap :[String : T]?, for property :String) {
+		// Check if different
+		guard documentMap?.mapValues({ $0.id }) != (map(for: property) as? [String : String]) else { return }
+
 		// Set value
 		self.documentStorage.documentSet(documentMap?.mapValues({ $0.id }), for: property, of: self)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func remove(for property :String) {
+		// Check if have value
+		guard self.documentStorage.documentValue(for: property, of: self) != nil else { return }
+
 		// Update
 		self.documentStorage.documentSet(nil, for: property, of: self)
 	}

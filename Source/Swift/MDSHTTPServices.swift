@@ -912,7 +912,7 @@ class MDSHTTPServices {
 											performInfo.headers["Authorization"])
 								}
 	static func httpEndpointRequestForCacheRegister(documentStorageID :String, name :String, documentType :String,
-			relevantProperties :[String] = [], valueInfos :[CacheRegisterEndpointValueInfo],
+			relevantProperties :[String]? = nil, valueInfos :[CacheRegisterEndpointValueInfo],
 			authorization :String? = nil) -> MDSSuccessHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.transformedForPath
@@ -924,13 +924,15 @@ class MDSHTTPServices {
 										"selector": $0.selector,
 									  ] })
 
+		var	jsonBody :[String : Any] = [
+										"name": name,
+										"documentType": documentType,
+										"valueInfos": valueInfosTransformed,
+									   ]
+		jsonBody["relevantProperties"] = relevantProperties
+
 		return MDSSuccessHTTPEndpointRequest(method: .put, path: "/v1/cache/\(documentStorageIDUse)", headers: headers,
-				jsonBody: [
-							"name": name,
-							"documentType": documentType,
-							"relevantProperties": relevantProperties,
-							"valueInfos": valueInfosTransformed,
-						  ] as [String : Any])
+				jsonBody: jsonBody)
 	}
 	static func cacheRegisterGetValueInfo(for info :[String : Any]) ->
 			(valueInfo :CacheRegisterEndpointValueInfo?, error :String?) {
@@ -1028,23 +1030,24 @@ class MDSHTTPServices {
 											performInfo.headers["Authorization"])
 								}
 	static func httpEndpointRequestForCollectionRegister(documentStorageID :String, name :String, documentType :String,
-			relevantProperties :[String] = [], isUpToDate :Bool = false, isIncludedSelector :String,
+			relevantProperties :[String]? = nil, isUpToDate :Bool = false, isIncludedSelector :String,
 			isIncludedSelectorInfo :[String : Any] = [:], authorization :String? = nil) ->
 			MDSSuccessHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.transformedForPath
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : [:]
 
+		var	jsonBody :[String : Any] = [
+										"name": name,
+										"documentType": documentType,
+										"isUpToDate": isUpToDate ? 1 : 0,
+										"isIncludedSelector": isIncludedSelector,
+										"isIncludedSelectorInfo": isIncludedSelectorInfo,
+									   ]
+		jsonBody["relevantProperties"] = relevantProperties
+
 		return MDSSuccessHTTPEndpointRequest(method: .put, path: "/v1/collection/\(documentStorageIDUse)",
-				headers: headers,
-				jsonBody: [
-							"name": name,
-							"documentType": documentType,
-							"relevantProperties": relevantProperties,
-							"isUpToDate": isUpToDate ? 1 : 0,
-							"isIncludedSelector": isIncludedSelector,
-							"isIncludedSelectorInfo": isIncludedSelectorInfo,
-						  ] as [String : Any])
+				headers: headers, jsonBody: jsonBody)
 	}
 
 	// MARK: - Collection Get Document Count
@@ -1430,20 +1433,22 @@ class MDSHTTPServices {
 											performInfo.headers["Authorization"])
 								}
 	static func httpEndpointRequestForIndexRegister(documentStorageID :String, name :String, documentType :String,
-			relevantProperties :[String] = [], keysSelector :String, keysSelectorInfo :[String : Any] = [:],
+			relevantProperties :[String]? = nil, keysSelector :String, keysSelectorInfo :[String : Any] = [:],
 			authorization :String? = nil) -> MDSSuccessHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.transformedForPath
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : [:]
 
+		var	jsonBody :[String : Any] = [
+										"name": name,
+										"documentType": documentType,
+										"keysSelector": keysSelector,
+										"keysSelectorInfo": keysSelectorInfo,
+									   ]
+		jsonBody["relevantProperties"] = relevantProperties
+
 		return MDSSuccessHTTPEndpointRequest(method: .put, path: "/v1/index/\(documentStorageIDUse)", headers: headers,
-				jsonBody: [
-							"name": name,
-							"documentType": documentType,
-							"relevantProperties": relevantProperties,
-							"keysSelector": keysSelector,
-							"keysSelectorInfo": keysSelectorInfo,
-						  ] as [String : Any])
+				jsonBody: jsonBody)
 	}
 
 	// MARK: - Index Get Status

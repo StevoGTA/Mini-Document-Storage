@@ -38,17 +38,24 @@ public class MDSCache : Equatable {
 
 			var	lastRevision :Int
 
-	private	let	relevantProperties: Set<String>
+	private	let	relevantProperties: Set<String>?
 	private	let	valueInfos :[ValueInfo]
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	init(name :String, documentType :String, relevantProperties :[String], valueInfos :[ValueInfo], lastRevision :Int) {
+	init(name :String, documentType :String, relevantProperties :[String]?, valueInfos :[ValueInfo],
+			lastRevision :Int) {
+		// Validate - nil means "always evaluate"; an empty array is a programmer error
+		if relevantProperties?.isEmpty ?? false {
+			// Empty
+			fatalError("MDSCache \(name): relevantProperties is empty - pass nil to always evaluate")
+		}
+
 		// Store
 		self.name = name
 		self.documentType = documentType
 
-		self.relevantProperties = Set<String>(relevantProperties)
+		self.relevantProperties = relevantProperties.map({ Set<String>($0) })
 		self.valueInfos = valueInfos
 
 		self.lastRevision = lastRevision
@@ -73,8 +80,8 @@ public class MDSCache : Equatable {
 		var	lastRevision :Int?
 		updateInfos.forEach() { updateInfo in
 			// Check if there is something to do
-			if (updateInfo.changedProperties == nil) ||
-					!self.relevantProperties.intersection(updateInfo.changedProperties!).isEmpty {
+			if (self.relevantProperties == nil) || (updateInfo.changedProperties == nil) ||
+					!self.relevantProperties!.intersection(updateInfo.changedProperties!).isEmpty {
 				// Collect value infos
 				var	valueByName = [/* Name */ String : Any]()
 				self.valueInfos.forEach() {

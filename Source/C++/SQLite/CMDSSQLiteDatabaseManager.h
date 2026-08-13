@@ -96,73 +96,77 @@ class CMDSSQLiteDatabaseManager {
 	public:
 		struct CacheInfo {
 			public:
-											CacheInfo(const CString& documentType,
-													const TArray<CString>& relevantProperites,
-													const CacheValueInfos& cacheValueInfos, UInt32 lastRevision) :
-												mDocumentType(documentType), mRelevantProperties(relevantProperites),
-														mCacheValueInfos(cacheValueInfos), mLastRevision(lastRevision)
-												{}
-											CacheInfo(const CacheInfo& other) :
-												mDocumentType(other.mDocumentType),
-														mRelevantProperties(other.mRelevantProperties),
-														mCacheValueInfos(other.mCacheValueInfos),
-														mLastRevision(other.mLastRevision)
-												{}
+												CacheInfo(const CString& documentType,
+														const OV<TArray<CString> >& relevantProperites,
+														const CacheValueInfos& cacheValueInfos, UInt32 lastRevision) :
+													mDocumentType(documentType),
+															mRelevantProperties(relevantProperites),
+															mCacheValueInfos(cacheValueInfos),
+															mLastRevision(lastRevision)
+													{}
+												CacheInfo(const CacheInfo& other) :
+													mDocumentType(other.mDocumentType),
+															mRelevantProperties(other.mRelevantProperties),
+															mCacheValueInfos(other.mCacheValueInfos),
+															mLastRevision(other.mLastRevision)
+													{}
 
-				const	CString&			getDocumentType() const
-												{ return mDocumentType; }
-				const	TArray<CString>&	getRelevantProperties() const
-												{ return mRelevantProperties; }
-				const	CacheValueInfos&	getCacheValueInfos() const
-												{ return mCacheValueInfos; }
-						UInt32				getLastRevision() const
-												{ return mLastRevision; }
+				const	CString&				getDocumentType() const
+													{ return mDocumentType; }
+				const	OV<TArray<CString> >&	getRelevantProperties() const
+													{ return mRelevantProperties; }
+				const	CacheValueInfos&		getCacheValueInfos() const
+													{ return mCacheValueInfos; }
+						UInt32					getLastRevision() const
+													{ return mLastRevision; }
 
 			private:
-				CString			mDocumentType;
-				TArray<CString>	mRelevantProperties;
-				CacheValueInfos	mCacheValueInfos;
-				UInt32			mLastRevision;
+				CString					mDocumentType;
+				OV<TArray<CString> >	mRelevantProperties;
+				CacheValueInfos			mCacheValueInfos;
+				UInt32					mLastRevision;
 		};
 
 	// CollectionInfo
 	public:
 		struct CollectionInfo {
 			public:
-											CollectionInfo(const CString& documentType,
-													const TArray<CString>& relevantProperites,
-													const CString& isIncludedSelector,
-													const CDictionary& isIncludedSelectorInfo, UInt32 lastRevision) :
-												mDocumentType(documentType), mRelevantProperties(relevantProperites),
-														mIsIncludedSelector(isIncludedSelector),
-														mIsIncludedSelectorInfo(isIncludedSelectorInfo),
-														mLastRevision(lastRevision)
-												{}
-											CollectionInfo(const CollectionInfo& other) :
-												mDocumentType(other.mDocumentType),
-														mRelevantProperties(other.mRelevantProperties),
-														mIsIncludedSelector(other.mIsIncludedSelector),
-														mIsIncludedSelectorInfo(other.mIsIncludedSelectorInfo),
-														mLastRevision(other.mLastRevision)
-												{}
+												CollectionInfo(const CString& documentType,
+														const OV<TArray<CString> >& relevantProperites,
+														const CString& isIncludedSelector,
+														const CDictionary& isIncludedSelectorInfo,
+														UInt32 lastRevision) :
+													mDocumentType(documentType),
+															mRelevantProperties(relevantProperites),
+															mIsIncludedSelector(isIncludedSelector),
+															mIsIncludedSelectorInfo(isIncludedSelectorInfo),
+															mLastRevision(lastRevision)
+													{}
+												CollectionInfo(const CollectionInfo& other) :
+													mDocumentType(other.mDocumentType),
+															mRelevantProperties(other.mRelevantProperties),
+															mIsIncludedSelector(other.mIsIncludedSelector),
+															mIsIncludedSelectorInfo(other.mIsIncludedSelectorInfo),
+															mLastRevision(other.mLastRevision)
+													{}
 
-				const	CString&			getDocumentType() const
-												{ return mDocumentType; }
-				const	TArray<CString>&	getRelevantProperties() const
-												{ return mRelevantProperties; }
-				const	CString&			getIsIncludedSelector() const
-												{ return mIsIncludedSelector; }
-				const	CDictionary&		getIsIncludedSelectorInfo() const
-												{ return mIsIncludedSelectorInfo; }
-						UInt32				getLastRevision() const
-												{ return mLastRevision; }
+				const	CString&				getDocumentType() const
+													{ return mDocumentType; }
+				const	OV<TArray<CString> >&	getRelevantProperties() const
+													{ return mRelevantProperties; }
+				const	CString&				getIsIncludedSelector() const
+													{ return mIsIncludedSelector; }
+				const	CDictionary&			getIsIncludedSelectorInfo() const
+													{ return mIsIncludedSelectorInfo; }
+						UInt32					getLastRevision() const
+													{ return mLastRevision; }
 
 			private:
-				CString			mDocumentType;
-				TArray<CString>	mRelevantProperties;
-				CString			mIsIncludedSelector;
-				CDictionary		mIsIncludedSelectorInfo;
-				UInt32			mLastRevision;
+				CString					mDocumentType;
+				OV<TArray<CString> >	mRelevantProperties;
+				CString					mIsIncludedSelector;
+				CDictionary				mIsIncludedSelectorInfo;
+				UInt32					mLastRevision;
 		};
 
 	// DocumentContentInfo
@@ -243,7 +247,8 @@ class CMDSSQLiteDatabaseManager {
 											mModificationUniversalTime(modificationUniversalTime)
 									{}
 								DocumentCreateInfo(const DocumentCreateInfo& other) :
-									mID(other.mID), mRevision(other.mRevision), mCreationUniversalTime(other.mCreationUniversalTime),
+									mID(other.mID), mRevision(other.mRevision),
+											mCreationUniversalTime(other.mCreationUniversalTime),
 											mModificationUniversalTime(other.mModificationUniversalTime)
 									{}
 
@@ -448,43 +453,43 @@ class CMDSSQLiteDatabaseManager {
 	public:
 		struct IndexInfo {
 			public:
-													IndexInfo(const CString& documentType,
-															const TArray<CString>& relevantProperties,
-															const CString& keysSelector,
-															const CDictionary& keysSelectorInfo,
-															UInt32 lastRevision) :
-														mDocumentType(documentType),
-																mRelevantProperties(relevantProperties),
-																mKeysSelector(keysSelector),
-																mKeysSelectorInfo(keysSelectorInfo),
-																mLastRevision(lastRevision)
-														{}
-													IndexInfo(const IndexInfo& other) :
-														mDocumentType(other.mDocumentType),
-																mRelevantProperties(other.mRelevantProperties),
-																mKeysSelector(other.mKeysSelector),
-																mKeysSelectorInfo(other.mKeysSelectorInfo),
-																mLastRevision(other.mLastRevision)
-														{}
+														IndexInfo(const CString& documentType,
+																const OV<TArray<CString> >& relevantProperties,
+																const CString& keysSelector,
+																const CDictionary& keysSelectorInfo,
+																UInt32 lastRevision) :
+															mDocumentType(documentType),
+																	mRelevantProperties(relevantProperties),
+																	mKeysSelector(keysSelector),
+																	mKeysSelectorInfo(keysSelectorInfo),
+																	mLastRevision(lastRevision)
+															{}
+														IndexInfo(const IndexInfo& other) :
+															mDocumentType(other.mDocumentType),
+																	mRelevantProperties(other.mRelevantProperties),
+																	mKeysSelector(other.mKeysSelector),
+																	mKeysSelectorInfo(other.mKeysSelectorInfo),
+																	mLastRevision(other.mLastRevision)
+															{}
 
-						const	CString&			getDocumentType() const
-														{ return mDocumentType; }
-						const	TArray<CString>&	getRelevantProperties() const
-														{ return mRelevantProperties; }
-						const	CString&			getKeysSelector() const
-														{ return mKeysSelector; }
-						const	CDictionary&		getKeysSelectorInfo() const
-														{ return mKeysSelectorInfo; }
-								UInt32				getLastRevision() const
-														{ return mLastRevision; }
+						const	CString&				getDocumentType() const
+															{ return mDocumentType; }
+						const	OV<TArray<CString> >&	getRelevantProperties() const
+															{ return mRelevantProperties; }
+						const	CString&				getKeysSelector() const
+															{ return mKeysSelector; }
+						const	CDictionary&			getKeysSelectorInfo() const
+															{ return mKeysSelectorInfo; }
+								UInt32					getLastRevision() const
+															{ return mLastRevision; }
 
 			// Properties
 			private:
-				CString			mDocumentType;
-				TArray<CString>	mRelevantProperties;
-				CString			mKeysSelector;
-				CDictionary		mKeysSelectorInfo;
-				UInt32			mLastRevision;
+				CString					mDocumentType;
+				OV<TArray<CString> >	mRelevantProperties;
+				CString					mKeysSelector;
+				CDictionary				mKeysSelectorInfo;
+				UInt32					mLastRevision;
 		};
 
 	// Types
@@ -557,7 +562,7 @@ class CMDSSQLiteDatabaseManager {
 															const TArray<CString>& cachedValueNames);
 
 				UInt32								cacheRegister(const CString& name, const CString& documentType,
-															const TArray<CString>& relevantProperties,
+															const OV<TArray<CString> >& relevantProperties,
 															const TArray<CacheValueInfo>& cacheValueInfos);
 				OV<CacheInfo>						cacheInfo(const CString& name);
 				TVResult<TArray<CDictionary> >		cacheGetValues(const I<TMDSCache<SInt64, ValueInfoByID> >& cache,
@@ -568,7 +573,7 @@ class CMDSSQLiteDatabaseManager {
 															const IDArray& removedIDs, const OV<UInt32>& lastRevision);
 
 				UInt32								collectionRegister(const CString& name, const CString& documentType,
-															const TArray<CString>& relevantProperties,
+															const OV<TArray<CString> >& relevantProperties,
 															const CString& isIncludedSelector,
 															const CDictionary& isIncludedSelectorInfo, bool isUpToDate);
 				OV<CollectionInfo>					collectionInfo(const CString& name);
@@ -615,7 +620,7 @@ class CMDSSQLiteDatabaseManager {
 															const CString& attachmentID);
 
 				UInt32								indexRegister(const CString& name, const CString& documentType,
-															const TArray<CString>& relevantProperties,
+															const OV<TArray<CString> >& relevantProperties,
 															const CString& keysSelector,
 															const CDictionary& keysSelectorInfo);
 				OV<IndexInfo>						indexInfo(const CString& name);

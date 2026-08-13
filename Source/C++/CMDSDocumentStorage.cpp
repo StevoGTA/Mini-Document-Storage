@@ -4,6 +4,8 @@
 
 #include "CMDSDocumentStorage.h"
 
+#include "TLockingDictionary.h"
+
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: CMDSDocumentStorage::Internals
 
@@ -58,12 +60,17 @@ class CMDSDocumentStorage::Internals {
 								TNDictionary<I<CMDSDocument> >* documentMap)
 							{ documentMap->set(key, document); }
 
-		TNDictionary<CMDSDocument::Info>				mDocumentCreateInfoByDocumentType;
-		TNArrayDictionary<CMDSDocument::ChangedInfo>	mDocumentChangedInfoByDocumentType;
-		TNDictionary<DocumentIsIncludedPerformerInfo>	mDocumentIsIncludedPerformerInfoBySelector;
-		TNDictionary<CMDSDocument::KeysPerformer>		mDocumentKeysPerformerBySelector;
-		TNDictionary<CMDSDocument::ValueInfo>			mDocumentValueInfoBySelector;
-		TNDictionary<SValue>							mEphemeralValueByKey;
+		TNDictionary<CMDSDocument::Info>								mDocumentCreateInfoByDocumentType;
+		TNLockingArrayDictionary<CMDSDocument::CreatedInfo>				mDocumentCreatedInfoByDocumentType;
+		TNLockingArrayDictionary<CMDSDocument::UpdatedInfo>				mDocumentUpdatedInfoByDocumentType;
+		TNLockingArrayDictionary<CMDSDocument::RemovedInfo>				mDocumentRemovedInfoByDocumentType;
+		TNLockingArrayDictionary<CMDSDocument::AttachmentCreatedInfo>	mDocumentAttachmentCreatedInfoByDocumentType;
+		TNLockingArrayDictionary<CMDSDocument::AttachmentUpdatedInfo>	mDocumentAttachmentUpdatedInfoByDocumentType;
+		TNLockingArrayDictionary<CMDSDocument::AttachmentRemovedInfo>	mDocumentAttachmentRemovedInfoByDocumentType;
+		TNDictionary<DocumentIsIncludedPerformerInfo>					mDocumentIsIncludedPerformerInfoBySelector;
+		TNDictionary<CMDSDocument::KeysPerformer>						mDocumentKeysPerformerBySelector;
+		TNDictionary<CMDSDocument::ValueInfo>							mDocumentValueInfoBySelector;
+		TNDictionary<SValue>											mEphemeralValueByKey;
 };
 
 CMDSDocument::Info	CMDSDocumentStorage::Internals::GenericDocument::mInfo(CString(OSSTR("generic")), create);
@@ -166,8 +173,8 @@ TVResult<CDictionary> CMDSDocumentStorage::associationGetSumValues(const CString
 
 //----------------------------------------------------------------------------------------------------------------------
 OV<SError> CMDSDocumentStorage::collectionRegister(const CString& name, const CString& documentType,
-		const TArray<CString>& relevantProperties, bool isUpToDate, const CDictionary& isIncludedInfo,
-		const CString& isIncludedSelector, bool checkRelevantProperties)
+		const OV<TArray<CString> >& relevantProperties, bool isUpToDate, const CDictionary& isIncludedInfo,
+		const CString& isIncludedSelector)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Setup
@@ -175,8 +182,7 @@ OV<SError> CMDSDocumentStorage::collectionRegister(const CString& name, const CS
 														this->documentIsIncludedPerformerInfo(isIncludedSelector);
 
 	return collectionRegister(name, documentType, relevantProperties, isUpToDate, isIncludedInfo,
-			documentIsIncludedPerformerInfo.getDocumentIsIncludedPerformer(),
-			documentIsIncludedPerformerInfo.getCheckRelevantProperties());
+			documentIsIncludedPerformerInfo.getDocumentIsIncludedPerformer());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -256,23 +262,135 @@ const CMDSDocument::Info& CMDSDocumentStorage::documentCreateInfo(const CString&
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSDocumentStorage::registerDocumentChangedInfos(const CMDSDocument::Info& documentInfo,
-		const CMDSDocument::ChangedInfo& documentChangedInfo)
+void CMDSDocumentStorage::registerDocumentCreatedInfo(const CMDSDocument::Info& documentInfo,
+		const CMDSDocument::CreatedInfo& documentCreatedInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	mInternals->mDocumentChangedInfoByDocumentType.add(documentInfo.getDocumentType(), documentChangedInfo);
+	mInternals->mDocumentCreatedInfoByDocumentType.add(documentInfo.getDocumentType(), documentCreatedInfo);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-CMDSDocumentStorage::DocumentChangedInfos CMDSDocumentStorage::documentChangedInfos(const CString& documentType) const
+CMDSDocumentStorage::DocumentCreatedInfos CMDSDocumentStorage::documentCreatedInfos(const CString& documentType) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Setup
-	const	OR<TNArray<CMDSDocument::ChangedInfo> >	documentChangedInfos =
-															mInternals->mDocumentChangedInfoByDocumentType.get(
-																	documentType);
+	const	OR<TNArray<CMDSDocument::CreatedInfo> >	documentCreatedInfos =
+															mInternals->mDocumentCreatedInfoByDocumentType
+																	.get(documentType);
 
-	return documentChangedInfos.hasReference() ? *documentChangedInfos : TNArray<CMDSDocument::ChangedInfo>();
+	return documentCreatedInfos.hasReference() ? *documentCreatedInfos : TNArray<CMDSDocument::CreatedInfo>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocumentStorage::registerDocumentUpdatedInfo(const CMDSDocument::Info& documentInfo,
+		const CMDSDocument::UpdatedInfo& documentUpdatedInfo)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	mInternals->mDocumentUpdatedInfoByDocumentType.add(documentInfo.getDocumentType(), documentUpdatedInfo);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+CMDSDocumentStorage::DocumentUpdatedInfos CMDSDocumentStorage::documentUpdatedInfos(const CString& documentType) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	const	OR<TNArray<CMDSDocument::UpdatedInfo> >	documentUpdatedInfos =
+															mInternals->mDocumentUpdatedInfoByDocumentType
+																	.get(documentType);
+
+	return documentUpdatedInfos.hasReference() ? *documentUpdatedInfos : TNArray<CMDSDocument::UpdatedInfo>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocumentStorage::registerDocumentRemovedInfo(const CMDSDocument::Info& documentInfo,
+		const CMDSDocument::RemovedInfo& documentRemovedInfo)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	mInternals->mDocumentRemovedInfoByDocumentType.add(documentInfo.getDocumentType(), documentRemovedInfo);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+CMDSDocumentStorage::DocumentRemovedInfos CMDSDocumentStorage::documentRemovedInfos(const CString& documentType) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	const	OR<TNArray<CMDSDocument::RemovedInfo> >	documentRemovedInfos =
+															mInternals->mDocumentRemovedInfoByDocumentType
+																	.get(documentType);
+
+	return documentRemovedInfos.hasReference() ? *documentRemovedInfos : TNArray<CMDSDocument::RemovedInfo>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocumentStorage::registerDocumentAttachmentCreatedInfo(const CMDSDocument::Info& documentInfo,
+		const CMDSDocument::AttachmentCreatedInfo& documentAttachmentCreatedInfo)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	mInternals->mDocumentAttachmentCreatedInfoByDocumentType.add(documentInfo.getDocumentType(),
+			documentAttachmentCreatedInfo);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+CMDSDocumentStorage::DocumentAttachmentCreatedInfos CMDSDocumentStorage::documentAttachmentCreatedInfos(
+		const CString& documentType) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	const	OR<TNArray<CMDSDocument::AttachmentCreatedInfo> >	documentAttachmentCreatedInfos =
+																		mInternals->
+																				mDocumentAttachmentCreatedInfoByDocumentType
+																				.get(documentType);
+
+	return documentAttachmentCreatedInfos.hasReference() ?
+			*documentAttachmentCreatedInfos : TNArray<CMDSDocument::AttachmentCreatedInfo>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocumentStorage::registerDocumentAttachmentUpdatedInfo(const CMDSDocument::Info& documentInfo,
+		const CMDSDocument::AttachmentUpdatedInfo& documentAttachmentUpdatedInfo)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	mInternals->mDocumentAttachmentUpdatedInfoByDocumentType.add(documentInfo.getDocumentType(),
+			documentAttachmentUpdatedInfo);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+CMDSDocumentStorage::DocumentAttachmentUpdatedInfos CMDSDocumentStorage::documentAttachmentUpdatedInfos(
+		const CString& documentType) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	const	OR<TNArray<CMDSDocument::AttachmentUpdatedInfo> >	documentAttachmentUpdatedInfos =
+																		mInternals->
+																				mDocumentAttachmentUpdatedInfoByDocumentType
+																				.get(documentType);
+
+	return documentAttachmentUpdatedInfos.hasReference() ?
+			*documentAttachmentUpdatedInfos : TNArray<CMDSDocument::AttachmentUpdatedInfo>();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocumentStorage::registerDocumentAttachmentRemovedInfo(const CMDSDocument::Info& documentInfo,
+		const CMDSDocument::AttachmentRemovedInfo& documentAttachmentRemovedInfo)
+//----------------------------------------------------------------------------------------------------------------------
+{
+	mInternals->mDocumentAttachmentRemovedInfoByDocumentType.add(documentInfo.getDocumentType(),
+			documentAttachmentRemovedInfo);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+CMDSDocumentStorage::DocumentAttachmentRemovedInfos CMDSDocumentStorage::documentAttachmentRemovedInfos(
+		const CString& documentType) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	const	OR<TNArray<CMDSDocument::AttachmentRemovedInfo> >	documentAttachmentRemovedInfos =
+																		mInternals->
+																				mDocumentAttachmentRemovedInfoByDocumentType
+																				.get(documentType);
+
+	return documentAttachmentRemovedInfos.hasReference() ?
+			*documentAttachmentRemovedInfos : TNArray<CMDSDocument::AttachmentRemovedInfo>();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -351,18 +469,99 @@ void CMDSDocumentStorage::storeEphemeral(const CString& key, const OV<SValue>& v
 // MARK: Subclass methods
 
 //----------------------------------------------------------------------------------------------------------------------
-void CMDSDocumentStorage::notifyDocumentChanged(const I<CMDSDocument>& document,
-		CMDSDocument::ChangeKind documentChangeKind) const
+void CMDSDocumentStorage::notifyDocumentCreated(const I<CMDSDocument>& document) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Setup
-	DocumentChangedInfos	documentChangedInfos = this->documentChangedInfos(document->getDocumentType());
+	DocumentCreatedInfos	documentCreatedInfos_ = documentCreatedInfos(document->getDocumentType());
 
-	// Call document changed procs
-	for (TArray<CMDSDocument::ChangedInfo>::Iterator iterator = documentChangedInfos.getIterator(); iterator;
+	// Call document created procs
+	for (TArray<CMDSDocument::CreatedInfo>::Iterator iterator = documentCreatedInfos_.getIterator(); iterator;
 			iterator++)
 		// Call proc
-		iterator->notify(document, documentChangeKind);
+		iterator->notify(document);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocumentStorage::notifyDocumentUpdated(const I<CMDSDocument>& document, const TSet<CString>& updatedProperties,
+		const TSet<CString>& removedProperties) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	DocumentUpdatedInfos	documentUpdatedInfos_ = documentUpdatedInfos(document->getDocumentType());
+	if (documentUpdatedInfos_.isEmpty())
+		// Nobody listening, so don't compose the union
+		return;
+
+	TNSet<CString>	changedProperties = TNSet<CString>(updatedProperties).insertFrom(removedProperties);
+
+	// Call document updated procs
+	for (TArray<CMDSDocument::UpdatedInfo>::Iterator iterator = documentUpdatedInfos_.getIterator(); iterator;
+			iterator++)
+		// Call proc
+		iterator->notify(document, updatedProperties, removedProperties, changedProperties);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocumentStorage::notifyDocumentRemoved(const I<CMDSDocument>& document) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	DocumentRemovedInfos	documentRemovedInfos_ = documentRemovedInfos(document->getDocumentType());
+
+	// Call document removed procs
+	for (TArray<CMDSDocument::RemovedInfo>::Iterator iterator = documentRemovedInfos_.getIterator(); iterator;
+			iterator++)
+		// Call proc
+		iterator->notify(document);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocumentStorage::notifyDocumentAttachmentCreated(const I<CMDSDocument>& document,
+		const CString& attachmentID, const CMDSDocument::AttachmentInfo& attachmentInfo) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	DocumentAttachmentCreatedInfos	documentAttachmentCreatedInfos_ =
+											documentAttachmentCreatedInfos(document->getDocumentType());
+
+	// Call document attachment created procs
+	for (TArray<CMDSDocument::AttachmentCreatedInfo>::Iterator iterator = documentAttachmentCreatedInfos_.getIterator();
+			iterator; iterator++)
+		// Call proc
+		iterator->notify(document, attachmentID, attachmentInfo);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocumentStorage::notifyDocumentAttachmentUpdated(const I<CMDSDocument>& document,
+		const CString& attachmentID, const CMDSDocument::AttachmentInfo& attachmentInfo) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	DocumentAttachmentUpdatedInfos	documentAttachmentUpdatedInfos_ =
+											documentAttachmentUpdatedInfos(document->getDocumentType());
+
+	// Call document attachment updated procs
+	for (TArray<CMDSDocument::AttachmentUpdatedInfo>::Iterator iterator = documentAttachmentUpdatedInfos_.getIterator();
+			iterator; iterator++)
+		// Call proc
+		iterator->notify(document, attachmentID, attachmentInfo);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void CMDSDocumentStorage::notifyDocumentAttachmentRemoved(const I<CMDSDocument>& document,
+		const CString& attachmentID) const
+//----------------------------------------------------------------------------------------------------------------------
+{
+	// Setup
+	DocumentAttachmentRemovedInfos	documentAttachmentRemovedInfos_ =
+											documentAttachmentRemovedInfos(document->getDocumentType());
+
+	// Call document attachment removed procs
+	for (TArray<CMDSDocument::AttachmentRemovedInfo>::Iterator iterator = documentAttachmentRemovedInfos_.getIterator();
+			iterator; iterator++)
+		// Call proc
+		iterator->notify(document, attachmentID);
 }
 
 // MARK: Class methods

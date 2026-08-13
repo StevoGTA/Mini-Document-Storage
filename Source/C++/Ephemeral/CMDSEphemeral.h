@@ -43,18 +43,17 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 															const TArray<CMDSAssociation::Update>& updates);
 
 		OV<SError>									cacheRegister(const CString& name, const CString& documentType,
-															const TArray<CString>& relevantProperties,
+															const OV<TArray<CString> >& relevantProperties,
 															const TArray<CacheValueInfo>& cacheValueInfos);
 		TVResult<TArray<CDictionary> >				cacheGetValues(const CString& name,
 															const TArray<CString>& valueNames,
 															const OV<TArray<CString> >& documentIDs);
 
 		OV<SError>									collectionRegister(const CString& name, const CString& documentType,
-															const TArray<CString>& relevantProperties, bool isUpToDate,
-															const CDictionary& isIncludedInfo,
+															const OV<TArray<CString> >& relevantProperties,
+															bool isUpToDate, const CDictionary& isIncludedInfo,
 															const CMDSDocument::IsIncludedPerformer&
-																	documentIsIncludedPerformer,
-															bool checkRelevantProperties);
+																	documentIsIncludedPerformer);
 		TVResult<UInt32>							collectionGetDocumentCount(const CString& name) const;
 		OV<SError>									collectionIterate(const CString& name, const CString& documentType,
 															CMDSDocument::Proc proc, void* procUserData) const;
@@ -104,7 +103,7 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 		OV<SError>									documentRemove(const I<CMDSDocument>& document);
 
 		OV<SError>									indexRegister(const CString& name, const CString& documentType,
-															const TArray<CString>& relevantProperties,
+															const OV<TArray<CString> >& relevantProperties,
 															const CDictionary& keysInfo,
 															const CMDSDocument::KeysPerformer& documentKeysPerformer);
 		OV<SError>									indexIterate(const CString& name, const CString& documentType,

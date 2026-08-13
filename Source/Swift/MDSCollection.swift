@@ -16,23 +16,27 @@ class MDSCollection : Equatable {
 
 			var	lastRevision :Int
 
-	private	let	relevantProperties: Set<String>
+	private	let	relevantProperties: Set<String>?
 	private	let	documentIsIncludedProc :MDSDocument.IsIncludedProc
-	private	let	checkRelevantProperties :Bool
 	private	let	isIncludedInfo :[String : Any]
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	init(name :String, documentType :String, relevantProperties :[String],
-			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc, checkRelevantProperties :Bool,
-			isIncludedInfo :[String : Any], lastRevision :Int) {
+	init(name :String, documentType :String, relevantProperties :[String]?,
+			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc, isIncludedInfo :[String : Any],
+			lastRevision :Int) {
+		// Validate - nil means "always evaluate"; an empty array is a programmer error
+		if relevantProperties?.isEmpty ?? false {
+			// Empty
+			fatalError("MDSCollection \(name): relevantProperties is empty - pass nil to always evaluate")
+		}
+
 		// Store
 		self.name = name
 		self.documentType = documentType
 
-		self.relevantProperties = Set<String>(relevantProperties)
+		self.relevantProperties = relevantProperties.map({ Set<String>($0) })
 		self.documentIsIncludedProc = documentIsIncludedProc
-		self.checkRelevantProperties = checkRelevantProperties
 		self.isIncludedInfo = isIncludedInfo
 
 		self.lastRevision = lastRevision
@@ -51,8 +55,8 @@ class MDSCollection : Equatable {
 		var	lastRevision :Int?
 		updateInfos.forEach() {
 			// Check if there is something to do
-			if !self.checkRelevantProperties || ($0.changedProperties == nil) ||
-					!self.relevantProperties.intersection($0.changedProperties!).isEmpty {
+			if (self.relevantProperties == nil) || ($0.changedProperties == nil) ||
+					!self.relevantProperties!.intersection($0.changedProperties!).isEmpty {
 				// Query
 				if self.documentIsIncludedProc(self.documentType, $0.document, self.isIncludedInfo) {
 					// Included

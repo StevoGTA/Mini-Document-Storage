@@ -46,18 +46,39 @@ class CMDSSQLite::Internals {
 	public:
 		struct BatchInfo {
 			public:
-									BatchInfo(Internals& internals, const MDSBatch& batch) :
-										mInternals(internals), mBatch(batch)
-										{}
+																			BatchInfo(Internals& internals,
+																					const MDSBatch& batch) :
+																				mInternals(internals), mBatch(batch)
+																				{}
 
-						Internals&	getInternals() const
-										{ return mInternals; }
-				const	MDSBatch&	getBatch() const
-										{ return mBatch; }
+						Internals&											getInternals() const
+																				{ return mInternals; }
+				const	MDSBatch&											getBatch() const
+																				{ return mBatch; }
+
+						TNArray<I<CMDSDocument> >&							getCreatedDocuments()
+																				{ return mCreatedDocuments; }
+						CMDSDocument::UpdatedNotificationInfos&				getUpdatedNotificationInfos()
+																				{ return mUpdatedNotificationInfos; }
+						CMDSDocument::AttachmentNotificationInfos&			getAttachmentCreatedNotificationInfos()
+																				{ return
+																						mAttachmentCreatedNotificationInfos; }
+						CMDSDocument::AttachmentNotificationInfos&			getAttachmentUpdatedNotificationInfos()
+																				{ return
+																						mAttachmentUpdatedNotificationInfos; }
+						CMDSDocument::AttachmentRemovedNotificationInfos&	getAttachmentRemovedNotificationInfos()
+																				{ return
+																						mAttachmentRemovedNotificationInfos; }
 
 			private:
-						Internals&	mInternals;
-				const	MDSBatch&	mBatch;
+						Internals&											mInternals;
+				const	MDSBatch&											mBatch;
+
+						TNArray<I<CMDSDocument> >							mCreatedDocuments;
+						CMDSDocument::UpdatedNotificationInfos				mUpdatedNotificationInfos;
+						CMDSDocument::AttachmentNotificationInfos			mAttachmentCreatedNotificationInfos;
+						CMDSDocument::AttachmentNotificationInfos			mAttachmentUpdatedNotificationInfos;
+						CMDSDocument::AttachmentRemovedNotificationInfos	mAttachmentRemovedNotificationInfos;
 		};
 
 	public:
@@ -164,31 +185,38 @@ class CMDSSQLite::Internals {
 	public:
 		struct DocumentUpdateInfo {
 			public:
-															DocumentUpdateInfo(Internals& internals,
-																	const CString& documentType,
-																	const TArray<CMDSDocument::UpdateInfo>&
-																			documentUpdateInfos,
-																	TNArray<CMDSDocument::FullInfo>&
-																			documentFullInfos) :
-																mInternals(internals), mDocumentType(documentType),
-																		mDocumentUpdateInfos(documentUpdateInfos),
-																		mDocumentFullInfos(documentFullInfos)
-																{}
+																DocumentUpdateInfo(Internals& internals,
+																		const CString& documentType,
+																		const TArray<CMDSDocument::UpdateInfo>&
+																				documentUpdateInfos,
+																		TNArray<CMDSDocument::FullInfo>&
+																				documentFullInfos,
+																		CMDSDocument::UpdatedNotificationInfos&
+																				updatedNotificationInfos) :
+																	mInternals(internals), mDocumentType(documentType),
+																			mDocumentUpdateInfos(documentUpdateInfos),
+																			mDocumentFullInfos(documentFullInfos),
+																			mUpdatedNotificationInfos(
+																					updatedNotificationInfos)
+																	{}
 
-						Internals&							getInternals() const
-																{ return mInternals; }
-				const	CString&							getDocumentType() const
-																{ return mDocumentType; }
-				const	TArray<CMDSDocument::UpdateInfo>&	getDocumentUpdateInfos() const
-																{ return mDocumentUpdateInfos; }
-						TNArray<CMDSDocument::FullInfo>&	getDocumentFullInfos() const
-																{ return mDocumentFullInfos; }
+						Internals&								getInternals() const
+																	{ return mInternals; }
+				const	CString&								getDocumentType() const
+																	{ return mDocumentType; }
+				const	TArray<CMDSDocument::UpdateInfo>&		getDocumentUpdateInfos() const
+																	{ return mDocumentUpdateInfos; }
+						TNArray<CMDSDocument::FullInfo>&		getDocumentFullInfos() const
+																	{ return mDocumentFullInfos; }
+						CMDSDocument::UpdatedNotificationInfos&	getUpdatedNotificationInfos() const
+																	{ return mUpdatedNotificationInfos; }
 
 			private:
-						Internals&							mInternals;
-				const	CString&							mDocumentType;
-				const	TArray<CMDSDocument::UpdateInfo>&	mDocumentUpdateInfos;
-						TNArray<CMDSDocument::FullInfo>&	mDocumentFullInfos;
+						Internals&								mInternals;
+				const	CString&								mDocumentType;
+				const	TArray<CMDSDocument::UpdateInfo>&		mDocumentUpdateInfos;
+						TNArray<CMDSDocument::FullInfo>&		mDocumentFullInfos;
+						CMDSDocument::UpdatedNotificationInfos&	mUpdatedNotificationInfos;
 		};
 
 	public:
@@ -257,52 +285,93 @@ class CMDSSQLite::Internals {
 	private:
 		struct ProcessDocumentUpdateInfo {
 			public:
-													ProcessDocumentUpdateInfo(Internals& internals,
-															const CString& documentType,
-															TNArray<CMDSDocument::FullInfo>& documentFullInfos,
-															const MDSDocumentUpdateByDocumentID&
-																	documentUpdateByDocumentID,
-															MDSUpdateInfoBatchQueue& updateInfoBatchQueue,
-															MDSRemoveBatchQueue& removeBatchQueue) :
-														mInternals(internals), mDocumentType(documentType),
-																mDocumentInfo(
-																		mInternals.mDocumentStorage.documentCreateInfo(
-																				mDocumentType)),
-																mDocumentFullInfos(documentFullInfos),
-																mDocumentUpdateInfoByDocumentID(
-																		documentUpdateByDocumentID),
-																mUpdateInfoBatchQueue(updateInfoBatchQueue),
-																mRemoveBatchQueue(removeBatchQueue)
-														{}
+																ProcessDocumentUpdateInfo(Internals& internals,
+																		const CString& documentType,
+																		TNArray<CMDSDocument::FullInfo>&
+																				documentFullInfos,
+																		const MDSDocumentUpdateByDocumentID&
+																				documentUpdateByDocumentID,
+																		MDSUpdateInfoBatchQueue& updateInfoBatchQueue,
+																		MDSRemoveBatchQueue& removeBatchQueue,
+																		CMDSDocument::UpdatedNotificationInfos&
+																				updatedNotificationInfos) :
+																	mInternals(internals), mDocumentType(documentType),
+																			mDocumentInfo(
+																					mInternals
+																							.mDocumentStorage
+																							.documentCreateInfo(
+																							mDocumentType)),
+																			mDocumentFullInfos(documentFullInfos),
+																			mDocumentUpdateInfoByDocumentID(
+																					documentUpdateByDocumentID),
+																			mUpdateInfoBatchQueue(updateInfoBatchQueue),
+																			mRemoveBatchQueue(removeBatchQueue),
+																			mUpdatedNotificationInfos(
+																					updatedNotificationInfos)
+																	{}
 
-						Internals&					getInternals() const
-														{ return mInternals; }
-				const	CString&					getDocumentType() const
-														{ return mDocumentType; }
-				const	CMDSDocument::UpdateInfo&	getDocumentUpdateInfo(const CString& documentID) const
-														{ return *mDocumentUpdateInfoByDocumentID[documentID]; }
+						Internals&								getInternals() const
+																	{ return mInternals; }
+				const	CString&								getDocumentType() const
+																	{ return mDocumentType; }
+				const	CMDSDocument::UpdateInfo&				getDocumentUpdateInfo(const CString& documentID) const
+																	{ return *mDocumentUpdateInfoByDocumentID[
+																			documentID]; }
 
-						I<CMDSDocument>				documentCreate(const CString& documentID)
-														{ return mDocumentInfo.create(documentID,
-																mInternals.mDocumentStorage); }
-						void						update(const I<CMDSDocument>& document, UInt32 revision, SInt64 id,
-															const TSet<CString> changedProperties)
-														{ mUpdateInfoBatchQueue.add(
-																MDSUpdateInfo(document, revision, id,
-																		changedProperties)); }
-						void						remove(SInt64 id)
-														{ mRemoveBatchQueue.add(id); }
-						void						add(const CMDSDocument::FullInfo& documentFullInfo)
-														{ mDocumentFullInfos += documentFullInfo; }
+						I<CMDSDocument>							documentCreate(const CString& documentID)
+																	{ return mDocumentInfo.create(documentID,
+																			mInternals.mDocumentStorage); }
+						void									update(const I<CMDSDocument>& document, UInt32 revision,
+																		SInt64 id,
+																		const TSet<CString> changedProperties)
+																	{ mUpdateInfoBatchQueue.add(
+																			MDSUpdateInfo(document, revision, id,
+																					changedProperties)); }
+						void									remove(SInt64 id)
+																	{ mRemoveBatchQueue.add(id); }
+						void									add(const CMDSDocument::FullInfo& documentFullInfo)
+																	{ mDocumentFullInfos += documentFullInfo; }
+
+						CMDSDocument::UpdatedNotificationInfos&	getUpdatedNotificationInfos() const
+																	{ return mUpdatedNotificationInfos; }
+						void									notifyRemoved(const CString& documentID)
+																	{
+																		// Check if anybody is listening
+																		CMDSDocumentStorage::DocumentRemovedInfos
+																				documentRemovedInfos =
+																						mInternals.mDocumentStorage
+																								.documentRemovedInfos(
+																										mDocumentType);
+																		if (documentRemovedInfos.isEmpty())
+																			return;
+
+																		// Create document
+																		I<CMDSDocument>	document =
+																								mDocumentInfo.create(
+																										documentID,
+																										mInternals
+																												.mDocumentStorage);
+
+																		// Call document removed procs
+																		for (TArray<CMDSDocument::RemovedInfo>::Iterator
+																						iterator =
+																								documentRemovedInfos
+																										.getIterator();
+																				iterator; iterator++)
+																			// Call proc
+																			iterator->notify(document);
+																	}
 
 			private:
-						Internals&							mInternals;
-				const	CString&							mDocumentType;
-				const	CMDSDocument::Info&					mDocumentInfo;
-						TNArray<CMDSDocument::FullInfo>&	mDocumentFullInfos;
-				const	MDSDocumentUpdateByDocumentID&		mDocumentUpdateInfoByDocumentID;
-						MDSUpdateInfoBatchQueue&			mUpdateInfoBatchQueue;
-						MDSRemoveBatchQueue&				mRemoveBatchQueue;
+						Internals&								mInternals;
+				const	CString&								mDocumentType;
+				const	CMDSDocument::Info&						mDocumentInfo;
+						TNArray<CMDSDocument::FullInfo>&		mDocumentFullInfos;
+				const	MDSDocumentUpdateByDocumentID&			mDocumentUpdateInfoByDocumentID;
+						MDSUpdateInfoBatchQueue&				mUpdateInfoBatchQueue;
+						MDSRemoveBatchQueue&					mRemoveBatchQueue;
+
+						CMDSDocument::UpdatedNotificationInfos&	mUpdatedNotificationInfos;
 		};
 
 	private:
@@ -519,8 +588,6 @@ class CMDSSQLite::Internals {
 																									getRelevantProperties(),
 																							documentIsIncludedPerformerInfo
 																									.getDocumentIsIncludedPerformer(),
-																							documentIsIncludedPerformerInfo
-																									.getCheckRelevantProperties(),
 																							collectionInfo->
 																									getIsIncludedSelectorInfo(),
 																							collectionInfo->
@@ -853,12 +920,19 @@ class CMDSSQLite::Internals {
 				void						process(const CString& documentID,
 													const MDSBatchDocumentInfo& batchDocumentInfo,
 													const I<CMDSSQLiteDocumentBacking>& documentBacking,
-													const TSet<CString>& changedProperties,
+													const TSet<CString>& updatedProperties,
+													const TSet<CString>& removedProperties,
 													const CMDSDocument::Info& documentInfo,
 													MDSUpdateInfoBatchQueue& updateInfoBatchQueue,
-													const CMDSDocumentStorage::DocumentChangedInfos&
-															documentChangedInfos,
-													CMDSDocument::ChangeKind documentChangeKind)
+													TNArray<I<CMDSDocument> >& createdDocuments,
+													CMDSDocument::UpdatedNotificationInfos& updatedNotificationInfos,
+													CMDSDocument::AttachmentNotificationInfos&
+															attachmentCreatedNotificationInfos,
+													CMDSDocument::AttachmentNotificationInfos&
+															attachmentUpdatedNotificationInfos,
+													CMDSDocument::AttachmentRemovedNotificationInfos&
+															attachmentRemovedNotificationInfos,
+													bool isCreate)
 												{
 													// Create document
 													I<CMDSDocument>	document =
@@ -867,33 +941,57 @@ class CMDSSQLite::Internals {
 
 													// Add updates to BatchQueue
 													updateInfoBatchQueue.add(
-															MDSUpdateInfo(document, documentBacking->getRevision(),
-																	documentBacking->getID(), changedProperties));
+															isCreate ?
+																	MDSUpdateInfo(document,
+																			documentBacking->getRevision(),
+																			documentBacking->getID()) :
+																	MDSUpdateInfo(document,
+																			documentBacking->getRevision(),
+																			documentBacking->getID(),
+																			TNSet<CString>(updatedProperties)
+																					.insertFrom(removedProperties)));
 
 													// Process attachments
 													for (TSet<CString>::Iterator iterator =
 																	batchDocumentInfo
 																			.getRemovedAttachmentIDs()
 																			.getIterator();
-															iterator; iterator++)
+															iterator; iterator++) {
 														// Remove attachment
 														documentBacking->attachmentRemove(
 																batchDocumentInfo.getDocumentType(), *iterator,
 																mDatabaseManager);
 
+														// Add notification info
+														attachmentRemovedNotificationInfos +=
+																CMDSDocument::AttachmentRemovedNotificationInfo(
+																		document, *iterator);
+													}
+
 													const	TDictionary<MDSBatch::AddAttachmentInfo>&
-																	addAttachmentInfosByID =
-																			batchDocumentInfo
-																					.getAddAttachmentInfosByID();
+																addAttachmentInfosByID =
+																		batchDocumentInfo
+																				.getAddAttachmentInfosByID();
 													for (TDictionary<MDSBatch::AddAttachmentInfo>::ValueIterator
 																	iterator =
 																			addAttachmentInfosByID.getValueIterator();
-															iterator; iterator++)
+															iterator; iterator++) {
 														// Add attachment
-														documentBacking->attachmentAdd(
-																batchDocumentInfo.getDocumentType(),
-																iterator->getInfo(), iterator->getContent(),
-																mDatabaseManager);
+														CMDSDocument::AttachmentInfo	attachmentInfo =
+																								documentBacking->attachmentAdd(
+																										batchDocumentInfo
+																												.getDocumentType(),
+																										iterator->
+																												getInfo(),
+																										iterator->
+																												getContent(),
+																										mDatabaseManager);
+
+														// Add notification info
+														attachmentCreatedNotificationInfos +=
+																CMDSDocument::AttachmentNotificationInfo(document,
+																		attachmentInfo);
+													}
 
 													const	TDictionary<MDSBatch::UpdateAttachmentInfo>&
 																	updateAttachmentInfosByID =
@@ -903,21 +1001,37 @@ class CMDSSQLite::Internals {
 																	iterator =
 																			updateAttachmentInfosByID
 																					.getValueIterator();
-															iterator; iterator++)
+															iterator; iterator++) {
 														// Update attachment
 														documentBacking->attachmentUpdate(
-																batchDocumentInfo.getDocumentType(),
-																iterator->getID(),
-																iterator->getInfo(),
-																iterator->getContent(),
+																batchDocumentInfo.getDocumentType(), iterator->getID(),
+																iterator->getInfo(), iterator->getContent(),
 																mDatabaseManager);
 
-													// Call document changed procs
-													for (TArray<CMDSDocument::ChangedInfo>::Iterator iterator =
-																	documentChangedInfos.getIterator();
-															iterator; iterator++)
-														// Call proc
-														iterator->notify(document, documentChangeKind);
+														// Note the attachment as it now stands - retrieve the map into a local
+														//	as it is returned by value
+																CMDSDocument::AttachmentInfoByID	attachmentInfoByID =
+																											documentBacking->
+																													getDocumentAttachmentInfoByID();
+														const	OR<CMDSDocument::AttachmentInfo>	attachmentInfo =
+																											attachmentInfoByID[
+																													iterator->getID()];
+														if (attachmentInfo.hasReference())
+															// Have attachment info
+															attachmentUpdatedNotificationInfos +=
+																	CMDSDocument::AttachmentNotificationInfo(document, *attachmentInfo);
+													}
+
+													// Note document notification
+													if (isCreate)
+														// Created
+														createdDocuments += document;
+													else if (!updatedProperties.isEmpty() ||
+															!removedProperties.isEmpty())
+														// Updated
+														updatedNotificationInfos +=
+																CMDSDocument::UpdatedNotificationInfo(document,
+																		updatedProperties, removedProperties);
 												}
 
 		static	void						addDocumentInfoToDocumentFullInfoArray(const CString& key,
@@ -991,11 +1105,14 @@ class CMDSSQLite::Internals {
 												{
 													// Setup
 															Internals&					internals =
-																								batchInfo->getInternals();
+																								batchInfo->
+																										getInternals();
 															CMDSDocumentStorage&		documentStorage =
-																								internals.mDocumentStorage;
+																								internals
+																										.mDocumentStorage;
 															CMDSSQLiteDatabaseManager&	databaseManager =
-																								internals.mDatabaseManager;
+																								internals
+																										.mDatabaseManager;
 													const	MDSBatch&					batch = batchInfo->getBatch();
 
 													// Iterate all document changes
@@ -1010,31 +1127,21 @@ class CMDSSQLite::Internals {
 														const	CString&				documentType =
 																								documentTypeIterator
 																										.getKey();
-
 														const	CMDSDocument::Info&		documentInfo =
 																								documentStorage
 																										.documentCreateInfo(
 																												documentType);
-																DocumentChangedInfos	documentChangedInfos =
-																								documentStorage
-																										.documentChangedInfos(
-																												documentType);
-
-
-
 																Info					info(internals, documentType);
 																MDSUpdateInfoBatchQueue	updateInfoBatchQueue(
 																								databaseManager
 																										.getVariableNumberLimit(),
-																								(MDSUpdateInfoBatchQueue
-																												::Proc)
+																								(MDSUpdateInfoBatchQueue::Proc)
 																										processUpdates,
 																								&info);
 																MDSRemoveBatchQueue		removeBatchQueue(
 																								databaseManager
 																										.getVariableNumberLimit(),
-																								(MDSRemoveBatchQueue
-																												::Proc)
+																								(MDSRemoveBatchQueue::Proc)
 																										processRemoves,
 																								&info);
 														for (MDSBatchDocumentInfoByDocumentID::Iterator
@@ -1065,18 +1172,23 @@ class CMDSSQLite::Internals {
 																			databaseManager);
 
 																	// Process
-																	TNSet<CString>	changedProperties =
-																							TNSet<CString>(
-																									batchDocumentInfo
-																											.getUpdatedPropertyMap()
-																											.getKeys()) +
-																									batchDocumentInfo
-																											.getRemovedProperties();
-																	internals.process(documentID,
-																			batchDocumentInfo, *documentBacking,
-																			changedProperties, documentInfo,
-																			updateInfoBatchQueue, documentChangedInfos,
-																			CMDSDocument::kChangeKindUpdated);
+																	internals.process(documentID, batchDocumentInfo,
+																			*documentBacking,
+																			TNSet<CString>(
+																					batchDocumentInfo.getUpdatedPropertyMap()
+																							.getKeys()),
+																			batchDocumentInfo.getRemovedProperties(),
+																			documentInfo,
+																			updateInfoBatchQueue,
+																			batchInfo->getCreatedDocuments(),
+																			batchInfo->getUpdatedNotificationInfos(),
+																			batchInfo->
+																					getAttachmentCreatedNotificationInfos(),
+																			batchInfo->
+																					getAttachmentUpdatedNotificationInfos(),
+																			batchInfo->
+																					getAttachmentRemovedNotificationInfos(),
+																			false);
 																} else {
 																	// Add document
 																	I<CMDSSQLiteDocumentBacking>	newDocumentBacking(
@@ -1095,13 +1207,47 @@ class CMDSSQLite::Internals {
 																					newDocumentBacking));
 
 																	// Process
-																	internals.process(documentID,
-																			batchDocumentInfo, newDocumentBacking,
+																	internals.process(documentID, batchDocumentInfo,
+																			newDocumentBacking,
+																			TNSet<CString>(
+																					batchDocumentInfo.getUpdatedPropertyMap()
+																							.getKeys()),
 																			TNSet<CString>(), documentInfo,
-																			updateInfoBatchQueue, documentChangedInfos,
-																			CMDSDocument::kChangeKindCreated);
+																			updateInfoBatchQueue,
+																			batchInfo->getCreatedDocuments(),
+																			batchInfo->getUpdatedNotificationInfos(),
+																			batchInfo->
+																					getAttachmentCreatedNotificationInfos(),
+																			batchInfo->
+																					getAttachmentUpdatedNotificationInfos(),
+																			batchInfo->
+																					getAttachmentRemovedNotificationInfos(),
+																			true);
 																}
 															} else if (documentBacking.hasReference()) {
+																// Call document removed procs - before any removal
+																//	work so the document is still readable
+																DocumentRemovedInfos	documentRemovedInfos =
+																								documentStorage
+																										.documentRemovedInfos(
+																												documentType);
+																if (!documentRemovedInfos.isEmpty()) {
+																	// Create document
+																	I<CMDSDocument>	document =
+																							documentInfo.create(
+																									documentID,
+																									documentStorage);
+
+																	// Call document removed procs
+																	for (TArray<CMDSDocument::RemovedInfo>::Iterator
+																					iterator =
+																							documentRemovedInfos
+																									.getIterator();
+																			iterator; iterator++)
+																		// Call proc
+																		iterator->notify(document);
+																}
+
 																// Remove document
 																databaseManager.documentRemove(documentType,
 																		(*documentBacking)->getID());
@@ -1111,24 +1257,6 @@ class CMDSSQLite::Internals {
 
 																// Add updates to BatchQueue
 																removeBatchQueue.add((*documentBacking)->getID());
-
-																// Check if have documentChangedProcs
-																if (!documentChangedInfos.isEmpty()) {
-																	// Create document
-																	I<CMDSDocument>	document =
-																							documentInfo.create(
-																									documentID,
-																									documentStorage);
-
-																	// Call document changed procs
-																	for (TArray<CMDSDocument::ChangedInfo>::Iterator
-																					iterator =
-																					documentChangedInfos.getIterator();
-																			iterator; iterator++)
-																		// Call proc
-																		iterator->notify(document,
-																				CMDSDocument::kChangeKindRemoved);
-																}
 															}
 														}
 
@@ -1163,7 +1291,6 @@ class CMDSSQLite::Internals {
 																									getInternals();
 													CMDSSQLiteDatabaseManager&		databaseManager =
 																							internals.mDatabaseManager;
-
 													MDSDocumentUpdateByDocumentID	documentUpdateInfoByDocumentID;
 													TNArray<CString>				documentIDs;
 													for (TArray<CMDSDocument::UpdateInfo>::Iterator iterator =
@@ -1198,7 +1325,9 @@ class CMDSSQLite::Internals {
 																								getDocumentFullInfos(),
 																						documentUpdateInfoByDocumentID,
 																						updateInfoBatchQueue,
-																						removeBatchQueue);
+																						removeBatchQueue,
+																						documentUpdateInfo->
+																								getUpdatedNotificationInfos());
 
 													// Iterate document IDs
 													internals.documentBackingsIterate(
@@ -1208,7 +1337,7 @@ class CMDSSQLite::Internals {
 															&processDocumentUpdateInfo);
 
 													// Finalize updates
-													updateInfoBatchQueue.finalize();
+													removeBatchQueue.finalize();
 													updateInfoBatchQueue.finalize();
 												}
 
@@ -1312,8 +1441,7 @@ class CMDSSQLite::Internals {
 														// Add update info
 														batchQueue.add(
 																MDSUpdateInfo(document, documentBacking->getRevision(),
-																		documentBacking->getID(),
-																		propertyMap.getKeys()));
+																		documentBacking->getID()));
 													}
 
 													// Finalize batch queue
@@ -1342,16 +1470,38 @@ class CMDSSQLite::Internals {
 																documentUpdateInfo.getRemoved(),
 																internals.mDatabaseManager);
 
+														// Setup
+														I<CMDSDocument>	document =
+																				processDocumentUpdateInfo->
+																						documentCreate(
+																								documentBacking->
+																										getDocumentID());
+														TNSet<CString>	updatedProperties(
+																				documentUpdateInfo.getUpdated()
+																						.getKeys());
+														TNSet<CString>	removedProperties(
+																				documentUpdateInfo.getRemoved());
+
 														// Add update
-														processDocumentUpdateInfo->update(
-																processDocumentUpdateInfo->documentCreate(
-																		documentBacking->getDocumentID()),
+														processDocumentUpdateInfo->update(document,
 																documentBacking->getRevision(),
 																documentBacking->getID(),
-																TNSet<CString>(
-																		documentUpdateInfo.getUpdated().getKeys()) +
-																		documentUpdateInfo.getRemoved());
+																TNSet<CString>(updatedProperties)
+																		.insertFrom(removedProperties));
+
+														// Note document updated - deferred until storage has settled
+														if (!updatedProperties.isEmpty() ||
+																!removedProperties.isEmpty())
+															// Have property changes
+															processDocumentUpdateInfo->getUpdatedNotificationInfos() +=
+																	CMDSDocument::UpdatedNotificationInfo(document,
+																			updatedProperties, removedProperties);
 													} else {
+														// Call document removed procs - before any removal work so
+														//	the document is still readable
+														processDocumentUpdateInfo->notifyRemoved(
+																documentBacking->getDocumentID());
+
 														// Remove document
 														internals.mDatabaseManager.documentRemove(
 																processDocumentUpdateInfo->getDocumentType(),
@@ -1688,7 +1838,7 @@ OV<SError> CMDSSQLite::associationUpdate(const CString& name, const TArray<CMDSA
 
 //----------------------------------------------------------------------------------------------------------------------
 OV<SError> CMDSSQLite::cacheRegister(const CString& name, const CString& documentType,
-		const TArray<CString>& relevantProperties, const TArray<CacheValueInfo>& cacheValueInfos)
+		const OV<TArray<CString> >& relevantProperties, const TArray<CacheValueInfo>& cacheValueInfos)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Remove current cache if found
@@ -1751,8 +1901,8 @@ TVResult<TArray<CDictionary> > CMDSSQLite::cacheGetValues(const CString& name, c
 
 //----------------------------------------------------------------------------------------------------------------------
 OV<SError> CMDSSQLite::collectionRegister(const CString& name, const CString& documentType,
-		const TArray<CString>& relevantProperties, bool isUpToDate, const CDictionary& isIncludedInfo,
-		const CMDSDocument::IsIncludedPerformer& documentIsIncludedPerformer, bool checkRelevantProperties)
+		const OV<TArray<CString> >& relevantProperties, bool isUpToDate, const CDictionary& isIncludedInfo,
+		const CMDSDocument::IsIncludedPerformer& documentIsIncludedPerformer)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Remove current collection if found
@@ -1768,7 +1918,7 @@ OV<SError> CMDSSQLite::collectionRegister(const CString& name, const CString& do
 	// Create or re-create collection
 	I<MDSCollection>	collection(
 								new MDSCollection(name, documentType, relevantProperties, documentIsIncludedPerformer,
-										checkRelevantProperties, isIncludedInfo, lastRevision));
+										isIncludedInfo, lastRevision));
 
 	// Add to maps
 	mInternals->mCollectionByName.set(name, collection);
@@ -1867,7 +2017,7 @@ TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSSQLite::documentCreate(
 		for (TArray<CMDSDocument::CreateResultInfo>::Iterator iterator = documentCreateResultInfos.getIterator();
 				iterator; iterator++)
 			// Call proc
-			notifyDocumentChanged(iterator->getDocument(), CMDSDocument::kChangeKindCreated);
+			notifyDocumentCreated(iterator->getDocument());
 	}
 
 	return TVResult<TArray<CMDSDocument::CreateResultInfo> >(documentCreateResultInfos);
@@ -2105,8 +2255,9 @@ void CMDSSQLite::documentSet(const CString& property, const OV<SValue>& value, c
 									MDSUpdateInfo(document, documentBacking->getRevision(), documentBacking->getID(),
 											TNSet<CString>(property)))));
 
-			// Call document changed procs
-			notifyDocumentChanged(document, CMDSDocument::kChangeKindUpdated);
+			// Call document updated procs
+			notifyDocumentUpdated(document, valueUse.hasValue() ? TNSet<CString>(property) : TNSet<CString>(),
+					valueUse.hasValue() ? TNSet<CString>() : TNSet<CString>(property));
 		}
 	}
 }
@@ -2139,11 +2290,21 @@ TVResult<CMDSDocument::AttachmentInfo> CMDSSQLite::documentAttachmentAdd(const C
 	} else {
 		// Not in batch
 		MDSDocumentBackingResult	documentBacking = mInternals->documentBackingGet(documentType, documentID);
+		if (!documentBacking.hasValue())
+			return TVResult<CMDSDocument::AttachmentInfo>(getUnknownDocumentIDError(documentID));
 
-		return documentBacking.hasValue() ?
-				TVResult<CMDSDocument::AttachmentInfo>(
-						(*documentBacking)->attachmentAdd(documentType, info, content, mInternals->mDatabaseManager)) :
-				TVResult<CMDSDocument::AttachmentInfo>(getUnknownDocumentIDError(documentID));
+		// Add attachment
+		CMDSDocument::AttachmentInfo	attachmentInfo =
+												(*documentBacking)->attachmentAdd(documentType, info, content,
+														mInternals->mDatabaseManager);
+
+		// Call document attachment created procs
+		if (!documentAttachmentCreatedInfos(documentType).isEmpty())
+			// Create document and notify
+			notifyDocumentAttachmentCreated(documentCreateInfo(documentType).create(documentID, *this),
+					attachmentInfo.getID(), attachmentInfo);
+
+		return TVResult<CMDSDocument::AttachmentInfo>(attachmentInfo);
 	}
 }
 
@@ -2276,16 +2437,32 @@ TVResult<OV<UInt32> > CMDSSQLite::documentAttachmentUpdate(const CString& docume
 		if (!documentBacking.hasValue())
 			return TVResult<OV<UInt32> >(getUnknownDocumentIDError(documentID));
 
-		const	OR<CMDSDocument::AttachmentInfo>	documentAttachmentInfo =
-															(*documentBacking)->getDocumentAttachmentInfoByID()
-																	[attachmentID];
+		// Retrieve the map into a local as it is returned by value
+				CMDSDocument::AttachmentInfoByID	documentAttachmentInfoByID =
+															(*documentBacking)->getDocumentAttachmentInfoByID();
+		const	OR<CMDSDocument::AttachmentInfo>	documentAttachmentInfo = documentAttachmentInfoByID[attachmentID];
 		if (!documentAttachmentInfo.hasReference())
 			return TVResult<OV<UInt32> >(getUnknownAttachmentIDError(attachmentID));
 
 		// Update attachment
-		return TVResult<OV<UInt32> >(
-				(*documentBacking)->attachmentUpdate(documentType, attachmentID, updatedInfo, updatedContent,
-						mInternals->mDatabaseManager));
+		OV<UInt32>	revision =
+							(*documentBacking)->attachmentUpdate(documentType, attachmentID, updatedInfo,
+									updatedContent, mInternals->mDatabaseManager);
+
+		// Call document attachment updated procs
+		if (!documentAttachmentUpdatedInfos(documentType).isEmpty()) {
+			// Note the attachment as it now stands
+					CMDSDocument::AttachmentInfoByID	updatedAttachmentInfoByID =
+																(*documentBacking)->getDocumentAttachmentInfoByID();
+			const	OR<CMDSDocument::AttachmentInfo>	updatedAttachmentInfo =
+																updatedAttachmentInfoByID[attachmentID];
+			if (updatedAttachmentInfo.hasReference())
+				// Create document and notify
+				notifyDocumentAttachmentUpdated(documentCreateInfo(documentType).create(documentID, *this),
+						attachmentID, *updatedAttachmentInfo);
+		}
+
+		return TVResult<OV<UInt32> >(revision);
 	}
 }
 
@@ -2339,6 +2516,11 @@ OV<SError> CMDSSQLite::documentAttachmentRemove(const CString& documentType, con
 
 		// Remove attachment
 		(*documentBacking)->attachmentRemove(documentType, attachmentID, mInternals->mDatabaseManager);
+
+		// Call document attachment removed procs
+		if (!documentAttachmentRemovedInfos(documentType).isEmpty())
+			// Create document and notify
+			notifyDocumentAttachmentRemoved(documentCreateInfo(documentType).create(documentID, *this), attachmentID);
 	}
 
 	return OV<SError>();
@@ -2371,6 +2553,9 @@ OV<SError> CMDSSQLite::documentRemove(const I<CMDSDocument>& document)
 		// Not in batch
 		MDSDocumentBackingResult	documentBacking = mInternals->documentBackingGet(documentType, documentID);
 
+		// Call document removed procs
+		notifyDocumentRemoved(document);
+
 		// Remove from stuffs
 		mInternals->update(documentType,
 				Internals::UpdatesInfo(TNArray<MDSUpdateInfo>(), DMIDArray((*documentBacking)->getID())));
@@ -2380,9 +2565,6 @@ OV<SError> CMDSSQLite::documentRemove(const I<CMDSDocument>& document)
 
 		// Remove from cache
 		mInternals->mDocumentBackingByDocumentID.remove(TSArray<CString>(documentID));
-
-		// Call document changed procs
-		notifyDocumentChanged(document, CMDSDocument::kChangeKindRemoved);
 	}
 
 	return OV<SError>();
@@ -2390,7 +2572,7 @@ OV<SError> CMDSSQLite::documentRemove(const I<CMDSDocument>& document)
 
 //----------------------------------------------------------------------------------------------------------------------
 OV<SError> CMDSSQLite::indexRegister(const CString& name, const CString& documentType,
-		const TArray<CString>& relevantProperties, const CDictionary& keysInfo,
+		const OV<TArray<CString> >& relevantProperties, const CDictionary& keysInfo,
 		const CMDSDocument::KeysPerformer& documentKeysPerformer)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -2527,6 +2709,35 @@ OV<SError> CMDSSQLite::batch(BatchProc batchProc, void* userData)
 		// Batch changes
 		Internals::BatchInfo	batchInfo(*mInternals, *batch);
 		mInternals->mDatabaseManager.batch((CMDSSQLiteDatabaseManager::BatchProc) Internals::batch, &batchInfo);
+
+		// Notify - deferred until the database batch (and its settle) completed
+		for (TArray<I<CMDSDocument> >::Iterator iterator = batchInfo.getCreatedDocuments().getIterator(); iterator;
+				iterator++)
+			// Call proc
+			notifyDocumentCreated(*iterator);
+		for (TArray<CMDSDocument::UpdatedNotificationInfo>::Iterator iterator =
+						batchInfo.getUpdatedNotificationInfos().getIterator();
+				iterator; iterator++)
+			// Call proc
+			notifyDocumentUpdated(iterator->getDocument(), iterator->getUpdatedProperties(),
+					iterator->getRemovedProperties());
+		for (TArray<CMDSDocument::AttachmentNotificationInfo>::Iterator iterator =
+						batchInfo.getAttachmentCreatedNotificationInfos().getIterator();
+				iterator; iterator++)
+			// Call proc
+			notifyDocumentAttachmentCreated(iterator->getDocument(), iterator->getAttachmentInfo().getID(),
+					iterator->getAttachmentInfo());
+		for (TArray<CMDSDocument::AttachmentNotificationInfo>::Iterator iterator =
+						batchInfo.getAttachmentUpdatedNotificationInfos().getIterator();
+				iterator; iterator++)
+			// Call proc
+			notifyDocumentAttachmentUpdated(iterator->getDocument(), iterator->getAttachmentInfo().getID(),
+					iterator->getAttachmentInfo());
+		for (TArray<CMDSDocument::AttachmentRemovedNotificationInfo>::Iterator iterator =
+						batchInfo.getAttachmentRemovedNotificationInfos().getIterator();
+				iterator; iterator++)
+			// Call proc
+			notifyDocumentAttachmentRemoved(iterator->getDocument(), iterator->getAttachmentID());
 	}
 
 	// Remove
@@ -2875,11 +3086,19 @@ TVResult<TArray<CMDSDocument::FullInfo> > CMDSSQLite::documentUpdate(const CStri
 		return TVResult<TArray<CMDSDocument::FullInfo> >(getUnknownDocumentTypeError(documentType));
 
 	// Batch changes
-	TNArray<CMDSDocument::FullInfo>	documentFullInfos;
-	Internals::DocumentUpdateInfo	documentUpdateInfo(*mInternals, documentType, documentUpdateInfos,
-											documentFullInfos);
+	TNArray<CMDSDocument::FullInfo>			documentFullInfos;
+	CMDSDocument::UpdatedNotificationInfos	updatedNotificationInfos;
+	Internals::DocumentUpdateInfo			documentUpdateInfo(*mInternals, documentType, documentUpdateInfos,
+													documentFullInfos, updatedNotificationInfos);
 	mInternals->mDatabaseManager.batch((CMDSSQLiteDatabaseManager::BatchProc) Internals::documentUpdate,
 			&documentUpdateInfo);
+
+	// Notify - deferred until the database batch (and its settle) completed
+	for (TArray<CMDSDocument::UpdatedNotificationInfo>::Iterator iterator = updatedNotificationInfos.getIterator();
+			iterator; iterator++)
+		// Call proc
+		notifyDocumentUpdated(iterator->getDocument(), iterator->getUpdatedProperties(),
+				iterator->getRemovedProperties());
 
 	return TVResult<TArray<CMDSDocument::FullInfo> >(documentFullInfos);
 }

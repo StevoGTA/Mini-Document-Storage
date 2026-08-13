@@ -236,7 +236,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func cacheRegister(name :String, documentType :String, relevantProperties :[String],
+	public func cacheRegister(name :String, documentType :String, relevantProperties :[String]?,
 			cacheValueInfos :[(valueInfo :MDSValueInfo, selector :String)]) throws {
 		// Remove current cache if found
 		if let cache = self.cacheByName.value(for: name) {
@@ -295,9 +295,9 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+	public func collectionRegister(name :String, documentType :String, relevantProperties :[String]?, isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
-			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc, checkRelevantProperties :Bool) throws {
+			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
 		// Remove current collection if found
 		if let collection = self.collectionByName.value(for: name) {
 			// Remove
@@ -313,8 +313,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Create or re-create collection
 		let	collection =
 					MDSCollection(name: name, documentType: documentType, relevantProperties: relevantProperties,
-							documentIsIncludedProc: documentIsIncludedProc,
-							checkRelevantProperties: checkRelevantProperties, isIncludedInfo: isIncludedInfo,
+							documentIsIncludedProc: documentIsIncludedProc, isIncludedInfo: isIncludedInfo,
 							lastRevision: lastRevision)
 
 		// Add to maps
@@ -393,9 +392,6 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 				infos.append((proc(documentID, self), nil))
 			}
 		} else {
-			// Setup
-			let	documentChangedProcs = self.documentChangedProcs(for: documentType)
-
 			// Batch
 			try self.databaseManager.batch() {
 				// Setup
@@ -432,18 +428,18 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 									MDSDocument.OverviewInfo(documentID: documentID, revision: documentBacking.revision,
 											creationDate: creationDate, modificationDate: modificationDate)))
 
-					// Call document changed procs
-					documentChangedProcs.forEach() { $0(document, .created) }
-
-					// Add update info
+					// Add update info - a create sends no property set so everything evaluates fresh
 					batchQueue.add(
 							MDSUpdateInfo<Int64>(document: document, revision: documentBacking.revision,
-									id: documentBacking.id, changedProperties: Set<String>(propertyMap.keys)))
+									id: documentBacking.id, changedProperties: nil))
 				}
 
 				// Finalize batch queue
 				batchQueue.finalize()
 			}
+
+			// Call document created procs
+			infos.forEach() { noteDocumentCreated(document: $0.document) }
 		}
 
 		return infos
@@ -631,8 +627,9 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 								id: documentBacking.id, changedProperties: [property])]
 			update(for: documentType, info: (updateInfos, []))
 
-			// Call document changed procs
-			self.documentChangedProcs(for: documentType).forEach() { $0(document, .updated) }
+			// Call document updated procs
+			noteDocumentUpdated(document: document, updatedProperties: (valueUse != nil) ? [property] : [],
+					removedProperties: (valueUse != nil) ? [] : [property])
 		}
 	}
 
@@ -659,8 +656,19 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			}
 		} else {
 			// Not in batch
-			return try self.documentBacking(documentType: documentType, documentID: documentID)
-					.attachmentAdd(documentType: documentType, info: info, content: content, with: self.databaseManager)
+			let	attachmentInfo =
+						try self.documentBacking(documentType: documentType, documentID: documentID)
+								.attachmentAdd(documentType: documentType, info: info, content: content,
+										with: self.databaseManager)
+
+			// Call document attachment created procs
+			if !documentAttachmentCreatedProcs(for: documentType).isEmpty {
+				// Create document
+				noteDocumentAttachmentCreated(document: documentCreateProc(for: documentType)(documentID, self),
+						attachmentID: attachmentInfo.id, attachmentInfo: attachmentInfo)
+			}
+
+			return attachmentInfo
 		}
 	}
 
@@ -762,8 +770,19 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			}
 
 			// Update attachment
-			return documentBacking.attachmentUpdate(documentType: documentType, attachmentID: attachmentID,
-					updatedInfo: updatedInfo, updatedContent: updatedContent, with: self.databaseManager)
+			let	revision =
+						documentBacking.attachmentUpdate(documentType: documentType, attachmentID: attachmentID,
+								updatedInfo: updatedInfo, updatedContent: updatedContent, with: self.databaseManager)
+
+			// Call document attachment updated procs
+			if !documentAttachmentUpdatedProcs(for: documentType).isEmpty,
+					let attachmentInfo = documentBacking.documentAttachmentInfoByID[attachmentID] {
+				// Create document
+				noteDocumentAttachmentUpdated(document: documentCreateProc(for: documentType)(documentID, self),
+						attachmentID: attachmentID, attachmentInfo: attachmentInfo)
+			}
+
+			return revision
 		}
 	}
 
@@ -808,6 +827,13 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			// Remove attachment
 			documentBacking.attachmentRemove(documentType: documentType, attachmentID: attachmentID,
 					with: self.databaseManager)
+
+			// Call document attachment removed procs
+			if !documentAttachmentRemovedProcs(for: documentType).isEmpty {
+				// Create document
+				noteDocumentAttachmentRemoved(document: documentCreateProc(for: documentType)(documentID, self),
+						attachmentID: attachmentID)
+			}
 		}
 	}
 
@@ -832,6 +858,9 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			// Not in batch
 			let	documentBacking = try! self.documentBacking(documentType: documentType, documentID: documentID)
 
+			// Call document removed procs
+			noteDocumentRemoved(document: document)
+
 			// Remove from stuffs
 			update(for: documentType, info: ([], [documentBacking.id]))
 
@@ -840,14 +869,11 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 			// Remove from cache
 			self.documentBackingByDocumentID.remove([documentID])
-
-			// Call document changed procs
-			self.documentChangedProcs(for: documentType).forEach() { $0(document, .removed) }
 		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func indexRegister(name :String, documentType :String, relevantProperties :[String],
+	public func indexRegister(name :String, documentType :String, relevantProperties :[String]?,
 			keysInfo :[String : Any], keysSelector :String, keysProc :@escaping MDSDocument.KeysProc) throws {
 		// Remove current index if found
 		if let index = self.indexByName.value(for: name) {
@@ -946,13 +972,22 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Check result
 		if result == .commit {
+			// Setup
+			var	createdDocuments = [MDSDocument]()
+			var	updatedNotificationInfos =
+						[(document :MDSDocument, updatedProperties :Set<String>, removedProperties :Set<String>)]()
+			var	attachmentCreatedNotificationInfos =
+						[(document :MDSDocument, attachmentInfo :MDSDocument.AttachmentInfo)]()
+			var	attachmentUpdatedNotificationInfos =
+						[(document :MDSDocument, attachmentInfo :MDSDocument.AttachmentInfo)]()
+			var	attachmentRemovedNotificationInfos = [(document :MDSDocument, attachmentID :String)]()
+
 			// Batch changes
 			try self.databaseManager.batch() {
 				// Iterate all document changes
 				batch.documentInfosByDocumentType.forEach() { documentType, batchDocumentInfosByDocumentID in
 					// Setup
 					let	documentCreateProc = documentCreateProc(for: documentType)
-					let	documentChangedProcs = self.documentChangedProcs(for: documentType)
 					let	updateBatchQueue =
 								BatchQueue<MDSUpdateInfo<Int64>>(
 										maximumBatchSize: self.databaseManager.variableNumberLimit)
@@ -962,37 +997,67 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 										{ self.update(for: documentType, info: ([], $0)) }
 
 					let	process :(_ documentID :String, _ batchDocumentInfo :Batch.DocumentInfo,
-									_ documentBacking :MDSSQLiteDocumentBacking, _ changedProperties :Set<String>?,
-									_ changeKind :MDSDocument.ChangeKind) -> Void =
-								{ documentID, batchDocumentInfo, documentBacking, changedProperties, changeKind in
+									_ documentBacking :MDSSQLiteDocumentBacking, _ updatedProperties :Set<String>,
+									_ removedProperties :Set<String>, _ isCreate :Bool) -> Void =
+								{ documentID, batchDocumentInfo, documentBacking, updatedProperties, removedProperties,
+										isCreate in
 									// Create document
 									let	document = documentCreateProc(documentID, self)
 
 									// Add updates to BatchQueue
 									updateBatchQueue.add(
 											MDSUpdateInfo<Int64>(document: document, revision: documentBacking.revision,
-													id: documentBacking.id, changedProperties: changedProperties))
+													id: documentBacking.id,
+													changedProperties:
+															isCreate ?
+																	nil :
+																	updatedProperties.union(removedProperties)))
 
 									// Process attachments
 									batchDocumentInfo.removedAttachmentIDs.forEach() {
 										// Remove attachment
 										documentBacking.attachmentRemove(documentType: documentType, attachmentID: $0,
 												with: self.databaseManager)
+
+										// Note notification info
+										attachmentRemovedNotificationInfos.append(
+												(document: document, attachmentID: $0))
 									}
 									batchDocumentInfo.addAttachmentInfosByID.values.forEach() {
 										// Add attachment
-										_ = documentBacking.attachmentAdd(documentType: documentType, info: $0.info,
-												content: $0.content, with: self.databaseManager)
+										let	attachmentInfo =
+													documentBacking.attachmentAdd(documentType: documentType,
+															info: $0.info, content: $0.content,
+															with: self.databaseManager)
+
+										// Note notification info
+										attachmentCreatedNotificationInfos.append(
+												(document: document, attachmentInfo: attachmentInfo))
 									}
 									batchDocumentInfo.updateAttachmentInfosByID.values.forEach() {
 										// Update attachment
 										_ = documentBacking.attachmentUpdate(documentType: documentType,
 												attachmentID: $0.id, updatedInfo: $0.info,
 												updatedContent: $0.content, with: self.databaseManager)
+
+										// Try to get the attachment info
+										if let attachmentInfo = documentBacking.documentAttachmentInfoByID[$0.id] {
+											// Note notification info
+											attachmentUpdatedNotificationInfos.append(
+													(document: document, attachmentInfo: attachmentInfo))
+										}
 									}
 
-									// Call document changed procs
-									documentChangedProcs.forEach() { $0(document, changeKind) }
+									// Check situation
+									if isCreate {
+										// Note notification info
+										createdDocuments.append(document)
+									} else if !updatedProperties.isEmpty || !removedProperties.isEmpty {
+										// Note notification info
+										updatedNotificationInfos.append(
+												(document: document, updatedProperties: updatedProperties,
+														removedProperties: removedProperties))
+									}
 								}
 
 					// Update documents
@@ -1009,9 +1074,8 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 								// Process
 								process(documentID, batchDocumentInfo, documentBacking,
-										Set<String>(batchDocumentInfo.updatedPropertyMap.keys)
-												.union(batchDocumentInfo.removedProperties),
-										.updated)
+										Set<String>(batchDocumentInfo.updatedPropertyMap.keys),
+										batchDocumentInfo.removedProperties, false)
 							} else {
 								// Add document
 								let	documentBacking =
@@ -1023,24 +1087,22 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 								self.documentBackingByDocumentID.add([documentBacking])
 
 								// Process
-								process(documentID, batchDocumentInfo, documentBacking, nil, .created)
+								process(documentID, batchDocumentInfo, documentBacking,
+										Set<String>(batchDocumentInfo.updatedPropertyMap.keys), [], true)
 							}
 						} else if let documentBacking = batchDocumentInfo.documentBacking {
+							// Call document removed procs - before any removal work so the document is still readable
+							if !self.documentRemovedProcs(for: documentType).isEmpty {
+								// Note document removed
+								self.noteDocumentRemoved(document: documentCreateProc(documentID, self))
+							}
+
 							// Remove document
 							self.databaseManager.documentRemove(documentType: documentType, id: documentBacking.id)
 							self.documentBackingByDocumentID.remove([documentID])
 
 							// Add updates to BatchQueue
 							removeBatchQueue.add(documentBacking.id)
-
-							// Check if have documentChangedProcs
-							if !documentChangedProcs.isEmpty {
-								// Create document
-								let	document = documentCreateProc(documentID, self)
-
-								// Call document changed procs
-								documentChangedProcs.forEach() { $0(document, .removed) }
-							}
 						}
 					}
 
@@ -1049,6 +1111,20 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 					updateBatchQueue.finalize()
 				}
 			}
+
+			// Notify handlers
+			createdDocuments.forEach() { self.noteDocumentCreated(document: $0) }
+			updatedNotificationInfos.forEach()
+					{ self.noteDocumentUpdated(document: $0.document, updatedProperties: $0.updatedProperties,
+							removedProperties: $0.removedProperties) }
+			attachmentCreatedNotificationInfos.forEach()
+					{ self.noteDocumentAttachmentCreated(document: $0.document, attachmentID: $0.attachmentInfo.id,
+							attachmentInfo: $0.attachmentInfo) }
+			attachmentUpdatedNotificationInfos.forEach()
+					{ self.noteDocumentAttachmentUpdated(document: $0.document, attachmentID: $0.attachmentInfo.id,
+							attachmentInfo: $0.attachmentInfo) }
+			attachmentRemovedNotificationInfos.forEach()
+					{ self.noteDocumentAttachmentRemoved(document: $0.document, attachmentID: $0.attachmentID) }
 
 			// Iterate all association changes
 			batch.associationIterateChanges() { name, updates in
@@ -1316,6 +1392,8 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Batch changes
 		var	documentFullInfos = [MDSDocument.FullInfo]()
+		var	updatedNotificationInfos =
+					[(document :MDSDocument, updatedProperties :Set<String>, removedProperties :Set<String>)]()
 		try self.databaseManager.batch() {
 			// Setup
 			let	documentCreateProc = self.documentCreateProc(for: documentType)
@@ -1339,14 +1417,29 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 					$0.update(documentType: documentType, updatedPropertyMap: documentUpdateInfo.updated,
 							removedProperties: documentUpdateInfo.removed, with: self.databaseManager)
 
+					// Setup
+					let	document = documentCreateProc($0.documentID, self)
+					let	updatedProperties = Set<String>(documentUpdateInfo.updated.keys)
+					let	removed = documentUpdateInfo.removed
+
 					// Add update
 					updateBatchQueue.add(
-							MDSUpdateInfo<Int64>(document: documentCreateProc($0.documentID, self),
-									revision: $0.revision, id: $0.id,
-									changedProperties:
-											Set<String>(documentUpdateInfo.updated.keys)
-													.union(documentUpdateInfo.removed)))
+							MDSUpdateInfo<Int64>(document: document, revision: $0.revision, id: $0.id,
+									changedProperties: updatedProperties.union(removed)))
+
+					// Check if actually have updates
+					if !updatedProperties.isEmpty || !removed.isEmpty {
+						// Note notification info
+						updatedNotificationInfos.append(
+								(document: document, updatedProperties: updatedProperties, removedProperties: removed))
+					}
 				} else {
+					// Check if need to call document removed procs
+					if !self.documentRemovedProcs(for: documentType).isEmpty {
+						// Note document removed
+						self.noteDocumentRemoved(document: documentCreateProc($0.documentID, self))
+					}
+
 					// Remove document
 					self.databaseManager.documentRemove(documentType: documentType, id: $0.id)
 					self.documentBackingByDocumentID.remove([$0.documentID])
@@ -1363,6 +1456,11 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			removeBatchQueue.finalize()
 			updateBatchQueue.finalize()
 		}
+
+		// Notify handlers
+		updatedNotificationInfos.forEach()
+				{ self.noteDocumentUpdated(document: $0.document, updatedProperties: $0.updatedProperties,
+						removedProperties: $0.removedProperties) }
 
 		return documentFullInfos
 	}
@@ -1513,12 +1611,10 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			return collection
 		} else if let info = self.databaseManager.collectionInfo(for: name) {
 			// Have stored
-			let	isIncludedSelectorInfo = self.documentIsIncludedProc(for: info.isIncludedSelector)!
 			let	collection =
 						MDSCollection(name: name, documentType: info.documentType,
 								relevantProperties: info.relevantProperties,
-								documentIsIncludedProc: isIncludedSelectorInfo.isIncludedProc,
-								checkRelevantProperties: isIncludedSelectorInfo.checkRelevantProperties,
+								documentIsIncludedProc: self.documentIsIncludedProc(for: info.isIncludedSelector)!,
 								isIncludedInfo: info.isIncludedSelectorInfo, lastRevision: info.lastRevision)
 			self.collectionByName.set(collection, for: name)
 

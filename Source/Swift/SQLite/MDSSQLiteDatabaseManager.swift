@@ -376,9 +376,9 @@ class MDSSQLiteDatabaseManager {
 
 		//--------------------------------------------------------------------------------------------------------------
 		static func info(for name :String, in table :SQLiteTable) ->
-				(type :String, relevantProperties :[String], valueInfos :[CacheValueInfo], lastRevision :Int)? {
+				(type :String, relevantProperties :[String]?, valueInfos :[CacheValueInfo], lastRevision :Int)? {
 			// Query
-			var	info :(type :String, relevantProperties :[String], valueInfos :[CacheValueInfo], lastRevision :Int)?
+			var	info :(type :String, relevantProperties :[String]?, valueInfos :[CacheValueInfo], lastRevision :Int)?
 			try! table.select(
 					tableColumns:
 							[
@@ -390,10 +390,13 @@ class MDSSQLiteDatabaseManager {
 					where: SQLiteWhere(tableColumn: self.nameTableColumn, value: name)) {
 						// Get info
 						let	type = $0.text(for: self.typeTableColumn)!
-						let	relevantProperties =
-								$0.text(for: self.relevantPropertiesTableColumn)!
-										.components(separatedBy: ",")
-										.filter({ !$0.isEmpty })
+
+						let	relevantPropertiesStored =
+									$0.text(for: self.relevantPropertiesTableColumn)!
+											.components(separatedBy: ",")
+											.filter({ !$0.isEmpty })
+						let	relevantProperties = !relevantPropertiesStored.isEmpty ? relevantPropertiesStored : nil
+
 						let	cacheValueInfos =
 									(try! JSONSerialization.jsonObject(with: $0.blob(for: self.infoTableColumn)!) as!
 											[[String : String]]).map({ CacheValueInfo(info: $0) })
@@ -407,14 +410,14 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func addOrUpdate(name :String, documentType :String, relevantProperties :[String],
+		static func addOrUpdate(name :String, documentType :String, relevantProperties :[String]?,
 				valueInfos :[CacheValueInfo], in table :SQLiteTable) {
 			// Insert or replace
 			table.insertOrReplaceRow(
 					[
 						(self.nameTableColumn, name),
 						(self.typeTableColumn, documentType),
-						(self.relevantPropertiesTableColumn, String(combining: relevantProperties, with: ",")),
+						(self.relevantPropertiesTableColumn, String(combining: relevantProperties ?? [], with: ",")),
 						(self.infoTableColumn,
 								try! JSONSerialization.data(withJSONObject: valueInfos.map({ $0.info }))),
 						(self.lastRevisionTableColumn, 0),
@@ -531,11 +534,11 @@ class MDSSQLiteDatabaseManager {
 
 		//--------------------------------------------------------------------------------------------------------------
 		static func info(for name :String, in table :SQLiteTable) ->
-				(type :String, relevantProperties :[String], isIncludedSelector :String,
+				(type :String, relevantProperties :[String]?, isIncludedSelector :String,
 						isIncludedSelectorInfo :[String : Any], lastRevision :Int)? {
 			// Query
 			var	info
-						:(type :String, relevantProperties :[String], isIncludedSelector :String,
+						:(type :String, relevantProperties :[String]?, isIncludedSelector :String,
 								isIncludedSelectorInfo :[String : Any], lastRevision :Int)?
 			try! table.select(
 					tableColumns:
@@ -549,10 +552,13 @@ class MDSSQLiteDatabaseManager {
 					where: SQLiteWhere(tableColumn: self.nameTableColumn, value: name)) {
 						// Get info
 						let	type = $0.text(for: self.typeTableColumn)!
-						let	relevantProperties =
-								$0.text(for: self.relevantPropertiesTableColumn)!
-										.components(separatedBy: ",")
-										.filter({ !$0.isEmpty })
+
+						let	relevantPropertiesStored =
+									$0.text(for: self.relevantPropertiesTableColumn)!
+											.components(separatedBy: ",")
+											.filter({ !$0.isEmpty })
+						let	relevantProperties = !relevantPropertiesStored.isEmpty ? relevantPropertiesStored : nil
+
 						let	isIncludedSelector = $0.text(for: self.isIncludedSelectorTableColumn)!
 						let	isIncludedSelectorInfo =
 									try! JSONSerialization.jsonObject(
@@ -568,7 +574,7 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func addOrUpdate(name :String, documentType :String, relevantProperties :[String],
+		static func addOrUpdate(name :String, documentType :String, relevantProperties :[String]?,
 				isIncludedSelector :String, isIncludedSelectorInfo :[String : Any], lastRevision :Int,
 				in table :SQLiteTable) {
 			// Insert or replace
@@ -576,7 +582,7 @@ class MDSSQLiteDatabaseManager {
 					[
 						(self.nameTableColumn, name),
 						(self.typeTableColumn, documentType),
-						(self.relevantPropertiesTableColumn, String(combining: relevantProperties, with: ",")),
+						(self.relevantPropertiesTableColumn, String(combining: relevantProperties ?? [], with: ",")),
 						(self.isIncludedSelectorTableColumn, isIncludedSelector),
 						(self.isIncludedSelectorInfoTableColumn,
 								try! JSONSerialization.data(withJSONObject: isIncludedSelectorInfo)),
@@ -1094,11 +1100,11 @@ class MDSSQLiteDatabaseManager {
 
 		//--------------------------------------------------------------------------------------------------------------
 		static func info(for name :String, in table :SQLiteTable) ->
-				(type :String, relevantProperties :[String], keysSelector :String, keysSelectorInfo :[String : Any],
+				(type :String, relevantProperties :[String]?, keysSelector :String, keysSelectorInfo :[String : Any],
 						lastRevision :Int)? {
 			// Query
 			var	info
-						:(type :String, relevantProperties :[String], keysSelector :String,
+						:(type :String, relevantProperties :[String]?, keysSelector :String,
 								keysSelectorInfo :[String : Any], lastRevision :Int)?
 			try! table.select(
 					tableColumns:
@@ -1112,10 +1118,13 @@ class MDSSQLiteDatabaseManager {
 					where: SQLiteWhere(tableColumn: self.nameTableColumn, value: name)) {
 						// Get info
 						let	type = $0.text(for: self.typeTableColumn)!
-						let	relevantProperties =
-								$0.text(for: self.relevantPropertiesTableColumn)!
-										.components(separatedBy: ",")
-										.filter({ !$0.isEmpty })
+
+						let	relevantPropertiesStored =
+									$0.text(for: self.relevantPropertiesTableColumn)!
+											.components(separatedBy: ",")
+											.filter({ !$0.isEmpty })
+						let	relevantProperties = !relevantPropertiesStored.isEmpty ? relevantPropertiesStored : nil
+
 						let	keysSelector = $0.text(for: self.keysSelectorTableColumn)!
 						let	keysSelectorInfo =
 									try! JSONSerialization.jsonObject(
@@ -1130,14 +1139,14 @@ class MDSSQLiteDatabaseManager {
 		}
 
 		//--------------------------------------------------------------------------------------------------------------
-		static func addOrUpdate(name :String, documentType :String, relevantProperties :[String], keysSelector :String,
+		static func addOrUpdate(name :String, documentType :String, relevantProperties :[String]?, keysSelector :String,
 				keysSelectorInfo :[String : Any], lastRevision :Int, in table :SQLiteTable) {
 			// Insert or replace
 			table.insertOrReplaceRow(
 					[
 						(self.nameTableColumn, name),
 						(self.typeTableColumn, documentType),
-						(self.relevantPropertiesTableColumn, String(combining: relevantProperties, with: ",")),
+						(self.relevantPropertiesTableColumn, String(combining: relevantProperties ?? [], with: ",")),
 						(self.keysSelectorTableColumn, keysSelector),
 						(self.keysSelectorInfoTableColumn,
 								try! JSONSerialization.data(withJSONObject: keysSelectorInfo)),
@@ -1720,7 +1729,7 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func cacheRegister(name :String, documentType :String, relevantProperties :[String],
+	func cacheRegister(name :String, documentType :String, relevantProperties :[String]?,
 			cacheValueInfos :[CacheValueInfo]) -> Int {
 		// Get current info
 		let	currentInfo = CachesTable.info(for: name, in: self.cachesTable)
@@ -1765,7 +1774,7 @@ class MDSSQLiteDatabaseManager {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func cacheInfo(for name :String) ->
-			(documentType :String, relevantProperties :[String], valueInfos :[CacheValueInfo], lastRevision :Int)? {
+			(documentType :String, relevantProperties :[String]?, valueInfos :[CacheValueInfo], lastRevision :Int)? {
 		// Get info
 		if let info = CachesTable.info(for: name, in: self.cachesTable) {
 			// Found
@@ -1878,7 +1887,7 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func collectionRegister(name :String, documentType :String, relevantProperties :[String],
+	func collectionRegister(name :String, documentType :String, relevantProperties :[String]?,
 				isIncludedSelector :String, isIncludedSelectorInfo :[String : Any], isUpToDate :Bool) -> Int {
 		// Get current info
 		let currentInfo = CollectionsTable.info(for: name, in: self.collectionsTable)
@@ -1924,7 +1933,7 @@ class MDSSQLiteDatabaseManager {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func collectionInfo(for name :String) ->
-			(documentType :String, relevantProperties :[String], isIncludedSelector :String,
+			(documentType :String, relevantProperties :[String]?, isIncludedSelector :String,
 					isIncludedSelectorInfo :[String : Any], lastRevision :Int)? {
 		// Get info
 		if let info = CollectionsTable.info(for: name, in: self.collectionsTable) {
@@ -2162,7 +2171,7 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func indexRegister(name :String, documentType :String, relevantProperties :[String], keysSelector :String,
+	func indexRegister(name :String, documentType :String, relevantProperties :[String]?, keysSelector :String,
 				keysSelectorInfo :[String : Any]) -> Int {
 		// Get current info
 		let currentInfo = IndexesTable.info(for: name, in: self.indexesTable)
@@ -2207,7 +2216,7 @@ class MDSSQLiteDatabaseManager {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func indexInfo(for name :String) ->
-			(documentType :String, relevantProperties :[String], keysSelector :String, keysSelectorInfo :[String : Any],
+			(documentType :String, relevantProperties :[String]?, keysSelector :String, keysSelectorInfo :[String : Any],
 					lastRevision :Int)? {
 		// Get info
 		if let info = IndexesTable.info(for: name, in: self.indexesTable) {

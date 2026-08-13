@@ -85,13 +85,13 @@ public protocol MDSDocumentStorage {
 			fromDocumentIDs :[String], cacheName :String, cachedValueNames :[String]) throws -> Any
 	func associationUpdate(for name :String, updates :[MDSAssociation.Update]) throws
 
-	func cacheRegister(name :String, documentType :String, relevantProperties :[String],
+	func cacheRegister(name :String, documentType :String, relevantProperties :[String]?,
 			cacheValueInfos :[(valueInfo :MDSValueInfo, selector :String)]) throws
 	func cacheGetValues(for name :String, valueNames :[String], documentIDs :[String]?) throws -> [[String : Any]]
 
-	func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+	func collectionRegister(name :String, documentType :String, relevantProperties :[String]?, isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
-			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc, checkRelevantProperties :Bool) throws
+			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc) throws
 	func collectionGetDocumentCount(for name :String) throws -> Int
 	func collectionIterate(name :String, documentType :String, proc :MDSDocument.Proc) throws
 
@@ -123,7 +123,7 @@ public protocol MDSDocumentStorage {
 
 	func documentRemove(_ document :MDSDocument) throws
 
-	func indexRegister(name :String, documentType :String, relevantProperties :[String], keysInfo :[String : Any],
+	func indexRegister(name :String, documentType :String, relevantProperties :[String]?, keysInfo :[String : Any],
 			keysSelector :String, keysProc :@escaping MDSDocument.KeysProc) throws
 	func indexIterate(name :String, documentType :String, keys :[String],
 			proc :(_ key :String, _ document :MDSDocument) -> Void) throws
@@ -139,8 +139,23 @@ public protocol MDSDocumentStorage {
 
 	func register<T : MDSDocument>(
 			documentCreateProc :@escaping (_ id :String, _ documentStorage :MDSDocumentStorage) -> T)
+
+	func register<T : MDSDocument>(documentCreatedProc :@escaping (_ document :T) -> Void)
 	func register<T : MDSDocument>(
-			documentChangedProc :@escaping (_ document :T, _ changeKind :MDSDocument.ChangeKind) -> Void)
+			documentUpdatedProc
+					:@escaping (_ document :T, _ updatedProperties :Set<String>, _ removedProperties :Set<String>,
+							_ changedProperties :Set<String>) -> Void)
+	func register<T : MDSDocument>(documentRemovedProc :@escaping (_ document :T) -> Void)
+	func register<T : MDSDocument>(
+			documentAttachmentCreatedProc
+					:@escaping (_ document :T, _ attachmentID :String, _ attachmentInfo :MDSDocument.AttachmentInfo) ->
+							Void)
+	func register<T : MDSDocument>(
+			documentAttachmentUpdatedProc
+					:@escaping (_ document :T, _ attachmentID :String, _ attachmentInfo :MDSDocument.AttachmentInfo) ->
+							Void)
+	func register<T : MDSDocument>(
+				documentAttachmentRemovedProc :@escaping (_ document :T, _ attachmentID :String) -> Void)
 
 	func ephemeralValue<T>(for key :String) -> T?
 	func store<T>(ephemeralValue :T?, for key :String)
@@ -237,33 +252,30 @@ public extension MDSDocumentStorage {
 			cacheValueInfos :[(valueInfo :MDSValueInfo, selector :String)]) throws {
 		// Register cache
 		try cacheRegister(name: documentType, documentType: documentType,
-				relevantProperties: relevantProperties ?? cacheValueInfos.map({ $0.valueInfo.name }),
-				cacheValueInfos: cacheValueInfos)
+				relevantProperties: relevantProperties, cacheValueInfos: cacheValueInfos)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool = false,
-			isIncludedSelector :String, documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc,
-			checkRelevantProperties :Bool) throws {
+	func collectionRegister(name :String, documentType :String, relevantProperties :[String]? = nil,
+			isUpToDate :Bool = false, isIncludedSelector :String,
+			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
 		// Register collection
 		try collectionRegister(name: name, documentType: documentType, relevantProperties: relevantProperties,
 				isUpToDate: isUpToDate, isIncludedInfo: [:], isIncludedSelector: isIncludedSelector,
-				documentIsIncludedProc: documentIsIncludedProc, checkRelevantProperties: checkRelevantProperties)
+				documentIsIncludedProc: documentIsIncludedProc)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func collectionRegister<T : MDSDocument>(name :String, relevantProperties :[String], isUpToDate :Bool = false,
-			isIncludedInfo :[String : Any] = [:], isIncludedSelector :String,
-			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool,
-			checkRelevantProperties :Bool = true) throws {
+	func collectionRegister<T : MDSDocument>(name :String, relevantProperties :[String]? = nil,
+			isUpToDate :Bool = false, isIncludedInfo :[String : Any] = [:], isIncludedSelector :String,
+			isIncludedProc :@escaping (_ document :T, _ info :[String : Any]) -> Bool) throws {
 		// Register creation proc
 		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
 
 		// Register collection
 		try collectionRegister(name: name, documentType: T.documentType, relevantProperties: relevantProperties,
 				isUpToDate: isUpToDate, isIncludedInfo: isIncludedInfo, isIncludedSelector: isIncludedSelector,
-				documentIsIncludedProc: { isIncludedProc($1 as! T, $2) },
-				checkRelevantProperties: checkRelevantProperties)
+				documentIsIncludedProc: { isIncludedProc($1 as! T, $2) })
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -398,7 +410,7 @@ public extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func indexRegister(name :String, documentType :String, relevantProperties :[String], keysSelector :String,
+	func indexRegister(name :String, documentType :String, relevantProperties :[String]? = nil, keysSelector :String,
 			keysProc :@escaping MDSDocument.KeysProc) throws {
 		// Register index
 		try indexRegister(name: name, documentType: documentType, relevantProperties: relevantProperties,
@@ -406,8 +418,9 @@ public extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func indexRegister<T : MDSDocument>(name :String, relevantProperties :[String], keysInfo :[String : Any] = [:],
-			keysSelector :String, keysProc :@escaping (_ document :T, _ info :[String : Any]) -> [String]) throws {
+	func indexRegister<T : MDSDocument>(name :String, relevantProperties :[String]? = nil,
+			keysInfo :[String : Any] = [:], keysSelector :String,
+			keysProc :@escaping (_ document :T, _ info :[String : Any]) -> [String]) throws {
 		// Register creation proc
 		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
 
@@ -453,10 +466,17 @@ open class MDSDocumentStorageCore {
 	public	let	id :String = UUID().uuidString
 
 	private	let	documentCreateProcByDocumentType = LockingDictionary<String, MDSDocument.CreateProc>()
-	private	let	documentChangedProcsByDocumentType = LockingArrayDictionary<String, MDSDocument.ChangedProc>()
-	private	let	documentIsIncludedProcsBySelector =
-						LockingDictionary<String,
-								(isIncludedProc :MDSDocument.IsIncludedProc, checkRelevantProperties :Bool)>()
+
+	private	let	documentCreatedProcsByDocumentType = LockingArrayDictionary<String, MDSDocument.CreatedProc>()
+	private	let	documentUpdatedProcsByDocumentType = LockingArrayDictionary<String, MDSDocument.UpdatedProc>()
+	private	let	documentRemovedProcsByDocumentType = LockingArrayDictionary<String, MDSDocument.RemovedProc>()
+	private	let	documentAttachmentCreatedProcsByDocumentType =
+						LockingArrayDictionary<String, MDSDocument.AttachmentCreatedProc>()
+	private	let	documentAttachmentUpdatedProcsByDocumentType =
+						LockingArrayDictionary<String, MDSDocument.AttachmentUpdatedProc>()
+	private	let	documentAttachmentRemovedProcsByDocumentType =
+						LockingArrayDictionary<String, MDSDocument.AttachmentRemovedProc>()
+	private	let	documentIsIncludedProcsBySelector = LockingDictionary<String, MDSDocument.IsIncludedProc>()
 	private	let	documentKeysProcsBySelector = LockingDictionary<String, MDSDocument.KeysProc>()
 	private	let	documentValueProcsBySelector = LockingDictionary<String, MDSDocument.ValueProc>()
 
@@ -471,20 +491,60 @@ open class MDSDocumentStorageCore {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func register<T : MDSDocument>(
-			documentChangedProc :@escaping (_ document :T, _ changeKind :MDSDocument.ChangeKind) -> Void) {
+	public func register<T : MDSDocument>(documentCreatedProc :@escaping (_ document :T) -> Void) {
 		//  Add
-		self.documentChangedProcsByDocumentType.append({ documentChangedProc($0 as! T, $1) }, for: T.documentType)
+		self.documentCreatedProcsByDocumentType.append({ documentCreatedProc($0 as! T) }, for: T.documentType)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func register(
-			isIncludedProcs
-					:[(selector :String, isIncludedProc :MDSDocument.IsIncludedProc, checkRelevantProperties :Bool)]) {
+	public func register<T : MDSDocument>(
+			documentUpdatedProc
+					:@escaping (_ document :T, _ updatedProperties :Set<String>, _ removedProperties :Set<String>,
+							_ changedProperties :Set<String>) -> Void) {
+		//  Add
+		self.documentUpdatedProcsByDocumentType.append({ documentUpdatedProc($0 as! T, $1, $2, $3) },
+				for: T.documentType)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func register<T : MDSDocument>(documentRemovedProc :@escaping (_ document :T) -> Void) {
+		//  Add
+		self.documentRemovedProcsByDocumentType.append({ documentRemovedProc($0 as! T) }, for: T.documentType)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func register<T : MDSDocument>(
+			documentAttachmentCreatedProc
+					:@escaping (_ document :T, _ attachmentID :String, _ attachmentInfo :MDSDocument.AttachmentInfo) ->
+							Void) {
+		//  Add
+		self.documentAttachmentCreatedProcsByDocumentType.append(
+				{ documentAttachmentCreatedProc($0 as! T, $1, $2) }, for: T.documentType)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func register<T : MDSDocument>(
+			documentAttachmentUpdatedProc
+					:@escaping (_ document :T, _ attachmentID :String, _ attachmentInfo :MDSDocument.AttachmentInfo) ->
+							Void) {
+		//  Add
+		self.documentAttachmentUpdatedProcsByDocumentType.append(
+				{ documentAttachmentUpdatedProc($0 as! T, $1, $2) }, for: T.documentType)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func register<T : MDSDocument>(
+			documentAttachmentRemovedProc :@escaping (_ document :T, _ attachmentID :String) -> Void) {
+		//  Add
+		self.documentAttachmentRemovedProcsByDocumentType.append(
+				{ documentAttachmentRemovedProc($0 as! T, $1) }, for: T.documentType)
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	public func register(isIncludedProcs :[(selector :String, isIncludedProc :MDSDocument.IsIncludedProc)]) {
 		// Register all
 		isIncludedProcs.forEach()
-			{ self.documentIsIncludedProcsBySelector.set(
-					($0.isIncludedProc, $0.checkRelevantProperties), for: $0.selector) }
+			{ self.documentIsIncludedProcsBySelector.set($0.isIncludedProc, for: $0.selector) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -528,20 +588,89 @@ open class MDSDocumentStorageCore {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentChangedProcs(for documentType :String) -> [MDSDocument.ChangedProc] {
+	func documentCreatedProcs(for documentType :String) -> [MDSDocument.CreatedProc] {
 		// Return procs
-		return self.documentChangedProcsByDocumentType.values(for: documentType) ?? []
+		return self.documentCreatedProcsByDocumentType.values(for: documentType) ?? []
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func noteDocumentChanged(document :MDSDocument, changeKind :MDSDocument.ChangeKind) {
+	func documentUpdatedProcs(for documentType :String) -> [MDSDocument.UpdatedProc] {
+		// Return procs
+		return self.documentUpdatedProcsByDocumentType.values(for: documentType) ?? []
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentRemovedProcs(for documentType :String) -> [MDSDocument.RemovedProc] {
+		// Return procs
+		return self.documentRemovedProcsByDocumentType.values(for: documentType) ?? []
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentAttachmentCreatedProcs(for documentType :String) -> [MDSDocument.AttachmentCreatedProc] {
+		// Return procs
+		return self.documentAttachmentCreatedProcsByDocumentType.values(for: documentType) ?? []
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentAttachmentUpdatedProcs(for documentType :String) -> [MDSDocument.AttachmentUpdatedProc] {
+		// Return procs
+		return self.documentAttachmentUpdatedProcsByDocumentType.values(for: documentType) ?? []
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentAttachmentRemovedProcs(for documentType :String) -> [MDSDocument.AttachmentRemovedProc] {
+		// Return procs
+		return self.documentAttachmentRemovedProcsByDocumentType.values(for: documentType) ?? []
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func noteDocumentCreated(document :MDSDocument) {
 		// Call procs
-		self.documentChangedProcs(for: type(of: document).documentType).forEach() { $0(document, changeKind) }
+		documentCreatedProcs(for: type(of: document).documentType).forEach() { $0(document) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentIsIncludedProc(for selector :String) ->
-			(isIncludedProc :MDSDocument.IsIncludedProc, checkRelevantProperties :Bool)? {
+	func noteDocumentUpdated(document :MDSDocument, updatedProperties :Set<String>, removedProperties :Set<String>) {
+		// Preflight - compose the union only when someone is listening
+		let	procs = documentUpdatedProcs(for: type(of: document).documentType)
+		guard !procs.isEmpty else { return }
+
+		// Call procs
+		let	changedProperties = updatedProperties.union(removedProperties)
+		procs.forEach() { $0(document, updatedProperties, removedProperties, changedProperties) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func noteDocumentRemoved(document :MDSDocument) {
+		// Call procs
+		documentRemovedProcs(for: type(of: document).documentType).forEach() { $0(document) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func noteDocumentAttachmentCreated(document :MDSDocument, attachmentID :String,
+			attachmentInfo :MDSDocument.AttachmentInfo) {
+		// Call procs
+		documentAttachmentCreatedProcs(for: type(of: document).documentType).forEach()
+			{ $0(document, attachmentID, attachmentInfo) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func noteDocumentAttachmentUpdated(document :MDSDocument, attachmentID :String,
+			attachmentInfo :MDSDocument.AttachmentInfo) {
+		// Call procs
+		documentAttachmentUpdatedProcs(for: type(of: document).documentType).forEach()
+			{ $0(document, attachmentID, attachmentInfo) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func noteDocumentAttachmentRemoved(document :MDSDocument, attachmentID :String) {
+		// Call procs
+		documentAttachmentRemovedProcs(for: type(of: document).documentType).forEach()
+			{ $0(document, attachmentID) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentIsIncludedProc(for selector :String) -> MDSDocument.IsIncludedProc? {
 		// Return proc
 		return self.documentIsIncludedProcsBySelector.value(for: selector)
 	}

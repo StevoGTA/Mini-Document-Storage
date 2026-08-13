@@ -16,19 +16,25 @@ class MDSIndex : Equatable {
 
 			var	lastRevision :Int
 
-	private	let	relevantProperties :Set<String>
+	private	let	relevantProperties :Set<String>?
 	private	let	keysProc :MDSDocument.KeysProc
 	private	let	keysInfo :[String : Any]
 
 	// MARK: Lifecycle methods
 	//------------------------------------------------------------------------------------------------------------------
-	init(name :String, documentType :String, relevantProperties :[String], keysProc :@escaping MDSDocument.KeysProc,
-			keysInfo :[String : Any], lastRevision :Int) {
+	init(name :String, documentType :String, relevantProperties :[String]?,
+			keysProc :@escaping MDSDocument.KeysProc, keysInfo :[String : Any], lastRevision :Int) {
+		// Validate - nil means "always evaluate"; an empty array is a programmer error
+		if relevantProperties?.isEmpty ?? false {
+			// Empty
+			fatalError("MDSIndex \(name): relevantProperties is empty - pass nil to always evaluate")
+		}
+
 		// Store
 		self.name = name
 		self.documentType = documentType
 
-		self.relevantProperties = Set<String>(relevantProperties)
+		self.relevantProperties = relevantProperties.map({ Set<String>($0) })
 		self.keysProc = keysProc
 		self.keysInfo = keysInfo
 
@@ -47,7 +53,8 @@ class MDSIndex : Equatable {
 		var	lastRevision :Int?
 		updateInfos.forEach() {
 			// Check if there is something to do
-			if ($0.changedProperties == nil) || !self.relevantProperties.intersection($0.changedProperties!).isEmpty {
+			if (self.relevantProperties == nil) || ($0.changedProperties == nil) ||
+					!self.relevantProperties!.intersection($0.changedProperties!).isEmpty {
 				// Update keys info
 				keysInfos.append((self.keysProc(self.documentType, $0.document, self.keysInfo), $0.id))
 			}

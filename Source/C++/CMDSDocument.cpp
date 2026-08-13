@@ -114,6 +114,11 @@ OV<TArray<CString> > CMDSDocument::getArrayOfStrings(const CString& property) co
 void CMDSDocument::set(const CString& property, const TArray<CString>& value) const
 //----------------------------------------------------------------------------------------------------------------------
 {
+	// Check if different
+	OV<TArray<CString> >	previousValue = getArrayOfStrings(property);
+	if (previousValue.hasValue() && (value == *previousValue))
+		return;
+
 	// Set value
 	mInternals->mDocumentStorage.documentSet(property, OV<SValue>(value), makeI());
 }
@@ -133,6 +138,11 @@ OV<TArray<CDictionary> > CMDSDocument::getArrayOfDictionaries(const CString& pro
 void CMDSDocument::set(const CString& property, const TArray<CDictionary>& value) const
 //----------------------------------------------------------------------------------------------------------------------
 {
+	// Check if different
+	OV<TArray<CDictionary> >	previousValue = getArrayOfDictionaries(property);
+	if (previousValue.hasValue() && (value == *previousValue))
+		return;
+
 	// Set value
 	mInternals->mDocumentStorage.documentSet(property, OV<SValue>(value), makeI());
 }
@@ -472,6 +482,10 @@ void CMDSDocument::set(const CString& property, const TArray<CMDSDocument>& docu
 void CMDSDocument::remove(const CString& property) const
 //----------------------------------------------------------------------------------------------------------------------
 {
+	// Check if have value
+	if (!mInternals->mDocumentStorage.documentValue(property, makeI()).hasValue())
+		return;
+
 	// Set value
 	mInternals->mDocumentStorage.documentSet(property, OV<SValue>(), makeI());
 }

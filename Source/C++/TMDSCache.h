@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CMDSDocument.h"
+#include "CppToolboxAssert.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: SMDSCacheValueInfo
@@ -69,12 +70,18 @@ template <typename T, typename U> class TMDSCache : public CEquatable {
 	public:
 								// Lifecycle methods
 								TMDSCache(const CString& name, const CString& documentType,
-										const TArray<CString>& relevantProperties,
+										const OV<TArray<CString> >& relevantProperties,
 										const TArray<SMDSCacheValueInfo>& valueInfos, UInt32 lastRevision) :
-									mName(name), mDocumentType(documentType), mRelevantProperties(relevantProperties),
-											mValueInfos(valueInfos),
-											mLastRevision(lastRevision)
-									{}
+									mName(name), mDocumentType(documentType),
+											mRelevantProperties(
+													relevantProperties.hasValue() ?
+															OV<TSet<CString> >(TNSet<CString>(*relevantProperties)) :
+															OV<TSet<CString> >()),
+											mValueInfos(valueInfos), mLastRevision(lastRevision)
+									{
+										// Must have no entry or at least 1 item
+										AssertFailIf(relevantProperties.hasValue() && relevantProperties->isEmpty());
+									}
 
 								// CEquatable methods
 				bool			operator==(const CEquatable& other) const
@@ -102,8 +109,9 @@ template <typename T, typename U> class TMDSCache : public CEquatable {
 														updateInfos.getIterator();
 												updateInfoIterator; updateInfoIterator++) {
 											// Check if there is something to do
-											if (!updateInfoIterator->getChangedProperties().hasValue() ||
-													(mRelevantProperties.intersects(
+											if (!mRelevantProperties.hasValue() ||
+													!updateInfoIterator->getChangedProperties().hasValue() ||
+													(mRelevantProperties->intersects(
 															*updateInfoIterator->getChangedProperties()))) {
 												// Collect value infos
 												CDictionary	valueByName;
@@ -138,7 +146,7 @@ template <typename T, typename U> class TMDSCache : public CEquatable {
 	private:
 		CString						mName;
 		CString						mDocumentType;
-		TNSet<CString>				mRelevantProperties;
+		OV<TSet<CString> >			mRelevantProperties;
 
 		TArray<SMDSCacheValueInfo>	mValueInfos;
 

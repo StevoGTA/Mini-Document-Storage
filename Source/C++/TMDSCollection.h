@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CMDSDocument.h"
+#include "CppToolboxAssert.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: TMDSCollection
@@ -43,17 +44,22 @@ template <typename T, typename AT> class TMDSCollection : public CEquatable {
 	public:
 								// Lifecycle methods
 								TMDSCollection(const CString& name, const CString& documentType,
-										const TArray<CString>& relevantProperties,
+										const OV<TArray<CString> >& relevantProperties,
 										const CMDSDocument::IsIncludedPerformer& documentIsIncludedPerformer,
-										bool checkRelevantProperties, const CDictionary& isIncludedInfo,
+										const CDictionary& isIncludedInfo,
 										UInt32 lastRevision) :
 									mName(name), mDocumentType(documentType),
-											mRelevantProperties(relevantProperties),
+											mRelevantProperties(
+													relevantProperties.hasValue() ?
+															OV<TSet<CString> >(TNSet<CString>(*relevantProperties)) :
+															OV<TSet<CString> >()),
 											mDocumentIsIncludedPerformer(documentIsIncludedPerformer),
-											mCheckRelevantProperties(checkRelevantProperties),
 											mIsIncludedInfo(isIncludedInfo),
 											mLastRevision(lastRevision)
-									{}
+									{
+										// Must have no entry or at least 1 item
+										AssertFailIf(relevantProperties.hasValue() && relevantProperties->isEmpty());
+									}
 
 								// CEquatable methods
 				bool			operator==(const CEquatable& other) const
@@ -77,9 +83,9 @@ template <typename T, typename AT> class TMDSCollection : public CEquatable {
 															updateInfos.getIterator();
 													iterator; iterator++) {
 												// Check if there is something to do
-												if (!mCheckRelevantProperties ||
+												if (!mRelevantProperties.hasValue() ||
 														!iterator->getChangedProperties().hasValue() ||
-														(mRelevantProperties.intersects(
+														(mRelevantProperties->intersects(
 																*iterator->getChangedProperties()))) {
 													// Query
 													if (mDocumentIsIncludedPerformer.perform(mDocumentType,
@@ -108,9 +114,8 @@ template <typename T, typename AT> class TMDSCollection : public CEquatable {
 		CString								mName;
 		CString								mDocumentType;
 
-		TNSet<CString>						mRelevantProperties;
+		OV<TSet<CString> >					mRelevantProperties;
 		CMDSDocument::IsIncludedPerformer	mDocumentIsIncludedPerformer;
-		bool								mCheckRelevantProperties;
 		CDictionary							mIsIncludedInfo;
 
 		UInt32								mLastRevision;

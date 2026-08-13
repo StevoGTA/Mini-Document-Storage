@@ -359,7 +359,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func cacheRegister(name :String, documentType :String, relevantProperties :[String],
+	public func cacheRegister(name :String, documentType :String, relevantProperties :[String]?,
 			cacheValueInfos :[(valueInfo :MDSValueInfo, selector :String)]) throws {
 		// Remove current cache if found
 		if let cache = self.cacheByName.value(for: name) {
@@ -449,9 +449,9 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+	public func collectionRegister(name :String, documentType :String, relevantProperties :[String]?, isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
-			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc, checkRelevantProperties :Bool) throws {
+			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
 		// Remove current collection if found
 		if let collection = self.collectionByName.value(for: name) {
 			// Remove
@@ -465,8 +465,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 									{ self.documentLastRevisionByDocumentType[documentType] ?? 0 } : 0
 		let	collection =
 					MDSCollection(name: name, documentType: documentType, relevantProperties: relevantProperties,
-							documentIsIncludedProc: documentIsIncludedProc,
-							checkRelevantProperties: checkRelevantProperties, isIncludedInfo: isIncludedInfo,
+							documentIsIncludedProc: documentIsIncludedProc, isIncludedInfo: isIncludedInfo,
 							lastRevision: lastRevision)
 
 		// Add to maps
@@ -536,7 +535,6 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			}
 		} else {
 			// Setup
-			let	documentChangedProcs = self.documentChangedProcs(for: documentType)
 			var	updateInfos = [MDSUpdateInfo<String>]()
 
 			// Iterate document create infos
@@ -572,17 +570,17 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 								MDSDocument.OverviewInfo(documentID: documentID, revision: revision,
 										creationDate: creationDate, modificationDate: modificationDate)))
 
-				// Call document changed procs
-				documentChangedProcs.forEach() { $0(document, .created) }
-
 				// Add update info
 				updateInfos.append(
 						MDSUpdateInfo<String>(document: document, revision: revision, id: documentID,
-								changedProperties: Set<String>(propertyMap.keys)))
+								changedProperties: nil))
 			}
 
 			// Update stuffs
 			update(for: documentType, updateInfos: updateInfos)
+
+			// Call document created procs
+			infos.forEach() { noteDocumentCreated(document: $0.document) }
 
 			// Note changes made
 			self.noteChangesMadeProc()
@@ -750,8 +748,9 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 							[MDSUpdateInfo<String>(document: document, revision: documentBacking.revision,
 									id: document.id, changedProperties: [property])])
 
-			// Call document changed procs
-			noteDocumentChanged(document: document, changeKind: .updated)
+			// Call document updated procs
+			noteDocumentUpdated(document: document, updatedProperties: (value != nil) ? [property] : [],
+					removedProperties: (value != nil) ? [] : [property])
 
 			// Note changes made
 			self.noteChangesMadeProc()
@@ -789,23 +788,30 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			}
 		} else {
 			// Not in batch
-			return try self.documentMapsLock.write() {
-				// Setup
-				if let documentBacking = self.documentBackingByDocumentID[documentID] {
-					// Add attachment
-					let	documentAttachmentInfo =
-								documentBacking.attachmentAdd(revision: self.nextRevision(for: documentType),
-										info: info, content: content)
+			let	documentAttachmentInfo =
+						try self.documentMapsLock.write() { () -> MDSDocument.AttachmentInfo in
+							// Setup
+							guard let documentBacking = self.documentBackingByDocumentID[documentID] else {
+								// No document
+								throw MDSDocumentStorageError.unknownDocumentID(documentID: documentID)
+							}
 
-					// Note changes made
-					self.noteChangesMadeProc()
+							// Add attachment
+							return documentBacking.attachmentAdd(revision: self.nextRevision(for: documentType),
+									info: info, content: content)
+						}
 
-					return documentAttachmentInfo
-				} else {
-					// No document
-					throw MDSDocumentStorageError.unknownDocumentID(documentID: documentID)
-				}
+			// Note changes made
+			self.noteChangesMadeProc()
+
+			// Call document attachment created procs - outside documentMapsLock
+			if !documentAttachmentCreatedProcs(for: documentType).isEmpty {
+				// Create document
+				noteDocumentAttachmentCreated(document: documentCreateProc(for: documentType)(documentID, self),
+						attachmentID: documentAttachmentInfo.id, attachmentInfo: documentAttachmentInfo)
 			}
+
+			return documentAttachmentInfo
 		}
 	}
 
@@ -927,6 +933,15 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			// Note changes made
 			self.noteChangesMadeProc()
 
+			// Call document attachment updated procs - outside documentMapsLock
+			if !documentAttachmentUpdatedProcs(for: documentType).isEmpty,
+					let attachmentInfo =
+							self.documentMapsLock.read({ documentBacking.documentAttachmentInfoByID })[attachmentID] {
+				// Create document
+				noteDocumentAttachmentUpdated(document: documentCreateProc(for: documentType)(documentID, self),
+						attachmentID: attachmentID, attachmentInfo: attachmentInfo)
+			}
+
 			return attachmentRevision
 		}
 	}
@@ -977,6 +992,13 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 			// Note changes made
 			self.noteChangesMadeProc()
+
+			// Call document attachment removed procs - outside documentMapsLock
+			if !documentAttachmentRemovedProcs(for: documentType).isEmpty {
+				// Create document
+				noteDocumentAttachmentRemoved(document: documentCreateProc(for: documentType)(documentID, self),
+						attachmentID: attachmentID)
+			}
 		}
 	}
 
@@ -997,14 +1019,14 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 				batch.documentAdd(documentType: documentType, documentBacking: documentBacking).remove()
 			}
 		} else {
+			// Call document removed procs - before any removal work so the document is still readable
+			noteDocumentRemoved(document: document)
+
 			// Not in batch
 			self.documentMapsLock.write({ self.documentBackingByDocumentID[document.id]?.active = false })
 
 			// Remove
 			note(removedDocumentIDs: Set<String>([document.id]))
-
-			// Call document changed procs
-			noteDocumentChanged(document: document, changeKind: .removed)
 
 			// Note changes made
 			self.noteChangesMadeProc()
@@ -1012,7 +1034,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func indexRegister(name :String, documentType :String, relevantProperties :[String],
+	public func indexRegister(name :String, documentType :String, relevantProperties :[String]?,
 			keysInfo :[String : Any], keysSelector :String, keysProc :@escaping MDSDocument.KeysProc) throws {
 		// Remove current index if found
 		if let index = self.indexByName.value(for: name) {
@@ -1122,48 +1144,84 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Check result
 		if result == .commit {
+			// Setup
+			var	createdDocuments = [MDSDocument]()
+			var	updatedNotificationInfos =
+						[(document :MDSDocument, updatedProperties :Set<String>, removedProperties :Set<String>)]()
+			var	attachmentCreatedNotificationInfos =
+						[(document :MDSDocument, attachmentInfo :MDSDocument.AttachmentInfo)]()
+			var	attachmentUpdatedNotificationInfos =
+						[(document :MDSDocument, attachmentInfo :MDSDocument.AttachmentInfo)]()
+			var	attachmentRemovedNotificationInfos = [(document :MDSDocument, attachmentID :String)]()
+
 			// Iterate all document changes
 			batch.documentInfosByDocumentType.forEach() { documentType, batchDocumentInfoByDocumentID in
 				// Setup
 				let	documentCreateProc = self.documentCreateProc(for: documentType)
-				let	documentChangedProcs = self.documentChangedProcs(for: documentType)
 
 				var	updateInfos = [MDSUpdateInfo<String>]()
 				var	removedDocumentIDs = Set<String>()
 
 				let	process
 							:(_ documentID :String, _ batchDocumentInfo :Batch.DocumentInfo,
-									_ documentBacking :DocumentBacking, _ changedProperties :Set<String>?,
-									_ changeKind :MDSDocument.ChangeKind) -> Void =
-							{ documentID, batchDocumentInfo, documentBacking, changedProperties, changeKind in
+									_ documentBacking :DocumentBacking, _ updatedProperties :Set<String>,
+									_ removedProperties :Set<String>, _ isCreate :Bool) -> Void =
+							{ documentID, batchDocumentInfo, documentBacking, updatedProperties, removedProperties,
+									isCreate in
+								// Create document
+								let	document = documentCreateProc(documentID, self)
+
 								// Process attachments
 								batchDocumentInfo.removedAttachmentIDs.forEach() {
 									// Remove attachment
 									documentBacking.attachmentRemove(revision: documentBacking.revision,
 											attachmentID: $0)
+
+									// Note notification info
+									attachmentRemovedNotificationInfos.append(
+											(document: document, attachmentID: $0))
 								}
 								batchDocumentInfo.addAttachmentInfosByID.values.forEach() {
 									// Add attachment
-									_ = documentBacking.attachmentAdd(revision: documentBacking.revision, info: $0.info,
-											content: $0.content)
+									let	attachmentInfo =
+												documentBacking.attachmentAdd(revision: documentBacking.revision,
+														info: $0.info, content: $0.content)
+
+									// Note notification info
+									attachmentCreatedNotificationInfos.append(
+											(document: document, attachmentInfo: attachmentInfo))
 								}
 								batchDocumentInfo.updateAttachmentInfosByID.values.forEach() {
 									// Update attachment
 									_ = documentBacking.attachmentUpdate(revision: documentBacking.revision,
 											attachmentID: $0.id, updatedInfo: $0.info,
 											updatedContent: $0.content)
-								}
 
-								// Create document
-								let	document = documentCreateProc(documentID, self)
+									// Try to get the attachment info
+									if let attachmentInfo = documentBacking.documentAttachmentInfoByID[$0.id] {
+										// Note notification info
+										attachmentUpdatedNotificationInfos.append(
+												(document: document, attachmentInfo: attachmentInfo))
+									}
+								}
 
 								// Note update info
 								updateInfos.append(
 										MDSUpdateInfo<String>(document: document, revision: documentBacking.revision,
-												id: documentID, changedProperties: changedProperties))
+												id: documentID,
+												changedProperties:
+														isCreate ? nil : updatedProperties.union(removedProperties)))
 
-								// Call document changed procs
-								documentChangedProcs.forEach() { $0(document, changeKind) }
+								// Check situation
+								if isCreate {
+									// Note notification info
+									createdDocuments.append(document)
+								} else if !updatedProperties.isEmpty || !removedProperties.isEmpty {
+									// Note notification info
+									updatedNotificationInfos.append(
+											(document: document, updatedProperties: updatedProperties,
+													removedProperties: removedProperties))
+								}
 							}
 
 				// Update documents
@@ -1180,10 +1238,9 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 										removedProperties: batchDocumentInfo.removedProperties)
 
 								// Process
-								let	changedProperties =
-											Set<String>(batchDocumentInfo.updatedPropertyMap.keys)
-													.union(batchDocumentInfo.removedProperties)
-								process(documentID, batchDocumentInfo, documentBacking, changedProperties, .updated)
+								process(documentID, batchDocumentInfo, documentBacking,
+										Set<String>(batchDocumentInfo.updatedPropertyMap.keys),
+										batchDocumentInfo.removedProperties, false)
 							} else {
 								// Add document
 								let	documentBacking =
@@ -1198,25 +1255,22 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 								// Process
 								process(documentID, batchDocumentInfo, documentBacking,
-										Set<String>(batchDocumentInfo.updatedPropertyMap.keys), .created)
+										Set<String>(batchDocumentInfo.updatedPropertyMap.keys), [], true)
 							}
 						}
 					} else {
 						// Remove document
 						removedDocumentIDs.insert(documentID)
 
+						// Call document removed procs - before any removal work, and outside documentMapsLock
+						if !self.documentRemovedProcs(for: documentType).isEmpty {
+							// Note document removed
+							self.noteDocumentRemoved(document: documentCreateProc(documentID, self))
+						}
+
 						self.documentMapsLock.write() {
 							// Update maps
 							self.documentBackingByDocumentID[documentID]!.active = false
-
-							// Check if have changed procs
-							if !documentChangedProcs.isEmpty {
-								// Create document
-								let	document = documentCreateProc(documentID, self)
-
-								// Call document changed procs
-								documentChangedProcs.forEach() { $0(document, .removed) }
-							}
 						}
 					}
 				}
@@ -1225,6 +1279,20 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 				note(removedDocumentIDs: removedDocumentIDs)
 				update(for: documentType, updateInfos: updateInfos)
 			}
+
+			// Notify handlers
+			createdDocuments.forEach() { self.noteDocumentCreated(document: $0) }
+			updatedNotificationInfos.forEach()
+					{ self.noteDocumentUpdated(document: $0.document, updatedProperties: $0.updatedProperties,
+							removedProperties: $0.removedProperties) }
+			attachmentCreatedNotificationInfos.forEach()
+					{ self.noteDocumentAttachmentCreated(document: $0.document, attachmentID: $0.attachmentInfo.id,
+							attachmentInfo: $0.attachmentInfo) }
+			attachmentUpdatedNotificationInfos.forEach()
+					{ self.noteDocumentAttachmentUpdated(document: $0.document, attachmentID: $0.attachmentInfo.id,
+							attachmentInfo: $0.attachmentInfo) }
+			attachmentRemovedNotificationInfos.forEach()
+					{ self.noteDocumentAttachmentRemoved(document: $0.document, attachmentID: $0.attachmentID) }
 
 			// Iterate all association changes
 			batch.associationIterateChanges() { name, updates in
@@ -1483,10 +1551,11 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Setup
 		let	documentCreateProc = self.documentCreateProc(for: documentType)
-		let	documentChangedProcs = self.documentChangedProcs(for: documentType)
 		var	updateInfos = [MDSUpdateInfo<String>]()
 		var	removedDocumentIDs = Set<String>()
 		var	documentFullInfos = [MDSDocument.FullInfo]()
+		var	updatedNotificationInfos =
+					[(document :MDSDocument, updatedProperties :Set<String>, removedProperties :Set<String>)]()
 
 		// Iterate document update infos
 		documentUpdateInfos.forEach() {
@@ -1494,6 +1563,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			let	documentID = $0.documentID
 			let	updated = $0.updated
 			let	removed = $0.removed
+			let	updatedProperties = Set<String>(updated.keys)
 
 			// Check active
 			if $0.active {
@@ -1511,19 +1581,29 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 					// Add update info
 					updateInfos.append(
-							MDSUpdateInfo<String>(document: document,
-									revision: documentBacking.revision, id: documentID,
-									changedProperties: Set<String>(updated.keys).union(removed)))
+							MDSUpdateInfo<String>(document: document, revision: documentBacking.revision,
+									id: documentID, changedProperties: updatedProperties.union(removed)))
 
 					// Add full info
 					documentFullInfos.append(documentBacking.documentFullInfo)
 
-					// Call document changed procs
-					documentChangedProcs.forEach() { $0(document, .updated) }
+					// Check if actually have updates
+					if !updatedProperties.isEmpty || !removed.isEmpty {
+						// Note notification info
+						updatedNotificationInfos.append(
+								(document: document, updatedProperties: updatedProperties, removedProperties: removed))
+					}
 				}
 			} else {
 				// Remove document
 				removedDocumentIDs.insert(documentID)
+
+				// Check if need to call document removed procs
+				if !self.documentRemovedProcs(for: documentType).isEmpty,
+						self.documentMapsLock.read({ self.documentBackingByDocumentID[documentID] }) != nil {
+					// Note document removed
+					self.noteDocumentRemoved(document: documentCreateProc(documentID, self))
+				}
 
 				self.documentMapsLock.write() {
 					// Retrieve existing document backing
@@ -1534,15 +1614,6 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 
 					// Add full info
 					documentFullInfos.append(documentBacking.documentFullInfo)
-
-					// Check if have document changed procs
-					if !documentChangedProcs.isEmpty {
-						// Create document
-						let	document = documentCreateProc(documentID, self)
-
-						// Call document changed procs
-						documentChangedProcs.forEach() { $0(document, .removed) }
-					}
 				}
 			}
 		}
@@ -1550,6 +1621,11 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Update stuffs
 		note(removedDocumentIDs: removedDocumentIDs)
 		update(for: documentType, updateInfos: updateInfos)
+
+		// Notify handlers
+		updatedNotificationInfos.forEach()
+				{ self.noteDocumentUpdated(document: $0.document, updatedProperties: $0.updatedProperties,
+						removedProperties: $0.removedProperties) }
 
 		// Note changes made
 		self.noteChangesMadeProc()

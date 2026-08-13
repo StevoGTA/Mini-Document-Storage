@@ -129,7 +129,7 @@ class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageS
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func cacheRegister(name :String, documentType :String, relevantProperties :[String],
+	func cacheRegister(name :String, documentType :String, relevantProperties :[String]?,
 			cacheValueInfos :[(valueInfo :MDSValueInfo, selector :String)]) throws {
 		// Register cache
 		try self.documentStorageObjC.cacheRegisterNamed(name, documentType: documentType,
@@ -167,13 +167,13 @@ class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageS
 	}
 	
 	//------------------------------------------------------------------------------------------------------------------
-	func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+	func collectionRegister(name :String, documentType :String, relevantProperties :[String]?, isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
-			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc, checkRelevantProperties :Bool) throws {
+			documentIsIncludedProc :@escaping MDSDocument.IsIncludedProc) throws {
 		// Register collection
 		try self.documentStorageObjC.collectionRegisterNamed(name, documentType: documentType,
 				relevantProperties: relevantProperties, isUpToDate: isUpToDate, isIncludedInfo: isIncludedInfo,
-				isIncludedSelector: isIncludedSelector, checkRelevantProperties: checkRelevantProperties)
+				isIncludedSelector: isIncludedSelector)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -319,7 +319,7 @@ class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageS
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func indexRegister(name :String, documentType :String, relevantProperties :[String], keysInfo :[String : Any],
+	func indexRegister(name :String, documentType :String, relevantProperties :[String]?, keysInfo :[String : Any],
 			keysSelector :String, keysProc :@escaping MDSDocument.KeysProc) throws {
 		// Register collection
 		try self.documentStorageObjC.indexRegisterNamed(name, documentType: documentType,

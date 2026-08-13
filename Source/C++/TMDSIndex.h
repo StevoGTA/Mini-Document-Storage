@@ -5,6 +5,7 @@
 #pragma once
 
 #include "CMDSDocument.h"
+#include "CppToolboxAssert.h"
 
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: TMDSIndex
@@ -59,14 +60,20 @@ template <typename T> class TMDSIndex : public CEquatable {
 	public:
 								// Lifecycle methods
 								TMDSIndex(const CString& name, const CString& documentType,
-										const TArray<CString>& relevantProperties,
+										const OV<TArray<CString> >& relevantProperties,
 										const CMDSDocument::KeysPerformer& documentKeysPerformer,
 										const CDictionary& keysInfo, UInt32 lastRevision) :
 									mName(name), mDocumentType(documentType),
-											mRelevantProperties(relevantProperties),
+											mRelevantProperties(
+													relevantProperties.hasValue() ?
+															OV<TSet<CString> >(TNSet<CString>(*relevantProperties)) :
+															OV<TSet<CString> >()),
 											mDocumentKeysPerformer(documentKeysPerformer), mKeysInfo(keysInfo),
 											mLastRevision(lastRevision)
-									{}
+									{
+										// Must have no entry or at least 1 item
+										AssertFailIf(relevantProperties.hasValue() && relevantProperties->isEmpty());
+									}
 
 								// CEquatable methods
 				bool			operator==(const CEquatable& other) const
@@ -89,8 +96,9 @@ template <typename T> class TMDSIndex : public CEquatable {
 														updateInfos.getIterator();
 												iterator; iterator++) {
 											// Check if there is something to do
-											if (!iterator->getChangedProperties().hasValue() ||
-													(mRelevantProperties.intersects(
+											if (!mRelevantProperties.hasValue() ||
+													!iterator->getChangedProperties().hasValue() ||
+													(mRelevantProperties->intersects(
 															*iterator->getChangedProperties()))) {
 												// Update keys info
 												keysInfos +=
@@ -116,7 +124,7 @@ template <typename T> class TMDSIndex : public CEquatable {
 		CString						mName;
 		CString						mDocumentType;
 		
-		TNSet<CString>				mRelevantProperties;
+		OV<TSet<CString> >			mRelevantProperties;
 		CMDSDocument::KeysPerformer	mDocumentKeysPerformer;
 		CDictionary					mKeysInfo;
 

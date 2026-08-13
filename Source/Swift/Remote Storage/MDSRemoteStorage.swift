@@ -328,7 +328,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func cacheRegister(name :String, documentType :String, relevantProperties :[String],
+	public func cacheRegister(name :String, documentType :String, relevantProperties :[String]?,
 			cacheValueInfos :[(valueInfo :MDSValueInfo, selector :String)]) throws {
 		// Register cache
 		let	error =
@@ -369,9 +369,9 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func collectionRegister(name :String, documentType :String, relevantProperties :[String], isUpToDate :Bool,
+	public func collectionRegister(name :String, documentType :String, relevantProperties :[String]?, isUpToDate :Bool,
 			isIncludedInfo :[String : Any], isIncludedSelector :String,
-			documentIsIncludedProc: @escaping MDSDocument.IsIncludedProc, checkRelevantProperties: Bool) throws {
+			documentIsIncludedProc: @escaping MDSDocument.IsIncludedProc) throws {
 		// Register collection
 		let	error =
 					self.httpEndpointClient.collectionRegister(documentStorageID: self.documentStorageID, name: name,
@@ -852,7 +852,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func indexRegister(name :String, documentType :String, relevantProperties :[String],
+	public func indexRegister(name :String, documentType :String, relevantProperties :[String]?,
 			keysInfo :[String : Any], keysSelector :String, keysProc :@escaping MDSDocument.KeysProc) throws {
 		// Register index
 		let	error =

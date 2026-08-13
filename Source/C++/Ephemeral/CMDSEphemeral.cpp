@@ -546,60 +546,115 @@ class CMDSEphemeral::Internals {
 				void							process(const CString& documentID,
 														const BatchDocumentInfo& batchDocumentInfo,
 														DocumentBacking& documentBacking,
-														const TSet<CString>& changedProperties,
+														const TSet<CString>& updatedProperties,
+														const TSet<CString>& removedProperties,
 														const CMDSDocument::Info& documentInfo,
 														TNArray<MDSUpdateInfo>& updateInfos,
-														const CMDSDocumentStorage::DocumentChangedInfos&
-																documentChangedInfos,
-														CMDSDocument::ChangeKind documentChangeKind)
+														TNArray<I<CMDSDocument> >& createdDocuments,
+														CMDSDocument::UpdatedNotificationInfos& updatedNotificationInfos,
+														CMDSDocument::AttachmentNotificationInfos&
+																attachmentCreatedNotificationInfos,
+														CMDSDocument::AttachmentNotificationInfos&
+																attachmentUpdatedNotificationInfos,
+														CMDSDocument::AttachmentRemovedNotificationInfos&
+																attachmentRemovedNotificationInfos,
+														bool isCreate)
 													{
+														// Create document
+														I<CMDSDocument>	document =
+																				documentInfo.create(documentID,
+																						mDocumentStorage);
+
 														// Process attachments
 														for (TSet<CString>::Iterator iterator =
 																		batchDocumentInfo.getRemovedAttachmentIDs()
 																				.getIterator();
-																iterator; iterator++)
+																iterator; iterator++) {
 															// Remove attachment
 															documentBacking.attachmentRemove(
 																	documentBacking.getRevision(), *iterator);
+
+															// Add notification info
+															attachmentRemovedNotificationInfos +=
+																	CMDSDocument::AttachmentRemovedNotificationInfo(
+																			document, *iterator);
+														}
 
 														for (TDictionary<Batch::AddAttachmentInfo>::ValueIterator
 																		iterator =
 																				batchDocumentInfo
 																						.getAddAttachmentInfosByID()
 																						.getValueIterator();
-																iterator; iterator++)
+																iterator; iterator++) {
 															// Add attachment
-															documentBacking.attachmentAdd(iterator->getID(),
-																	documentBacking.getRevision(), iterator->getInfo(),
-																	iterator->getContent());
+															CMDSDocument::AttachmentInfo	attachmentInfo =
+																									documentBacking
+																											.attachmentAdd(
+																													iterator->getID(),
+																													documentBacking
+																															.getRevision(),
+																													iterator->getInfo(),
+																													iterator->getContent());
+
+															// Add notification info
+															attachmentCreatedNotificationInfos +=
+																	CMDSDocument::AttachmentNotificationInfo(document,
+																			attachmentInfo);
+														}
 
 														for (TDictionary<Batch::UpdateAttachmentInfo>::ValueIterator
 																		iterator =
 																				batchDocumentInfo
 																						.getUpdateAttachmentInfosByID()
 																						.getValueIterator();
-																iterator; iterator++)
+																iterator; iterator++) {
 															// Update attachment
 															documentBacking.attachmentUpdate(
 																	documentBacking.getRevision(), iterator->getID(),
 																	iterator->getInfo(), iterator->getContent());
 
-														// Create document
-														I<CMDSDocument>	document =
-																				documentInfo.create(documentID,
-																						mDocumentStorage);
+															// Note the attachment as it now stands - retrieve the
+															//	map into a local as it is returned by value
+																	CMDSDocument::AttachmentInfoByID
+																			attachmentInfoByID =
+																					documentBacking
+																							.getDocumentAttachmentInfoByID();
+															const	OR<CMDSDocument::AttachmentInfo>
+																			attachmentInfo =
+																					attachmentInfoByID[
+																							iterator->getID()];
+															if (attachmentInfo.hasReference())
+																// Add notification info
+																attachmentUpdatedNotificationInfos +=
+																		CMDSDocument::AttachmentNotificationInfo(
+																				document, *attachmentInfo);
+														}
 
-														// Note update info
+														// Note update info - a create sends no property set so
+														//	everything evaluates fresh
 														updateInfos +=
-																MDSUpdateInfo(document, documentBacking.getRevision(),
-																		documentID, changedProperties);
+																isCreate ?
+																		MDSUpdateInfo(document,
+																				documentBacking.getRevision(),
+																				documentID) :
+																		MDSUpdateInfo(document,
+																				documentBacking.getRevision(),
+																				documentID,
+																				TNSet<CString>(updatedProperties)
+																						.insertFrom(
+																								removedProperties));
 
-														// Call document changed procs
-														for (TArray<CMDSDocument::ChangedInfo>::Iterator iterator =
-																		documentChangedInfos.getIterator();
-																iterator; iterator++)
-															// Call proc
-															iterator->notify(document, documentChangeKind);
+														// Note document notification - attachment-only changes do
+														//	not update the document
+														if (isCreate)
+															// Created
+															createdDocuments += document;
+														else if (!updatedProperties.isEmpty() ||
+																!removedProperties.isEmpty())
+															// Updated
+															updatedNotificationInfos +=
+																	CMDSDocument::UpdatedNotificationInfo(document,
+																			updatedProperties, removedProperties);
 													}
 
 				UInt32							nextRevision(const CString& documentType)
@@ -1270,7 +1325,7 @@ OV<SError> CMDSEphemeral::associationUpdate(const CString& name, const TArray<CM
 
 //----------------------------------------------------------------------------------------------------------------------
 OV<SError> CMDSEphemeral::cacheRegister(const CString& name, const CString& documentType,
-		const TArray<CString>& relevantProperties, const TArray<CacheValueInfo>& cacheValueInfos)
+		const OV<TArray<CString> >& relevantProperties, const TArray<CacheValueInfo>& cacheValueInfos)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Remove current cache if found
@@ -1370,8 +1425,8 @@ TVResult<TArray<CDictionary> > CMDSEphemeral::cacheGetValues(const CString& name
 
 //----------------------------------------------------------------------------------------------------------------------
 OV<SError> CMDSEphemeral::collectionRegister(const CString& name, const CString& documentType,
-		const TArray<CString>& relevantProperties, bool isUpToDate, const CDictionary& isIncludedInfo,
-		const CMDSDocument::IsIncludedPerformer& documentIsIncludedPerformer, bool checkRelevantProperties)
+		const OV<TArray<CString> >& relevantProperties, bool isUpToDate, const CDictionary& isIncludedInfo,
+		const CMDSDocument::IsIncludedPerformer& documentIsIncludedPerformer)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Remove current collection if found
@@ -1395,7 +1450,7 @@ OV<SError> CMDSEphemeral::collectionRegister(const CString& name, const CString&
 
 	I<MDSCollection>	collection(
 								new MDSCollection(name, documentType, relevantProperties, documentIsIncludedPerformer,
-										checkRelevantProperties, isIncludedInfo, lastRevision));
+										isIncludedInfo, lastRevision));
 
 	// Add to maps
 	mInternals->mCollectionByName.set(name, collection);
@@ -1517,15 +1572,18 @@ TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSEphemeral::documentCreate(
 							CMDSDocument::OverviewInfo(documentID, revision, creationUniversalTime,
 									modificationUniversalTime));
 
-			// Call document changed procs
-			notifyDocumentChanged(document, CMDSDocument::kChangeKindCreated);
-
 			// Add update info
-			updateInfos += MDSUpdateInfo(document, revision, documentID, propertyMap.getKeys());
+			updateInfos += MDSUpdateInfo(document, revision, documentID);
 		}
 
 		// Update stuffs
 		mInternals->update(documentInfoForNew.getDocumentType(), updateInfos);
+
+		// Call document created procs - after storage has settled
+		for (TArray<CMDSDocument::CreateResultInfo>::Iterator iterator = documentCreateResultInfos.getIterator();
+				iterator; iterator++)
+			// Call proc
+			notifyDocumentCreated(iterator->getDocument());
 	}
 
 	return TVResult<TArray<CMDSDocument::CreateResultInfo> >(documentCreateResultInfos);
@@ -1766,8 +1824,9 @@ void CMDSEphemeral::documentSet(const CString& property, const OV<SValue>& value
 							MDSUpdateInfo(document, (*documentBacking)->getRevision(), document->getID(),
 									TSSet<CString>(property))));
 
-			// Call document changed procs
-			notifyDocumentChanged(document, CMDSDocument::kChangeKindUpdated);
+			// Call document updated procs
+			notifyDocumentUpdated(document, value.hasValue() ? TNSet<CString>(property) : TNSet<CString>(),
+					value.hasValue() ? TNSet<CString>() : TNSet<CString>(property));
 		}
 	}
 }
@@ -1817,9 +1876,16 @@ TVResult<CMDSDocument::AttachmentInfo> CMDSEphemeral::documentAttachmentAdd(cons
 							info, content));
 		mInternals->mDocumentMapsLock.unlockForWriting();
 
-		return documentAttachmentInfo.hasValue() ?
-				TVResult<CMDSDocument::AttachmentInfo>(*documentAttachmentInfo) :
-				TVResult<CMDSDocument::AttachmentInfo>(getUnknownDocumentIDError(documentID));
+		if (!documentAttachmentInfo.hasValue())
+			return TVResult<CMDSDocument::AttachmentInfo>(getUnknownDocumentIDError(documentID));
+
+		// Call document attachment created procs - outside mDocumentMapsLock
+		if (!documentAttachmentCreatedInfos(documentType).isEmpty())
+			// Create document and notify
+			notifyDocumentAttachmentCreated(documentCreateInfo(documentType).create(documentID, *this),
+					documentAttachmentInfo->getID(), *documentAttachmentInfo);
+
+		return TVResult<CMDSDocument::AttachmentInfo>(*documentAttachmentInfo);
 	}
 }
 
@@ -1968,6 +2034,18 @@ TVResult<OV<UInt32> > CMDSEphemeral::documentAttachmentUpdate(const CString& doc
 								updatedInfo, updatedContent);
 		mInternals->mDocumentMapsLock.unlockForWriting();
 
+		// Call document attachment updated procs - outside mDocumentMapsLock
+		if (!documentAttachmentUpdatedInfos(documentType).isEmpty()) {
+			// Note the attachment as it now stands - retrieve the map into a local as it is returned by value
+					CMDSDocument::AttachmentInfoByID	attachmentInfoByID =
+																(*documentBacking)->getDocumentAttachmentInfoByID();
+			const	OR<CMDSDocument::AttachmentInfo>	attachmentInfo = attachmentInfoByID[attachmentID];
+			if (attachmentInfo.hasReference())
+				// Create document and notify
+				notifyDocumentAttachmentUpdated(documentCreateInfo(documentType).create(documentID, *this),
+						attachmentID, *attachmentInfo);
+		}
+
 		return TVResult<OV<UInt32> >(OV<UInt32>(revision));
 	}
 }
@@ -2026,6 +2104,11 @@ OV<SError> CMDSEphemeral::documentAttachmentRemove(const CString& documentType, 
 		(*documentBacking)->attachmentRemove(mInternals->nextRevision(documentType), attachmentID);
 		mInternals->mDocumentMapsLock.unlockForWriting();
 
+		// Call document attachment removed procs - outside mDocumentMapsLock
+		if (!documentAttachmentRemovedInfos(documentType).isEmpty())
+			// Create document and notify
+			notifyDocumentAttachmentRemoved(documentCreateInfo(documentType).create(documentID, *this), attachmentID);
+
 		return OV<SError>();
 	}
 }
@@ -2055,6 +2138,9 @@ OV<SError> CMDSEphemeral::documentRemove(const I<CMDSDocument>& document)
 			(*batch)->documentAdd(documentType, R<I<Internals::DocumentBacking> >(*documentBacking)).remove();
 		}
 	} else {
+		// Call document removed procs - before any removal work so the document is still readable
+		notifyDocumentRemoved(document);
+
 		// Not in batch
 		mInternals->mDocumentMapsLock.lockForWriting();
 		(*mInternals->mDocumentBackingByDocumentID.get(document->getID()))->setActive(false);
@@ -2062,9 +2148,6 @@ OV<SError> CMDSEphemeral::documentRemove(const I<CMDSDocument>& document)
 
 		// Remove
 		mInternals->noteRemoved(TSSet<CString>(document->getID()));
-
-		// Call document changed procs
-		notifyDocumentChanged(document, CMDSDocument::ChangeKind::kChangeKindRemoved);
 	}
 
 	return OV<SError>();
@@ -2072,7 +2155,7 @@ OV<SError> CMDSEphemeral::documentRemove(const I<CMDSDocument>& document)
 
 //----------------------------------------------------------------------------------------------------------------------
 OV<SError> CMDSEphemeral::indexRegister(const CString& name, const CString& documentType,
-		const TArray<CString>& relevantProperties, const CDictionary& keysInfo,
+		const OV<TArray<CString> >& relevantProperties, const CDictionary& keysInfo,
 		const CMDSDocument::KeysPerformer& documentKeysPerformer)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -2212,16 +2295,19 @@ OV<SError> CMDSEphemeral::batch(BatchProc batchProc, void* userData)
 	ReturnErrorIfResultError(batchResult);
 	if (*batchResult == kMDSBatchResultCommit) {
 		// Iterate all document changes
+		TNArray<I<CMDSDocument> >								createdDocuments;
+		CMDSDocument::UpdatedNotificationInfos					updatedNotificationInfos;
+		CMDSDocument::AttachmentNotificationInfos				attachmentCreatedNotificationInfos;
+		CMDSDocument::AttachmentNotificationInfos				attachmentUpdatedNotificationInfos;
+		CMDSDocument::AttachmentRemovedNotificationInfos		attachmentRemovedNotificationInfos;
 		Internals::BatchDocumentInfoByDocumentIDByDocumentType	batchDocumentInfoByDocumentType =
 																		batch->documentGetInfosByDocumentType();
 		for (Internals::BatchDocumentInfoByDocumentIDByDocumentType::Iterator documentTypeIterator =
 						batchDocumentInfoByDocumentType.getIterator();
 				documentTypeIterator; documentTypeIterator++) {
 			// Setup
-			const	CString&				documentType = documentTypeIterator.getKey();
-
-			const	CMDSDocument::Info&		documentInfo = documentCreateInfo(documentType);
-					DocumentChangedInfos	documentChangedInfos = this->documentChangedInfos(documentType);
+			const	CString&			documentType = documentTypeIterator.getKey();
+			const	CMDSDocument::Info&	documentInfo = documentCreateInfo(documentType);
 
 			// Update documents
 			TNArray<MDSUpdateInfo>	updateInfos;
@@ -2246,12 +2332,11 @@ OV<SError> CMDSEphemeral::batch(BatchProc batchProc, void* userData)
 								batchDocumentInfo.getUpdatedPropertyMap(), batchDocumentInfo.getRemovedProperties());
 
 						// Process
-						TNSet<CString>	changedProperties =
-												TNSet<CString>(batchDocumentInfo.getUpdatedPropertyMap().getKeys())
-														.insertFrom(batchDocumentInfo.getRemovedProperties());
 						mInternals->process(documentID, batchDocumentInfo, **documentBacking,
-								changedProperties, documentInfo, updateInfos, documentChangedInfos,
-								CMDSDocument::ChangeKind::kChangeKindUpdated);
+								TNSet<CString>(batchDocumentInfo.getUpdatedPropertyMap().getKeys()),
+								batchDocumentInfo.getRemovedProperties(), documentInfo, updateInfos, createdDocuments,
+								updatedNotificationInfos, attachmentCreatedNotificationInfos,
+								attachmentUpdatedNotificationInfos, attachmentRemovedNotificationInfos, false);
 					} else {
 						// Add document
 						I<Internals::DocumentBacking>	newDocumentBacking(
@@ -2266,8 +2351,10 @@ OV<SError> CMDSEphemeral::batch(BatchProc batchProc, void* userData)
 
 						// Process
 						mInternals->process(documentID, batchDocumentInfo, *newDocumentBacking,
-								batchDocumentInfo.getUpdatedPropertyMap().getKeys(), documentInfo, updateInfos,
-								documentChangedInfos, CMDSDocument::ChangeKind::kChangeKindCreated);
+								TNSet<CString>(batchDocumentInfo.getUpdatedPropertyMap().getKeys()), TNSet<CString>(),
+								documentInfo, updateInfos, createdDocuments, updatedNotificationInfos,
+								attachmentCreatedNotificationInfos, attachmentUpdatedNotificationInfos,
+								attachmentRemovedNotificationInfos, true);
 					}
 
 					// Unlock
@@ -2276,23 +2363,16 @@ OV<SError> CMDSEphemeral::batch(BatchProc batchProc, void* userData)
 					// Remove document
 					removedDocumentIDs.insert(documentID);
 
+					// Call document removed procs - before any removal work, and outside mDocumentMapsLock
+					if (!documentRemovedInfos(documentType).isEmpty())
+						// Create document and notify
+						notifyDocumentRemoved(documentInfo.create(documentID, *this));
+
 					// Lock
 					mInternals->mDocumentMapsLock.lockForWriting();
 
 					// Update maps
 					(*mInternals->mDocumentBackingByDocumentID.get(documentID))->setActive(false);
-
-					// Check if have changed procs
-					if (!documentChangedInfos.isEmpty()) {
-						// Create document
-						I<CMDSDocument>	document = documentInfo.create(documentID, *this);
-
-						// Call document changed procs
-						for (TArray<CMDSDocument::ChangedInfo>::Iterator iterator = documentChangedInfos.getIterator();
-								iterator; iterator++)
-							// Call proc
-							iterator->notify(document, CMDSDocument::ChangeKind::kChangeKindRemoved);
-					}
 
 					// Unlock
 					mInternals->mDocumentMapsLock.unlockForWriting();
@@ -2303,6 +2383,33 @@ OV<SError> CMDSEphemeral::batch(BatchProc batchProc, void* userData)
 			mInternals->noteRemoved(removedDocumentIDs);
 			mInternals->update(documentType, updateInfos);
 		}
+
+		// Notify - deferred until outside mDocumentMapsLock, after storage has settled
+		for (TArray<I<CMDSDocument> >::Iterator iterator = createdDocuments.getIterator(); iterator; iterator++)
+			// Call proc
+			notifyDocumentCreated(*iterator);
+		for (TArray<CMDSDocument::UpdatedNotificationInfo>::Iterator iterator = updatedNotificationInfos.getIterator();
+				iterator; iterator++)
+			// Call proc
+			notifyDocumentUpdated(iterator->getDocument(), iterator->getUpdatedProperties(),
+					iterator->getRemovedProperties());
+		for (TArray<CMDSDocument::AttachmentNotificationInfo>::Iterator iterator =
+						attachmentCreatedNotificationInfos.getIterator();
+				iterator; iterator++)
+			// Call proc
+			notifyDocumentAttachmentCreated(iterator->getDocument(), iterator->getAttachmentInfo().getID(),
+					iterator->getAttachmentInfo());
+		for (TArray<CMDSDocument::AttachmentNotificationInfo>::Iterator iterator =
+						attachmentUpdatedNotificationInfos.getIterator();
+				iterator; iterator++)
+			// Call proc
+			notifyDocumentAttachmentUpdated(iterator->getDocument(), iterator->getAttachmentInfo().getID(),
+					iterator->getAttachmentInfo());
+		for (TArray<CMDSDocument::AttachmentRemovedNotificationInfo>::Iterator iterator =
+						attachmentRemovedNotificationInfos.getIterator();
+				iterator; iterator++)
+			// Call proc
+			notifyDocumentAttachmentRemoved(iterator->getDocument(), iterator->getAttachmentID());
 
 		// Iterate all association changes
 		TSet<CString>	associationNames = batch->associationGetUpdatedNames();
@@ -2755,10 +2862,11 @@ TVResult<TArray<CMDSDocument::FullInfo> > CMDSEphemeral::documentUpdate(const CS
 		return TVResult<TArray<CMDSDocument::FullInfo> >(getUnknownDocumentTypeError(documentType));
 
 	// Setup
-	const	CMDSDocument::Info&				documentInfo = documentCreateInfo(documentType);
-			TNArray<MDSUpdateInfo>			updateInfos;
-			TNSet<CString>					removedDocumentIDs;
-			TNArray<CMDSDocument::FullInfo>	documentFullInfos;
+	const	CMDSDocument::Info&						documentInfo = documentCreateInfo(documentType);
+			TNArray<MDSUpdateInfo>					updateInfos;
+			TNSet<CString>							removedDocumentIDs;
+			TNArray<CMDSDocument::FullInfo>			documentFullInfos;
+			CMDSDocument::UpdatedNotificationInfos	updatedNotificationInfos;
 
 	// Iterate document update infos
 	for (TArray<CMDSDocument::UpdateInfo>::Iterator iterator = documentUpdateInfos.getIterator(); iterator;
@@ -2779,17 +2887,22 @@ TVResult<TArray<CMDSDocument::FullInfo> > CMDSEphemeral::documentUpdate(const CS
 
 				// Create document
 				I<CMDSDocument>	document = documentInfo.create(iterator->getDocumentID(), *this);
+				TNSet<CString>	updatedProperties(iterator->getUpdated().getKeys());
+				TNSet<CString>	removedProperties(iterator->getRemoved());
 
 				// Add update info
 				updateInfos +=
 						MDSUpdateInfo(document, (*documentBacking)->getRevision(), iterator->getDocumentID(),
-								TNSet<CString>(iterator->getUpdated().getKeys()).insertFrom(iterator->getRemoved()));
+								TNSet<CString>(updatedProperties).insertFrom(removedProperties));
 
 				// Add full info
 				documentFullInfos += (*documentBacking)->getDocumentFullInfo();
 
-				// Call document changed procs
-				notifyDocumentChanged(document, CMDSDocument::kChangeKindUpdated);
+				// Note document updated - deferred outside mDocumentMapsLock
+				if (!updatedProperties.isEmpty() || !removedProperties.isEmpty())
+					// Have property changes
+					updatedNotificationInfos +=
+							CMDSDocument::UpdatedNotificationInfo(document, updatedProperties, removedProperties);
 			}
 
 			// Done
@@ -2797,6 +2910,19 @@ TVResult<TArray<CMDSDocument::FullInfo> > CMDSEphemeral::documentUpdate(const CS
 		} else {
 			// Remove document
 			removedDocumentIDs += iterator->getDocumentID();
+
+			// Call document removed procs - before any removal work, and outside mDocumentMapsLock
+			if (!documentRemovedInfos(documentType).isEmpty()) {
+				// Check that the document backing is actually present
+				mInternals->mDocumentMapsLock.lockForReading();
+				bool	hasDocumentBacking =
+								mInternals->mDocumentBackingByDocumentID.get(iterator->getDocumentID()).hasReference();
+				mInternals->mDocumentMapsLock.unlockForReading();
+
+				if (hasDocumentBacking)
+					// Create document and notify
+					notifyDocumentRemoved(documentInfo.create(iterator->getDocumentID(), *this));
+			}
 
 			// Update document backing
 			mInternals->mDocumentMapsLock.lockForWriting();
@@ -2811,15 +2937,6 @@ TVResult<TArray<CMDSDocument::FullInfo> > CMDSEphemeral::documentUpdate(const CS
 
 				// Add full info
 				documentFullInfos += (*documentBacking)->getDocumentFullInfo();
-
-				// Check if have document changed infos
-				if (!documentChangedInfos(documentType).isEmpty()) {
-					// Create document
-					I<CMDSDocument>	document = documentInfo.create(iterator->getDocumentID(), *this);
-
-					// Call document changed procs
-					notifyDocumentChanged(document, CMDSDocument::kChangeKindRemoved);
-				}
 			}
 
 			// Done
@@ -2830,6 +2947,13 @@ TVResult<TArray<CMDSDocument::FullInfo> > CMDSEphemeral::documentUpdate(const CS
 	// Update stuffs
 	mInternals->noteRemoved(removedDocumentIDs);
 	mInternals->update(documentType, updateInfos);
+
+	// Notify - deferred until outside mDocumentMapsLock, after storage has settled
+	for (TArray<CMDSDocument::UpdatedNotificationInfo>::Iterator iterator = updatedNotificationInfos.getIterator();
+			iterator; iterator++)
+		// Call proc
+		notifyDocumentUpdated(iterator->getDocument(), iterator->getUpdatedProperties(),
+				iterator->getRemovedProperties());
 
 	return TVResult<TArray<CMDSDocument::FullInfo> >(documentFullInfos);
 }

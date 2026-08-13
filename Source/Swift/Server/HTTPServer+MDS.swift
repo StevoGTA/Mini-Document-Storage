@@ -57,9 +57,7 @@ extension MDSHTTPServices {
 	// Class methods
 	//------------------------------------------------------------------------------------------------------------------
 	static func register(documentStorage :MDSDocumentStorageServer, for documentStorageID :String = "default",
-			isIncludedProcs
-					:[(selector :String, isIncludedProc :MDSDocument.IsIncludedProc, checkRelevantProperties :Bool)] =
-							[],
+			isIncludedProcs :[(selector :String, isIncludedProc :MDSDocument.IsIncludedProc)] = [],
 			keysProcs :[(selector :String, keysProc :MDSDocument.KeysProc)] = [],
 			valueProcs :[(selector :String, valueProc :MDSDocument.ValueProc)] = [],
 			authorizationValidationProc :@escaping AuthorizationValidationProc = { _ in true }) {
@@ -77,8 +75,7 @@ extension MDSHTTPServices {
 
 										return documentStorage.documentValue(for: documentType, documentID: document.id,
 												property: property) != nil
-									},
-									true),
+									}),
 							("documentDoesNotHaveProperty()",
 									{ [unowned documentStorage] documentType, document, info in
 										// Setup
@@ -86,8 +83,7 @@ extension MDSHTTPServices {
 
 										return documentStorage.documentValue(for: documentType, documentID: document.id,
 												property: property) == nil
-									},
-									false),
+									}),
 							("documentPropertyIsValue()",
 									{ [unowned documentStorage] documentType, document, info in
 										// Setup
@@ -96,8 +92,7 @@ extension MDSHTTPServices {
 
 										return documentStorage.documentValue(for: documentType, documentID: document.id,
 												property: property) == value
-									},
-									true),
+									}),
 							("documentPropertiesMatch()",
 									{ [unowned documentStorage] documentType, document, info in
 										// Setup
@@ -111,8 +106,7 @@ extension MDSHTTPServices {
 										}
 
 										return true
-									},
-									true),
+									}),
 							("documentPropertyIsOneOfValues()",
 									{ [unowned documentStorage] documentType, document, info in
 										// Setup
@@ -124,8 +118,7 @@ extension MDSHTTPServices {
 												{ return false }
 
 										return values.contains(where: { $0 == documentPropertyValue })
-									},
-									true),
+									}),
 							("documentPropertyIsNotValue()",
 									{ [unowned documentStorage] documentType, document, info in
 										// Setup
@@ -134,8 +127,7 @@ extension MDSHTTPServices {
 
 										return documentStorage.documentValue(for: documentType, documentID: document.id,
 												property: property) != value
-									},
-									true),
+									}),
 						] +
 						isIncludedProcs)
 		documentStorage.register(
@@ -416,10 +408,13 @@ extension HTTPServer {
 				// documentType missing
 				return (.badRequest, nil, .json(["error": "Missing documentType"]))
 			}
-			guard let relevantProperties = info.relevantProperties else {
-				// relevantProperties missing
-				return (.badRequest, nil, .json(["error": "Missing relevantProperties"]))
+
+			let	relevantProperties = info.relevantProperties
+			guard !(relevantProperties?.isEmpty ?? false) else {
+				// relevantProperties empty
+				return (.badRequest, nil, .json(["error": "relevantProperties is empty - omit to always evaluate"]))
 			}
+
 			guard let valueInfoInfos = info.valueInfos else {
 				// valueInfoInfos empty
 				return (.badRequest, nil, .json(["error": "Missing valueInfos"]))
@@ -543,10 +538,13 @@ extension HTTPServer {
 				// documentType missing
 				return (.badRequest, nil, .json(["error": "Missing documentType"]))
 			}
-			guard let relevantProperties = info.relevantProperties else {
-				// relevantProperties missing
-				return (.badRequest, nil, .json(["error": "Missing relevantProperties"]))
+
+			let	relevantProperties = info.relevantProperties
+			guard !(relevantProperties?.isEmpty ?? false) else {
+				// relevantProperties empty
+				return (.badRequest, nil, .json(["error": "relevantProperties is empty - omit to always evaluate"]))
 			}
+
 			guard let isIncludedSelector = info.isIncludedSelector else {
 				// isIncludedSelector missing
 				return (.badRequest, nil, .json(["error": "Missing isIncludedSelector"]))
@@ -566,8 +564,7 @@ extension HTTPServer {
 				try documentStorage!.collectionRegister(name: name, documentType: documentType,
 						relevantProperties: relevantProperties, isUpToDate: info.isUpToDate,
 						isIncludedInfo: isIncludedSelectorInfo, isIncludedSelector: isIncludedSelector,
-						documentIsIncludedProc: isIncludedProcInfo.isIncludedProc,
-						checkRelevantProperties: isIncludedProcInfo.checkRelevantProperties)
+						documentIsIncludedProc: isIncludedProcInfo)
 
 				return (.ok, nil, nil)
 			} catch {
@@ -944,10 +941,13 @@ extension HTTPServer {
 				// documentType missing
 				return (.badRequest, nil, .json(["error": "Missing documentType"]))
 			}
-			guard let relevantProperties = info.relevantProperties else {
-				// relevantProperties missing
-				return (.badRequest, nil, .json(["error": "Missing relevantProperties"]))
+
+			let	relevantProperties = info.relevantProperties
+			guard !(relevantProperties?.isEmpty ?? false) else {
+				// relevantProperties empty
+				return (.badRequest, nil, .json(["error": "relevantProperties is empty - omit to always evaluate"]))
 			}
+
 			guard let keysSelector = info.keysSelector else {
 				// keysSelector missing
 				return (.badRequest, nil, .json(["error": "Missing keysSelector"]))

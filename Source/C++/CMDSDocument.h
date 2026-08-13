@@ -16,14 +16,6 @@ class CMDSDocumentStorage;
 // MARK: CMDSDocument
 
 class CMDSDocument : public CHashable {
-	// ChangeKind
-	public:
-		enum ChangeKind {
-			kChangeKindCreated,
-			kChangeKindUpdated,
-			kChangeKindRemoved,
-		};
-
 	// AttachmentInfo
 	public:
 		struct AttachmentInfo {
@@ -272,29 +264,248 @@ class CMDSDocument : public CHashable {
 				bool			mActive;
 		};
 
-	// ChangedInfo
+	// CreatedInfo
 	public:
-		struct ChangedInfo {
+		struct CreatedInfo {
 			// Procs
 			public:
-				typedef	void	(*Proc)(const I<CMDSDocument>& document, ChangeKind changeKind, void* userData);
+				typedef	void	(*Proc)(const I<CMDSDocument>& document, void* userData);
 
 			// Methods
 			public:
 						// Lifecycle methods
-						ChangedInfo(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
-						ChangedInfo(const ChangedInfo& other) : mProc(other.mProc), mUserData(other.mUserData) {}
+						CreatedInfo(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
+						CreatedInfo(const CreatedInfo& other) : mProc(other.mProc), mUserData(other.mUserData) {}
 
 						// Instance methods
-				void	notify(const I<CMDSDocument>& document, ChangeKind changeKind) const
-							{ mProc(document, changeKind, mUserData); }
+				void	notify(const I<CMDSDocument>& document) const
+							{ mProc(document, mUserData); }
 
 			// Properties
 			private:
 				Proc	mProc;
 				void*	mUserData;
-
 		};
+
+	// UpdatedInfo
+	public:
+		struct UpdatedInfo {
+			// Procs
+			public:
+				typedef	void	(*Proc)(const I<CMDSDocument>& document, const TSet<CString>& updatedProperties,
+										const TSet<CString>& removedProperties,
+										const TSet<CString>& changedProperties, void* userData);
+
+			// Methods
+			public:
+						// Lifecycle methods
+						UpdatedInfo(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
+						UpdatedInfo(const UpdatedInfo& other) : mProc(other.mProc), mUserData(other.mUserData) {}
+
+						// Instance methods
+				void	notify(const I<CMDSDocument>& document, const TSet<CString>& updatedProperties,
+								const TSet<CString>& removedProperties, const TSet<CString>& changedProperties) const
+							{ mProc(document, updatedProperties, removedProperties, changedProperties, mUserData); }
+
+			// Properties
+			private:
+				Proc	mProc;
+				void*	mUserData;
+		};
+
+	// RemovedInfo
+	public:
+		struct RemovedInfo {
+			// Procs
+			public:
+				typedef	void	(*Proc)(const I<CMDSDocument>& document, void* userData);
+
+			// Methods
+			public:
+						// Lifecycle methods
+						RemovedInfo(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
+						RemovedInfo(const RemovedInfo& other) : mProc(other.mProc), mUserData(other.mUserData) {}
+
+						// Instance methods
+				void	notify(const I<CMDSDocument>& document) const
+							{ mProc(document, mUserData); }
+
+			// Properties
+			private:
+				Proc	mProc;
+				void*	mUserData;
+		};
+
+	// AttachmentCreatedInfo
+	public:
+		struct AttachmentCreatedInfo {
+			// Procs
+			public:
+				typedef	void	(*Proc)(const I<CMDSDocument>& document, const CString& attachmentID,
+										const AttachmentInfo& attachmentInfo, void* userData);
+
+			// Methods
+			public:
+						// Lifecycle methods
+						AttachmentCreatedInfo(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
+						AttachmentCreatedInfo(const AttachmentCreatedInfo& other) :
+							mProc(other.mProc), mUserData(other.mUserData)
+							{}
+
+						// Instance methods
+				void	notify(const I<CMDSDocument>& document, const CString& attachmentID,
+								const AttachmentInfo& attachmentInfo) const
+							{ mProc(document, attachmentID, attachmentInfo, mUserData); }
+
+			// Properties
+			private:
+				Proc	mProc;
+				void*	mUserData;
+		};
+
+	// AttachmentUpdatedInfo
+	public:
+		struct AttachmentUpdatedInfo {
+			// Procs
+			public:
+				typedef	void	(*Proc)(const I<CMDSDocument>& document, const CString& attachmentID,
+										const AttachmentInfo& attachmentInfo, void* userData);
+
+			// Methods
+			public:
+						// Lifecycle methods
+						AttachmentUpdatedInfo(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
+						AttachmentUpdatedInfo(const AttachmentUpdatedInfo& other) :
+							mProc(other.mProc), mUserData(other.mUserData)
+							{}
+
+						// Instance methods
+				void	notify(const I<CMDSDocument>& document, const CString& attachmentID,
+								const AttachmentInfo& attachmentInfo) const
+							{ mProc(document, attachmentID, attachmentInfo, mUserData); }
+
+			// Properties
+			private:
+				Proc	mProc;
+				void*	mUserData;
+		};
+
+	// AttachmentRemovedInfo
+	public:
+		struct AttachmentRemovedInfo {
+			// Procs
+			public:
+				typedef	void	(*Proc)(const I<CMDSDocument>& document, const CString& attachmentID, void* userData);
+
+			// Methods
+			public:
+						// Lifecycle methods
+						AttachmentRemovedInfo(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
+						AttachmentRemovedInfo(const AttachmentRemovedInfo& other) :
+							mProc(other.mProc), mUserData(other.mUserData)
+							{}
+
+						// Instance methods
+				void	notify(const I<CMDSDocument>& document, const CString& attachmentID) const
+							{ mProc(document, attachmentID, mUserData); }
+
+			// Properties
+			private:
+				Proc	mProc;
+				void*	mUserData;
+		};
+
+	// UpdatedNotificationInfo
+	public:
+		struct UpdatedNotificationInfo {
+			// Methods
+			public:
+											// Lifecycle methods
+											UpdatedNotificationInfo(const I<CMDSDocument>& document,
+													const TSet<CString>& updatedProperties,
+													const TSet<CString>& removedProperties) :
+												mDocument(document), mUpdatedProperties(updatedProperties),
+														mRemovedProperties(removedProperties)
+												{}
+											UpdatedNotificationInfo(const UpdatedNotificationInfo& other) :
+												mDocument(other.mDocument),
+														mUpdatedProperties(other.mUpdatedProperties),
+														mRemovedProperties(other.mRemovedProperties)
+												{}
+
+											// Instance methods
+				const	I<CMDSDocument>&	getDocument() const
+												{ return mDocument; }
+				const	TNSet<CString>&		getUpdatedProperties() const
+												{ return mUpdatedProperties; }
+				const	TNSet<CString>&		getRemovedProperties() const
+												{ return mRemovedProperties; }
+
+			// Properties
+			private:
+				I<CMDSDocument>	mDocument;
+				TNSet<CString>	mUpdatedProperties;
+				TNSet<CString>	mRemovedProperties;
+		};
+
+	// AttachmentNotificationInfo
+	public:
+		struct AttachmentNotificationInfo {
+			// Methods
+			public:
+											// Lifecycle methods
+											AttachmentNotificationInfo(const I<CMDSDocument>& document,
+													const AttachmentInfo& attachmentInfo) :
+												mDocument(document), mAttachmentInfo(attachmentInfo)
+												{}
+											AttachmentNotificationInfo(const AttachmentNotificationInfo& other) :
+												mDocument(other.mDocument), mAttachmentInfo(other.mAttachmentInfo)
+												{}
+
+											// Instance methods
+				const	I<CMDSDocument>&	getDocument() const
+												{ return mDocument; }
+				const	AttachmentInfo&		getAttachmentInfo() const
+												{ return mAttachmentInfo; }
+
+			// Properties
+			private:
+				I<CMDSDocument>	mDocument;
+				AttachmentInfo	mAttachmentInfo;
+		};
+
+	// AttachmentRemovedNotificationInfo
+	public:
+		struct AttachmentRemovedNotificationInfo {
+			// Methods
+			public:
+											// Lifecycle methods
+											AttachmentRemovedNotificationInfo(const I<CMDSDocument>& document,
+													const CString& attachmentID) :
+												mDocument(document), mAttachmentID(attachmentID)
+												{}
+											AttachmentRemovedNotificationInfo(
+													const AttachmentRemovedNotificationInfo& other) :
+												mDocument(other.mDocument), mAttachmentID(other.mAttachmentID)
+												{}
+
+											// Instance methods
+				const	I<CMDSDocument>&	getDocument() const
+												{ return mDocument; }
+				const	CString&			getAttachmentID() const
+												{ return mAttachmentID; }
+
+			// Properties
+			private:
+				I<CMDSDocument>	mDocument;
+				CString			mAttachmentID;
+		};
+
+	// Notification collections
+	public:
+		typedef	TNArray<UpdatedNotificationInfo>				UpdatedNotificationInfos;
+		typedef	TNArray<AttachmentNotificationInfo>			AttachmentNotificationInfos;
+		typedef	TNArray<AttachmentRemovedNotificationInfo>	AttachmentRemovedNotificationInfos;
 
 	// IsIncludedPerformer
 	public:

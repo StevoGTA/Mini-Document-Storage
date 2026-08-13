@@ -265,7 +265,7 @@ typedef NS_ENUM(NSInteger) {
 		error:(NSError**) error;
 
 - (BOOL) cacheRegisterNamed:(NSString*) name documentType:(NSString*) documentType
-		relevantProperties:(NSArray<NSString*>*) relevantProperties
+		relevantProperties:(nullable NSArray<NSString*>*) relevantProperties
 		cacheValueInfos:(NSArray<MDSCacheValueInfo*>*) cacheValueInfos error:(NSError**) error;
 - (BOOL) cacheGetValuesNamed:(NSString*) name valueNames:(NSArray<NSString*>*) valueNames
 		documentIDs:(nullable NSArray<NSString*>*) documentIDs
@@ -273,9 +273,9 @@ typedef NS_ENUM(NSInteger) {
 - (BOOL) cacheGetStatusNamed:(NSString*) name error:(NSError**) error;
 
 - (BOOL) collectionRegisterNamed:(NSString*) name documentType:(NSString*) documentType
-		relevantProperties:(NSArray<NSString*>*) relevantProperties isUpToDate:(BOOL) isUpToDate
+		relevantProperties:(nullable NSArray<NSString*>*) relevantProperties isUpToDate:(BOOL) isUpToDate
 		isIncludedInfo:(NSDictionary<NSString*, id>*) isIncludedInfo isIncludedSelector:(NSString*) isIncludedSelector
-		checkRelevantProperties:(BOOL) checkRelevantProperties error:(NSError**) error;
+		error:(NSError**) error;
 - (BOOL) collectionGetDocumentCountNamed:(NSString*) name outDocumentCount:(NSUInteger*) outDocumentCount
 		error:(NSError**) error;
 - (BOOL) collectionGetDocumentRevisionInfosNamed:(NSString*) name startIndex:(NSInteger) startIndex
@@ -323,8 +323,8 @@ typedef NS_ENUM(NSInteger) {
 		attachmentID:(NSString*) attachmentID error:(NSError**) error;
 
 - (BOOL) indexRegisterNamed:(NSString*) name documentType:(NSString*) documentType
-		relevantProperties:(NSArray<NSString*>*) relevantProperties keysInfo:(NSDictionary<NSString*, id>*) keysInfo
-		keysSelector:(NSString*) keysSelector error:(NSError**) error;
+		relevantProperties:(nullable NSArray<NSString*>*) relevantProperties
+		keysInfo:(NSDictionary<NSString*, id>*) keysInfo keysSelector:(NSString*) keysSelector error:(NSError**) error;
 - (BOOL) indexGetDocumentRevisionInfosNamed:(NSString*) name keys:(NSArray<NSString*>*) keys
 		outDocumentRevisionInfoDictionary:(MDSDocumentRevisionInfoDictionary* _Nullable * _Nullable)
 				outDocumentRevisionInfoDictionary

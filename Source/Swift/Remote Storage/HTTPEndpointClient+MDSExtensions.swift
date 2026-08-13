@@ -729,7 +729,7 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func cacheRegister(documentStorageID :String, name :String, documentType :String, relevantProperties :[String] = [],
+	func cacheRegister(documentStorageID :String, name :String, documentType :String, relevantProperties :[String]? = nil,
 			valueInfos :[MDSHTTPServices.CacheRegisterEndpointValueInfo], authorization :String? = nil) -> Error? {
 		// Perform
 		return DispatchQueue.performBlocking() { completionProc in
@@ -790,7 +790,7 @@ extension HTTPEndpointClient {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func collectionRegister(documentStorageID :String, name :String, documentType :String,
-			relevantProperties :[String] = [], isUpToDate :Bool = false, isIncludedSelector :String,
+			relevantProperties :[String]? = nil, isUpToDate :Bool = false, isIncludedSelector :String,
 			isIncludedSelectorInfo :[String : Any] = [:], authorization :String? = nil) -> Error? {
 		// Perform
 		return DispatchQueue.performBlocking() { completionProc in
@@ -1008,7 +1008,7 @@ extension HTTPEndpointClient {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func indexRegister(documentStorageID :String, name :String, documentType :String,
-			relevantProperties :[String] = [], keysSelector :String, keysSelectorInfo :[String : Any] = [:],
+			relevantProperties :[String]? = nil, keysSelector :String, keysSelectorInfo :[String : Any] = [:],
 			authorization :String? = nil) -> Error? {
 		// Perform
 		return DispatchQueue.performBlocking() { completionProc in

@@ -454,7 +454,7 @@ class CCachesTable {
 										return cacheInfo;
 									}
 		static	void			addOrUpdate(const CString& name, const CString& documentType,
-										const TArray<CString>& relevantProperties,
+										const OV<TArray<CString> >& relevantProperties,
 										const CacheValueInfos& cacheValueInfos, CSQLiteTable& table)
 									{
 										// Setup
@@ -472,8 +472,10 @@ class CCachesTable {
 																				documentType),
 																		TableColumnAndValue(
 																				mRelevantPropertiesTableColumn,
-																				CString(relevantProperties,
-																						CString::mComma)),
+																				relevantProperties.hasValue() ?
+																						CString(*relevantProperties,
+																								CString::mComma) :
+																						CString::mEmpty),
 																		TableColumnAndValue(mInfoTableColumn,
 																				*CJSON::dataFrom(infos)),
 																		TableColumnAndValue(mLastRevisionTableColumn,
@@ -499,17 +501,21 @@ class CCachesTable {
 										OV<CacheInfo>* cacheInfo)
 									{
 										// Get info
-										TArray<CString>		relevantProperties =
-																	TNArray<CString>(
-																			resultsRow.getText(
-																					mRelevantPropertiesTableColumn)->
-																					components(CString::mComma))
-																					.filtered(CString::isNotEmpty);
+										TArray<CString>			relevantPropertiesStored =
+																		TNArray<CString>(
+																				resultsRow.getText(
+																						mRelevantPropertiesTableColumn)->
+																						components(CString::mComma))
+																						.filtered(CString::isNotEmpty);
+										OV<TArray<CString> >	relevantPropertiesUse =
+																		!relevantPropertiesStored.isEmpty() ?
+																				OV<TArray<CString> >(
+																						relevantPropertiesStored) :
+																				OV<TArray<CString> >();
 
-										TArray<CDictionary>	infos =
-																	*CJSON::arrayOfDictionariesFrom(
-																			*resultsRow.getBlob(mInfoTableColumn));
-
+										TArray<CDictionary>		infos =
+																		*CJSON::arrayOfDictionariesFrom(
+																				*resultsRow.getBlob(mInfoTableColumn));
 										TNArray<CacheValueInfo>	cacheValueInfos;
 										for (TArray<CDictionary>::Iterator iterator = infos.getIterator(); iterator;
 												iterator++)
@@ -518,8 +524,8 @@ class CCachesTable {
 
 										// Set current info
 										cacheInfo->setValue(
-												CacheInfo(*resultsRow.getText(mTypeTableColumn),
-														relevantProperties, cacheValueInfos,
+												CacheInfo(*resultsRow.getText(mTypeTableColumn), relevantPropertiesUse,
+														cacheValueInfos,
 														*resultsRow.getUInt32(mLastRevisionTableColumn)));
 
 										return OV<SError>();
@@ -688,7 +694,7 @@ class CCollectionsTable {
 													return collectionInfo;
 												}
 		static	void						addOrUpdate(const CString& name, const CString& documentType,
-													const TArray<CString>& relevantProperties,
+													const OV<TArray<CString> >& relevantProperties,
 													const CString& isIncludedSelector,
 													const CDictionary& isIncludedSelectorInfo, UInt32 lastRevision,
 													CSQLiteTable& table)
@@ -703,8 +709,10 @@ class CCollectionsTable {
 																							documentType),
 																					TableColumnAndValue(
 																							mRelevantPropertiesTableColumn,
-																							CString(relevantProperties,
-																									CString::mComma)),
+																							relevantProperties.hasValue() ?
+																									CString(*relevantProperties,
+																											CString::mComma) :
+																									CString::mEmpty),
 																					TableColumnAndValue(
 																							mIsIncludedSelectorTableColumn,
 																							isIncludedSelector),
@@ -736,17 +744,21 @@ class CCollectionsTable {
 													relevantProperties =
 															relevantProperties.filtered(CString::isNotEmpty);
 
+													OV<TArray<CString> >	relevantPropertiesUse =
+																					!relevantProperties.isEmpty() ?
+																							OV<TArray<CString> >(
+																									relevantProperties) :
+																							OV<TArray<CString> >();
+
 													// Process results
 													collectionInfo->setValue(
 															CollectionInfo(*resultsRow.getText(mTypeTableColumn),
-																	relevantProperties,
-																	*resultsRow.getText(
-																			mIsIncludedSelectorTableColumn),
+																	relevantPropertiesUse,
+																	*resultsRow.getText(mIsIncludedSelectorTableColumn),
 																	*CJSON::dictionaryFrom(
 																			*resultsRow.getBlob(
 																					mIsIncludedSelectorInfoTableColumn)),
-																	*resultsRow.getUInt32(
-																			mLastRevisionTableColumn)));
+																	*resultsRow.getUInt32(mLastRevisionTableColumn)));
 
 													return OV<SError>();
 												}
@@ -1574,7 +1586,7 @@ class CIndexesTable {
 													return indexInfo;
 												}
 		static	void						addOrUpdate(const CString& name, const CString& documentType,
-													const TArray<CString>& relevantProperties,
+													const OV<TArray<CString> >& relevantProperties,
 													const CString& keysSelector, const CDictionary& keysSelectorInfo,
 													UInt32 lastRevision, CSQLiteTable& table)
 												{
@@ -1588,8 +1600,10 @@ class CIndexesTable {
 																							documentType),
 																					TableColumnAndValue(
 																							mRelevantPropertiesTableColumn,
-																							CString(relevantProperties,
-																									CString::mComma)),
+																							relevantProperties.hasValue() ?
+																									CString(*relevantProperties,
+																											CString::mComma) :
+																									CString::mEmpty),
 																					TableColumnAndValue(
 																							mKeysSelectorTableColumn,
 																							keysSelector),
@@ -1621,17 +1635,21 @@ class CIndexesTable {
 													relevantProperties =
 															relevantProperties.filtered(CString::isNotEmpty);
 
+													OV<TArray<CString> >	relevantPropertiesUse =
+																					!relevantProperties.isEmpty() ?
+																							OV<TArray<CString> >(
+																									relevantProperties) :
+																							OV<TArray<CString> >();
+
 													// Process results
 													indexInfo->setValue(
 															IndexInfo(*resultsRow.getText(mTypeTableColumn),
-																	relevantProperties,
-																	*resultsRow.getText(
-																			mKeysSelectorTableColumn),
+																	relevantPropertiesUse,
+																	*resultsRow.getText(mKeysSelectorTableColumn),
 																	*CJSON::dictionaryFrom(
 																			*resultsRow.getBlob(
 																					mKeysSelectorInfoTableColumn)),
-																	*resultsRow.getUInt32(
-																			mLastRevisionTableColumn)));
+																	*resultsRow.getUInt32(mLastRevisionTableColumn)));
 
 													return OV<SError>();
 												}
@@ -2818,7 +2836,7 @@ TVResult<SValue> CMDSSQLiteDatabaseManager::associationSum(const I<CMDSAssociati
 
 //----------------------------------------------------------------------------------------------------------------------
 UInt32 CMDSSQLiteDatabaseManager::cacheRegister(const CString& name, const CString& documentType,
-		const TArray<CString>& relevantProperties, const CacheValueInfos& cacheValueInfos)
+		const OV<TArray<CString> >& relevantProperties, const CacheValueInfos& cacheValueInfos)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get current info
@@ -2950,7 +2968,7 @@ void CMDSSQLiteDatabaseManager::cacheUpdate(const CString& name, const OV<ValueI
 
 //----------------------------------------------------------------------------------------------------------------------
 UInt32 CMDSSQLiteDatabaseManager::collectionRegister(const CString& name, const CString& documentType,
-		const TArray<CString>& relevantProperties, const CString& isIncludedSelector,
+		const OV<TArray<CString> >& relevantProperties, const CString& isIncludedSelector,
 		const CDictionary& isIncludedSelectorInfo, bool isUpToDate)
 //----------------------------------------------------------------------------------------------------------------------
 {
@@ -3277,7 +3295,8 @@ CMDSSQLiteDatabaseManager::DocumentAttachmentRemoveInfo CMDSSQLiteDatabaseManage
 
 //----------------------------------------------------------------------------------------------------------------------
 UInt32 CMDSSQLiteDatabaseManager::indexRegister(const CString& name, const CString& documentType,
-		const TArray<CString>& relevantProperties, const CString& keysSelector, const CDictionary& keysSelectorInfo)
+		const OV<TArray<CString> >& relevantProperties, const CString& keysSelector,
+		const CDictionary& keysSelectorInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Get current info
