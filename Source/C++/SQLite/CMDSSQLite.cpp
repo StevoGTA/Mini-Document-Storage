@@ -337,12 +337,12 @@ class CMDSSQLite::Internals {
 						void									notifyRemoved(const CString& documentID)
 																	{
 																		// Check if anybody is listening
-																		CMDSDocumentStorage::DocumentRemovedInfos
-																				documentRemovedInfos =
+																		CMDSDocumentStorage::DocumentRemovedCallbacks
+																				documentRemovedCallbacks =
 																						mInternals.mDocumentStorage
-																								.documentRemovedInfos(
+																								.documentRemovedCallbacks(
 																										mDocumentType);
-																		if (documentRemovedInfos.isEmpty())
+																		if (documentRemovedCallbacks.isEmpty())
 																			return;
 
 																		// Create document
@@ -353,9 +353,9 @@ class CMDSSQLite::Internals {
 																												.mDocumentStorage);
 
 																		// Call document removed procs
-																		for (TArray<CMDSDocument::RemovedInfo>::Iterator
+																		for (TArray<CMDSDocument::RemovedCallback>::Iterator
 																						iterator =
-																								documentRemovedInfos
+																								documentRemovedCallbacks
 																										.getIterator();
 																				iterator; iterator++)
 																			// Call proc
@@ -1227,11 +1227,11 @@ class CMDSSQLite::Internals {
 															} else if (documentBacking.hasReference()) {
 																// Call document removed procs - before any removal
 																//	work so the document is still readable
-																DocumentRemovedInfos	documentRemovedInfos =
+																DocumentRemovedCallbacks	documentRemovedCallbacks =
 																								documentStorage
-																										.documentRemovedInfos(
+																										.documentRemovedCallbacks(
 																												documentType);
-																if (!documentRemovedInfos.isEmpty()) {
+																if (!documentRemovedCallbacks.isEmpty()) {
 																	// Create document
 																	I<CMDSDocument>	document =
 																							documentInfo.create(
@@ -1239,9 +1239,9 @@ class CMDSSQLite::Internals {
 																									documentStorage);
 
 																	// Call document removed procs
-																	for (TArray<CMDSDocument::RemovedInfo>::Iterator
+																	for (TArray<CMDSDocument::RemovedCallback>::Iterator
 																					iterator =
-																							documentRemovedInfos
+																							documentRemovedCallbacks
 																									.getIterator();
 																			iterator; iterator++)
 																		// Call proc
@@ -2299,7 +2299,7 @@ TVResult<CMDSDocument::AttachmentInfo> CMDSSQLite::documentAttachmentAdd(const C
 														mInternals->mDatabaseManager);
 
 		// Call document attachment created procs
-		if (!documentAttachmentCreatedInfos(documentType).isEmpty())
+		if (!documentAttachmentCreatedCallbacks(documentType).isEmpty())
 			// Create document and notify
 			notifyDocumentAttachmentCreated(documentCreateInfo(documentType).create(documentID, *this),
 					attachmentInfo.getID(), attachmentInfo);
@@ -2450,7 +2450,7 @@ TVResult<OV<UInt32> > CMDSSQLite::documentAttachmentUpdate(const CString& docume
 									updatedContent, mInternals->mDatabaseManager);
 
 		// Call document attachment updated procs
-		if (!documentAttachmentUpdatedInfos(documentType).isEmpty()) {
+		if (!documentAttachmentUpdatedCallbacks(documentType).isEmpty()) {
 			// Note the attachment as it now stands
 					CMDSDocument::AttachmentInfoByID	updatedAttachmentInfoByID =
 																(*documentBacking)->getDocumentAttachmentInfoByID();
@@ -2518,7 +2518,7 @@ OV<SError> CMDSSQLite::documentAttachmentRemove(const CString& documentType, con
 		(*documentBacking)->attachmentRemove(documentType, attachmentID, mInternals->mDatabaseManager);
 
 		// Call document attachment removed procs
-		if (!documentAttachmentRemovedInfos(documentType).isEmpty())
+		if (!documentAttachmentRemovedCallbacks(documentType).isEmpty())
 			// Create document and notify
 			notifyDocumentAttachmentRemoved(documentCreateInfo(documentType).create(documentID, *this), attachmentID);
 	}

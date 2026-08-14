@@ -9,6 +9,8 @@
 #include "TMDSCache.h"
 #include "TResult.h"
 
+class CNotificationCenter;
+
 //----------------------------------------------------------------------------------------------------------------------
 // MARK: CMDSDocumentStorage
 
@@ -79,12 +81,12 @@ class CMDSDocumentStorage {
 	typedef	TVResult<TArray<CMDSAssociation::Item> >			AssociationItemsResult;
 	typedef	TVResult<CMDSDocument::AttachmentInfo>				DocumentAttachmentInfoResult;
 	typedef	TVResult<CMDSDocument::AttachmentInfoByID>			DocumentAttachmentInfoByIDResult;
-	typedef	TArray<CMDSDocument::CreatedInfo>					DocumentCreatedInfos;
-	typedef	TArray<CMDSDocument::UpdatedInfo>					DocumentUpdatedInfos;
-	typedef	TArray<CMDSDocument::RemovedInfo>					DocumentRemovedInfos;
-	typedef	TArray<CMDSDocument::AttachmentCreatedInfo>			DocumentAttachmentCreatedInfos;
-	typedef	TArray<CMDSDocument::AttachmentUpdatedInfo>			DocumentAttachmentUpdatedInfos;
-	typedef	TArray<CMDSDocument::AttachmentRemovedInfo>			DocumentAttachmentRemovedInfos;
+	typedef	TArray<CMDSDocument::CreatedCallback>				DocumentCreatedCallbacks;
+	typedef	TArray<CMDSDocument::UpdatedCallback>				DocumentUpdatedCallbacks;
+	typedef	TArray<CMDSDocument::RemovedCallback>				DocumentRemovedCallbacks;
+	typedef	TArray<CMDSDocument::AttachmentCreatedCallback>		DocumentAttachmentCreatedCallbacks;
+	typedef	TArray<CMDSDocument::AttachmentUpdatedCallback>		DocumentAttachmentUpdatedCallbacks;
+	typedef	TArray<CMDSDocument::AttachmentRemovedCallback>		DocumentAttachmentRemovedCallbacks;
 	typedef	TVResult<TArray<CMDSDocument::CreateResultInfo> >	DocumentCreateResultInfosResult;
 	typedef	CMDSDocument::IsIncludedPerformer					DocumentIsIncludedPerformer;
 	typedef	CMDSDocument::KeysPerformer							DocumentKeysPerformer;
@@ -314,43 +316,61 @@ class CMDSDocumentStorage {
 																	const CMDSDocument::Info& documentInfo);
 				const	CMDSDocument::Info&					documentCreateInfo(const CString& documentType) const;
 
-						void								registerDocumentCreatedInfo(
+						void								registerDocumentCreatedCallback(
 																	const CMDSDocument::Info& documentInfo,
-																	const CMDSDocument::CreatedInfo&
-																			documentCreatedInfo);
-						DocumentCreatedInfos				documentCreatedInfos(const CString& documentType) const;
+																	const CMDSDocument::CreatedCallback&
+																			documentCreatedCallback);
+						void								registerDocumentCreatedNotification(
+																	const CMDSDocument::Info& documentInfo,
+																	CNotificationCenter& notificationCenter);
+						DocumentCreatedCallbacks			documentCreatedCallbacks(const CString& documentType) const;
 
-						void								registerDocumentUpdatedInfo(
+						void								registerDocumentUpdatedCallback(
 																	const CMDSDocument::Info& documentInfo,
-																	const CMDSDocument::UpdatedInfo&
-																			documentUpdatedInfo);
-						DocumentUpdatedInfos				documentUpdatedInfos(const CString& documentType) const;
+																	const CMDSDocument::UpdatedCallback&
+																			documentUpdatedCallback);
+						void								registerDocumentUpdatedNotification(
+																	const CMDSDocument::Info& documentInfo,
+																	CNotificationCenter& notificationCenter);
+						DocumentUpdatedCallbacks			documentUpdatedCallbacks(const CString& documentType) const;
 
-						void								registerDocumentRemovedInfo(
+						void								registerDocumentRemovedCallback(
 																	const CMDSDocument::Info& documentInfo,
-																	const CMDSDocument::RemovedInfo&
-																			documentRemovedInfo);
-						DocumentRemovedInfos				documentRemovedInfos(const CString& documentType) const;
+																	const CMDSDocument::RemovedCallback&
+																			documentRemovedCallback);
+						void								registerDocumentRemovedNotification(
+																	const CMDSDocument::Info& documentInfo,
+																	CNotificationCenter& notificationCenter);
+						DocumentRemovedCallbacks			documentRemovedCallbacks(const CString& documentType) const;
 
-						void								registerDocumentAttachmentCreatedInfo(
+						void								registerDocumentAttachmentCreatedCallback(
 																	const CMDSDocument::Info& documentInfo,
-																	const CMDSDocument::AttachmentCreatedInfo&
-																			documentAttachmentCreatedInfo);
-						DocumentAttachmentCreatedInfos		documentAttachmentCreatedInfos(
+																	const CMDSDocument::AttachmentCreatedCallback&
+																			documentAttachmentCreatedCallback);
+						void								registerDocumentAttachmentCreatedNotification(
+																	const CMDSDocument::Info& documentInfo,
+																	CNotificationCenter& notificationCenter);
+						DocumentAttachmentCreatedCallbacks	documentAttachmentCreatedCallbacks(
 																	const CString& documentType) const;
 
-						void								registerDocumentAttachmentUpdatedInfo(
+						void								registerDocumentAttachmentUpdatedCallback(
 																	const CMDSDocument::Info& documentInfo,
-																	const CMDSDocument::AttachmentUpdatedInfo&
-																			documentAttachmentUpdatedInfo);
-						DocumentAttachmentUpdatedInfos		documentAttachmentUpdatedInfos(
+																	const CMDSDocument::AttachmentUpdatedCallback&
+																			documentAttachmentUpdatedCallback);
+						void								registerDocumentAttachmentUpdatedNotification(
+																	const CMDSDocument::Info& documentInfo,
+																	CNotificationCenter& notificationCenter);
+						DocumentAttachmentUpdatedCallbacks	documentAttachmentUpdatedCallbacks(
 																	const CString& documentType) const;
 
-						void								registerDocumentAttachmentRemovedInfo(
+						void								registerDocumentAttachmentRemovedCallback(
 																	const CMDSDocument::Info& documentInfo,
-																	const CMDSDocument::AttachmentRemovedInfo&
-																			documentAttachmentRemovedInfo);
-						DocumentAttachmentRemovedInfos		documentAttachmentRemovedInfos(
+																	const CMDSDocument::AttachmentRemovedCallback&
+																			documentAttachmentRemovedCallback);
+						void								registerDocumentAttachmentRemovedNotification(
+																	const CMDSDocument::Info& documentInfo,
+																	CNotificationCenter& notificationCenter);
+						DocumentAttachmentRemovedCallbacks	documentAttachmentRemovedCallbacks(
 																	const CString& documentType) const;
 
 						void								registerDocumentIsIncludedPerformerInfos(

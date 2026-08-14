@@ -6,6 +6,7 @@
 
 #include "CDictionary.h"
 #include "CHashable.h"
+#include "CNotificationCenter.h"
 #include "TimeAndDate.h"
 #include "TResult.h"
 #include "TWrappers.h"
@@ -16,6 +17,60 @@ class CMDSDocumentStorage;
 // MARK: CMDSDocument
 
 class CMDSDocument : public CHashable {
+	// Notifications
+	public:
+		/*
+			Sent when a document has been created.
+				sender is VSender<I<CMDSDocument> >
+		*/
+		static	const	CString	mCreatedNotificationName;
+
+		/*
+			Sent when a document has been updated.
+				sender is VSender<I<CMDSDocument> >
+				info contains the updated, removed, and changed property names
+		*/
+		static	const	CString	mUpdatedNotificationName;
+
+		/*
+			Sent when a document has been removed.
+				sender is VSender<I<CMDSDocument> >
+		*/
+		static	const	CString	mRemovedNotificationName;
+
+		/*
+			Sent when an attachment has been added to a document.
+				sender is VSender<I<CMDSDocument> >
+				info contains the attachment id and info
+		*/
+		static	const	CString	mAttachmentCreatedNotificationName;
+
+		/*
+			Sent when an attachment on a document has been updated.
+				sender is VSender<I<CMDSDocument> >
+				info contains the attachment id and info
+		*/
+		static	const	CString	mAttachmentUpdatedNotificationName;
+
+		/*
+			Sent when an attachment has been removed from a document.
+				sender is VSender<I<CMDSDocument> >
+				info contains the attachment id
+		*/
+		static	const	CString	mAttachmentRemovedNotificationName;
+
+		// Notificaton methods
+		struct AttachmentInfo;
+
+		static	const	I<CMDSDocument>&	notificationGetDocument(const OR<CNotificationCenter::Sender>& sender);
+
+		static			TSet<CString>		notificationGetUpdatedProperties(const CDictionary& info);
+		static			TSet<CString>		notificationGetRemovedProperties(const CDictionary& info);
+		static			TSet<CString>		notificationGetChangedProperties(const CDictionary& info);
+
+		static	const	CString&			notificationGetAttachmentID(const CDictionary& info);
+		static			AttachmentInfo		notificationGetAttachmentInfo(const CDictionary& info);
+
 	// AttachmentInfo
 	public:
 		struct AttachmentInfo {
@@ -49,9 +104,6 @@ class CMDSDocument : public CHashable {
 				UInt32		mRevision;
 				CDictionary	mInfo;
 		};
-
-	// AttachmentInfoByID
-	public:
 		typedef	TDictionary<AttachmentInfo>	AttachmentInfoByID;
 
 	// RevisionInfo
@@ -264,9 +316,9 @@ class CMDSDocument : public CHashable {
 				bool			mActive;
 		};
 
-	// CreatedInfo
+	// CreatedCallback
 	public:
-		struct CreatedInfo {
+		struct CreatedCallback {
 			// Procs
 			public:
 				typedef	void	(*Proc)(const I<CMDSDocument>& document, void* userData);
@@ -274,8 +326,10 @@ class CMDSDocument : public CHashable {
 			// Methods
 			public:
 						// Lifecycle methods
-						CreatedInfo(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
-						CreatedInfo(const CreatedInfo& other) : mProc(other.mProc), mUserData(other.mUserData) {}
+						CreatedCallback(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
+						CreatedCallback(const CreatedCallback& other) :
+							mProc(other.mProc), mUserData(other.mUserData)
+							{}
 
 						// Instance methods
 				void	notify(const I<CMDSDocument>& document) const
@@ -287,9 +341,9 @@ class CMDSDocument : public CHashable {
 				void*	mUserData;
 		};
 
-	// UpdatedInfo
+	// UpdatedCallback
 	public:
-		struct UpdatedInfo {
+		struct UpdatedCallback {
 			// Procs
 			public:
 				typedef	void	(*Proc)(const I<CMDSDocument>& document, const TSet<CString>& updatedProperties,
@@ -299,8 +353,10 @@ class CMDSDocument : public CHashable {
 			// Methods
 			public:
 						// Lifecycle methods
-						UpdatedInfo(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
-						UpdatedInfo(const UpdatedInfo& other) : mProc(other.mProc), mUserData(other.mUserData) {}
+						UpdatedCallback(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
+						UpdatedCallback(const UpdatedCallback& other) :
+							mProc(other.mProc), mUserData(other.mUserData)
+							{}
 
 						// Instance methods
 				void	notify(const I<CMDSDocument>& document, const TSet<CString>& updatedProperties,
@@ -313,9 +369,9 @@ class CMDSDocument : public CHashable {
 				void*	mUserData;
 		};
 
-	// RemovedInfo
+	// RemovedCallback
 	public:
-		struct RemovedInfo {
+		struct RemovedCallback {
 			// Procs
 			public:
 				typedef	void	(*Proc)(const I<CMDSDocument>& document, void* userData);
@@ -323,8 +379,10 @@ class CMDSDocument : public CHashable {
 			// Methods
 			public:
 						// Lifecycle methods
-						RemovedInfo(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
-						RemovedInfo(const RemovedInfo& other) : mProc(other.mProc), mUserData(other.mUserData) {}
+						RemovedCallback(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
+						RemovedCallback(const RemovedCallback& other) :
+							mProc(other.mProc), mUserData(other.mUserData)
+							{}
 
 						// Instance methods
 				void	notify(const I<CMDSDocument>& document) const
@@ -336,9 +394,9 @@ class CMDSDocument : public CHashable {
 				void*	mUserData;
 		};
 
-	// AttachmentCreatedInfo
+	// AttachmentCreatedCallback
 	public:
-		struct AttachmentCreatedInfo {
+		struct AttachmentCreatedCallback {
 			// Procs
 			public:
 				typedef	void	(*Proc)(const I<CMDSDocument>& document, const CString& attachmentID,
@@ -347,8 +405,8 @@ class CMDSDocument : public CHashable {
 			// Methods
 			public:
 						// Lifecycle methods
-						AttachmentCreatedInfo(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
-						AttachmentCreatedInfo(const AttachmentCreatedInfo& other) :
+						AttachmentCreatedCallback(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
+						AttachmentCreatedCallback(const AttachmentCreatedCallback& other) :
 							mProc(other.mProc), mUserData(other.mUserData)
 							{}
 
@@ -363,9 +421,9 @@ class CMDSDocument : public CHashable {
 				void*	mUserData;
 		};
 
-	// AttachmentUpdatedInfo
+	// AttachmentUpdatedCallback
 	public:
-		struct AttachmentUpdatedInfo {
+		struct AttachmentUpdatedCallback {
 			// Procs
 			public:
 				typedef	void	(*Proc)(const I<CMDSDocument>& document, const CString& attachmentID,
@@ -374,8 +432,8 @@ class CMDSDocument : public CHashable {
 			// Methods
 			public:
 						// Lifecycle methods
-						AttachmentUpdatedInfo(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
-						AttachmentUpdatedInfo(const AttachmentUpdatedInfo& other) :
+						AttachmentUpdatedCallback(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
+						AttachmentUpdatedCallback(const AttachmentUpdatedCallback& other) :
 							mProc(other.mProc), mUserData(other.mUserData)
 							{}
 
@@ -390,9 +448,9 @@ class CMDSDocument : public CHashable {
 				void*	mUserData;
 		};
 
-	// AttachmentRemovedInfo
+	// AttachmentRemovedCallback
 	public:
-		struct AttachmentRemovedInfo {
+		struct AttachmentRemovedCallback {
 			// Procs
 			public:
 				typedef	void	(*Proc)(const I<CMDSDocument>& document, const CString& attachmentID, void* userData);
@@ -400,8 +458,8 @@ class CMDSDocument : public CHashable {
 			// Methods
 			public:
 						// Lifecycle methods
-						AttachmentRemovedInfo(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
-						AttachmentRemovedInfo(const AttachmentRemovedInfo& other) :
+						AttachmentRemovedCallback(Proc proc, void* userData) : mProc(proc), mUserData(userData) {}
+						AttachmentRemovedCallback(const AttachmentRemovedCallback& other) :
 							mProc(other.mProc), mUserData(other.mUserData)
 							{}
 
@@ -447,6 +505,7 @@ class CMDSDocument : public CHashable {
 				TNSet<CString>	mUpdatedProperties;
 				TNSet<CString>	mRemovedProperties;
 		};
+		typedef	TNArray<UpdatedNotificationInfo>	UpdatedNotificationInfos;
 
 	// AttachmentNotificationInfo
 	public:
@@ -473,6 +532,7 @@ class CMDSDocument : public CHashable {
 				I<CMDSDocument>	mDocument;
 				AttachmentInfo	mAttachmentInfo;
 		};
+		typedef	TNArray<AttachmentNotificationInfo>	AttachmentNotificationInfos;
 
 	// AttachmentRemovedNotificationInfo
 	public:
@@ -500,11 +560,6 @@ class CMDSDocument : public CHashable {
 				I<CMDSDocument>	mDocument;
 				CString			mAttachmentID;
 		};
-
-	// Notification collections
-	public:
-		typedef	TNArray<UpdatedNotificationInfo>				UpdatedNotificationInfos;
-		typedef	TNArray<AttachmentNotificationInfo>			AttachmentNotificationInfos;
 		typedef	TNArray<AttachmentRemovedNotificationInfo>	AttachmentRemovedNotificationInfos;
 
 	// IsIncludedPerformer

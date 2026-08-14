@@ -1886,7 +1886,7 @@ TVResult<CMDSDocument::AttachmentInfo> CMDSEphemeral::documentAttachmentAdd(cons
 			return TVResult<CMDSDocument::AttachmentInfo>(getUnknownDocumentIDError(documentID));
 
 		// Call document attachment created procs - outside mDocumentMapsLock
-		if (!documentAttachmentCreatedInfos(documentType).isEmpty())
+		if (!documentAttachmentCreatedCallbacks(documentType).isEmpty())
 			// Create document and notify
 			notifyDocumentAttachmentCreated(documentCreateInfo(documentType).create(documentID, *this),
 					documentAttachmentInfo->getID(), *documentAttachmentInfo);
@@ -2044,7 +2044,7 @@ TVResult<OV<UInt32> > CMDSEphemeral::documentAttachmentUpdate(const CString& doc
 		mInternals->mDocumentMapsLock.unlockForWriting();
 
 		// Call document attachment updated procs - outside mDocumentMapsLock
-		if (!documentAttachmentUpdatedInfos(documentType).isEmpty()) {
+		if (!documentAttachmentUpdatedCallbacks(documentType).isEmpty()) {
 			// Note the attachment as it now stands - retrieve the map into a local as it is returned by value
 					CMDSDocument::AttachmentInfoByID	attachmentInfoByID =
 																(*documentBacking)->getDocumentAttachmentInfoByID();
@@ -2117,7 +2117,7 @@ OV<SError> CMDSEphemeral::documentAttachmentRemove(const CString& documentType, 
 		mInternals->mDocumentMapsLock.unlockForWriting();
 
 		// Call document attachment removed procs - outside mDocumentMapsLock
-		if (!documentAttachmentRemovedInfos(documentType).isEmpty())
+		if (!documentAttachmentRemovedCallbacks(documentType).isEmpty())
 			// Create document and notify
 			notifyDocumentAttachmentRemoved(documentCreateInfo(documentType).create(documentID, *this), attachmentID);
 
@@ -2394,7 +2394,7 @@ OV<SError> CMDSEphemeral::batch(BatchProc batchProc, void* userData)
 					anyDocumentRemoved = true;
 
 					// Call document removed procs - before any removal work, and outside mDocumentMapsLock
-					if (!documentRemovedInfos(documentType).isEmpty())
+					if (!documentRemovedCallbacks(documentType).isEmpty())
 						// Create document and notify
 						notifyDocumentRemoved(documentInfo.create(documentID, *this));
 
@@ -2949,7 +2949,7 @@ TVResult<TArray<CMDSDocument::FullInfo> > CMDSEphemeral::documentUpdate(const CS
 			removedDocumentIDs += iterator->getDocumentID();
 
 			// Call document removed procs - before any removal work, and outside mDocumentMapsLock
-			if (!documentRemovedInfos(documentType).isEmpty()) {
+			if (!documentRemovedCallbacks(documentType).isEmpty()) {
 				// Check that the document backing is actually present
 				mInternals->mDocumentMapsLock.lockForReading();
 				bool	hasDocumentBacking =
