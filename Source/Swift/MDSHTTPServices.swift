@@ -267,7 +267,7 @@ class MDSHTTPServices {
 					let	info = try JSONSerialization.jsonObject(with: responseData!, options: []) as? [String : String]
 					if let error = info?["error"] {
 						// Received error
-						return (statusCode == HTTPEndpointStatus.notFound.rawValue) ?
+						return (HTTPEndpointStatus(code: statusCode) == .notFound) ?
 								MDSError.notFound(error: error) : MDSError.badRequest(error: error)
 					} else {
 						// Nope
@@ -314,7 +314,7 @@ class MDSHTTPServices {
 					} else {
 						// Unknown response status
 						self.completionProc(nil,
-								MDSError.unknownResponseStatus(status: HTTPEndpointStatus(rawValue: statusCode)!))
+								MDSError.unknownResponseStatus(status: HTTPEndpointStatus(code: statusCode)))
 					}
 				} else {
 					// No response
@@ -356,14 +356,14 @@ class MDSHTTPServices {
 						completionProc(nil, nil)
 					} else if (400..<500).contains(statusCode) {
 						// Error
-						self.completionProc(nil, MDSError.failed(status: HTTPEndpointStatus(rawValue: statusCode)!))
+						self.completionProc(nil, MDSError.failed(status: HTTPEndpointStatus(code: statusCode)))
 					} else if statusCode >= 500 {
 						// Internal error
 						self.completionProc(nil, MDSError.internalError)
 					} else {
 						// Unknown response status
 						self.completionProc(nil,
-								MDSError.unknownResponseStatus(status: HTTPEndpointStatus(rawValue: statusCode)!))
+								MDSError.unknownResponseStatus(status: HTTPEndpointStatus(code: statusCode)))
 					}
 				} else {
 					// Error
@@ -406,14 +406,14 @@ class MDSHTTPServices {
 					} else if (400..<500).contains(statusCode) {
 						// Error
 						self.completionWithCountProc(nil,
-								MDSError.failed(status: HTTPEndpointStatus(rawValue: statusCode)!))
+								MDSError.failed(status: HTTPEndpointStatus(code: statusCode)))
 					} else if statusCode >= 500 {
 						// Internal error
 						self.completionWithCountProc(nil, MDSError.internalError)
 					} else {
 						// Unknown response status
 						self.completionWithCountProc(nil,
-								MDSError.unknownResponseStatus(status: HTTPEndpointStatus(rawValue: statusCode)!))
+								MDSError.unknownResponseStatus(status: HTTPEndpointStatus(code: statusCode)))
 					}
 				} else {
 					// Error
@@ -450,14 +450,14 @@ class MDSHTTPServices {
 					} else if (400..<500).contains(statusCode) {
 						// Error
 						self.completionWithUpToDateProc(nil,
-								MDSError.failed(status: HTTPEndpointStatus(rawValue: statusCode)!))
+								MDSError.failed(status: HTTPEndpointStatus(code: statusCode)))
 					} else if statusCode >= 500 {
 						// Internal error
 						self.completionWithUpToDateProc(nil, MDSError.internalError)
 					} else {
 						// Unknown response status
 						self.completionWithUpToDateProc(nil,
-								MDSError.unknownResponseStatus(status: HTTPEndpointStatus(rawValue: statusCode)!))
+								MDSError.unknownResponseStatus(status: HTTPEndpointStatus(code: statusCode)))
 					}
 				} else {
 					// Error
@@ -542,7 +542,7 @@ class MDSHTTPServices {
 						localError = MDSError.internalError
 					} else {
 						// Unknown response status
-						localError = MDSError.unknownResponseStatus(status: HTTPEndpointStatus(rawValue: statusCode)!)
+						localError = MDSError.unknownResponseStatus(status: HTTPEndpointStatus(code: statusCode))
 					}
 				} else {
 					// No response
@@ -594,7 +594,7 @@ class MDSHTTPServices {
 								self.completionWithUpToDateAndCountProc!(nil, nil,
 										MDSError.badRequest(error: "Missing content range size"))
 							}
-						} else if response != nil, HTTPEndpointStatus(rawValue: response!.statusCode)! == .conflict {
+						} else if response != nil, HTTPEndpointStatus(code: response!.statusCode) == .conflict {
 							// Not up to date
 							self.completionWithUpToDateAndCountProc!(false, nil, nil)
 						} else {
