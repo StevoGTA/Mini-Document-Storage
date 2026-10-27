@@ -903,12 +903,13 @@ static	SValue			sIntegerValueForProperty(const CString& documentType, const I<CM
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-- (BOOL) documentGetCountDocumentType:(NSString*) documentType outCount:(NSUInteger*) outCount error:(NSError**) error
+- (BOOL) documentGetCountDocumentType:(NSString*) documentType activeOnly:(BOOL) activeOnly
+		outCount:(NSUInteger*) outCount error:(NSError**) error
 {
 	// Get count
 	TVResult<UInt32>	count =
 								self.documentStorageServer->documentGetCount(
-										CString((__bridge CFStringRef) documentType));
+										CString((__bridge CFStringRef) documentType), activeOnly);
 	if (count.hasError()) {
 		// Error
 		*error = [self errorFrom:count.getError()];

@@ -446,7 +446,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentGetCount(for documentType :String) throws -> Int {
+	public func documentGetCount(for documentType :String, activeOnly :Bool) throws -> Int {
 		// Validate
 		guard self.databaseManager.documentTypeIsKnown(documentType) else {
 			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
@@ -455,7 +455,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			throw MDSDocumentStorageError.illegalInBatch
 		}
 
-		return self.databaseManager.documentCount(for: documentType)
+		return self.databaseManager.documentCount(for: documentType, activeOnly: activeOnly)
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

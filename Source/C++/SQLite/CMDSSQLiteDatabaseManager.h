@@ -592,7 +592,7 @@ class CMDSSQLiteDatabaseManager {
 															const OV<UniversalTime>& creationUniversalTime,
 															const OV<UniversalTime>& modificationUniversalTime,
 															const CDictionary& propertyMap);
-				UInt32								documentCount(const CString& documentType);
+				UInt32								documentCount(const CString& documentType, bool activeOnly);
 				bool								documentTypeIsKnown(const CString& documentType);
 				void								documentInfoIterate(const CString& documentType,
 															const TArray<CString>& documentIDs,

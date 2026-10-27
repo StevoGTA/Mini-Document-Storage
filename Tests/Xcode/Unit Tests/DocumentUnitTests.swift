@@ -225,7 +225,7 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	(count, error) =
 					config.httpEndpointClient.documentGetCount(documentStorageID: UUID().uuidString,
-							documentType: config.defaultDocumentType)
+							documentType: config.defaultDocumentType, activeOnly: true)
 
 		// Evaluate results
 		XCTAssertNil(count, "received count")
@@ -253,7 +253,7 @@ class DocumentUnitTests : XCTestCase {
 		// Perform
 		let	(count, error) =
 					config.httpEndpointClient.documentGetCount(documentStorageID: config.documentStorageID,
-							documentType: documentType)
+							documentType: documentType, activeOnly: true)
 
 		// Evaluate results
 		XCTAssertNil(count, "received count")

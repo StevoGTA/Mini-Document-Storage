@@ -3108,11 +3108,15 @@ CMDSSQLiteDatabaseManager::DocumentCreateInfo CMDSSQLiteDatabaseManager::documen
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-UInt32 CMDSSQLiteDatabaseManager::documentCount(const CString& documentType)
+UInt32 CMDSSQLiteDatabaseManager::documentCount(const CString& documentType, bool activeOnly)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	// Return count
-	return mInternals->getDocumentTables(documentType).getInfoTable().count();
+	// Setup
+	CSQLiteTable&	infoTable = mInternals->getDocumentTables(documentType).getInfoTable();
+
+	return activeOnly ?
+			infoTable.count(CSQLiteWhere(CDocumentTypeInfoTable::mActiveTableColumn, SSQLiteValue((UInt32) 1))) :
+			infoTable.count();
 }
 
 //----------------------------------------------------------------------------------------------------------------------

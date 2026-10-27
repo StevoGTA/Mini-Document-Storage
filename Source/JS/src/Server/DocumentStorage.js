@@ -386,7 +386,7 @@ module.exports = class DocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentGetCount(documentStorageID, documentType) {
+	async documentGetCount(documentStorageID, documentType, activeOnly) {
 		// Setup
 		let	statementPerformer = this.statementPerformerProc();
 		statementPerformer.use(documentStorageID);
@@ -398,7 +398,10 @@ module.exports = class DocumentStorage {
 			// Do it
 			let	{results} =
 						await statementPerformer.batch(true,
-								() => { return internals.documents.getCount(statementPerformer, documentType); });
+								() => {
+									return internals.documents.getCount(statementPerformer, documentType,
+											activeOnly);
+								});
 			
 			return results;
 		} catch (error) {

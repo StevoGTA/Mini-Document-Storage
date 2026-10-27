@@ -1593,19 +1593,34 @@ TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSEphemeral::documentCreate(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TVResult<UInt32> CMDSEphemeral::documentGetCount(const CString& documentType) const
+TVResult<UInt32> CMDSEphemeral::documentGetCount(const CString& documentType, bool activeOnly) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Validate
-	mInternals->mDocumentMapsLock.lockForReading();
-	const	OR<TNSet<CString> >	documentIDs = mInternals->mDocumentIDsByDocumentType.get(documentType);
-	mInternals->mDocumentMapsLock.unlockForReading();
-	if (!documentIDs.hasReference())
-		return TVResult<UInt32>(getUnknownDocumentTypeError(documentType));
 	if (mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()].hasReference())
 		return TVResult<UInt32>(getIllegalInBatchError());
 
-	return TVResult<UInt32>(documentIDs->getCount());
+	// Count documents
+	mInternals->mDocumentMapsLock.lockForReading();
+	const	OR<TNSet<CString> >	documentIDs = mInternals->mDocumentIDsByDocumentType.get(documentType);
+			UInt32				count = 0;
+	if (documentIDs.hasReference()) {
+		// Check active only
+		if (activeOnly) {
+			// Count active documents
+			for (TSet<CString>::Iterator iterator = documentIDs->getIterator(); iterator; iterator++)
+				// Update count
+				count += (*mInternals->mDocumentBackingByDocumentID.get(*iterator))->isActive() ? 1 : 0;
+		} else
+			// All documents
+			count = documentIDs->getCount();
+	}
+	mInternals->mDocumentMapsLock.unlockForReading();
+
+	if (!documentIDs.hasReference())
+		return TVResult<UInt32>(getUnknownDocumentTypeError(documentType));
+
+	return TVResult<UInt32>(count);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

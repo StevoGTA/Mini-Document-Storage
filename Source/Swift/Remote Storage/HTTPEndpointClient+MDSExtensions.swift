@@ -864,14 +864,14 @@ extension HTTPEndpointClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentGetCount(documentStorageID :String, documentType :String, authorization :String? = nil) ->
-			(count :Int?, error :Error?) {
+	func documentGetCount(documentStorageID :String, documentType :String, activeOnly :Bool,
+			authorization :String? = nil) -> (count :Int?, error :Error?) {
 		// Perform
 		return DispatchQueue.performBlocking() { completionProc in
 			// Queue
 			self.queue(
 					MDSHTTPServices.httpEndpointRequestForDocumentGetCount(documentStorageID: documentStorageID,
-							documentType: documentType, authorization: authorization))
+							documentType: documentType, activeOnly: activeOnly, authorization: authorization))
 					{ completionProc(($0, $1)) }
 		}
 	}

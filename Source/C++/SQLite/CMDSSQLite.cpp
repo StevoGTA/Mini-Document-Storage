@@ -2024,7 +2024,7 @@ TVResult<TArray<CMDSDocument::CreateResultInfo> > CMDSSQLite::documentCreate(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TVResult<UInt32> CMDSSQLite::documentGetCount(const CString& documentType) const
+TVResult<UInt32> CMDSSQLite::documentGetCount(const CString& documentType, bool activeOnly) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Validate
@@ -2033,7 +2033,7 @@ TVResult<UInt32> CMDSSQLite::documentGetCount(const CString& documentType) const
 	if (mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()].hasReference())
 		return TVResult<UInt32>(getIllegalInBatchError());
 
-	return TVResult<UInt32>(mInternals->mDatabaseManager.documentCount(documentType));
+	return TVResult<UInt32>(mInternals->mDatabaseManager.documentCount(documentType, activeOnly));
 }
 
 //----------------------------------------------------------------------------------------------------------------------

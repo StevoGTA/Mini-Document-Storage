@@ -849,14 +849,18 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getCount(statementPerformer, documentType) {
+	async getCount(statementPerformer, documentType, activeOnly) {
 		// Setup
 		let	tablesInfo = this.tablesInfo(statementPerformer, documentType);
 
 		// Catch errors
 		try {
 			// Get count
-			let	count = await statementPerformer.count(tablesInfo.infoTable);
+			let	count =
+						activeOnly ?
+								await statementPerformer.count(tablesInfo.infoTable,
+										statementPerformer.where(tablesInfo.infoTable.activeTableColumn, 1)) :
+								await statementPerformer.count(tablesInfo.infoTable);
 
 			return [count, null];
 		} catch (error) {

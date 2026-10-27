@@ -1160,7 +1160,8 @@ class MDSHTTPServices {
 	}
 
 	// MARK: - Document Get Count
-	typealias DocumentGetCountEndpointInfo = (documentStorageID :String, documentType :String, authorization :String?)
+	typealias DocumentGetCountEndpointInfo =
+				(documentStorageID :String, documentType :String, activeOnly :Bool, authorization :String?)
 	static	let	documentGetCountEndpoint =
 						BasicHTTPEndpoint<DocumentGetCountEndpointInfo>(method: .head,
 								path: "/v1/document/:documentStorageID/:type")
@@ -1169,17 +1170,20 @@ class MDSHTTPServices {
 									let	documentStorageID = performInfo.pathComponents[2]
 									let	documentType = performInfo.pathComponents[3]
 
-									return (documentStorageID, documentType, performInfo.headers["Authorization"])
+									return (documentStorageID, documentType,
+											(Int(performInfo.queryItemsMap["activeOnly"] as? String) ?? 0) == 1,
+											performInfo.headers["Authorization"])
 								}
 	static func httpEndpointRequestForDocumentGetCount(documentStorageID :String, documentType :String,
-			authorization :String? = nil) -> MDSHeadHTTPEndpointRequest {
+			activeOnly :Bool, authorization :String? = nil) -> MDSHeadHTTPEndpointRequest {
 		// Setup
 		let	documentStorageIDUse = documentStorageID.transformedForPath
 		let	documentTypeUse = documentType.transformedForPath
 		let	headers = (authorization != nil) ? ["Authorization" : authorization!] : [:]
 
 		return MDSHeadHTTPEndpointRequest(method: .head,
-				path: "/v1/document/\(documentStorageIDUse)/\(documentTypeUse)", headers: headers)
+				path: "/v1/document/\(documentStorageIDUse)/\(documentTypeUse)",
+				queryComponents: ["activeOnly": activeOnly ? 1 : 0], headers: headers)
 	}
 
 	// MARK: - Document Get
