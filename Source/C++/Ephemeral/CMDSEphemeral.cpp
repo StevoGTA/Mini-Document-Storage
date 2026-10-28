@@ -1613,6 +1613,9 @@ OV<SError> CMDSEphemeral::documentIterate(const CMDSDocument::Info& documentInfo
 		CMDSDocument::Proc proc, void* procUserData) const
 //----------------------------------------------------------------------------------------------------------------------
 {
+	// Register document create info
+	((CMDSDocumentStorage&) *this).registerDocumentCreateInfo(documentInfo);
+
 	// Setup
 	const	OR<I<Internals::Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
 
@@ -1651,6 +1654,9 @@ OV<SError> CMDSEphemeral::documentIterate(const CMDSDocument::Info& documentInfo
 		CMDSDocument::Proc proc, void* procUserData) const
 //----------------------------------------------------------------------------------------------------------------------
 {
+	// Register document create info
+	((CMDSDocumentStorage&) *this).registerDocumentCreateInfo(documentInfo);
+
 	// Validate
 	const	OR<I<Internals::Batch> >	batch = mInternals->mBatchByThreadRef[CThread::getCurrentRefAsString()];
 	if (batch.hasReference())

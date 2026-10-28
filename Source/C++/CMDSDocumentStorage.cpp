@@ -60,7 +60,7 @@ class CMDSDocumentStorage::Internals {
 								TNDictionary<I<CMDSDocument> >* documentMap)
 							{ documentMap->set(key, document); }
 
-		TNDictionary<CMDSDocument::Info>									mDocumentCreateInfoByDocumentType;
+		TNLockingDictionary<CMDSDocument::Info>								mDocumentCreateInfoByDocumentType;
 		TNLockingArrayDictionary<CMDSDocument::CreatedCallback>				mDocumentCreatedCallbackByDocumentType;
 		TNLockingArrayDictionary<CMDSDocument::UpdatedCallback>				mDocumentUpdatedCallbackByDocumentType;
 		TNLockingArrayDictionary<CMDSDocument::RemovedCallback>				mDocumentRemovedCallbackByDocumentType;
@@ -102,7 +102,7 @@ TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocuments
 		const CMDSDocument& fromDocument, const CMDSDocument::Info& toDocumentInfo)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	// Register
+	// Register document create info
 	registerDocumentCreateInfo(toDocumentInfo);
 
 	// Setup
@@ -125,7 +125,7 @@ TVResult<TArray<I<CMDSDocument> > > CMDSDocumentStorage::associationGetDocuments
 		const CMDSDocument::Info& fromDocumentInfo, const CMDSDocument& toDocument)
 //----------------------------------------------------------------------------------------------------------------------
 {
-	// Register
+	// Register document create info
 	registerDocumentCreateInfo(fromDocumentInfo);
 
 	// Setup
@@ -266,6 +266,10 @@ void CMDSDocumentStorage::registerDocumentCreatedCallback(const CMDSDocument::In
 		const CMDSDocument::CreatedCallback& documentCreatedCallback)
 //----------------------------------------------------------------------------------------------------------------------
 {
+	// Register document create info
+	registerDocumentCreateInfo(documentInfo);
+
+	// Add
 	mInternals->mDocumentCreatedCallbackByDocumentType.add(documentInfo.getDocumentType(), documentCreatedCallback);
 }
 
@@ -288,6 +292,10 @@ void CMDSDocumentStorage::registerDocumentUpdatedCallback(const CMDSDocument::In
 		const CMDSDocument::UpdatedCallback& documentUpdatedCallback)
 //----------------------------------------------------------------------------------------------------------------------
 {
+	// Register document create info
+	registerDocumentCreateInfo(documentInfo);
+
+	// Add
 	mInternals->mDocumentUpdatedCallbackByDocumentType.add(documentInfo.getDocumentType(), documentUpdatedCallback);
 }
 
@@ -310,6 +318,10 @@ void CMDSDocumentStorage::registerDocumentRemovedCallback(const CMDSDocument::In
 		const CMDSDocument::RemovedCallback& documentRemovedCallback)
 //----------------------------------------------------------------------------------------------------------------------
 {
+	// Register document create info
+	registerDocumentCreateInfo(documentInfo);
+
+	// Add
 	mInternals->mDocumentRemovedCallbackByDocumentType.add(documentInfo.getDocumentType(), documentRemovedCallback);
 }
 
@@ -332,6 +344,10 @@ void CMDSDocumentStorage::registerDocumentAttachmentCreatedCallback(const CMDSDo
 		const CMDSDocument::AttachmentCreatedCallback& documentAttachmentCreatedCallback)
 //----------------------------------------------------------------------------------------------------------------------
 {
+	// Register document create info
+	registerDocumentCreateInfo(documentInfo);
+
+	// Add
 	mInternals->mDocumentAttachmentCreatedCallbackByDocumentType.add(documentInfo.getDocumentType(),
 			documentAttachmentCreatedCallback);
 }
@@ -356,6 +372,10 @@ void CMDSDocumentStorage::registerDocumentAttachmentUpdatedCallback(const CMDSDo
 		const CMDSDocument::AttachmentUpdatedCallback& documentAttachmentUpdatedCallback)
 //----------------------------------------------------------------------------------------------------------------------
 {
+	// Register document create info
+	registerDocumentCreateInfo(documentInfo);
+
+	// Add
 	mInternals->mDocumentAttachmentUpdatedCallbackByDocumentType.add(documentInfo.getDocumentType(),
 			documentAttachmentUpdatedCallback);
 }
@@ -380,6 +400,10 @@ void CMDSDocumentStorage::registerDocumentAttachmentRemovedCallback(const CMDSDo
 		const CMDSDocument::AttachmentRemovedCallback& documentAttachmentRemovedCallback)
 //----------------------------------------------------------------------------------------------------------------------
 {
+	// Register document create info
+	registerDocumentCreateInfo(documentInfo);
+
+	// Add
 	mInternals->mDocumentAttachmentRemovedCallbackByDocumentType.add(documentInfo.getDocumentType(),
 			documentAttachmentRemovedCallback);
 }

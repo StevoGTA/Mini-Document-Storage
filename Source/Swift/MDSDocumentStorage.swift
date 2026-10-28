@@ -280,6 +280,9 @@ public extension MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func collectionIterate<T : MDSDocument>(name :String, proc :(_ document : T) -> Void) throws {
+		// Register creation proc
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
+
 		// Iterate collection
 		try collectionIterate(name: name, documentType: T.documentType, proc: { proc($0 as! T) })
 	}
@@ -306,20 +309,27 @@ public extension MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func documentCreate<T : MDSDocument>(proc :(_ id :String, _ documentStorage :MDSDocumentStorage) -> T) throws -> T {
-		// Create document
-		try documentCreate(documentType: T.documentType, documentCreateInfos: [MDSDocument.CreateInfo()],
+		// Register creation proc
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
+
+		return try documentCreate(documentType: T.documentType, documentCreateInfos: [MDSDocument.CreateInfo()],
 				proc: proc)[0].document as! T
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func documentCreate<T : MDSDocument>() throws -> T {
-		// Create document
-		try documentCreate(documentType: T.documentType, documentCreateInfos: [MDSDocument.CreateInfo()],
+		// Register creation proc
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
+
+		return try documentCreate(documentType: T.documentType, documentCreateInfos: [MDSDocument.CreateInfo()],
 				proc: { T(id: $0, documentStorage: $1) })[0].document as! T
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func documentIterate<T :MDSDocument>(for documentIDs :[String], proc :(_ document :T) -> Void) throws {
+		// Register creation proc
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
+
 		// Iterate documents
 		try documentIterate(for: T.documentType, documentIDs: documentIDs,
 				documentCreateProc: { T(id: $0, documentStorage: $1) }, proc: { proc($0 as! T) })
@@ -327,6 +337,9 @@ public extension MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func documentIterate<T :MDSDocument>(activeOnly: Bool, proc :(_ document :T) -> Void) throws {
+		// Register creation proc
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
+
 		// Iterate documents
 		try documentIterate(for: T.documentType, activeOnly: activeOnly,
 				documentCreateProc: { T(id: $0, documentStorage: $1) }, proc: { proc($0 as! T) })
@@ -334,6 +347,9 @@ public extension MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func documents<T :MDSDocument>(activeOnly :Bool = true) throws -> [T] {
+		// Register creation proc
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
+
 		// Setup
 		var	documents = [T]()
 
@@ -346,6 +362,9 @@ public extension MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func document<T : MDSDocument>(for documentID :String) throws -> T {
+		// Register creation proc
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
+
 		// Retrieve document
 		var	document :T?
 		try documentIterate(for: T.documentType, documentIDs: [documentID],
@@ -356,6 +375,9 @@ public extension MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func documents<T :MDSDocument>(for documentIDs :[String]) throws -> [T] {
+		// Register creation proc
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
+
 		// Setup
 		var	documents = [T]()
 
@@ -432,6 +454,9 @@ public extension MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	func indexIterate<T : MDSDocument>(name :String, keys :[String], proc :(_ key :String, _ document :T) -> Void)
 			throws {
+		// Register creation proc
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
+
 		// Iterate index
 		try indexIterate(name: name, documentType: T.documentType, keys: keys, proc: { proc($0, $1 as! T) })
 	}
@@ -486,12 +511,18 @@ open class MDSDocumentStorageCore {
 	//------------------------------------------------------------------------------------------------------------------
 	public func register<T : MDSDocument>(
 			documentCreateProc :@escaping (_ id :String, _ documentStorage :MDSDocumentStorage) -> T) {
-		// Add
-		self.documentCreateProcByDocumentType.set(documentCreateProc, for: T.documentType)
+		// Check if already have a create proc for this document type
+		if self.documentCreateProcByDocumentType.value(for: T.documentType) == nil {
+			// Add
+			self.documentCreateProcByDocumentType.set(documentCreateProc, for: T.documentType)
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func register<T : MDSDocument>(documentCreatedProc :@escaping (_ document :T) -> Void) {
+		// Register creation proc
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
+
 		//  Add
 		self.documentCreatedProcsByDocumentType.append({ documentCreatedProc($0 as! T) }, for: T.documentType)
 	}
@@ -501,6 +532,9 @@ open class MDSDocumentStorageCore {
 			documentUpdatedProc
 					:@escaping (_ document :T, _ updatedProperties :Set<String>, _ removedProperties :Set<String>,
 							_ changedProperties :Set<String>) -> Void) {
+		// Register creation proc
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
+
 		//  Add
 		self.documentUpdatedProcsByDocumentType.append({ documentUpdatedProc($0 as! T, $1, $2, $3) },
 				for: T.documentType)
@@ -508,6 +542,9 @@ open class MDSDocumentStorageCore {
 
 	//------------------------------------------------------------------------------------------------------------------
 	public func register<T : MDSDocument>(documentRemovedProc :@escaping (_ document :T) -> Void) {
+		// Register creation proc
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
+
 		//  Add
 		self.documentRemovedProcsByDocumentType.append({ documentRemovedProc($0 as! T) }, for: T.documentType)
 	}
@@ -517,6 +554,9 @@ open class MDSDocumentStorageCore {
 			documentAttachmentCreatedProc
 					:@escaping (_ document :T, _ attachmentID :String, _ attachmentInfo :MDSDocument.AttachmentInfo) ->
 							Void) {
+		// Register creation proc
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
+
 		//  Add
 		self.documentAttachmentCreatedProcsByDocumentType.append(
 				{ documentAttachmentCreatedProc($0 as! T, $1, $2) }, for: T.documentType)
@@ -527,6 +567,9 @@ open class MDSDocumentStorageCore {
 			documentAttachmentUpdatedProc
 					:@escaping (_ document :T, _ attachmentID :String, _ attachmentInfo :MDSDocument.AttachmentInfo) ->
 							Void) {
+		// Register creation proc
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
+
 		//  Add
 		self.documentAttachmentUpdatedProcsByDocumentType.append(
 				{ documentAttachmentUpdatedProc($0 as! T, $1, $2) }, for: T.documentType)
@@ -535,6 +578,9 @@ open class MDSDocumentStorageCore {
 	//------------------------------------------------------------------------------------------------------------------
 	public func register<T : MDSDocument>(
 			documentAttachmentRemovedProc :@escaping (_ document :T, _ attachmentID :String) -> Void) {
+		// Register creation proc
+		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
+
 		//  Add
 		self.documentAttachmentRemovedProcsByDocumentType.append(
 				{ documentAttachmentRemovedProc($0 as! T, $1) }, for: T.documentType)

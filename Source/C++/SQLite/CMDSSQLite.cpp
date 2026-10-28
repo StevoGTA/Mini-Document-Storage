@@ -2041,6 +2041,9 @@ OV<SError> CMDSSQLite::documentIterate(const CMDSDocument::Info& documentInfo, c
 		CMDSDocument::Proc proc, void* procUserData) const
 //----------------------------------------------------------------------------------------------------------------------
 {
+	// Register document create info
+	((CMDSDocumentStorage&) *this).registerDocumentCreateInfo(documentInfo);
+
 	// Validate
 	if (!mInternals->mDatabaseManager.documentTypeIsKnown(documentInfo.getDocumentType()))
 		return OV<SError>(getUnknownDocumentTypeError(documentInfo.getDocumentType()));
@@ -2091,6 +2094,9 @@ OV<SError> CMDSSQLite::documentIterate(const CMDSDocument::Info& documentInfo, b
 		void* procUserData) const
 //----------------------------------------------------------------------------------------------------------------------
 {
+	// Register document create info
+	((CMDSDocumentStorage&) *this).registerDocumentCreateInfo(documentInfo);
+
 	// Validate
 	if (!mInternals->mDatabaseManager.documentTypeIsKnown(documentInfo.getDocumentType()))
 		return OV<SError>(getUnknownDocumentTypeError(documentInfo.getDocumentType()));
