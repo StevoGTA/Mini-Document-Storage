@@ -692,7 +692,7 @@ extension HTTPServer {
 			// Catch errors
 			do {
 				// Query count
-				let	count = try documentStorage!.documentGetCount(for: info.documentType)
+				let	count = try documentStorage!.documentGetCount(for: info.documentType, activeOnly: info.activeOnly)
 
 				return (.ok,
 						[HTTPURLResponse.contentRangeHeader(for: "items", start: 0, length: Int64(count),
@@ -717,7 +717,7 @@ extension HTTPServer {
 			// Catch errors
 			do {
 				// Query count
-				let	count = try documentStorage!.documentGetCount(for: info.documentType)
+				let	count = try documentStorage!.documentGetCount(for: info.documentType, activeOnly: false)
 
 				// Check requested flavor
 				if let documentIDs = info.documentIDs {

@@ -584,16 +584,21 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentGetCount(for documentType :String) throws -> Int {
+	public func documentGetCount(for documentType :String, activeOnly :Bool) throws -> Int {
 		// Validate
-		guard let documentIDs = self.documentMapsLock.read({ self.documentIDsByDocumentType[documentType] }) else {
-			throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
-		}
 		guard self.batchByThread.value(for: .current) == nil else {
 			throw MDSDocumentStorageError.illegalInBatch
 		}
 
-		return documentIDs.count
+		return try self.documentMapsLock.read() { () -> Int in
+			// Get document IDs
+			guard let documentIDs = self.documentIDsByDocumentType[documentType] else {
+				throw MDSDocumentStorageError.unknownDocumentType(documentType: documentType)
+			}
+
+			return activeOnly ?
+					documentIDs.lazy.filter({ self.documentBackingByDocumentID[$0]!.active }).count : documentIDs.count
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

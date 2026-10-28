@@ -152,7 +152,8 @@ class CMDSDocumentStorage {
 																	const CMDSDocument::InfoForNew& documentInfoForNew,
 																	const TArray<CMDSDocument::CreateInfo>&
 																			documentCreateInfos) = 0;
-		virtual			TVResult<UInt32>					documentGetCount(const CString& documentType) const = 0;
+		virtual			TVResult<UInt32>					documentGetCount(const CString& documentType,
+																	bool activeOnly) const = 0;
 		virtual			OV<SError>							documentIterate(const CMDSDocument::Info& documentInfo,
 																	const TArray<CString>& documentIDs,
 																	CMDSDocument::Proc proc, void* procUserData) const

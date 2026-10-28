@@ -98,7 +98,7 @@ public protocol MDSDocumentStorage {
 	func documentCreate(documentType :String, documentCreateInfos :[MDSDocument.CreateInfo],
 			proc :MDSDocument.CreateProc) throws ->
 			[(document :MDSDocument, documentOverviewInfo :MDSDocument.OverviewInfo?)]
-	func documentGetCount(for documentType :String) throws -> Int
+	func documentGetCount(for documentType :String, activeOnly :Bool) throws -> Int
 	func documentIterate(for documentType :String, documentIDs :[String], documentCreateProc :MDSDocument.CreateProc,
 			proc :MDSDocument.Proc) throws
 	func documentIterate(for documentType :String, activeOnly: Bool, documentCreateProc :MDSDocument.CreateProc,

@@ -2003,7 +2003,14 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentCount(for documentType :String) -> Int { self.documentTables(for: documentType).infoTable.count() }
+	func documentCount(for documentType :String, activeOnly :Bool) -> Int {
+		// Setup
+		let	infoTable = self.documentTables(for: documentType).infoTable
+
+		return activeOnly ?
+				infoTable.count(where: SQLiteWhere(tableColumn: DocumentTypeInfoTable.activeTableColumn, value: 1)) :
+				infoTable.count()
+	}
 
 	//------------------------------------------------------------------------------------------------------------------
 	func documentTypeIsKnown(_ documentType :String) -> Bool {

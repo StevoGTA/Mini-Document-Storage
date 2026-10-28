@@ -54,10 +54,13 @@ exports.getCountV1 = async (event) => {
 	let	documentStorageID = decodeURIComponent(event.pathParameters.documentStorageID);
 	let	documentType = decodeURIComponent(event.pathParameters.documentType);
 
+	let	queryStringParameters = event.queryStringParameters || {};
+	let	activeOnly = queryStringParameters.activeOnly == 1;
+
 	// Catch errors
 	try {
 		// Get document count
-		let	[count, error] = await documentStorage.documentGetCount(documentStorageID, documentType);
+		let	[count, error] = await documentStorage.documentGetCount(documentStorageID, documentType, activeOnly);
 		if (!error)
 			// Success
 			return {

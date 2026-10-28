@@ -216,10 +216,11 @@ class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageS
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentGetCount(for documentType :String) throws -> Int {
+	func documentGetCount(for documentType :String, activeOnly :Bool) throws -> Int {
 		// Get count
 		var	count :UInt = 0
-		try self.documentStorageObjC.documentGetCountDocumentType(documentType, outCount: &count)
+		try self.documentStorageObjC.documentGetCountDocumentType(documentType, activeOnly: activeOnly,
+				outCount: &count)
 
 		return Int(count)
 	}

@@ -804,13 +804,13 @@ class MDSClient {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async documentGetCount(documentType, documentStorageID = null) {
+	async documentGetCount(documentType, activeOnly, documentStorageID = null) {
 		// Setup
 		let	documentStorageIDUse = documentStorageID || this.documentStorageID;
 
 		let	url =
 					this.urlBase + '/v1/document/' + encodeURIComponent(documentStorageIDUse) + '/' +
-							encodeURIComponent(documentType);
+							encodeURIComponent(documentType) + '?activeOnly=' + (activeOnly ? 1 : 0);
 		let	options = {method: 'HEAD', headers: this.headers};
 
 		// Queue the call

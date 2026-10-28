@@ -47,11 +47,14 @@ export async function getCountV1(request, response) {
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	documentType = decodeURIComponent(request.params.documentType);
 
+	let	activeOnly = request.query.activeOnly == 1;
+
 	// Catch errors
 	try {
 		// Get document count
 		let	[count, error] =
-					await request.app.locals.documentStorage.documentGetCount(documentStorageID, documentType);
+					await request.app.locals.documentStorage.documentGetCount(documentStorageID, documentType,
+							activeOnly);
 		if (!error)
 			// Success
 			response

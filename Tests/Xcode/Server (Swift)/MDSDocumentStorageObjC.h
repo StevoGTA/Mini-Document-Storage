@@ -291,7 +291,8 @@ typedef NS_ENUM(NSInteger) {
 		documentCreateInfos:(NSArray<MDSDocumentCreateInfo*>*) documentCreateInfos
 		outDocumentOverviewInfos:(NSArray<MDSDocumentOverviewInfo*>* _Nullable * _Nonnull) outDocumentOverviewInfos
 		error:(NSError**) error;
-- (BOOL) documentGetCountDocumentType:(NSString*) documentType outCount:(NSUInteger*) outCount error:(NSError**) error;
+- (BOOL) documentGetCountDocumentType:(NSString*) documentType activeOnly:(BOOL) activeOnly
+		outCount:(NSUInteger*) outCount error:(NSError**) error;
 - (BOOL) documentRevisionInfosDocumentType:(NSString*) documentType documentIDs:(NSArray<NSString*>*) documentIDs
 		outDocumentRevisionInfos:(MDSDocumentRevisionInfoArray* _Nullable * _Nullable) outDocumentRevisionInfos
 		error:(NSError**) error;

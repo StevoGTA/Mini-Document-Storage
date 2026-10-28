@@ -88,9 +88,11 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 		DocumentCreateResultInfosResult				documentCreate(const CMDSDocument::InfoForNew& documentInfoForNew,
 															const TArray<CMDSDocument::CreateInfo>&
 																	documentCreateInfos);
-		TVResult<UInt32>							documentGetCount(const CString& documentType) const;
-		TVResult<UInt32>							documentGetCount(const CMDSDocument::Info& documentInfo) const
-														{ return documentGetCount(documentInfo.getDocumentType()); }
+		TVResult<UInt32>							documentGetCount(const CString& documentType, bool activeOnly) const;
+		TVResult<UInt32>							documentGetCount(const CMDSDocument::Info& documentInfo,
+															bool activeOnly) const
+														{ return documentGetCount(documentInfo.getDocumentType(),
+																activeOnly); }
 		OV<SError>									documentIterate(const CMDSDocument::Info& documentInfo,
 															const TArray<CString>& documentIDs, CMDSDocument::Proc proc,
 															void* procUserData) const;

@@ -63,7 +63,7 @@ class DocumentTransactionTests : XCTestCase {
 		// Get document count
 		let	(getDocumentCount, getDocumentCountError) =
 					config.httpEndpointClient.documentGetCount(documentStorageID: config.documentStorageID,
-							documentType: config.defaultDocumentType)
+							documentType: config.defaultDocumentType, activeOnly: true)
 		XCTAssertNotNil(getDocumentCount, "get document count did not receive count")
 		if getDocumentCount != nil {
 			XCTAssertGreaterThan(getDocumentCount!, 0, "get document count returned count of 0")

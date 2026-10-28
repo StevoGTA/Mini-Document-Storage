@@ -520,7 +520,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentGetCount(for documentType :String) throws -> Int {
+	public func documentGetCount(for documentType :String, activeOnly :Bool) throws -> Int {
 		// Validate
 		guard self.batchMap.value(for: .current) == nil else {
 			throw MDSDocumentStorageError.illegalInBatch
@@ -529,7 +529,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Get document count
 		let	(count, error) =
 					self.httpEndpointClient.documentGetCount(documentStorageID: self.documentStorageID,
-							documentType: documentType, authorization: self.authorization)
+							documentType: documentType, activeOnly: activeOnly, authorization: self.authorization)
 		guard error == nil else {
 			// Error
 			throw error!

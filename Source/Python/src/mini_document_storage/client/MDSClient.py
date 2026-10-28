@@ -796,14 +796,16 @@ class MDSClient:
 				documents_by_id[result['documentID']].update_from_create(result)
 
 	#-------------------------------------------------------------------------------------------------------------------
-	async def document_get_count(self, document_type, document_storage_id=None):
+	async def document_get_count(self, document_type, active_only, document_storage_id=None):
 		# Setup
 		document_storage_id = urllib.parse.quote(document_storage_id or self.document_storage_id, safe='')
 		document_type = urllib.parse.quote(document_type, safe='')
 
+		params = {'activeOnly': 1 if active_only else 0}
+
 		# Queue request
-		async with self.session.head(f'/v1/document/{document_storage_id}/{document_type}', headers=self.headers) as \
-				response:
+		async with self.session.head(f'/v1/document/{document_storage_id}/{document_type}', headers=self.headers,
+				params=params) as response:
 			# Process response
 			if not response.ok:
 				# Some error, but no additional info
