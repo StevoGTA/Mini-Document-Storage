@@ -2708,7 +2708,12 @@ OV<SError> CMDSSQLite::batch(BatchProc batchProc, void* userData)
 
 	// Call proc
 	TVResult<EMDSBatchResult>	batchResult = batchProc(userData);
-	ReturnErrorIfResultError(batchResult);
+	if (batchResult.hasError()) {
+		// Remove
+		mInternals->mBatchByThreadRef.remove(CThread::getCurrentRefAsString());
+
+		return OV<SError>(batchResult.getError());
+	}
 
 	// Check result
 	if (*batchResult == kMDSBatchResultCommit) {

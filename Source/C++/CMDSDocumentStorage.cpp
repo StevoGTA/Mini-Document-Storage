@@ -164,7 +164,7 @@ TVResult<CDictionary> CMDSDocumentStorage::associationGetSumValues(const CString
 {
 	// Get sum values
 	TVResult<SValue>	value =
-								associationGetValues(name, CMDSAssociation::kGetValueActionDetail, fromDocumentIDs,
+								associationGetValues(name, CMDSAssociation::kGetValueActionSum, fromDocumentIDs,
 										cacheName, cachedValueNames);
 	ReturnValueIfResultError(value, TVResult<CDictionary>(value.getError()));
 
@@ -489,7 +489,7 @@ const CMDSDocument::ValueInfo& CMDSDocumentStorage::documentValueInfo(const CStr
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Retrieve
-	const	OR<CMDSDocument::ValueInfo>&	documentValueInfo = *mInternals->mDocumentValueInfoBySelector[selector];
+	const	OR<CMDSDocument::ValueInfo>	documentValueInfo = mInternals->mDocumentValueInfoBySelector[selector];
 	AssertFailIf(!documentValueInfo.hasReference());
 
 	return *documentValueInfo;

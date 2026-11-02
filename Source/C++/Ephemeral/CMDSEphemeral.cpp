@@ -1774,9 +1774,10 @@ OV<SValue> CMDSEphemeral::documentValue(const CString& property, const I<CMDSDoc
 		mInternals->mDocumentMapsLock.lockForReading();
 		const	OR<I<Internals::DocumentBacking> >	documentBacking =
 															mInternals->mDocumentBackingByDocumentID[document->getID()];
+				OV<SValue>							value = (*documentBacking)->getPropertyMap().getOValue(property);
 		mInternals->mDocumentMapsLock.unlockForReading();
 
-		return (*documentBacking)->getPropertyMap().getOValue(property);
+		return value;
 	}
 }
 
@@ -2473,11 +2474,11 @@ OV<SError> CMDSEphemeral::batch(BatchProc batchProc, void* userData)
 				// Check action
 				if (associationUpdateIterator->getAction() == CMDSAssociation::Update::kActionAdd)
 					// Add
-					mInternals->mAssociationItemsByName.remove(*associationNameIterator,
+					mInternals->mAssociationItemsByName.add(*associationNameIterator,
 							associationUpdateIterator->getItem());
 				else
 					// Remove
-					mInternals->mAssociationItemsByName.add(*associationNameIterator,
+					mInternals->mAssociationItemsByName.remove(*associationNameIterator,
 							associationUpdateIterator->getItem());
 			}
 		}
@@ -2724,7 +2725,7 @@ TVResult<TArray<CMDSDocument::RevisionInfo> > CMDSEphemeral::collectionGetDocume
 					(*mInternals->mDocumentBackingByDocumentID.get(*iterator))->getDocumentRevisionInfo();
 
 		// Check count
-		if (count.hasValue() && (iterator.getIndex() > (startIndex + *count)))
+		if (count.hasValue() && (documentRevisionInfos.getCount() >= *count))
 			// Done
 			break;
 	}
@@ -2753,7 +2754,7 @@ TVResult<TArray<CMDSDocument::FullInfo> > CMDSEphemeral::collectionGetDocumentFu
 			documentFullInfos += (*mInternals->mDocumentBackingByDocumentID.get(*iterator))->getDocumentFullInfo();
 
 		// Check count
-		if (count.hasValue() && (iterator.getIndex() > (startIndex + *count)))
+		if (count.hasValue() && (documentFullInfos.getCount() >= *count))
 			// Done
 			break;
 	}

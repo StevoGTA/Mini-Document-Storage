@@ -671,13 +671,20 @@ extension HTTPServer {
 				return (.badRequest, nil, .json(["error": "Missing info(s)"]))
 			}
 
-			// Create documents
-			let	infos =
-						try! documentStorage!.documentCreate(documentType: info.documentType,
-										documentCreateInfos: info.documentCreateInfos)
-								.map({ $0.httpServicesInfo })
+			// Catch errors
+			do {
+				// Create documents
+				let	infos =
+							try documentStorage!.documentCreate(documentType: info.documentType,
+											documentCreateInfos: info.documentCreateInfos)
+									.map({ $0.httpServicesInfo })
 
-			return (.ok, nil, .json(infos))
+				return (.ok, nil, .json(infos))
+			} catch {
+				// Error
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
+			}
 		}
 		register(documentCreateEndpoint)
 
@@ -1054,7 +1061,15 @@ extension HTTPServer {
 				return (.badRequest, nil, .json(["error": "Missing key(s)"]))
 			}
 
-			return (.ok, nil, .json(try! documentStorage!.infoGet(for: keys)))
+			// Catch errors
+			do {
+				// Get info
+				return (.ok, nil, .json(try documentStorage!.infoGet(for: keys)))
+			} catch {
+				// Error
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
+			}
 		}
 		register(infoGetEndpoint)
 
@@ -1071,10 +1086,17 @@ extension HTTPServer {
 				return (.badRequest, nil, .json(["error": "Missing info"]))
 			}
 
-			// Update
-			try! documentStorage!.infoSet(info.info)
+			// Catch errors
+			do {
+				// Update
+				try documentStorage!.infoSet(info.info)
 
-			return (.ok, nil, nil)
+				return (.ok, nil, nil)
+			} catch {
+				// Error
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
+			}
 		}
 		register(infoSetEndpoint)
 	}
@@ -1094,10 +1116,17 @@ extension HTTPServer {
 				return (.badRequest, nil, .json(["error": "Missing info"]))
 			}
 
-			// Update
-			try! documentStorage!.internalSet(info.info)
+			// Catch errors
+			do {
+				// Update
+				try documentStorage!.internalSet(info.info)
 
-			return (.ok, nil, nil)
+				return (.ok, nil, nil)
+			} catch {
+				// Error
+				return ((error as? MDSDocumentStorageError)?.status ?? .badRequest, nil,
+						.json(["error": error.localizedDescription]))
+			}
 		}
 		register(internalSetEndpoint)
 	}

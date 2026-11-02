@@ -141,6 +141,12 @@
 		0A5E187127C71F5B0089E550 /* HTTPEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55522C27C5DA60003E497B /* HTTPEndpoint.swift */; };
 		0A5E187227C71F5D0089E550 /* HTTPEndpointClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55522D27C5DA60003E497B /* HTTPEndpointClient.swift */; };
 		0A5E187327C71F5E0089E550 /* HTTPEndpointClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55522D27C5DA60003E497B /* HTTPEndpointClient.swift */; };
+		0A7303FC826CAC8E10096B31 /* HTTPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A246AD1E264DFAF19310766 /* HTTPTransport.swift */; };
+		0AD3631C71BC1B396D8F40CC /* URLSessionHTTPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ADCB14A3F23798487D53A8F /* URLSessionHTTPTransport.swift */; };
+		0AD54C843E1CA2D396E37874 /* HTTPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A246AD1E264DFAF19310766 /* HTTPTransport.swift */; };
+		0A1541F0178888CADC1A1C45 /* URLSessionHTTPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ADCB14A3F23798487D53A8F /* URLSessionHTTPTransport.swift */; };
+		0A52AC9A07512345265C1889 /* HTTPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A246AD1E264DFAF19310766 /* HTTPTransport.swift */; };
+		0AD55C2EAD69632822B28021 /* URLSessionHTTPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ADCB14A3F23798487D53A8F /* URLSessionHTTPTransport.swift */; };
 		0A5E187427C71F610089E550 /* HTTPEndpointHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55523227C5DA60003E497B /* HTTPEndpointHandler.swift */; };
 		0A5E187527C71F610089E550 /* HTTPEndpointHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55523227C5DA60003E497B /* HTTPEndpointHandler.swift */; };
 		0A5E187627C71F650089E550 /* HTTPEndpointRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A55523327C5DA60003E497B /* HTTPEndpointRequest.swift */; };
@@ -711,6 +717,8 @@
 		0A55522827C5DA60003E497B /* FilesystemEventsTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilesystemEventsTracker.swift; sourceTree = "<group>"; };
 		0A55522C27C5DA60003E497B /* HTTPEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPEndpoint.swift; sourceTree = "<group>"; };
 		0A55522D27C5DA60003E497B /* HTTPEndpointClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPEndpointClient.swift; sourceTree = "<group>"; };
+		0A246AD1E264DFAF19310766 /* HTTPTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPTransport.swift; sourceTree = "<group>"; };
+		0ADCB14A3F23798487D53A8F /* URLSessionHTTPTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLSessionHTTPTransport.swift; sourceTree = "<group>"; };
 		0A55522E27C5DA60003E497B /* NetServiceSubscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetServiceSubscriber.swift; sourceTree = "<group>"; };
 		0A55522F27C5DA60003E497B /* NetServicePublisher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetServicePublisher.swift; sourceTree = "<group>"; };
 		0A55523027C5DA60003E497B /* JWT.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JWT.swift; sourceTree = "<group>"; };
@@ -1694,9 +1702,11 @@
 				0A55523227C5DA60003E497B /* HTTPEndpointHandler.swift */,
 				0A55523327C5DA60003E497B /* HTTPEndpointRequest.swift */,
 				0A55523127C5DA60003E497B /* HTTPServer.swift */,
+				0A246AD1E264DFAF19310766 /* HTTPTransport.swift */,
 				0A55523027C5DA60003E497B /* JWT.swift */,
 				0A55522E27C5DA60003E497B /* NetServiceSubscriber.swift */,
 				0A55522F27C5DA60003E497B /* NetServicePublisher.swift */,
+				0ADCB14A3F23798487D53A8F /* URLSessionHTTPTransport.swift */,
 			);
 			path = Networking;
 			sourceTree = "<group>";
@@ -2041,6 +2051,8 @@
 				0A1F800427E40543007F8920 /* SQLiteStatementPerformer.swift in Sources */,
 				0A1F800927E40543007F8920 /* SQLiteInnerJoin.swift in Sources */,
 				0A55526327C5DB66003E497B /* HTTPEndpointClient.swift in Sources */,
+				0A7303FC826CAC8E10096B31 /* HTTPTransport.swift in Sources */,
+				0AD3631C71BC1B396D8F40CC /* URLSessionHTTPTransport.swift in Sources */,
 				0AC9E8ED2F882A2700D7C980 /* Sequence+Extensions.swift in Sources */,
 				0A55526127C5DB42003E497B /* HTTPEndpointRequest.swift in Sources */,
 				0A55526027C5DB32003E497B /* String+Extensions.swift in Sources */,
@@ -2116,6 +2128,8 @@
 				0AAF04982A70DE8D000AF19F /* MDSEphemeral.swift in Sources */,
 				0AFA09632E4EA9BD00A1F2D1 /* MDSDocumentStorage+Async.swift in Sources */,
 				0A5E187227C71F5D0089E550 /* HTTPEndpointClient.swift in Sources */,
+				0AD54C843E1CA2D396E37874 /* HTTPTransport.swift in Sources */,
+				0A1541F0178888CADC1A1C45 /* URLSessionHTTPTransport.swift in Sources */,
 				0A0C46B22BCF542E0028F319 /* Int64+Extensions.swift in Sources */,
 				0A5E185027C716FB0089E550 /* HTTPURLResponse+Extensions.swift in Sources */,
 				0A1DFB332B892C9E00C9FA6F /* DateFormatter+Extensions.swift in Sources */,
@@ -2177,6 +2191,8 @@
 				0A5E187B27C71F800089E550 /* Dictionary+Extensions.swift in Sources */,
 				0A1F801927E40544007F8920 /* SQLiteTable.swift in Sources */,
 				0A5E187327C71F5E0089E550 /* HTTPEndpointClient.swift in Sources */,
+				0A52AC9A07512345265C1889 /* HTTPTransport.swift in Sources */,
+				0AD55C2EAD69632822B28021 /* URLSessionHTTPTransport.swift in Sources */,
 				0A5E185127C716FB0089E550 /* HTTPURLResponse+Extensions.swift in Sources */,
 				0A4313B228E3C1BC00CD1A6B /* MDSAssociation.swift in Sources */,
 				0A5E188727C71F9A0089E550 /* URLComponents+Extensions.swift in Sources */,

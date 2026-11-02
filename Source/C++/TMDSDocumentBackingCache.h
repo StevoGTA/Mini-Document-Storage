@@ -139,7 +139,7 @@ template <typename T> class TMDSDocumentBackingCache {
 												for (TArray<CString>::Iterator iterator = documentIDs.getIterator();
 														iterator; iterator++) {
 													// Look up reference for this document ID
-													const	OR<T>	reference = mReferenceByDocumentID[*iterator];
+													const	OR<Reference>	reference = mReferenceByDocumentID[*iterator];
 													if (reference.hasReference()) {
 														// Found
 														foundDocumentIDs += *iterator;
@@ -166,7 +166,7 @@ template <typename T> class TMDSDocumentBackingCache {
 												for (TArray<CString>::Iterator iterator = documentIDs.getIterator();
 														iterator; iterator++) {
 													// Look up reference for this document ID
-													const	OR<T>	reference = mReferenceByDocumentID[*iterator];
+													const	OR<Reference>	reference = mReferenceByDocumentID[*iterator];
 													if (reference.hasReference()) {
 														// Found
 														foundDocumentBackings += reference->getDocumentBacking();

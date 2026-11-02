@@ -2295,15 +2295,15 @@ class CMDSSQLiteDatabaseManager::Internals {
 									Internals(const CFolder& folder, const CString& name) :
 										mDatabase(folder, name),
 												mInternalsTable(CInternalsTable::in(mDatabase)),
+												mInfoTable(CInfoTable::in(mDatabase)),
+												mInternalTable(CInternalTable::in(mDatabase)),
 												mAssociationsTable(CAssociationsTable::in(mDatabase, mInternalsTable)),
 												mCachesTable(CCachesTable::in(mDatabase, mInternalsTable)),
 												mCollectionsTable(
 														CCollectionsTable::in(mDatabase, mInternalsTable, mInfoTable)),
 												mDocumentsTable(CDocumentsTable::in(mDatabase, mInternalsTable)),
 												mIndexesTable(
-														CIndexesTable::in(mDatabase, mInternalsTable, mInfoTable)),
-												mInfoTable(CInfoTable::in(mDatabase)),
-												mInternalTable(CInternalTable::in(mDatabase))
+														CIndexesTable::in(mDatabase, mInternalsTable, mInfoTable))
 										{
 											// Finalize setup
 											CInfoTable::set(CString(OSSTR("version")), OV<CString>(), mInfoTable);
@@ -2422,6 +2422,10 @@ class CMDSSQLiteDatabaseManager::Internals {
 
 		CSQLiteTable							mInternalsTable;
 
+		CSQLiteTable							mInfoTable;
+
+		CSQLiteTable							mInternalTable;
+
 		CSQLiteTable							mAssociationsTable;
 		TNLockingDictionary<CSQLiteTable>		mAssociationTablesByName;
 
@@ -2437,10 +2441,6 @@ class CMDSSQLiteDatabaseManager::Internals {
 
 		CSQLiteTable							mIndexesTable;
 		TNLockingDictionary<CSQLiteTable>		mIndexTablesByName;
-
-		CSQLiteTable							mInfoTable;
-
-		CSQLiteTable							mInternalTable;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

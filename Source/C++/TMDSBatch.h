@@ -65,10 +65,6 @@ template <typename DB> class TMDSBatch {
 														mID(id), mCurrentRevision(currentRevision), mInfo(info),
 																mContent(content)
 														{}
-													UpdateAttachmentInfo(const AddAttachmentInfo& other) :
-														mID(other.mID), mCurrentRevision(other.mCurrentRevision),
-																mInfo(other.mInfo), mContent(other.mContent)
-														{}
 
 													// Instance methods
 			const	CString&						getID() const
@@ -291,7 +287,7 @@ template <typename DB> class TMDSBatch {
 
 			// Properties
 			private:
-				const	CString&							mDocumentType;
+						CString								mDocumentType;
 						OR<DB>								mDocumentBacking;
 						UniversalTime						mCreationUniversalTime;
 
@@ -354,23 +350,6 @@ template <typename DB> class TMDSBatch {
 														return associationItemsUpdated;
 													}
 
-		DocumentInfo&							documentAdd(const CString& documentType, const CString& documentID,
-														const OR<DB>& documentBacking,
-														UniversalTime creationUniversalTime,
-														UniversalTime modificationUniversalTime,
-														const OV<CDictionary>& initialPropertyMap)
-													{
-														// Setup
-														DocumentInfo	documentInfo(documentType, documentBacking,
-																				creationUniversalTime,
-																				modificationUniversalTime,
-																				initialPropertyMap);
-
-														// Store
-														mDocumentInfoByDocumentID.set(documentID, documentInfo);
-
-														return *mDocumentInfoByDocumentID[documentID];
-													}
 		DocumentInfo&							documentAdd(const CString& documentType, const R<DB>& documentBacking)
 													{
 														// Setup
