@@ -102,11 +102,20 @@ exports.getV1 = async (event) => {
 
 	let	queryStringParameters = event.queryStringParameters || {};
 	let	sinceRevision = parseInt(queryStringParameters.sinceRevision);
-	let	count = queryStringParameters.count;
+	let	count = (queryStringParameters.count != null) ? Number(queryStringParameters.count) : null;
 	let	fullInfo = queryStringParameters.fullInfo == 1;
 
 	let	multiValueQueryStringParameters = event.multiValueQueryStringParameters || {};
 	let	documentIDs = (multiValueQueryStringParameters.id || []) .map(documentID => decodeURIComponent(documentID));
+
+	// Validate
+	if ((count != null) && (!Number.isInteger(count) || (count < 1)))
+		// Invalid count
+		return {
+				statusCode: 400,
+				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+				body: JSON.stringify({error: 'Invalid count: ' + queryStringParameters.count}),
+		};
 
 	// Catch errors
 	try {
@@ -126,9 +135,8 @@ exports.getV1 = async (event) => {
 									'Access-Control-Allow-Credentials': true,
 									'Access-Control-Expose-Headers': 'Content-Range',
 									'Content-Range':
-											(totalCount > 0) ?
-													'documents 0-' + (results.length - 1) + '/' + totalCount :
-													'documents */0',
+											'documents ' + ((results.length > 0) ? '0-' + (results.length - 1) : '*') +
+													'/' + totalCount,
 						},
 						body: JSON.stringify(results),
 				};

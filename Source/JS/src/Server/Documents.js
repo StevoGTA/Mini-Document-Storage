@@ -875,7 +875,7 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getDocumentInfos(statementPerformer, documentType, table, innerJoin, where, limit) {
+	async getDocumentInfos(statementPerformer, documentType, table, innerJoin, where, limit, orderBy) {
 		// Setup
 		let	tablesInfo = this.tablesInfo(statementPerformer, documentType);
 
@@ -901,8 +901,8 @@ module.exports = class Documents {
 										tablesInfo.infoTable.documentIDTableColumn,
 										tablesInfo.infoTable.revisionTableColumn,
 									],
-									innerJoin, where, limit);
-									
+									innerJoin, where, orderBy, limit);
+
 				return [results, null];
 			}
 		} catch (error) {
@@ -917,7 +917,7 @@ module.exports = class Documents {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	async getDocuments(statementPerformer, documentType, table, innerJoin, where, limit) {
+	async getDocuments(statementPerformer, documentType, table, innerJoin, where, limit, orderBy) {
 		// Setup
 		let	tablesInfo = this.tablesInfo(statementPerformer, documentType);
 
@@ -974,7 +974,7 @@ module.exports = class Documents {
 									tablesInfo.contentTable.modificationDateTableColumn,
 									tablesInfo.contentTable.jsonTableColumn,
 								],
-								innerJoin, where, limit);
+								innerJoin, where, orderBy, limit);
 
 				// Handle results
 				if (selectResults.length == 0)

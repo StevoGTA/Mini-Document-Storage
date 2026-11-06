@@ -91,9 +91,26 @@ exports.getDocumentsV1 = async (event) => {
 	let	queryStringParameters = event.queryStringParameters || {};
 	let	fromDocumentID = queryStringParameters.fromID ? decodeURIComponent(queryStringParameters.fromID) : null;
 	let	toDocumentID = queryStringParameters.toID ? decodeURIComponent(queryStringParameters.toID) : null;
-	let	startIndex = queryStringParameters.startIndex || 0;
-	let	count = queryStringParameters.count;
+	let	startIndex =
+				(queryStringParameters.startIndex != null) ? Number(queryStringParameters.startIndex) : 0;
+	let	count = (queryStringParameters.count != null) ? Number(queryStringParameters.count) : null;
 	let	fullInfo = queryStringParameters.fullInfo || 0;
+
+	// Validate
+	if (!Number.isInteger(startIndex) || (startIndex < 0))
+		// Invalid startIndex
+		return {
+				statusCode: 400,
+				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+				body: JSON.stringify({error: 'Invalid startIndex: ' + queryStringParameters.startIndex}),
+		};
+	if ((count != null) && (!Number.isInteger(count) || (count < 1)))
+		// Invalid count
+		return {
+				statusCode: 400,
+				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+				body: JSON.stringify({error: 'Invalid count: ' + queryStringParameters.count}),
+		};
 
 	// Catch errors
 	try {
@@ -103,10 +120,8 @@ exports.getDocumentsV1 = async (event) => {
 							startIndex, count, fullInfo == 1);
 		if (!error) {
 			// Success
-			let	endIndex = startIndex + Object.keys(results).length - 1;
-			let	contentRange =
-						(totalCount > 0) ?
-								'documents ' + startIndex + '-' + endIndex + '/' + totalCount : 'documents */0';
+			let	range = (results.length > 0) ? startIndex + '-' + (startIndex + results.length - 1) : '*';
+			let	contentRange = 'documents ' + range + '/' + totalCount;
 
 			return {
 					statusCode: 200,

@@ -80,9 +80,29 @@ export async function getDocumentsV1(request, response) {
 	let	name = decodeURIComponent(request.params.name);
 	let	fromDocumentID = request.query.fromID ? decodeURIComponent(request.query.fromID) : null;
 	let	toDocumentID = request.query.toID ? decodeURIComponent(request.query.toID) : null;
-	let	startIndex = request.query.startIndex || 0;
-	let	count = request.query.count;
+	let	startIndex = (request.query.startIndex != null) ? Number(request.query.startIndex) : 0;
+	let	count = (request.query.count != null) ? Number(request.query.count) : null;
 	let	fullInfo = request.query.fullInfo || 0;
+
+	// Validate
+	if (!Number.isInteger(startIndex) || (startIndex < 0)) {
+		// Invalid startIndex
+		response
+				.status(400)
+				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+				.send({error: 'Invalid startIndex: ' + request.query.startIndex});
+
+		return;
+	}
+	if ((count != null) && (!Number.isInteger(count) || (count < 1))) {
+		// Invalid count
+		response
+				.status(400)
+				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+				.send({error: 'Invalid count: ' + request.query.count});
+
+		return;
+	}
 
 	// Catch errors
 	try {
@@ -92,10 +112,8 @@ export async function getDocumentsV1(request, response) {
 							fromDocumentID, toDocumentID, startIndex, count, fullInfo == 1);
 		if (!error) {
 			// Success
-			let	endIndex = startIndex + Object.keys(results).length - 1;
-			let	contentRange =
-						(totalCount > 0) ?
-								'documents ' + startIndex + '-' + endIndex + '/' + totalCount : 'documents */0';
+			let	range = (results.length > 0) ? startIndex + '-' + (startIndex + results.length - 1) : '*';
+			let	contentRange = 'documents ' + range + '/' + totalCount;
 
 			response
 					.status(200)

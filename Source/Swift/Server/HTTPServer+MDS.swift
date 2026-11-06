@@ -268,6 +268,16 @@ extension HTTPServer {
 						self.preflight(documentStorageID: info.documentStorageID, authorization: info.authorization)
 			guard performResult == nil else { return performResult! }
 
+			guard info.startIndex >= 0 else {
+				// Invalid startIndex
+				return (.badRequest, nil, .json(["error": "Invalid startIndex: \(info.startIndex)"]))
+			}
+
+			guard (info.count == nil) || (info.count! > 0) else {
+				// Invalid count
+				return (.badRequest, nil, .json(["error": "Invalid count: \(info.count!)"]))
+			}
+
 			// Catch errors
 			do {
 				// Check requested flavor
@@ -321,10 +331,9 @@ extension HTTPServer {
 					// Some part of all the associations
 					var	associationItems = try documentStorage!.associationGet(for: info.name)
 					let	totalCount = associationItems.count
-					associationItems =
-							(info.count != nil) ?
-									Array(associationItems[info.startIndex...(info.startIndex + info.count!)]) :
-									Array(associationItems[info.startIndex...])
+					let	startIndex = min(info.startIndex, totalCount)
+					let	endIndex = (info.count != nil) ? min(startIndex + info.count!, totalCount) : totalCount
+					associationItems = Array(associationItems[startIndex..<endIndex])
 
 					return (.ok,
 							[HTTPURLResponse.contentRangeHeader(for: "documents", start: Int64(info.startIndex),
