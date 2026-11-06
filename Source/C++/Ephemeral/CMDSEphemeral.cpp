@@ -1174,7 +1174,8 @@ TVResult<SValue> CMDSEphemeral::associationGetValues(const CString& name, CMDSAs
 	// Setup
 	TNSet<CString>					fromDocumentIDsUse(fromDocumentIDs);
 	TArray<CMDSAssociation::Item>	associationItems = mInternals->associationGetItems(name);
-	TDictionary<CDictionary>&		cacheValueInfos = *mInternals->mCacheValuesByName.get(cacheName);
+	TDictionary<CDictionary>		cacheValueInfos =
+											mInternals->mCacheValuesByName.get(cacheName, TNDictionary<CDictionary>());
 
 	// Process association items
 	switch (action) {

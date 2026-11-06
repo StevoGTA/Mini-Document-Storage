@@ -468,10 +468,8 @@ class CMDSSQLite::Internals {
 													ReturnErrorIfError(error);
 
 													// Iterate document backings
-													documentBackingsIterate(association->getToDocumentType(),
+													return documentBackingsIterate(association->getToDocumentType(),
 															keyAndDocumentInfos, documentBackingKeyProc, userData);
-
-													return OV<SError>();
 												}
 				OV<SError>					associationIterateTo(const I<CMDSAssociation>& association,
 													const CString& toDocumentID, UInt32 startIndex,
@@ -498,10 +496,8 @@ class CMDSSQLite::Internals {
 													ReturnErrorIfError(error);
 
 													// Iterate document backings
-													documentBackingsIterate(association->getToDocumentType(),
+													return documentBackingsIterate(association->getFromDocumentType(),
 															keyAndDocumentInfos, documentBackingKeyProc, userData);
-
-													return OV<SError>();
 												}
 
 				OV<I<MDSCache> >			cacheGet(const CString& name)
@@ -1769,13 +1765,18 @@ TVResult<SValue> CMDSSQLite::associationGetValues(const CString& name, CMDSAssoc
 	switch (action) {
 		case CMDSAssociation::kGetValueActionDetail:
 			// Detail
-			return mInternals->mDatabaseManager.associationDetail(*association, fromDocumentIDs, *cache,
+			return mInternals->mDatabaseManager.associationDetail(*association, fromDocumentIDsUse, *cache,
 					cachedValueNames);
 
 		case CMDSAssociation::kGetValueActionSum:
 			// Sum
 			return mInternals->mDatabaseManager.associationSum(*association, fromDocumentIDsUse, *cache,
 					cachedValueNames);
+
+#if defined(TARGET_OS_WINDOWS)
+		default:
+			return TVResult<SValue>(SError::mUnimplemented);
+#endif
 	}
 }
 
@@ -2247,7 +2248,7 @@ void CMDSSQLite::documentSet(const CString& property, const OV<SValue>& value, c
 		const	OR<CDictionary>	propertyMap = mInternals->mDocumentsBeingCreatedPropertyMapByDocumentID[documentID];
 		if (propertyMap.hasReference())
 			// Being created
-			propertyMap->set(property, value);
+			propertyMap->set(property, valueUse);
 		else {
 			// Update document
 			I<CMDSSQLiteDocumentBacking>	documentBacking =
