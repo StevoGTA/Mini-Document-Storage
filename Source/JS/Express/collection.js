@@ -91,9 +91,29 @@ export async function getDocumentsV1(request, response) {
 	let	documentStorageID = decodeURIComponent(request.params.documentStorageID);
 	let	name = decodeURIComponent(request.params.name);
 
-	let	startIndex = request.query.startIndex || 0;
-	let	count = request.query.count;
+	let	startIndex = (request.query.startIndex != null) ? Number(request.query.startIndex) : 0;
+	let	count = (request.query.count != null) ? Number(request.query.count) : null;
 	let	fullInfo = request.query.fullInfo || 0;
+
+	// Validate
+	if (!Number.isInteger(startIndex) || (startIndex < 0)) {
+		// Invalid startIndex
+		response
+				.status(400)
+				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+				.send({error: 'Invalid startIndex: ' + request.query.startIndex});
+
+		return;
+	}
+	if ((count != null) && (!Number.isInteger(count) || (count < 1))) {
+		// Invalid count
+		response
+				.status(400)
+				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+				.send({error: 'Invalid count: ' + request.query.count});
+
+		return;
+	}
 
 	// Catch errors
 	try {
@@ -103,7 +123,7 @@ export async function getDocumentsV1(request, response) {
 							count, fullInfo == 1);
 		if (upToDate) {
 			// Success
-			let	range = (results.length > 0) ? startIndex + '-' + (parseInt(startIndex) + results.length - 1) : '*';
+			let	range = (results.length > 0) ? startIndex + '-' + (startIndex + results.length - 1) : '*';
 			let	contentRange = 'documents ' + range + '/' + totalCount;
 
 			response

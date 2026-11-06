@@ -1337,8 +1337,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		guard !documentIDs.isEmpty else { return (0, []) }
 
 		// Figure documentIDs to process
-		let	documentIDsToProcess =
-					(count != nil) ? documentIDs[startIndex...(startIndex + count!)] : documentIDs[startIndex...]
+		let	documentIDsToProcess = documentIDs.dropFirst(startIndex).prefix(count ?? Int.max)
 
 		// Retrieve document revision infos
 		let	documentRevisionInfos =
@@ -1371,8 +1370,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		guard !documentIDs.isEmpty else { return (0, []) }
 
 		// Figure documentIDs to process
-		let	documentIDsToProcess =
-					(count != nil) ? documentIDs[startIndex...(startIndex + count!)] : documentIDs[startIndex...]
+		let	documentIDsToProcess = documentIDs.dropFirst(startIndex).prefix(count ?? Int.max)
 
 		// Retrieve document revision infos
 		let	documentRevisionInfos =
@@ -1405,8 +1403,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		guard !documentIDs.isEmpty else { return (0, []) }
 
 		// Figure documentIDs to process
-		let	documentIDsToProcess =
-					(count != nil) ? documentIDs[startIndex...(startIndex + count!)] : documentIDs[startIndex...]
+		let	documentIDsToProcess = documentIDs.dropFirst(startIndex).prefix(count ?? Int.max)
 
 		// Get document full infos
 		let	documentFullInfos =
@@ -1439,8 +1436,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		guard !documentIDs.isEmpty else { return (0, []) }
 
 		// Figure documentIDs to process
-		let	documentIDsToProcess =
-					(count != nil) ? documentIDs[startIndex...(startIndex + count!)] : documentIDs[startIndex...]
+		let	documentIDsToProcess = documentIDs.dropFirst(startIndex).prefix(count ?? Int.max)
 
 		// Get document full infos
 		let	documentFullInfos =
@@ -1463,7 +1459,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 			[MDSDocument.RevisionInfo] {
 		// Validate
 		guard let documentIDs =
-						self.collectionValuesByName.value(for: name)?[startIndex...].prefix(count ?? Int.max) else
+						self.collectionValuesByName.value(for: name)?.dropFirst(startIndex).prefix(count ?? Int.max) else
 				{ throw MDSDocumentStorageError.unknownCollection(name: name) }
 
 		// Process documentIDs
@@ -1477,7 +1473,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	func collectionGetDocumentFullInfos(name :String, startIndex :Int, count :Int?) throws -> [MDSDocument.FullInfo] {
 		// Validate
 		guard let documentIDs =
-						self.collectionValuesByName.value(for: name)?[startIndex...].prefix(count ?? Int.max) else
+						self.collectionValuesByName.value(for: name)?.dropFirst(startIndex).prefix(count ?? Int.max) else
 				{ throw MDSDocumentStorageError.unknownCollection(name: name) }
 
 		// Process documentIDs
@@ -1777,7 +1773,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		// Check if have count
 		if count != nil {
 			// Have count
-			try documentBackings.sorted(by: { $0.revision < $1.revision })[..<count!].forEach({ try proc($0) })
+			try documentBackings.sorted(by: { $0.revision < $1.revision }).prefix(count!).forEach({ try proc($0) })
 		} else {
 			// Don't have count
 			try documentBackings.forEach({ try proc($0) })

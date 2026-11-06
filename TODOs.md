@@ -14,6 +14,22 @@ consumed at `Source/JS/src/Server/Collection.js:50-57`), including the lone
 an absent `relevantProperties` key as "always evaluate" and rejects an empty array, while a JS server still reads
 an array and applies its own per-selector flag.
 
+**W12 — `mysql-toolbox` `Limit` accepts anything.** `S`. Change lands in
+[MySQL-Toolbox-JS](https://github.com/StevoGTA/MySQL-Toolbox-JS).
+`Limit.toString()` (`src/Limit.js`) splices `startIndex` and `limit` into the SQL text unchecked
+(`'LIMIT ' + startIndex + ',' + limit`). The MDS JS handlers now parse and validate both, but the toolbox should
+not depend on every caller doing so. In the constructor, reject a non-null `startIndex` that is not an integer
+`>= 0` and a non-null `limit` that is not an integer `>= 0`, throwing as the constructor already does for bad
+arity.
+
+**W13 — `mysql-toolbox` `OrderBy` takes one column.** `S`. Change lands in
+[MySQL-Toolbox-JS](https://github.com/StevoGTA/MySQL-Toolbox-JS), then MDS.
+`OrderBy` (`src/OrderBy.js`) accepts `(tableColumn)` or `(tableColumn, order)` only. The association all-pairs
+page (`Source/JS/src/Server/Associations.js`, the branch with neither `fromDocumentID` nor `toDocumentID`) pages an
+association table whose only columns are `fromID` and `toID`; ordering by `fromID` alone leaves ties unordered,
+so with `LIMIT` a page boundary inside a run of equal `fromID`s can repeat or skip pairs across requests. Extend
+`OrderBy` to take multiple columns, then order that page by `fromID, toID`.
+
 ### Deferred
 
 **W1 — Tests.** `M`. Likely folds into a much larger effort to introduce unit tests across the project.

@@ -226,7 +226,8 @@ module.exports = class Collections {
 									collection.table,
 									internals.documents.getInnerJoinForDocument(statementPerformer, collection.type,
 											collection.table.idTableColumn),
-									null, statementPerformer.limit(startIndex, count));
+									null, statementPerformer.limit(startIndex, count),
+									statementPerformer.orderBy(collection.table.idTableColumn));
 				if (documentsByID)
 					// Success
 					return [true, totalCount, Object.values(documentsByID), null];
@@ -240,7 +241,8 @@ module.exports = class Collections {
 									collection.table,
 									internals.documents.getInnerJoinForDocumentInfo(statementPerformer, collection.type,
 											collection.table.idTableColumn),
-									null, statementPerformer.limit(startIndex, count));
+									null, statementPerformer.limit(startIndex, count),
+									statementPerformer.orderBy(collection.table.idTableColumn));
 				if (results)
 					// Success
 					return [true, totalCount,

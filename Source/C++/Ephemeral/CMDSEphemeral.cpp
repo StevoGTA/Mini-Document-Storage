@@ -2522,14 +2522,13 @@ TVResult<CMDSDocumentStorageServer::DocumentRevisionInfosWithTotalCount>
 		// Check association item
 		if (iterator->getFromDocumentID() == fromDocumentID) {
 			// Check index
-			if (toDocumentIDIndex >= startIndex)
+			if ((toDocumentIDIndex >= startIndex) &&
+					(!count.hasValue() || (toDocumentIDIndex < (startIndex + *count))))
 				// Add documentID
 				documentIDs += iterator->getToDocumentID();
 
 			// Update
-			if (count.hasValue() && (++toDocumentIDIndex > (startIndex + *count)))
-				// Done
-				break;
+			toDocumentIDIndex++;
 		}
 
 		// Retrieve Document RevisionInfos
@@ -2541,7 +2540,7 @@ TVResult<CMDSDocumentStorageServer::DocumentRevisionInfosWithTotalCount>
 		mInternals->mDocumentMapsLock.unlockForReading();
 
 		return TVResult<CMDSDocumentStorageServer::DocumentRevisionInfosWithTotalCount>(
-				CMDSDocumentStorageServer::DocumentRevisionInfosWithTotalCount(documentIDs.getCount(),
+				CMDSDocumentStorageServer::DocumentRevisionInfosWithTotalCount(toDocumentIDIndex,
 						documentRevisionInfos));
 }
 
@@ -2571,14 +2570,13 @@ TVResult<CMDSDocumentStorageServer::DocumentRevisionInfosWithTotalCount>
 		// Check association item
 		if (iterator->getToDocumentID() == toDocumentID) {
 			// Check index
-			if (fromDocumentIDIndex >= startIndex)
+			if ((fromDocumentIDIndex >= startIndex) &&
+					(!count.hasValue() || (fromDocumentIDIndex < (startIndex + *count))))
 				// Add documentID
 				documentIDs += iterator->getFromDocumentID();
 
 			// Update
-			if (count.hasValue() && (++fromDocumentIDIndex > (startIndex + *count)))
-				// Done
-				break;
+			fromDocumentIDIndex++;
 		}
 
 		// Retrieve Document RevisionInfos
@@ -2590,7 +2588,7 @@ TVResult<CMDSDocumentStorageServer::DocumentRevisionInfosWithTotalCount>
 		mInternals->mDocumentMapsLock.unlockForReading();
 
 		return TVResult<CMDSDocumentStorageServer::DocumentRevisionInfosWithTotalCount>(
-				CMDSDocumentStorageServer::DocumentRevisionInfosWithTotalCount(documentIDs.getCount(),
+				CMDSDocumentStorageServer::DocumentRevisionInfosWithTotalCount(fromDocumentIDIndex,
 						documentRevisionInfos));
 }
 
@@ -2619,14 +2617,13 @@ TVResult<CMDSDocumentStorageServer::DocumentFullInfosWithTotalCount> CMDSEphemer
 		// Check association item
 		if (iterator->getFromDocumentID() == fromDocumentID) {
 			// Check index
-			if (toDocumentIDIndex >= startIndex)
+			if ((toDocumentIDIndex >= startIndex) &&
+					(!count.hasValue() || (toDocumentIDIndex < (startIndex + *count))))
 				// Add documentID
 				documentIDs += iterator->getToDocumentID();
 
 			// Update
-			if (count.hasValue() && (++toDocumentIDIndex > (startIndex + *count)))
-				// Done
-				break;
+			toDocumentIDIndex++;
 		}
 	}
 
@@ -2639,7 +2636,7 @@ TVResult<CMDSDocumentStorageServer::DocumentFullInfosWithTotalCount> CMDSEphemer
 	mInternals->mDocumentMapsLock.unlockForReading();
 
 	return TVResult<CMDSDocumentStorageServer::DocumentFullInfosWithTotalCount>(
-			CMDSDocumentStorageServer::DocumentFullInfosWithTotalCount(documentIDs.getCount(),
+			CMDSDocumentStorageServer::DocumentFullInfosWithTotalCount(toDocumentIDIndex,
 					documentFullInfos));
 }
 
@@ -2668,14 +2665,13 @@ TVResult<CMDSDocumentStorageServer::DocumentFullInfosWithTotalCount> CMDSEphemer
 		// Check association item
 		if (iterator->getToDocumentID() == toDocumentID) {
 			// Check index
-			if (fromDocumentIDIndex >= startIndex)
+			if ((fromDocumentIDIndex >= startIndex) &&
+					(!count.hasValue() || (fromDocumentIDIndex < (startIndex + *count))))
 				// Add documentID
 				documentIDs += iterator->getFromDocumentID();
 
 			// Update
-			if (count.hasValue() && (++fromDocumentIDIndex > (startIndex + *count)))
-				// Done
-				break;
+			fromDocumentIDIndex++;
 		}
 	}
 
@@ -2688,7 +2684,7 @@ TVResult<CMDSDocumentStorageServer::DocumentFullInfosWithTotalCount> CMDSEphemer
 	mInternals->mDocumentMapsLock.unlockForReading();
 
 	return TVResult<CMDSDocumentStorageServer::DocumentFullInfosWithTotalCount>(
-			CMDSDocumentStorageServer::DocumentFullInfosWithTotalCount(documentIDs.getCount(),
+			CMDSDocumentStorageServer::DocumentFullInfosWithTotalCount(fromDocumentIDIndex,
 					documentFullInfos));
 }
 

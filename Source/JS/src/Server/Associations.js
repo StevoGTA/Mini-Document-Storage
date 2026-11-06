@@ -202,7 +202,8 @@ module.exports = class Associations {
 									association.table,
 									internals.documents.getInnerJoinForDocument(statementPerformer, returnDocumentType,
 											innerJoinIDTableColumn),
-									where, statementPerformer.limit(startIndex, count));
+									where, statementPerformer.limit(startIndex, count),
+									statementPerformer.orderBy(innerJoinIDTableColumn));
 				if (documentsByID)
 					// Success
 					return [totalCount, Object.values(documentsByID), null];
@@ -216,7 +217,8 @@ module.exports = class Associations {
 									association.table,
 									internals.documents.getInnerJoinForDocumentInfo(statementPerformer,
 											returnDocumentType, innerJoinIDTableColumn),
-									where, statementPerformer.limit(startIndex, count));
+									where, statementPerformer.limit(startIndex, count),
+									statementPerformer.orderBy(innerJoinIDTableColumn));
 				if (results)
 					// Success
 					return [totalCount,

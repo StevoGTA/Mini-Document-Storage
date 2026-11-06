@@ -91,13 +91,24 @@ export async function getV1(request, response) {
 	let	documentType = decodeURIComponent(request.params.documentType);
 
 	let	sinceRevision = parseInt(request.query.sinceRevision);
-	let	count = request.query.count;
+	let	count = (request.query.count != null) ? Number(request.query.count) : null;
 	let	fullInfo = request.query.fullInfo == 1;
-	
+
 	var	documentIDs = request.query.id || [];
 	if (typeof documentIDs == 'string')
 		documentIDs = [documentIDs];
 	documentIDs = documentIDs.map(documentID => decodeURIComponent(documentID));
+
+	// Validate
+	if ((count != null) && (!Number.isInteger(count) || (count < 1))) {
+		// Invalid count
+		response
+				.status(400)
+				.set({'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true})
+				.send({error: 'Invalid count: ' + request.query.count});
+
+		return;
+	}
 
 	// Catch errors
 	try {
@@ -116,8 +127,8 @@ export async function getV1(request, response) {
 							'Access-Control-Allow-Credentials': true,
 							'Access-Control-Expose-Headers': 'Content-Range',
 							'Content-Range':
-									(totalCount > 0) ?
-											'documents 0-' + (results.length - 1) + '/' + totalCount : 'documents */0',
+									'documents ' + ((results.length > 0) ? '0-' + (results.length - 1) : '*') + '/' +
+											totalCount,
 						})
 						.send(results);
 			else
