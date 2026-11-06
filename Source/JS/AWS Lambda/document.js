@@ -102,11 +102,20 @@ exports.getV1 = async (event) => {
 
 	let	queryStringParameters = event.queryStringParameters || {};
 	let	sinceRevision = parseInt(queryStringParameters.sinceRevision);
-	let	count = queryStringParameters.count;
+	let	count = (queryStringParameters.count != null) ? Number(queryStringParameters.count) : null;
 	let	fullInfo = queryStringParameters.fullInfo == 1;
 
 	let	multiValueQueryStringParameters = event.multiValueQueryStringParameters || {};
 	let	documentIDs = (multiValueQueryStringParameters.id || []) .map(documentID => decodeURIComponent(documentID));
+
+	// Validate
+	if ((count != null) && (!Number.isInteger(count) || (count < 1)))
+		// Invalid count
+		return {
+				statusCode: 400,
+				headers: {'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': true},
+				body: JSON.stringify({error: 'Invalid count: ' + queryStringParameters.count}),
+		};
 
 	// Catch errors
 	try {

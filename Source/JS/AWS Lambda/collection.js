@@ -126,7 +126,7 @@ exports.getDocumentsV1 = async (event) => {
 							fullInfo == 1);
 		if (upToDate) {
 			// Success
-			let	range = (results.length > 0) ? startIndex + '-' + (parseInt(startIndex) + results.length - 1) : '*';
+			let	range = (results.length > 0) ? startIndex + '-' + (startIndex + results.length - 1) : '*';
 			let	contentRange = 'documents ' + range + '/' + totalCount;
 
 			return {
