@@ -876,7 +876,22 @@ class CMDSSQLite::Internals {
 
 				void						update(const CString& documentType, const UpdatesInfo& updatesInfo)
 												{
-													// Get caches
+													// Figure the minimum version in the updatesInfo
+													OV<UInt32>	minimumRevision;
+													for (TArray<MDSUpdateInfo>::Iterator iterator =
+																	updatesInfo.getUpdateInfos().getIterator();
+															iterator; iterator++)
+														// Update minimum revision
+														minimumRevision.setValue(
+																minimumRevision.hasValue() ?
+																		std::min<UInt32>(*minimumRevision,
+																				iterator->getRevision()) :
+																		iterator->getRevision());
+
+													// Setup
+													TNDictionary<UpdatesInfo>	bringUpToDateUpdatesInfoBySinceRevision;
+
+													// Update caches
 													const	OR<TNArray<I<MDSCache> > >	caches =
 																								mCachesByDocumentType[
 																										documentType];
@@ -884,11 +899,37 @@ class CMDSSQLite::Internals {
 														// Iterate caches
 														for (TArray<I<MDSCache> >::Iterator iterator =
 																		caches->getIterator();
-																iterator; iterator++)
-															// Update cache
-															cacheUpdate(*iterator, updatesInfo);
+																iterator; iterator++) {
+															// Check revision state
+															if (!minimumRevision.hasValue() ||
+																	(((*iterator)->getLastRevision() + 1) ==
+																			*minimumRevision))
+																// Update cache
+																cacheUpdate(*iterator, updatesInfo);
+															else {
+																// Bring up to date
+																CString					key((*iterator)->getLastRevision());
+																const	OR<UpdatesInfo>	existingBringUpToDateUpdatesInfo =
+																								bringUpToDateUpdatesInfoBySinceRevision[
+																										key];
+																if (existingBringUpToDateUpdatesInfo.hasReference())
+																	// Have info
+																	cacheUpdate(*iterator,
+																			*existingBringUpToDateUpdatesInfo);
+																else {
+																	// Retrieve info
+																	UpdatesInfo	bringUpToDateUpdatesInfo =
+																						getUpdatesInfo(documentType,
+																								(*iterator)->
+																										getLastRevision());
+																	bringUpToDateUpdatesInfoBySinceRevision.set(key,
+																			bringUpToDateUpdatesInfo);
+																	cacheUpdate(*iterator, bringUpToDateUpdatesInfo);
+																}
+															}
+														}
 
-													// Get collections
+													// Update collections
 													const	OR<TNArray<I<MDSCollection> > >	collections =
 																									mCollectionsByDocumentType[
 																											documentType];
@@ -896,11 +937,39 @@ class CMDSSQLite::Internals {
 														// Iterate collections
 														for (TArray<I<MDSCollection> >::Iterator iterator =
 																		collections->getIterator();
-																iterator; iterator++)
-															// Update collection
-															collectionUpdate(*iterator, updatesInfo);
+																iterator; iterator++) {
+															// Check revision state
+															if (!minimumRevision.hasValue() ||
+																	(((*iterator)->getLastRevision() + 1) ==
+																			*minimumRevision))
+																// Update collection
+																collectionUpdate(*iterator, updatesInfo);
+															else {
+																// Bring up to date
+																CString					key((*iterator)->
+																								getLastRevision());
+																const	OR<UpdatesInfo>	existingBringUpToDateUpdatesInfo =
+																								bringUpToDateUpdatesInfoBySinceRevision[
+																										key];
+																if (existingBringUpToDateUpdatesInfo.hasReference())
+																	// Have info
+																	collectionUpdate(*iterator,
+																			*existingBringUpToDateUpdatesInfo);
+																else {
+																	// Retrieve info
+																	UpdatesInfo	bringUpToDateUpdatesInfo =
+																						getUpdatesInfo(documentType,
+																								(*iterator)->
+																										getLastRevision());
+																	bringUpToDateUpdatesInfoBySinceRevision.set(key,
+																			bringUpToDateUpdatesInfo);
+																	collectionUpdate(*iterator,
+																			bringUpToDateUpdatesInfo);
+																}
+															}
+														}
 
-													// Get indexes
+													// Update indexes
 													const	OR<TNArray<I<MDSIndex> > >	indexes =
 																								mIndexesByDocumentType[
 																										documentType];
@@ -908,9 +977,35 @@ class CMDSSQLite::Internals {
 														// Iterate indexes
 														for (TArray<I<MDSIndex> >::Iterator iterator =
 																		indexes->getIterator();
-																iterator; iterator++)
-															// Update index
-															indexUpdate(*iterator, updatesInfo);
+																iterator; iterator++) {
+															// Check revision state
+															if (!minimumRevision.hasValue() ||
+																	(((*iterator)->getLastRevision() + 1) ==
+																			*minimumRevision))
+																// Update index
+																indexUpdate(*iterator, updatesInfo);
+															else {
+																// Bring up to date
+																CString					key((*iterator)->getLastRevision());
+																const	OR<UpdatesInfo>	existingBringUpToDateUpdatesInfo =
+																								bringUpToDateUpdatesInfoBySinceRevision[
+																										key];
+																if (existingBringUpToDateUpdatesInfo.hasReference())
+																	// Have info
+																	indexUpdate(*iterator,
+																			*existingBringUpToDateUpdatesInfo);
+																else {
+																	// Retrieve info
+																	UpdatesInfo	bringUpToDateUpdatesInfo =
+																						getUpdatesInfo(documentType,
+																								(*iterator)->
+																										getLastRevision());
+																	bringUpToDateUpdatesInfoBySinceRevision.set(key,
+																			bringUpToDateUpdatesInfo);
+																	indexUpdate(*iterator, bringUpToDateUpdatesInfo);
+																}
+															}
+														}
 												}
 
 				void						process(const CString& documentID,
