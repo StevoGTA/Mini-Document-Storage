@@ -90,114 +90,126 @@ template <typename T> class TMDSDocumentBackingCache {
 
 	// Methods:
 	public:
-										// Lifecycle methods
-										TMDSDocumentBackingCache(UInt32 limit = 1000000) : mLimit(limit) {}
+													// Lifecycle methods
+		explicit									TMDSDocumentBackingCache(UInt32 limit = 1000000) : mLimit(limit) {}
 
-										// Instance methods
-				void					add(const TArray<T>& documentBackings)
-											{
-												// Setup
-												mLock.lockForWriting();
+													// Instance methods
+							void					add(const TArray<T>& documentBackings)
+														{
+															// Setup
+															mLock.lockForWriting();
 
-												// Iterate all backing infos
-												for (typename TArray<T>::Iterator iterator =
-																documentBackings.getIterator();
-														iterator; iterator++)
-													// Store
-													mReferenceByDocumentID.set((*iterator)->getDocumentID(),
-															Reference(*iterator));
+															// Iterate all backing infos
+															for (typename TArray<T>::Iterator iterator =
+																			documentBackings.getIterator();
+																	iterator; iterator++)
+																// Store
+																mReferenceByDocumentID.set((*iterator)->getDocumentID(),
+																		Reference(*iterator));
 
-												// Done
-												mLock.unlockForWriting();
-											}
-		const	OR<T>					getDocumentBacking(const CString& documentID) const
-											{
-												// Setup
-												mLock.lockForReading();
+															// Done
+															mLock.unlockForWriting();
+														}
+					const	OR<T>					getDocumentBacking(const CString& documentID) const
+														{
+															// Setup
+															mLock.lockForReading();
 
-												// Retrieve
-												const	OR<Reference>	reference = mReferenceByDocumentID[documentID];
-												if (reference.hasReference())
-													// Note was referenced
-													reference->noteWasReferenced();
+															// Retrieve
+															const	OR<Reference>	reference =
+																							mReferenceByDocumentID[
+																									documentID];
+															if (reference.hasReference())
+																// Note was referenced
+																reference->noteWasReferenced();
 
-												// Done
-												mLock.unlockForReading();
+															// Done
+															mLock.unlockForReading();
 
-												return reference.hasReference() ?
-														OR<T>(reference->getDocumentBacking()) : OR<T>();
-											}
-				DocumentIDsInfo			queryDocumentIDs(const TArray<CString>& documentIDs)
-											{
-												// Setup
-												TNArray<CString>	foundDocumentIDs;
-												TNArray<CString>	notFoundDocumentIDs;
+															return reference.hasReference() ?
+																	OR<T>(reference->getDocumentBacking()) : OR<T>();
+														}
+							DocumentIDsInfo			queryDocumentIDs(const TArray<CString>& documentIDs)
+														{
+															// Setup
+															TNArray<CString>	foundDocumentIDs;
+															TNArray<CString>	notFoundDocumentIDs;
 
-												mLock.lockForReading();
+															mLock.lockForReading();
 
-												// Iterate document IDs
-												for (TArray<CString>::Iterator iterator = documentIDs.getIterator();
-														iterator; iterator++) {
-													// Look up reference for this document ID
-													const	OR<Reference>	reference = mReferenceByDocumentID[*iterator];
-													if (reference.hasReference()) {
-														// Found
-														foundDocumentIDs += *iterator;
-														reference->noteWasReferenced();
-													} else
-														// Not found
-														notFoundDocumentIDs += *iterator;
-												}
+															// Iterate document IDs
+															for (TArray<CString>::Iterator iterator =
+																			documentIDs.getIterator();
+																	iterator; iterator++) {
+																// Look up reference for this document ID
+																const	OR<Reference>	reference =
+																								mReferenceByDocumentID[
+																										*iterator];
+																if (reference.hasReference()) {
+																	// Found
+																	foundDocumentIDs += *iterator;
+																	reference->noteWasReferenced();
+																} else
+																	// Not found
+																	notFoundDocumentIDs += *iterator;
+															}
 
-												// Done
-												mLock.unlockForReading();
+															// Done
+															mLock.unlockForReading();
 
-												return DocumentIDsInfo(foundDocumentIDs, notFoundDocumentIDs);
-											}
-				DocumentBackingsInfo	queryDocumentBackings(const TArray<CString>& documentIDs)
-											{
-												// Setup
-												TNArray<T>			foundDocumentBackings;
-												TNArray<CString>	notFoundDocumentIDs;
+															return DocumentIDsInfo(foundDocumentIDs,
+																	notFoundDocumentIDs);
+														}
+							DocumentBackingsInfo	queryDocumentBackings(const TArray<CString>& documentIDs)
+														{
+															// Setup
+															TNArray<T>			foundDocumentBackings;
+															TNArray<CString>	notFoundDocumentIDs;
 
-												mLock.lockForReading();
+															mLock.lockForReading();
 
-												// Iterate document IDs
-												for (TArray<CString>::Iterator iterator = documentIDs.getIterator();
-														iterator; iterator++) {
-													// Look up reference for this document ID
-													const	OR<Reference>	reference = mReferenceByDocumentID[*iterator];
-													if (reference.hasReference()) {
-														// Found
-														foundDocumentBackings += reference->getDocumentBacking();
-														reference->noteWasReferenced();
-													} else
-														// Not found
-														notFoundDocumentIDs += *iterator;
-												}
+															// Iterate document IDs
+															for (TArray<CString>::Iterator iterator =
+																			documentIDs.getIterator();
+																	iterator; iterator++) {
+																// Look up reference for this document ID
+																const	OR<Reference>	reference =
+																								mReferenceByDocumentID[
+																										*iterator];
+																if (reference.hasReference()) {
+																	// Found
+																	foundDocumentBackings +=
+																			reference->getDocumentBacking();
+																	reference->noteWasReferenced();
+																} else
+																	// Not found
+																	notFoundDocumentIDs += *iterator;
+															}
 
-												// Done
-												mLock.unlockForReading();
+															// Done
+															mLock.unlockForReading();
 
-												return DocumentBackingsInfo(foundDocumentBackings, notFoundDocumentIDs);
-											}
-				void					remove(const TArray<CString>& documentIDs)
-											{
-												// Setup
-												mLock.lockForWriting();
+															return DocumentBackingsInfo(foundDocumentBackings,
+																	notFoundDocumentIDs);
+														}
+							void					remove(const TArray<CString>& documentIDs)
+														{
+															// Setup
+															mLock.lockForWriting();
 
-												// Iterate document IDs
-												for (TArray<CString>::Iterator iterator = documentIDs.getIterator();
-														iterator; iterator++)
-													// Remove from storage
-													mReferenceByDocumentID.remove(*iterator);
+															// Iterate document IDs
+															for (TArray<CString>::Iterator iterator =
+																			documentIDs.getIterator();
+																	iterator; iterator++)
+																// Remove from storage
+																mReferenceByDocumentID.remove(*iterator);
 
-												// Done
-												mLock.unlockForWriting();
-											}
+															// Done
+															mLock.unlockForWriting();
+														}
 
-		const	OR<T>					operator[](const CString& documentID) const
-											{ return getDocumentBacking(documentID); }
+					const	OR<T>					operator[](const CString& documentID) const
+														{ return getDocumentBacking(documentID); }
 
 	// Properties:
 	private:

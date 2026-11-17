@@ -119,31 +119,31 @@ class CMDSAssociation : public CEquatable {
 
 	// Methods
 	public:
-										// Lifecycle methods
-										CMDSAssociation(const CString& name, const CString& fromDocumentType,
-												const CString& toDocumentType) :
-											mName(name), mFromDocumentType(fromDocumentType),
-													mToDocumentType(toDocumentType)
-											{}
-										CMDSAssociation(const CDictionary& storageInfo);
+											// Lifecycle methods
+											CMDSAssociation(const CString& name, const CString& fromDocumentType,
+													const CString& toDocumentType) :
+												mName(name), mFromDocumentType(fromDocumentType),
+														mToDocumentType(toDocumentType)
+												{}
+		explicit							CMDSAssociation(const CDictionary& storageInfo);
 
-										// CEquatable methods
-						bool			operator==(const CEquatable& other) const
-											{ return mName == ((const CMDSAssociation&) other).mName; }
+											// CEquatable methods
+							bool			operator==(const CEquatable& other) const
+												{ return mName == ((const CMDSAssociation&) other).mName; }
 
-										// Instance methods
-				const	CString&		getName() const
-											{ return mName; }
-				const	CString&		getFromDocumentType() const
-											{ return mFromDocumentType; }
-				const	CString&		getToDocumentType() const
-											{ return mToDocumentType; }
+											// Instance methods
+					const	CString&		getName() const
+												{ return mName; }
+					const	CString&		getFromDocumentType() const
+												{ return mFromDocumentType; }
+					const	CString&		getToDocumentType() const
+												{ return mToDocumentType; }
 
-						CDictionary		getStorageInfo() const;
+							CDictionary		getStorageInfo() const;
 
-										// Class methods
-		static			CDictionary		toStorageInfo(I<CMDSAssociation>* association, void* userData)
-											{ return (*association)->getStorageInfo(); }
+											// Class methods
+		static				CDictionary		toStorageInfo(I<CMDSAssociation>* association, void* userData)
+												{ return (*association)->getStorageInfo(); }
 
 	// Properties
 	private:
