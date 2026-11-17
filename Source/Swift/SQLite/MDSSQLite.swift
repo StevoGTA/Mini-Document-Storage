@@ -1829,17 +1829,73 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 	//------------------------------------------------------------------------------------------------------------------
 	private func update(for documentType :String, info: (updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64])) {
+		// Setup
+		let	minimumRevision = info.updateInfos.map({ $0.revision }).min()
+
+		var	bringUpToDateInfoBySinceRevision = [Int : (updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64])]()
+
 		// Update caches
-		self.cachesByDocumentType.values(for: documentType)?.forEach()
-			{ self.cacheUpdate($0, info: info) }
+		self.cachesByDocumentType.values(for: documentType)?.forEach() {
+			// Check revision state
+			if (minimumRevision == nil) || (($0.lastRevision + 1) == minimumRevision!) {
+				// Update cache
+				self.cacheUpdate($0, info: info)
+			} else {
+				// Bring up to date
+				let	bringUpToDateInfo :(updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64])
+				if let existingBringUpToDateInfo = bringUpToDateInfoBySinceRevision[$0.lastRevision] {
+					// Have info
+					bringUpToDateInfo = existingBringUpToDateInfo
+				} else {
+					// Retrieve info
+					bringUpToDateInfo = self.info(for: documentType, sinceRevision: $0.lastRevision)
+					bringUpToDateInfoBySinceRevision[$0.lastRevision] = bringUpToDateInfo
+				}
+				self.cacheUpdate($0, info: bringUpToDateInfo)
+			}
+		}
 
 		// Update collections
-		self.collectionsByDocumentType.values(for: documentType)?.forEach()
-			{ self.collectionUpdate($0, info: info) }
+		self.collectionsByDocumentType.values(for: documentType)?.forEach() {
+			// Check revision state
+			if (minimumRevision == nil) || (($0.lastRevision + 1) == minimumRevision!) {
+				// Update collection
+				self.collectionUpdate($0, info: info)
+			} else {
+				// Bring up to date
+				let	bringUpToDateInfo :(updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64])
+				if let existingBringUpToDateInfo = bringUpToDateInfoBySinceRevision[$0.lastRevision] {
+					// Have info
+					bringUpToDateInfo = existingBringUpToDateInfo
+				} else {
+					// Retrieve info
+					bringUpToDateInfo = self.info(for: documentType, sinceRevision: $0.lastRevision)
+					bringUpToDateInfoBySinceRevision[$0.lastRevision] = bringUpToDateInfo
+				}
+				self.collectionUpdate($0, info: bringUpToDateInfo)
+			}
+		}
 
 		// Update indexes
-		self.indexesByDocumentType.values(for: documentType)?.forEach()
-			{ self.indexUpdate($0, info: info) }
+		self.indexesByDocumentType.values(for: documentType)?.forEach() {
+			// Check revision state
+			if (minimumRevision == nil) || (($0.lastRevision + 1) == minimumRevision!) {
+				// Update index
+				self.indexUpdate($0, info: info)
+			} else {
+				// Bring up to date
+				let	bringUpToDateInfo :(updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64])
+				if let existingBringUpToDateInfo = bringUpToDateInfoBySinceRevision[$0.lastRevision] {
+					// Have info
+					bringUpToDateInfo = existingBringUpToDateInfo
+				} else {
+					// Retrieve info
+					bringUpToDateInfo = self.info(for: documentType, sinceRevision: $0.lastRevision)
+					bringUpToDateInfoBySinceRevision[$0.lastRevision] = bringUpToDateInfo
+				}
+				self.indexUpdate($0, info: bringUpToDateInfo)
+			}
+		}
 	}
 }
 
