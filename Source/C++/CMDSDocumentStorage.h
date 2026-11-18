@@ -232,6 +232,17 @@ class CMDSDocumentStorage {
 																{ return associationRegister(
 																		fromDocumentInfo.getDocumentType(),
 																		toDocumentInfo.getDocumentType()); }
+						AssociationItemsResult				associationGet(const CString& fromDocumentType,
+																	const CString& toDocumentType) const
+																{ return associationGet(
+																		associationName(fromDocumentType,
+																				toDocumentType)); }
+						AssociationItemsResult				associationGet(
+																	const CMDSDocument::Info& fromDocumentInfo,
+																	const CMDSDocument::Info& toDocumentInfo) const
+																{ return associationGet(
+																		fromDocumentInfo.getDocumentType(),
+																		toDocumentInfo.getDocumentType()); }
 						OV<SError>							associationUpdateAdd(const I<CMDSDocument>& fromDocument,
 																	const I<CMDSDocument>& toDocument)
 																{ return associationUpdate(
@@ -446,7 +457,7 @@ class CMDSDocumentStorage {
 	private:
 															// Instance methods
 						CString								associationName(const CString& fromDocumentType,
-																	const CString& toDocumentType)
+																	const CString& toDocumentType) const
 																{ return fromDocumentType + CString(OSSTR("To")) +
 																		toDocumentType.capitalizingFirstLetter(); }
 

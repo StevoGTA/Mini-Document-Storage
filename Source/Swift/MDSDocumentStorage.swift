@@ -175,6 +175,12 @@ public extension MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func associationGet(fromDocumentType :String, toDocumentType :String) throws -> [MDSAssociation.Item] {
+		// Get association
+		try associationGet(for: associationName(fromDocumentType: fromDocumentType, toDocumentType: toDocumentType))
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func associationUpdate<T : MDSDocument, U : MDSDocument>(
 			updates :[(action :MDSAssociation.Update.Action, fromDocument :T, toDocument :U)]) throws {
 		// Update association
