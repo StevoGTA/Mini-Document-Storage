@@ -105,8 +105,21 @@ Ephemeral implementations guard their document maps with a **non-reentrant** rea
 Never invoke a client-supplied proc while holding that lock — a callback that reads a document property will
 re-enter and deadlock. Collect the notifications inside the lock, drain them after release.
 
-SQLite's `databaseManager.batch()` is **not a transaction** — it is a per-thread write-deferral buffer that flushes
-collection/index/cache tables *after* the proc returns. Work done inside it does not see settled storage.
+There are **two batch layers** in the SQLite implementations, and they follow different rules:
+
+- **The public MDS batch** (`MDSSQLite.batch` / `CMDSSQLite::batch`) is the usage-site API and is **not
+  re-entrant**. Its rules are part of the public contract.
+- **The database manager batch** (`MDSSQLiteDatabaseManager.batch` / `CMDSSQLiteDatabaseManager::batch`) is an
+  internal detail, unreachable from usage sites, and **is re-entrant**: a nested call only adds its writes to the
+  batch already in progress, and only the outermost call writes. The per-change cache/collection/index update path
+  relies on this - it always runs inside a database manager batch, whether it is reached from a single property
+  set or remove, or from inside document create, the public batch commit, or `documentUpdate`.
+
+The database manager batch is a per-thread write-deferral buffer. Document rows are written immediately (they need
+their row IDs), so they are **not** part of any transaction. The deferred writes - collection/index/cache contents,
+document type last revisions, and any pending last revisions (structures whose last revision advanced with no
+change to contents) - are written *after* the proc returns, as **one SQLite transaction**. Work done inside the
+batch therefore does not see settled collection/index/cache storage.
 
 Deferred notifications are collected into **per-kind lists** and drained in a fixed order:
 **created → updated → attachment created → attachment updated → attachment removed** (removed documents notify

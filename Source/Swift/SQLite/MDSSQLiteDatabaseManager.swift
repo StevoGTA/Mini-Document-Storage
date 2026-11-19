@@ -120,6 +120,12 @@ class MDSSQLiteDatabaseManager {
 	// MARK: BatchInfo
 	private class BatchInfo {
 
+		// MARK: Properties
+		var	hasUpdates :Bool {
+					!self.documentLastRevisionTypesNeedingWrite.isEmpty || !self.cacheUpdateInfoByName.isEmpty ||
+							!self.collectionUpdateInfoByName.isEmpty || !self.indexUpdateInfoByName.isEmpty
+				}
+
 		// MARK: Instance methods
 		//--------------------------------------------------------------------------------------------------------------
 		func noteDocumentTypeNeedingLastRevisionWrite(documentType :String) {
@@ -137,7 +143,10 @@ class MDSSQLiteDatabaseManager {
 						(cacheUpdateInfo.valueInfoByID
 										.merging(valueInfoByID ?? [:],
 												uniquingKeysWith: { $0.merging($1, uniquingKeysWith: { $1 }) }),
-								cacheUpdateInfo.removedIDs + removedIDs, lastRevision)
+								cacheUpdateInfo.removedIDs + removedIDs,
+								(lastRevision != nil) ?
+										max(lastRevision!, cacheUpdateInfo.lastRevision ?? lastRevision!) :
+										cacheUpdateInfo.lastRevision)
 			} else {
 				// Add
 				self.cacheUpdateInfoByName[name] = (valueInfoByID ?? [:], removedIDs, lastRevision)
@@ -151,7 +160,10 @@ class MDSSQLiteDatabaseManager {
 				// Update
 				self.collectionUpdateInfoByName[name] =
 						(collectionUpdateInfo.includedIDs + (includedIDs ?? []),
-								collectionUpdateInfo.notIncludedIDs + (notIncludedIDs ?? []), lastRevision)
+								collectionUpdateInfo.notIncludedIDs + (notIncludedIDs ?? []),
+								(lastRevision != nil) ?
+										max(lastRevision!, collectionUpdateInfo.lastRevision ?? lastRevision!) :
+										collectionUpdateInfo.lastRevision)
 			} else {
 				// Add
 				self.collectionUpdateInfoByName[name] = (includedIDs ?? [], notIncludedIDs ?? [], lastRevision)
@@ -166,7 +178,9 @@ class MDSSQLiteDatabaseManager {
 				// Update
 				self.indexUpdateInfoByName[name] =
 						(indexInfo.keysInfos + (keysInfos ?? []), indexInfo.removedIDs + (removedIDs ?? []),
-								lastRevision)
+								(lastRevision != nil) ?
+										max(lastRevision!, indexInfo.lastRevision ?? lastRevision!) :
+										indexInfo.lastRevision)
 			} else {
 				// Add
 				self.indexUpdateInfoByName[name] = (keysInfos ?? [], removedIDs ?? [], lastRevision)
@@ -1363,6 +1377,10 @@ class MDSSQLiteDatabaseManager {
 
 	private	let	batchInfoByThread = LockingDictionary<Thread, BatchInfo>()
 
+	private	let	pendingCacheLastRevisionByName = LockingDictionary</* Cache name */ String, Int>()
+	private	let	pendingCollectionLastRevisionByName = LockingDictionary</* Collection name */ String, Int>()
+	private	let	pendingIndexLastRevisionByName = LockingDictionary</* Index name */ String, Int>()
+
 	private	let	associationsTable :SQLiteTable
 	private	let	associationTablesByName = LockingDictionary</* Association name */ String, SQLiteTable>()
 
@@ -1747,14 +1765,18 @@ class MDSSQLiteDatabaseManager {
 			// New
 			lastRevision = 0
 			updateMainTable = true
+			self.pendingCacheLastRevisionByName.remove(name)
 		} else if (relevantProperties != currentInfo!.relevantProperties) ||
 				(cacheValueInfos != currentInfo!.valueInfos) {
 			// Info has changed
 			lastRevision = 0
 			updateMainTable = true
+			self.pendingCacheLastRevisionByName.remove(name)
 		} else {
-			// No change
-			lastRevision = currentInfo!.lastRevision
+			// No change (a pending last revision not yet written is still current)
+			lastRevision =
+					max(currentInfo!.lastRevision,
+							self.pendingCacheLastRevisionByName.value(for: name) ?? currentInfo!.lastRevision)
 			updateMainTable = false
 		}
 
@@ -1872,6 +1894,12 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func cacheNoteLastRevision(name :String, lastRevision :Int) {
+		// Note
+		self.pendingCacheLastRevisionByName.update(for: name) { max(lastRevision, $0 ?? lastRevision) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func cacheUpdate(name :String, valueInfoByID :[Int64 : [/* Name */ String : Any]]?, removedIDs :[Int64],
 			lastRevision :Int?) {
 		// Check if in batch
@@ -1904,15 +1932,19 @@ class MDSSQLiteDatabaseManager {
 			// New
 			lastRevision = isUpToDate ? self.documentLastRevisionByDocumentType.value(for: documentType) ?? 0 : 0
 			updateMainTable = true
+			self.pendingCollectionLastRevisionByName.remove(name)
 		} else if (relevantProperties != currentInfo!.relevantProperties) ||
 				(isIncludedSelector != currentInfo!.isIncludedSelector) ||
 				!isIncludedSelectorInfo.equals(currentInfo!.isIncludedSelectorInfo) {
 			// Info has changed
 			lastRevision = isUpToDate ? self.documentLastRevisionByDocumentType.value(for: documentType) ?? 0 : 0
 			updateMainTable = true
+			self.pendingCollectionLastRevisionByName.remove(name)
 		} else {
-			// No change
-			lastRevision = currentInfo!.lastRevision
+			// No change (a pending last revision not yet written is still current)
+			lastRevision =
+					max(currentInfo!.lastRevision,
+							self.pendingCollectionLastRevisionByName.value(for: name) ?? currentInfo!.lastRevision)
 			updateMainTable = false
 		}
 
@@ -1972,6 +2004,12 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func collectionNoteLastRevision(name :String, lastRevision :Int) {
+		// Note
+		self.pendingCollectionLastRevisionByName.update(for: name) { max(lastRevision, $0 ?? lastRevision) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func collectionUpdate(name :String, includedIDs :[Int64]?, notIncludedIDs :[Int64]?, lastRevision :Int?) {
 		// Check if in batch
 		if let batchInfo = self.batchInfoByThread.value(for: .current) {
@@ -2016,6 +2054,12 @@ class MDSSQLiteDatabaseManager {
 	func documentTypeIsKnown(_ documentType :String) -> Bool {
 		// Check if have last revision for this document type
 		self.documentLastRevisionByDocumentType.value(for: documentType) != nil
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	func documentHasChanged(for documentType :String, since revision :Int) -> Bool {
+		// Check if any document of this type has a revision newer than the given revision
+		(self.documentLastRevisionByDocumentType.value(for: documentType) ?? 0) > revision
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
@@ -2195,14 +2239,18 @@ class MDSSQLiteDatabaseManager {
 			// New
 			lastRevision = 0
 			updateMainTable = true
+			self.pendingIndexLastRevisionByName.remove(name)
 		} else if (relevantProperties != currentInfo!.relevantProperties) ||
 				(keysSelector != currentInfo!.keysSelector) || !keysSelectorInfo.equals(currentInfo!.keysSelectorInfo) {
 			// Info has changed
 			lastRevision = 0
 			updateMainTable = true
+			self.pendingIndexLastRevisionByName.remove(name)
 		} else {
-			// No change
-			lastRevision = currentInfo!.lastRevision
+			// No change (a pending last revision not yet written is still current)
+			lastRevision =
+					max(currentInfo!.lastRevision,
+							self.pendingIndexLastRevisionByName.value(for: name) ?? currentInfo!.lastRevision)
 			updateMainTable = false
 		}
 
@@ -2256,6 +2304,12 @@ class MDSSQLiteDatabaseManager {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	func indexNoteLastRevision(name :String, lastRevision :Int) {
+		// Note
+		self.pendingIndexLastRevisionByName.update(for: name) { max(lastRevision, $0 ?? lastRevision) }
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	func indexUpdate(name :String, keysInfos :[(keys :[String], id :Int64)]?, removedIDs :[Int64]?,
 			lastRevision :Int?) {
 		// Check if in batch
@@ -2286,35 +2340,84 @@ class MDSSQLiteDatabaseManager {
 
 	//------------------------------------------------------------------------------------------------------------------
 	func batch(_ proc :() throws -> Void) throws {
-		// Setup
-		let	batchInfo = BatchInfo()
-		self.batchInfoByThread.set(batchInfo, for: .current)
+		// Check if already in batch
+		if self.batchInfoByThread.value(for: .current) != nil {
+			// Already in batch
+			try proc()
+		} else {
+			// Setup
+			let	batchInfo = BatchInfo()
+			self.batchInfoByThread.set(batchInfo, for: .current)
 
-		// Call proc
-		try proc()
+			// Call proc
+			try proc()
 
-		// Commit changes
-		self.batchInfoByThread.set(nil, for: .current)
+			// Commit changes
+			self.batchInfoByThread.set(nil, for: .current)
 
-		batchInfo.iterateDocumentLastRevisionTypesNeedingWrite() {
-			// Update
-			DocumentsTable.set(lastRevision: self.documentLastRevisionByDocumentType.value(for: $0)!, for: $0,
-					in: self.documentsTable)
-		}
-		batchInfo.iterateCacheUpdateInfos() {
-			// Update Cache
-			self.cacheUpdateInternal(name: $0, valueInfoByID: $1.valueInfoByID, removedIDs: $1.removedIDs,
-					lastRevision: $1.lastRevision)
-		}
-		batchInfo.iterateCollectionUpdateInfos() {
-			// Update Collection
-			self.collectionUpdateInternal(name: $0, includedIDs: $1.includedIDs, notIncludedIDs: $1.notIncludedIDs,
-					lastRevision: $1.lastRevision)
-		}
-		batchInfo.iterateIndexUpdateInfos() {
-			// Update Index
-			self.indexUpdateInternal(name: $0, keysInfos: $1.keysInfos, removedIDs: $1.removedIDs,
-					lastRevision: $1.lastRevision)
+			// Check if have updates
+			if batchInfo.hasUpdates {
+				// Write all updates
+				var	pendingCacheLastRevisionByName = self.pendingCacheLastRevisionByName.removeAll()
+				var	pendingCollectionLastRevisionByName = self.pendingCollectionLastRevisionByName.removeAll()
+				var	pendingIndexLastRevisionByName = self.pendingIndexLastRevisionByName.removeAll()
+				self.database.performAsTransaction() {
+					// Update document last revisions
+					batchInfo.iterateDocumentLastRevisionTypesNeedingWrite() {
+						// Update
+						DocumentsTable.set(lastRevision: self.documentLastRevisionByDocumentType.value(for: $0)!,
+								for: $0, in: self.documentsTable)
+					}
+
+					// Update caches
+					batchInfo.iterateCacheUpdateInfos() {
+						// Setup
+						let	pendingLastRevision = pendingCacheLastRevisionByName.removeValue(forKey: $0)
+
+						// Update cache
+						self.cacheUpdateInternal(name: $0, valueInfoByID: $1.valueInfoByID, removedIDs: $1.removedIDs,
+								lastRevision:
+										($1.lastRevision != nil) ?
+												max($1.lastRevision!, pendingLastRevision ?? $1.lastRevision!) :
+												pendingLastRevision)
+					}
+					pendingCacheLastRevisionByName.forEach()
+						{ CachesTable.update(name: $0.key, lastRevision: $0.value, in: self.cachesTable) }
+
+					// Update collections
+					batchInfo.iterateCollectionUpdateInfos() {
+						// Setup
+						let	pendingLastRevision = pendingCollectionLastRevisionByName.removeValue(forKey: $0)
+
+						// Update collection
+						self.collectionUpdateInternal(name: $0, includedIDs: $1.includedIDs,
+								notIncludedIDs: $1.notIncludedIDs,
+								lastRevision:
+										($1.lastRevision != nil) ?
+												max($1.lastRevision!, pendingLastRevision ?? $1.lastRevision!) :
+												pendingLastRevision)
+					}
+					pendingCollectionLastRevisionByName.forEach()
+						{ CollectionsTable.update(name: $0.key, lastRevision: $0.value, in: self.collectionsTable) }
+
+					// Update indexes
+					batchInfo.iterateIndexUpdateInfos() {
+						// Setup
+						let	pendingLastRevision = pendingIndexLastRevisionByName.removeValue(forKey: $0)
+
+						// Update index
+						self.indexUpdateInternal(name: $0, keysInfos: $1.keysInfos, removedIDs: $1.removedIDs,
+								lastRevision:
+										($1.lastRevision != nil) ?
+												max($1.lastRevision!, pendingLastRevision ?? $1.lastRevision!) :
+												pendingLastRevision)
+					}
+					pendingIndexLastRevisionByName.forEach()
+						{ IndexesTable.update(name: $0.key, lastRevision: $0.value, in: self.indexesTable) }
+
+					return .commit
+				}
+			}
 		}
 	}
 

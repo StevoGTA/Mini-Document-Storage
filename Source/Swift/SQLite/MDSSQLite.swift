@@ -286,10 +286,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Bring up to date
-		autoreleasepool() {
-			// Update
-			cacheUpdate(cache, info: self.info(for: cache.documentType, sinceRevision: cache.lastRevision))
-		}
+		bringUpToDate(cache)
 
 		return try self.databaseManager.cacheGetValues(cache: cache, valueNames: valueNames, documentIDs: documentIDs)
 	}
@@ -332,11 +329,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Bring up to date
-		autoreleasepool() {
-			// Update
-			collectionUpdate(collection, info: self.info(for: collection.documentType,
-					sinceRevision: collection.lastRevision))
-		}
+		bringUpToDate(collection)
 
 		return self.databaseManager.collectionGetDocumentCount(for: name)
 	}
@@ -352,11 +345,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Bring up to date
-		autoreleasepool() {
-			// Update
-			collectionUpdate(collection,
-					info: self.info(for: collection.documentType, sinceRevision: collection.lastRevision))
-		}
+		bringUpToDate(collection)
 
 		// Collect document IDs
 		var	documentIDs = [String]()
@@ -919,10 +908,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Bring up to date
-		autoreleasepool() {
-			// Update index
-			indexUpdate(index, info: self.info(for: index.documentType, sinceRevision: index.lastRevision))
-		}
+		bringUpToDate(index)
 
 		// Compose map
 		var	documentIDByKey = [/* Key */ String : /* String */ String]()
@@ -1576,6 +1562,48 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
+	private func bringUpToDate(_ cache :MDSCache) {
+		// Check if have changes
+		if self.databaseManager.documentHasChanged(for: cache.documentType, since: cache.lastRevision) {
+			// Bring up to date
+			autoreleasepool() {
+				// Update
+				try! self.databaseManager.batch()
+					{ cacheUpdate(cache, info: self.info(for: cache.documentType, sinceRevision: cache.lastRevision)) }
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func bringUpToDate(_ collection :MDSCollection) {
+		// Check if have changes
+		if self.databaseManager.documentHasChanged(for: collection.documentType, since: collection.lastRevision) {
+			// Bring up to date
+			autoreleasepool() {
+				// Update
+				try! self.databaseManager.batch() {
+					// Update
+					collectionUpdate(collection,
+							info: self.info(for: collection.documentType, sinceRevision: collection.lastRevision))
+				}
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
+	private func bringUpToDate(_ index :MDSIndex) {
+		// Check if have changes
+		if self.databaseManager.documentHasChanged(for: index.documentType, since: index.lastRevision) {
+			// Bring up to date
+			autoreleasepool() {
+				// Update
+				try! self.databaseManager.batch()
+					{ indexUpdate(index, info: self.info(for: index.documentType, sinceRevision: index.lastRevision)) }
+			}
+		}
+	}
+
+	//------------------------------------------------------------------------------------------------------------------
 	private func cache(for name :String) -> MDSCache? {
 		// Check if have loaded
 		if let cache = self.cacheByName.value(for: name) {
@@ -1603,6 +1631,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	private func cacheUpdate(_ cache :MDSCache, info :(updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64])) {
 		// Update Cache
+		let	previousLastRevision = cache.lastRevision
 		let	(valueInfoByID, lastRevision) = cache.update(info.updateInfos)
 
 		// Check if have updates
@@ -1610,6 +1639,9 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			// Update database
 			self.databaseManager.cacheUpdate(name: cache.name, valueInfoByID: valueInfoByID,
 					removedIDs: info.removedIDs, lastRevision: lastRevision)
+		} else if cache.lastRevision != previousLastRevision {
+			// Only the last revision advanced
+			self.databaseManager.cacheNoteLastRevision(name: cache.name, lastRevision: cache.lastRevision)
 		}
 	}
 
@@ -1654,6 +1686,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	private func collectionUpdate(_ collection :MDSCollection,
 			info :(updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64])) {
 		// Update Collection
+		let	previousLastRevision = collection.lastRevision
 		let	(includedIDs, notIncludedIDs, lastRevision) = collection.update(info.updateInfos)
 
 		// Check if have updates
@@ -1661,6 +1694,10 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			// Update database
 			self.databaseManager.collectionUpdate(name: collection.name, includedIDs: includedIDs,
 					notIncludedIDs: (notIncludedIDs ?? []) + info.removedIDs, lastRevision: lastRevision)
+		} else if collection.lastRevision != previousLastRevision {
+			// Only the last revision advanced
+			self.databaseManager.collectionNoteLastRevision(name: collection.name,
+					lastRevision: collection.lastRevision)
 		}
 	}
 
@@ -1798,6 +1835,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	private func indexUpdate(_ index :MDSIndex, info :(updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64])) {
 		// Update Index
+		let	previousLastRevision = index.lastRevision
 		let	(keysInfos, lastRevision) = index.update(info.updateInfos)
 
 		// Check if have updates
@@ -1805,6 +1843,9 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 			// Update database
 			self.databaseManager.indexUpdate(name: index.name, keysInfos: keysInfos, removedIDs: info.removedIDs,
 					lastRevision: lastRevision)
+		} else if index.lastRevision != previousLastRevision {
+			// Only the last revision advanced
+			self.databaseManager.indexNoteLastRevision(name: index.name, lastRevision: index.lastRevision)
 		}
 	}
 
@@ -1840,72 +1881,74 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	//------------------------------------------------------------------------------------------------------------------
 	private func update(for documentType :String, info: (updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64])) {
 		// Setup
-		let	minimumRevision = info.updateInfos.map({ $0.revision }).min()
+		let	minimumRevision = info.updateInfos.min(by: { $0.revision < $1.revision })?.revision
 
 		var	bringUpToDateInfoBySinceRevision = [Int : (updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64])]()
 
-		// Update caches
-		self.cachesByDocumentType.values(for: documentType)?.forEach() {
-			// Check revision state
-			if (minimumRevision == nil) || (($0.lastRevision + 1) == minimumRevision!) {
-				// Update cache
-				self.cacheUpdate($0, info: info)
-			} else {
-				// Bring up to date
-				let	bringUpToDateInfo :(updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64])
-				if let existingBringUpToDateInfo = bringUpToDateInfoBySinceRevision[$0.lastRevision] {
-					// Have info
-					bringUpToDateInfo = existingBringUpToDateInfo
+		// Collect changes
+		try! self.databaseManager.batch() {
+			// Update caches
+			self.cachesByDocumentType.values(for: documentType)?.forEach() {
+				// Check revision state
+				if (minimumRevision == nil) || (($0.lastRevision + 1) == minimumRevision!) {
+					// Update cache
+					self.cacheUpdate($0, info: info)
 				} else {
-					// Retrieve info
-					bringUpToDateInfo = self.info(for: documentType, sinceRevision: $0.lastRevision)
-					bringUpToDateInfoBySinceRevision[$0.lastRevision] = bringUpToDateInfo
+					// Bring up to date
+					let	bringUpToDateInfo :(updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64])
+					if let existingBringUpToDateInfo = bringUpToDateInfoBySinceRevision[$0.lastRevision] {
+						// Have info
+						bringUpToDateInfo = existingBringUpToDateInfo
+					} else {
+						// Retrieve info
+						bringUpToDateInfo = self.info(for: documentType, sinceRevision: $0.lastRevision)
+						bringUpToDateInfoBySinceRevision[$0.lastRevision] = bringUpToDateInfo
+					}
+					self.cacheUpdate($0, info: bringUpToDateInfo)
 				}
-				self.cacheUpdate($0, info: bringUpToDateInfo)
 			}
-		}
 
-		// Update collections
-		self.collectionsByDocumentType.values(for: documentType)?.forEach() {
-			// Check revision state
-			if (minimumRevision == nil) || (($0.lastRevision + 1) == minimumRevision!) {
-				// Update collection
-				self.collectionUpdate($0, info: info)
-			} else {
-				// Bring up to date
-				let	bringUpToDateInfo :(updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64])
-				if let existingBringUpToDateInfo = bringUpToDateInfoBySinceRevision[$0.lastRevision] {
-					// Have info
-					bringUpToDateInfo = existingBringUpToDateInfo
+			// Update collections
+			self.collectionsByDocumentType.values(for: documentType)?.forEach() {
+				// Check revision state
+				if (minimumRevision == nil) || (($0.lastRevision + 1) == minimumRevision!) {
+					// Update collection
+					self.collectionUpdate($0, info: info)
 				} else {
-					// Retrieve info
-					bringUpToDateInfo = self.info(for: documentType, sinceRevision: $0.lastRevision)
-					bringUpToDateInfoBySinceRevision[$0.lastRevision] = bringUpToDateInfo
+					// Bring up to date
+					let	bringUpToDateInfo :(updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64])
+					if let existingBringUpToDateInfo = bringUpToDateInfoBySinceRevision[$0.lastRevision] {
+						// Have info
+						bringUpToDateInfo = existingBringUpToDateInfo
+					} else {
+						// Retrieve info
+						bringUpToDateInfo = self.info(for: documentType, sinceRevision: $0.lastRevision)
+						bringUpToDateInfoBySinceRevision[$0.lastRevision] = bringUpToDateInfo
+					}
+					self.collectionUpdate($0, info: bringUpToDateInfo)
 				}
-				self.collectionUpdate($0, info: bringUpToDateInfo)
 			}
-		}
 
-		// Update indexes
-		self.indexesByDocumentType.values(for: documentType)?.forEach() {
-			// Check revision state
-			if (minimumRevision == nil) || (($0.lastRevision + 1) == minimumRevision!) {
-				// Update index
-				self.indexUpdate($0, info: info)
-			} else {
-				// Bring up to date
-				let	bringUpToDateInfo :(updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64])
-				if let existingBringUpToDateInfo = bringUpToDateInfoBySinceRevision[$0.lastRevision] {
-					// Have info
-					bringUpToDateInfo = existingBringUpToDateInfo
+			// Update indexes
+			self.indexesByDocumentType.values(for: documentType)?.forEach() {
+				// Check revision state
+				if (minimumRevision == nil) || (($0.lastRevision + 1) == minimumRevision!) {
+					// Update index
+					self.indexUpdate($0, info: info)
 				} else {
-					// Retrieve info
-					bringUpToDateInfo = self.info(for: documentType, sinceRevision: $0.lastRevision)
-					bringUpToDateInfoBySinceRevision[$0.lastRevision] = bringUpToDateInfo
+					// Bring up to date
+					let	bringUpToDateInfo :(updateInfos :[MDSUpdateInfo<Int64>], removedIDs :[Int64])
+					if let existingBringUpToDateInfo = bringUpToDateInfoBySinceRevision[$0.lastRevision] {
+						// Have info
+						bringUpToDateInfo = existingBringUpToDateInfo
+					} else {
+						// Retrieve info
+						bringUpToDateInfo = self.info(for: documentType, sinceRevision: $0.lastRevision)
+						bringUpToDateInfoBySinceRevision[$0.lastRevision] = bringUpToDateInfo
+					}
+					self.indexUpdate($0, info: bringUpToDateInfo)
 				}
-				self.indexUpdate($0, info: bringUpToDateInfo)
 			}
 		}
 	}
 }
-
