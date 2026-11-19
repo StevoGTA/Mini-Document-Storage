@@ -106,8 +106,8 @@ class CMDSEphemeral : public CMDSDocumentStorageServer {
 																			activeOnly); }
 					OV<SError>									documentIterate(const CMDSDocument::Info& documentInfo,
 																		const TArray<CString>& documentIDs,
-																		CMDSDocument::Proc proc, void* procUserData)
-																		const;
+																		bool activeOnly, CMDSDocument::Proc proc,
+																		void* procUserData) const;
 					OV<SError>									documentIterate(const CMDSDocument::Info& documentInfo,
 																		bool activeOnly, CMDSDocument::Proc proc,
 																		void* procUserData) const;

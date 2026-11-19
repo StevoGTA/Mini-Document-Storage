@@ -120,29 +120,33 @@ class CMDSSQLite::Internals {
 			public:
 							DocumentBackingDocumentIDsIterateInfo(const CMDSDocument::Info& documentInfo,
 									CMDSDocumentStorage& documentStorage, TNArray<CString>& documentIDs,
-									CMDSDocument::Proc proc, void* procUserData) :
+									bool activeOnly, CMDSDocument::Proc proc, void* procUserData) :
 								mDocumentIDs(documentIDs),
-										mDocumentInfo(documentInfo), mDocumentStorage(documentStorage), mProc(proc),
-										mProcUserData(procUserData)
+										mDocumentInfo(documentInfo), mDocumentStorage(documentStorage),
+										mActiveOnly(activeOnly), mProc(proc), mProcUserData(procUserData)
 								{}
 							DocumentBackingDocumentIDsIterateInfo(TNArray<CMDSDocument::FullInfo>& documentFullInfos,
 									TNArray<CString>& documentIDs) :
 								mDocumentIDs(documentIDs),
-										mProc(nil), mProcUserData(nil), mDocumentFullInfos(documentFullInfos)
+										mActiveOnly(false), mProc(nil), mProcUserData(nil),
+										mDocumentFullInfos(documentFullInfos)
 								{}
 
 				OV<SError>	processX(const I<CMDSSQLiteDocumentBacking>& documentBacking) const
 								{
 									// Check how to process
 									if (mProc != nil) {
-										// Call proc
-										OV<SError>	error =
-															mProc(
-																	mDocumentInfo->create(
-																			documentBacking->getDocumentID(),
-																					*mDocumentStorage),
-																	mProcUserData);
-										ReturnErrorIfError(error);
+										// Check active
+										if (!mActiveOnly || documentBacking->getActive()) {
+											// Call proc
+											OV<SError>	error =
+																mProc(
+																		mDocumentInfo->create(
+																				documentBacking->getDocumentID(),
+																						*mDocumentStorage),
+																		mProcUserData);
+											ReturnErrorIfError(error);
+										}
 									} else
 										// Add to array
 										mDocumentFullInfos->add(documentBacking->getDocumentFullInfo());
@@ -158,6 +162,7 @@ class CMDSSQLite::Internals {
 
 				OR<const CMDSDocument::Info>			mDocumentInfo;
 				OR<CMDSDocumentStorage>					mDocumentStorage;
+				bool									mActiveOnly;
 				CMDSDocument::Proc						mProc;
 				void*									mProcUserData;
 
@@ -2134,7 +2139,7 @@ TVResult<UInt32> CMDSSQLite::documentGetCount(const CString& documentType, bool 
 
 //----------------------------------------------------------------------------------------------------------------------
 OV<SError> CMDSSQLite::documentIterate(const CMDSDocument::Info& documentInfo, const TArray<CString>& documentIDs,
-		CMDSDocument::Proc proc, void* procUserData) const
+		bool activeOnly, CMDSDocument::Proc proc, void* procUserData) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Register document create info
@@ -2151,23 +2156,37 @@ OV<SError> CMDSSQLite::documentIterate(const CMDSDocument::Info& documentInfo, c
 	TNArray<CString>	documentIDsToCache;
 	for (TArray<CString>::Iterator iterator = documentIDs.getIterator(); iterator; iterator++) {
 		// Check what we have currently
-		if (batch.hasReference() && (*batch)->documentInfoGet(*iterator).hasReference()) {
+		OR<MDSBatchDocumentInfo>	batchDocumentInfo =
+											batch.hasReference() ?
+													(*batch)->documentInfoGet(*iterator) : OR<MDSBatchDocumentInfo>();
+		if (batchDocumentInfo.hasReference()) {
 			// Have document in batch
-			OV<SError>	error = proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
-			ReturnErrorIfError(error);
-		} else if (mInternals->mDocumentBackingByDocumentID.getDocumentBacking(*iterator).hasReference()) {
-			// Have documentBacking in cache
-			OV<SError>	error = proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
-			ReturnErrorIfError(error);
-		} else
-			// Will need to retrieve from database
-			documentIDsToCache += *iterator;
+			const	OR<I<CMDSSQLiteDocumentBacking> >	documentBacking = batchDocumentInfo->getDocumentBacking();
+			if (!activeOnly || !documentBacking.hasReference() || (*documentBacking)->getActive()) {
+				// Call proc
+				OV<SError>	error = proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
+				ReturnErrorIfError(error);
+			}
+		} else {
+			// Check cache
+			const	OR<I<CMDSSQLiteDocumentBacking> >	documentBacking =
+																mInternals->mDocumentBackingByDocumentID
+																		.getDocumentBacking(*iterator);
+			if (!documentBacking.hasReference())
+				// Will need to retrieve from database
+				documentIDsToCache += *iterator;
+			else if (!activeOnly || (*documentBacking)->getActive()) {
+				// Have active documentBacking in cache
+				OV<SError>	error = proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
+				ReturnErrorIfError(error);
+			}
+		}
 	}
 
 	// Iterate document IDs not found in batch or cache
 	Internals::DocumentBackingDocumentIDsIterateInfo	documentBackingDocumentIDsIterateInfo(documentInfo,
-																(CMDSDocumentStorage&) *this, documentIDsToCache, proc,
-																procUserData);
+																(CMDSDocumentStorage&) *this, documentIDsToCache,
+																activeOnly, proc, procUserData);
 	OV<SError>											error =
 																mInternals->documentBackingsIterate(
 																		documentInfo.getDocumentType(),

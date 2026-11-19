@@ -155,7 +155,7 @@ class CMDSDocumentStorage {
 		virtual			TVResult<UInt32>					documentGetCount(const CString& documentType,
 																	bool activeOnly) const = 0;
 		virtual			OV<SError>							documentIterate(const CMDSDocument::Info& documentInfo,
-																	const TArray<CString>& documentIDs,
+																	const TArray<CString>& documentIDs, bool activeOnly,
 																	CMDSDocument::Proc proc, void* procUserData) const
 																	= 0;
 		virtual			OV<SError>							documentIterate(const CMDSDocument::Info& documentInfo,

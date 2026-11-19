@@ -1626,7 +1626,7 @@ TVResult<UInt32> CMDSEphemeral::documentGetCount(const CString& documentType, bo
 
 //----------------------------------------------------------------------------------------------------------------------
 OV<SError> CMDSEphemeral::documentIterate(const CMDSDocument::Info& documentInfo, const TArray<CString>& documentIDs,
-		CMDSDocument::Proc proc, void* procUserData) const
+		bool activeOnly, CMDSDocument::Proc proc, void* procUserData) const
 //----------------------------------------------------------------------------------------------------------------------
 {
 	// Register document create info
@@ -1639,10 +1639,17 @@ OV<SError> CMDSEphemeral::documentIterate(const CMDSDocument::Info& documentInfo
 	TNArray<CString>	documentIDsForDocumentBackings;
 	for (TArray<CString>::Iterator iterator = documentIDs.getIterator(); iterator; iterator++) {
 		// Check what we have currently
-		if (batch.hasReference() && (*batch)->documentInfoGet(*iterator).hasReference())
+		OR<Internals::BatchDocumentInfo>	batchDocumentInfo =
+													batch.hasReference() ?
+															(*batch)->documentInfoGet(*iterator) :
+															OR<Internals::BatchDocumentInfo>();
+		if (batchDocumentInfo.hasReference()) {
 			// Have document in batch
-			proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
-		else
+			const	OR<I<Internals::DocumentBacking> >&	documentBacking = batchDocumentInfo->getDocumentBacking();
+			if (!activeOnly || !documentBacking.hasReference() || (*documentBacking)->isActive())
+				// Call proc
+				proc(documentInfo.create(*iterator, (CMDSDocumentStorage&) *this), procUserData);
+		} else
 			// Not in batch
 			documentIDsForDocumentBackings += *iterator;
 	}
@@ -1655,6 +1662,11 @@ OV<SError> CMDSEphemeral::documentIterate(const CMDSDocument::Info& documentInfo
 
 	for (TArray<I<Internals::DocumentBacking> >::Iterator iterator = documentBackingsResult->getIterator(); iterator;
 			iterator++) {
+		// Check active
+		if (activeOnly && !(*iterator)->isActive())
+			// Not active
+			continue;
+
 		// Call proc
 		OV<SError>	error =
 							proc(documentInfo.create((*iterator)->getDocumentID(), (CMDSDocumentStorage&) *this),

@@ -539,7 +539,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentIterate(for documentType :String, documentIDs :[String],
+	public func documentIterate(for documentType :String, documentIDs :[String], activeOnly :Bool,
 			documentCreateProc :MDSDocument.CreateProc, proc :MDSDocument.Proc) throws {
 		// Retrieve info
 		let	(documentRevisionInfos, errors) =
@@ -552,7 +552,7 @@ open class MDSRemoteStorage : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Iterate document IDs and retrieve any needed documents
 		try documentIterateIDs(documentType: documentType, documentRevisionInfos: documentRevisionInfos!,
-				activeOnly: false) { try proc(documentCreateProc($0, self)) }
+				activeOnly: activeOnly) { try proc(documentCreateProc($0, self)) }
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

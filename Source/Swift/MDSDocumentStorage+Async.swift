@@ -113,8 +113,8 @@ public extension MDSDocumentStorage {
 			// Start task
 			Task {
 				// Iterate documents
-				try documentIterate(for: documentType, documentIDs: documentIDs, documentCreateProc: documentCreateProc)
-						{ continuation.yield($0) }
+				try documentIterate(for: documentType, documentIDs: documentIDs, activeOnly: false,
+						documentCreateProc: documentCreateProc) { continuation.yield($0) }
 
 				// Done
 				continuation.finish()

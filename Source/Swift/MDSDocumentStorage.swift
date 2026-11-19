@@ -99,8 +99,8 @@ public protocol MDSDocumentStorage {
 			proc :MDSDocument.CreateProc) throws ->
 			[(document :MDSDocument, documentOverviewInfo :MDSDocument.OverviewInfo?)]
 	func documentGetCount(for documentType :String, activeOnly :Bool) throws -> Int
-	func documentIterate(for documentType :String, documentIDs :[String], documentCreateProc :MDSDocument.CreateProc,
-			proc :MDSDocument.Proc) throws
+	func documentIterate(for documentType :String, documentIDs :[String], activeOnly :Bool,
+			documentCreateProc :MDSDocument.CreateProc, proc :MDSDocument.Proc) throws
 	func documentIterate(for documentType :String, activeOnly: Bool, documentCreateProc :MDSDocument.CreateProc,
 			proc :MDSDocument.Proc) throws
 
@@ -331,7 +331,7 @@ public extension MDSDocumentStorage {
 		register(documentCreateProc: { T(id: $0, documentStorage: $1) })
 
 		// Iterate documents
-		try documentIterate(for: T.documentType, documentIDs: documentIDs,
+		try documentIterate(for: T.documentType, documentIDs: documentIDs, activeOnly: false,
 				documentCreateProc: { T(id: $0, documentStorage: $1) }, proc: { proc($0 as! T) })
 	}
 
@@ -367,7 +367,7 @@ public extension MDSDocumentStorage {
 
 		// Retrieve document
 		var	document :T?
-		try documentIterate(for: T.documentType, documentIDs: [documentID],
+		try documentIterate(for: T.documentType, documentIDs: [documentID], activeOnly: false,
 				documentCreateProc: { T(id: $0, documentStorage: $1) }, proc: { document = ($0 as! T) })
 
 		return document!
@@ -382,7 +382,7 @@ public extension MDSDocumentStorage {
 		var	documents = [T]()
 
 		// Iterate documents for document ids
-		try documentIterate(for: T.documentType, documentIDs: documentIDs,
+		try documentIterate(for: T.documentType, documentIDs: documentIDs, activeOnly: false,
 				documentCreateProc: { T(id: $0, documentStorage: $1) }, proc: { documents.append($0 as! T) })
 
 		return documents

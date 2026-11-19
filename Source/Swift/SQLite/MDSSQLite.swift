@@ -459,7 +459,7 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentIterate(for documentType :String, documentIDs :[String],
+	public func documentIterate(for documentType :String, documentIDs :[String], activeOnly :Bool,
 			documentCreateProc :MDSDocument.CreateProc, proc :MDSDocument.Proc) throws {
 		// Validate
 		guard self.databaseManager.documentTypeIsKnown(documentType) else {
@@ -473,12 +473,19 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 		var	documentIDsToCache = [String]()
 		try documentIDs.forEach() {
 			// Check what we have currently
-			if batch?.documentInfoGet(for: $0) != nil {
+			if let batchDocumentInfo = batch?.documentInfoGet(for: $0) {
 				// Have document in batch
-				try proc(documentCreateProc($0, self))
-			} else if self.documentBackingByDocumentID.documentBacking(for: $0) != nil {
+				if !activeOnly || (batchDocumentInfo.documentBacking == nil) ||
+						batchDocumentInfo.documentBacking!.active {
+					// Call proc
+					try proc(documentCreateProc($0, self))
+				}
+			} else if let documentBacking = self.documentBackingByDocumentID.documentBacking(for: $0) {
 				// Have documentBacking in cache
-				try proc(documentCreateProc($0, self))
+				if !activeOnly || documentBacking.active {
+					// Call proc
+					try proc(documentCreateProc($0, self))
+				}
 			} else {
 				// Will need to retrieve from database
 				documentIDsToCache.append($0)
@@ -487,8 +494,11 @@ public class MDSSQLite : MDSDocumentStorageCore, MDSDocumentStorage {
 
 		// Iterate document IDs not found in batch or cache
 		try documentBackingsIterate(documentType: documentType, documentIDs: documentIDsToCache) {
-			// Call proc
-			try proc(documentCreateProc($0.documentID, self))
+			// Check active
+			if !activeOnly || $0.active {
+				// Call proc
+				try proc(documentCreateProc($0.documentID, self))
+			}
 
 			// Update
 			documentIDsToCache.remove($0.documentID)

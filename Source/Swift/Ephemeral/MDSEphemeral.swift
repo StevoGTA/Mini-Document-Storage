@@ -602,7 +602,7 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	public func documentIterate(for documentType :String, documentIDs :[String],
+	public func documentIterate(for documentType :String, documentIDs :[String], activeOnly :Bool,
 			documentCreateProc :MDSDocument.CreateProc, proc :MDSDocument.Proc) throws {
 		// Setup
 		let	batch = self.batchByThread.value(for: .current)
@@ -611,9 +611,13 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		var	documentIDsForDocumentBackings = [String]()
 		try documentIDs.forEach() {
 			// Check what we have currently
-			if batch?.documentInfoGet(for: $0) != nil {
+			if let batchDocumentInfo = batch?.documentInfoGet(for: $0) {
 				// Have document in batch
-				try proc(documentCreateProc($0, self))
+				if !activeOnly || (batchDocumentInfo.documentBacking == nil) ||
+						batchDocumentInfo.documentBacking!.active {
+					// Call proc
+					try proc(documentCreateProc($0, self))
+				}
 			} else {
 				// Not in batch
 				documentIDsForDocumentBackings.append($0)
@@ -621,8 +625,13 @@ public class MDSEphemeral : MDSDocumentStorageCore, MDSDocumentStorage {
 		}
 
 		// Iterate document backings
-		try documentBackingsIterate(for: documentType, documentIDs: documentIDsForDocumentBackings,
-				proc: { try proc(documentCreateProc($0.documentID, self)) })
+		try documentBackingsIterate(for: documentType, documentIDs: documentIDsForDocumentBackings) {
+			// Check active
+			if !activeOnly || $0.active {
+				// Call proc
+				try proc(documentCreateProc($0.documentID, self))
+			}
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------------------------

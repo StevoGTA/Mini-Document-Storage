@@ -226,8 +226,8 @@ class MDSDocumentStorageServerObjC : MDSDocumentStorageCore, MDSDocumentStorageS
 	}
 
 	//------------------------------------------------------------------------------------------------------------------
-	func documentIterate(for documentType :String, documentIDs :[String], documentCreateProc :MDSDocument.CreateProc,
-			proc :MDSDocument.Proc) throws {
+	func documentIterate(for documentType :String, documentIDs :[String], activeOnly :Bool,
+			documentCreateProc :MDSDocument.CreateProc, proc :MDSDocument.Proc) throws {
 		fatalError("Unimplemented")
 	}
 
